@@ -1,9 +1,11 @@
 [submodule "external/eigen"]
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen.git
+
 [submodule "external/fmt"]
 	path = external/fmt
-	url = https://github.com/fmtlib/fmt
+	url = https://github.com/fmtlib/fmt.git
+
 [submodule "external/unvpp"]
 	path = external/unvpp
-	url = https://github.com/eigemx/unvpp
+	url = https://github.com/eigemx/unvpp.git
