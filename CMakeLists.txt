@@ -10,6 +10,9 @@ project(
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# generate compile_commands.json to be used by clang-tidy
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # setup eigen
 set(EIGEN_SOURCE_DIR "external/eigen")
 include_directories(${EIGEN_SOURCE_DIR})
@@ -29,5 +32,3 @@ add_executable(prism
 )
 
 target_link_libraries(prism fmt unvpp)
-
-
