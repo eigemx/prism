@@ -1,4 +1,4 @@
-BasedOnStyle: Google
+BasedOnStyle: llvm
 IndentWidth: 4
 ColumnLimit: 80
 AllowShortFunctionsOnASingleLine: Inline
@@ -10,24 +10,23 @@ AlignTrailingComments: true
 SpacesBeforeTrailingComments: 1
 SortIncludes: true
 AccessModifierOffset: -4
-Standard: Cpp17
 KeepEmptyLinesAtTheStartOfBlocks: false
-MaxEmptyLinesToKeep: 1
+MaxEmptyLinesToKeep: 2
 FixNamespaceComments: true
 ReflowComments: false
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel:  true
-  AfterClass:      true
-  AfterControlStatement: true
-  AfterEnum:       true
-  AfterFunction:   true
+  AfterCaseLabel:  false
+  AfterClass:      false
+  AfterControlStatement: false
+  AfterEnum:       false
+  AfterFunction:   false
   AfterNamespace:  false
-  AfterObjCDeclaration: true
-  AfterStruct:     true
+  AfterObjCDeclaration: false
+  AfterStruct:     false
   AfterUnion:      false
-  BeforeCatch:     true
-  BeforeElse:      true
+  BeforeCatch:     false
+  BeforeElse:      false
   IndentBraces:    false
 DerivePointerAlignment: false
 PointerAlignment: Left

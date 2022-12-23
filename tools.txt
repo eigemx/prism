@@ -1,0 +1,1 @@
+clang-tidy src/prism/*.cpp -p build/compile_commands.json
