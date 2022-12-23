@@ -19,11 +19,15 @@ set(FMT_SOURCE_DIR "external/fmt")
 add_subdirectory(${FMT_SOURCE_DIR})
 include_directories(${FMT_SOURCE_DIR}/include)
 
+# setup unvpp
+set(UNVPP_SOURCE_DIR "external/unvpp")
+add_subdirectory(${UNVPP_SOURCE_DIR})
+include_directories(${UNVPP_SOURCE_DIR}/include)
 
 add_executable(prism
     src/prism/main.cpp
 )
 
-target_link_libraries(prism fmt)
+target_link_libraries(prism fmt unvpp)
 
 

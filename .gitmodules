@@ -4,3 +4,6 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
+[submodule "external/unvpp"]
+	path = external/unvpp
+	url = https://github.com/eigemx/unvpp
