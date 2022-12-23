@@ -1,21 +1,21 @@
+#include <fmt/color.h>
 #include <fmt/core.h>
 #include <unvpp/unvpp.h>
 
 
 #include <Eigen/Dense>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
 
-int main() {
-    auto v = unv::Vertex{
-        0.0,
-        0.0,
-        0.0,
-    };
+auto main(int argc, char* argv[]) -> int {
+    if (argc < 2) {
+        fmt::print("Error: missing input mesh file\n");
+        std::exit(-1);
+    }
 
-    auto m = v;
-    std::string x;
-    x.clear();
+    auto stream = std::ifstream(argv[1]);
+    auto mesh = unv::read(stream);
 
-    fmt::print("{}", v.x);
-    fmt::print("Hello, {}\n", "World!");
+    fmt::print("Count of vertices = {}\n", mesh.vertices.size());
 }
