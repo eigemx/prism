@@ -29,6 +29,7 @@ include_directories(${UNVPP_SOURCE_DIR}/include)
 
 add_executable(prism
     src/prism/main.cpp
+    src/prism/mesh/from_unv.cpp
 )
 
 target_link_libraries(prism fmt unvpp)
