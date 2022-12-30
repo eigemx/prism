@@ -1,2 +1,6 @@
-Checks: '-*,modernize-*, readability-*, performance-*, -readability-magic-numbers'
+Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines-*,
+         -readability-magic-numbers, 
+         -cppcoreguidelines-avoid-magic-numbers, 
+         -cppcoreguidelines-narrowing-conversions,
+         -modernize-use-nodiscard'
 WarningsAsErrors: '*'

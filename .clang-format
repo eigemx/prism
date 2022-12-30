@@ -1,6 +1,6 @@
-BasedOnStyle: llvm
+BasedOnStyle: Google
 IndentWidth: 4
-ColumnLimit: 80
+ColumnLimit: 88
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
