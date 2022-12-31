@@ -17,20 +17,20 @@ class UnvToPMesh {
 public:
     UnvToPMesh() = delete;
     UnvToPMesh(const std::string& filename);
-    UnvToPMesh(unv::Mesh&& unv_mesh);
 
 private:
-    using FacesIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
+    using FaceIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
     void process_cells();
     void process_hex_cell(const unv::Element& cell_vertices);
     auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
     auto face_index(const std::vector<std::size_t>& face_vertices)
-        -> std::optional<FacesIndexMap::iterator>;
+        -> std::optional<FaceIndexMap::iterator>;
 
     unv::Mesh unv_mesh;
-    FacesIndexMap faces_map; // maps a sorted face to its index in `faces` vector
+    FaceIndexMap faces_map; // maps a sorted face to its index in `faces` vector
     std::vector<Face> faces;
     std::vector<Cell> cells;
+
     std::size_t current_cell_id {0};
     std::size_t current_face_id {0};
 };
