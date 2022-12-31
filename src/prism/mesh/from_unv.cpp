@@ -7,11 +7,8 @@ namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::string& filename) {
     unv_mesh = unv::read(filename);
     process_cells();
-
-    auto rand_face = faces[100];
-    fmt::print("face id: {}, face owner: {}, face neighbor: {}\n", rand_face.id(),
-               rand_face.owner(), rand_face.neighbor().value_or(9999));
 }
+
 
 void UnvToPMesh::process_cells() {
     for (auto& element : unv_mesh.elements.value()) {
@@ -40,7 +37,7 @@ void UnvToPMesh::process_cells() {
 
             // We shouldn't reach this, as unvpp lib won't allow it.
             default:
-                throw std::runtime_error("Mesh has unsupported UNV element!");
+                throw std::runtime_error("Input UNV mesh has an unsupported element!");
                 break;
         }
     }
@@ -121,6 +118,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
     new_face.set_owner(current_cell_id);
     new_face.set_id(face_id);
     faces.emplace_back(new_face);
+    faces_map.insert({sorted_face_vertices, face_id});
 
     return face_id;
 }
