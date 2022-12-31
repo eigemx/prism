@@ -44,6 +44,11 @@ void UnvToPMesh::process_cells() {
                 break;
         }
     }
+
+    if (cells.empty()) {
+        throw std::runtime_error(
+            "Input UNV mesh is either empty or two dimensional. Prism acceptes only 3D meshes");
+    }
 }
 
 void UnvToPMesh::process_hex_cell(const unv::Element& cell_vertices) {
