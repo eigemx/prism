@@ -19,11 +19,6 @@ public:
     UnvToPMesh() = delete;
     UnvToPMesh(const std::string& filename);
 
-    void quick_report() {
-        // in this house, we debug by printing.
-        fmt::print("Number of faces = {}, number of cells = {}\n", faces.size(), cells.size());
-    }
-
 private:
     using FaceIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
     void process_cells();
