@@ -15,8 +15,5 @@
 
 auto main() -> int {
     // test UNV library functionality
-    auto mesh = unv::read("./external/unvpp/meshes/one_hex_cell.unv");
-
-    fmt::print("Count of vertices = {}\n", mesh.vertices.size());
-    fmt::print("Count of elements = {}\n", mesh.elements.value().size());
+    auto pmesh = prism::mesh::UnvToPMesh("./external/unvpp/meshes/fine_cube.unv");
 }

@@ -9,8 +9,8 @@ namespace prism::mesh {
 class Cell {
 public:
     Cell() = delete;
-    Cell(const std::vector<Face>& faces, const std::vector<std::size_t>& faces_ids,
-         const std::size_t& cell_id);
+    Cell(const std::vector<Face>& faces, std::vector<std::size_t>& faces_ids,
+         std::size_t cell_id);
 
     auto inline volume() -> double& { return _volume; }
     auto inline center() -> Vector3d& { return _center; }

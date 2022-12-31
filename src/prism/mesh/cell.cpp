@@ -1,9 +1,9 @@
 #include "cell.h"
 
 namespace prism::mesh {
-Cell::Cell(const std::vector<Face>& faces, const std::vector<std::size_t>& faces_ids,
-           const std::size_t& cell_id)
-    : _id(cell_id), faces_ids(faces_ids) {
+Cell::Cell(const std::vector<Face>& faces, std::vector<std::size_t>& faces_ids,
+           std::size_t cell_id)
+    : _id(cell_id) {
     Vector3d geo_center {0.0, 0.0, 0.0};
 
     // calculate geometric center
@@ -30,5 +30,6 @@ Cell::Cell(const std::vector<Face>& faces, const std::vector<std::size_t>& faces
     }
 
     _center /= _volume;
+    faces_ids = std::move(faces_ids);
 }
 } // namespace prism::mesh
