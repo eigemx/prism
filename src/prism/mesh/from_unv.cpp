@@ -13,7 +13,7 @@ UnvToPMesh::UnvToPMesh(const std::string& filename) {
 void UnvToPMesh::process_cells() {
     for (auto& element : unv_mesh.elements.value()) {
         // look for 3-dimensional element types
-        switch (element.type) {
+        switch (element.type()) {
             // two dimensional elements, nothing to do
             case unv::ElementType::Line:
             case unv::ElementType::Quad:
@@ -48,51 +48,51 @@ void UnvToPMesh::process_cells() {
     }
 }
 
-void UnvToPMesh::process_hex_cell(const unv::Element& cell_vertices) {
+void UnvToPMesh::process_hex_cell(unv::Element& element) {
     // keep track of face ids inside the current hexagonal cell
-    std::vector<std::size_t> cell_face_ids;
+    std::vector<std::size_t> cell_faces_ids;
 
     // reserve a total of 6 faces
-    cell_face_ids.reserve(6);
+    cell_faces_ids.reserve(6);
 
-    for (auto& quad_face_vertices : hex_cell_faces(cell_vertices.vertices_ids)) {
+    for (auto& quad_face_vertices : hex_cell_faces(element.vertices_ids())) {
         auto face_id = process_face(quad_face_vertices);
-        cell_face_ids.push_back(face_id);
+        cell_faces_ids.push_back(face_id);
     }
 
-    cells.emplace_back(Cell {faces, cell_face_ids, current_cell_id});
+    cells.emplace_back(faces, std::move(cell_faces_ids), current_cell_id);
     current_cell_id++;
 }
 
-void UnvToPMesh::process_tetra_cell(const unv::Element& cell_vertices) {
+void UnvToPMesh::process_tetra_cell(unv::Element& element) {
     // keep track of face ids inside the current tetrahedron cell
-    std::vector<std::size_t> cell_face_ids;
+    std::vector<std::size_t> cell_faces_ids;
 
     // reserve a total of 4 faces
-    cell_face_ids.reserve(4);
+    cell_faces_ids.reserve(4);
 
-    for (auto& tri_face_vertices : tetra_cell_faces(cell_vertices.vertices_ids)) {
+    for (auto& tri_face_vertices : tetra_cell_faces(element.vertices_ids())) {
         auto face_id = process_face(tri_face_vertices);
-        cell_face_ids.push_back(face_id);
+        cell_faces_ids.push_back(face_id);
     }
 
-    cells.emplace_back(Cell {faces, cell_face_ids, current_cell_id});
+    cells.emplace_back(faces, std::move(cell_faces_ids), current_cell_id);
     current_cell_id++;
 }
 
-void UnvToPMesh::process_wedge_cell(const unv::Element& cell_vertices) {
+void UnvToPMesh::process_wedge_cell(unv::Element& element) {
     // keep track of face ids inside the current wedge cell
-    std::vector<std::size_t> cell_face_ids;
+    std::vector<std::size_t> cell_faces_ids;
 
     // reserve a total of 4 faces
-    cell_face_ids.reserve(5);
+    cell_faces_ids.reserve(5);
 
-    for (auto& tri_face_vertices : tetra_cell_faces(cell_vertices.vertices_ids)) {
+    for (auto& tri_face_vertices : tetra_cell_faces(element.vertices_ids())) {
         auto face_id = process_face(tri_face_vertices);
-        cell_face_ids.push_back(face_id);
+        cell_faces_ids.push_back(face_id);
     }
 
-    cells.emplace_back(Cell {faces, cell_face_ids, current_cell_id});
+    cells.emplace_back(faces, std::move(cell_faces_ids), current_cell_id);
     current_cell_id++;
 }
 
