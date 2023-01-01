@@ -3,8 +3,7 @@
 
 namespace prism::mesh {
 
-void Face::set_face_attributes(const std::vector<Vector3d>& face_vertices,
-                               Vector3d& geo_center, std::size_t vertices_count) {
+void Face::set_face_attributes(const std::vector<Vector3d>& face_vertices, Vector3d& geo_center) {
     // Calculate face geometric center.
     geo_center = geo_center / vertices_count;
 
@@ -48,7 +47,7 @@ Face::Face(const std::vector<std::size_t>& face,
         geo_center += face_vertices[i];
     }
 
-    set_face_attributes(face_vertices, geo_center, vertices_count);
+    set_face_attributes(face_vertices, geo_center);
 }
 
 Face::Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& vertices)
@@ -64,6 +63,6 @@ Face::Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& ve
         geo_center += face_vertices[i];
     }
 
-    set_face_attributes(face_vertices, geo_center, vertices_count);
+    set_face_attributes(face_vertices, geo_center);
 }
 } // namespace prism::mesh

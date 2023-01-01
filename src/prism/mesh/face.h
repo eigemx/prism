@@ -30,7 +30,7 @@ public:
 
 private:
     void inline set_face_attributes(const std::vector<Vector3d>& face_vertices,
-                                    Vector3d& geo_center, std::size_t vertices_count);
+                                    Vector3d& geo_center);
     std::size_t vertices_count;
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};

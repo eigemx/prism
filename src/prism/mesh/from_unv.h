@@ -22,9 +22,9 @@ public:
 private:
     using FaceIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
     void process_cells();
-    void process_hex_cell(const unv::Element& cell_vertices);
-    void process_tetra_cell(const unv::Element& cell_vertices);
-    void process_wedge_cell(const unv::Element& cell_vertices);
+    void process_hex_cell(unv::Element& cell_vertices);
+    void process_tetra_cell(unv::Element& cell_vertices);
+    void process_wedge_cell(unv::Element& cell_vertices);
     auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
     auto face_index(const std::vector<std::size_t>& face_vertices)
         -> std::optional<FaceIndexMap::iterator>;

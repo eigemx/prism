@@ -9,7 +9,7 @@ namespace prism::mesh {
 class Cell {
 public:
     Cell() = delete;
-    Cell(const std::vector<Face>& faces, std::vector<std::size_t>& faces_ids,
+    Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
          std::size_t cell_id);
 
     auto inline volume() -> double& { return _volume; }
