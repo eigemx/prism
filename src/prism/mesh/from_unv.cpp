@@ -7,6 +7,7 @@ namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::string& filename) {
     unv_mesh = unv::read(filename);
     process_cells();
+    process_groups();
 }
 
 void UnvToPMesh::report_mesh_stats() const {
@@ -46,7 +47,7 @@ void UnvToPMesh::process_cells() {
                 auto boundary_face_id = process_boundary_face(element);
 
                 // we will need UNV id of this boundary face later when we process groups
-                face_id_to_unv_index_map[boundary_face_id] = unv_element_counter;
+                bface_id_to_unv_index_map[boundary_face_id] = unv_element_counter;
                 break;
             }
 
@@ -92,8 +93,8 @@ void UnvToPMesh::process_hex_cell(const unv::Element& element) {
         cell_faces_ids.push_back(face_id);
     }
 
-    cells.emplace_back(faces, std::move(cell_faces_ids), current_cell_id);
-    current_cell_id++;
+    cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
+    cell_id_counter++;
 }
 
 void UnvToPMesh::process_tetra_cell(const unv::Element& element) {
@@ -108,8 +109,8 @@ void UnvToPMesh::process_tetra_cell(const unv::Element& element) {
         cell_faces_ids.push_back(face_id);
     }
 
-    cells.emplace_back(faces, std::move(cell_faces_ids), current_cell_id);
-    current_cell_id++;
+    cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
+    cell_id_counter++;
 }
 
 void UnvToPMesh::process_wedge_cell(const unv::Element& element) {
@@ -124,8 +125,8 @@ void UnvToPMesh::process_wedge_cell(const unv::Element& element) {
         cell_faces_ids.push_back(face_id);
     }
 
-    cells.emplace_back(faces, std::move(cell_faces_ids), current_cell_id);
-    current_cell_id++;
+    cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
+    cell_id_counter++;
 }
 
 auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t {
@@ -143,12 +144,12 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
         if (face.has_owner()) {
             // face has been visited before and is owned
             // we update its neighbor and return
-            face.set_neighbor(current_cell_id);
+            face.set_neighbor(cell_id_counter);
 
         } else {
             // face is not owned but has been processed, then it's a boundary face
             // we set the current cell as its owner and return
-            face.set_owner(current_cell_id);
+            face.set_owner(cell_id_counter);
         }
 
         return face_id;
@@ -156,10 +157,10 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
 
     // this a new interior face, we need to call Face() constructor
     // and push the new face to `faces` vector
-    auto face_id = current_face_id++;
+    auto face_id = face_id_counter++;
     auto new_face = Face(face_vertices, unv_mesh.vertices);
 
-    new_face.set_owner(current_cell_id);
+    new_face.set_owner(cell_id_counter);
     new_face.set_id(face_id);
 
     faces.emplace_back(new_face);
@@ -176,7 +177,7 @@ auto UnvToPMesh::process_boundary_face(unv::Element& boundary_face) -> std::size
 
     // this a new face, we need to call Face() constructor
     // and push the new face to `faces` vector
-    auto face_id = current_face_id++;
+    auto face_id = face_id_counter++;
     auto new_face = Face(boundary_face.vertices_ids(), unv_mesh.vertices);
 
     // this face does not yet has an owner, this will be set later by process_face()
@@ -199,7 +200,7 @@ auto UnvToPMesh::face_index(const std::vector<std::size_t>& face_vertices)
 }
 
 void UnvToPMesh::process_groups() {
-    if (!unv_mesh.groups.has_value()) {
+    if (!unv_mesh.groups) {
         throw std::runtime_error("Input UNV mesh has no groups (boundary patches)!");
     }
 
@@ -207,7 +208,31 @@ void UnvToPMesh::process_groups() {
         if (group.type() == unv::GroupType::Vertex) {
             continue;
         }
+        const auto& unique_types = group.unique_element_types();
+        bool error = false;
+
+        // unique elements count should be lower than or equal 2, and should be only Quad or Triangle or both
+        if (unique_types.size() > 2) {
+            error = true;
+        }
+
+        if (unique_types.size() == 2) {
+            if ((unique_types.find(unv::ElementType::Quad) == unique_types.end()) ||
+                (unique_types.find(unv::ElementType::Triangle) == unique_types.end())) {
+                error = true;
+            }
+        }
+
+        if (error) {
+            throw std::runtime_error(
+                "Input UNV contains boundary patches with non-face type elements. "
+                "Prism supports only boundary patches with two-dimensiobal elements.");
+        }
+
+        // process the group
+        process_group(group);
     }
 }
 
+void UnvToPMesh::process_group(const unv::Group& group) {}
 } // namespace prism::mesh
