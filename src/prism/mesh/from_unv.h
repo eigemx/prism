@@ -28,30 +28,36 @@ private:
     using FaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
 
     // map a boundary face index in `faces` vector to its index in `unv_mesh.elements()`
-    using FaceIndexToUnvIndexMap = std::map<std::size_t, std::size_t>;
+    using BFaceIndexToUnvIndexMap = std::map<std::size_t, std::size_t>;
 
     // map a patch name to a set of faces ids in `faces` vector
     using BoundaryPatchToFacesMap = std::map<std::string, std::unordered_set<std::size_t>>;
 
+    // cells
     void process_cells();
     void process_hex_cell(const unv::Element& element);
     void process_tetra_cell(const unv::Element& element);
     void process_wedge_cell(const unv::Element& element);
+
+    // faces
     auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
     auto process_boundary_face(unv::Element& boundary_face) -> std::size_t;
+
+    // groups
     void process_groups();
+    void process_group(const unv::Group& group);
     auto face_index(const std::vector<std::size_t>& face_vertices)
         -> std::optional<FaceToIndexMap::iterator>;
 
     unv::Mesh unv_mesh;
     FaceToIndexMap face_to_index_map;
     BoundaryPatchToFacesMap boundary_name_to_faces_map;
-    FaceIndexToUnvIndexMap face_id_to_unv_index_map;
+    BFaceIndexToUnvIndexMap bface_id_to_unv_index_map;
     std::vector<Face> faces;
     std::vector<Cell> cells;
 
-    std::size_t current_cell_id {0};
-    std::size_t current_face_id {0};
+    std::size_t cell_id_counter {0};
+    std::size_t face_id_counter {0};
 };
 
 // Array of 6 quad faces
