@@ -25,4 +25,5 @@ auto main(int argc, char* argv[]) -> int {
 
     // test UNV library functionality
     auto pmesh = prism::mesh::UnvToPMesh(filename);
+    pmesh.report_mesh_stats();
 }
