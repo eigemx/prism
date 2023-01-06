@@ -7,6 +7,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 #include "cell.h"
@@ -19,18 +20,33 @@ public:
     UnvToPMesh() = delete;
     UnvToPMesh(const std::string& filename);
 
+    void report_mesh_stats() const;
+    void report_mesh_connectivity() const;
+
 private:
-    using FaceIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
+    // map a face sorted vertex ids to its index in `faces` vector
+    using FaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
+
+    // map a boundary face index in `faces` vector to its index in `unv_mesh.elements()`
+    using FaceIndexToUnvIndexMap = std::map<std::size_t, std::size_t>;
+
+    // map a patch name to a set of faces ids in `faces` vector
+    using BoundaryPatchToFacesMap = std::map<std::string, std::unordered_set<std::size_t>>;
+
     void process_cells();
-    void process_hex_cell(unv::Element& cell_vertices);
-    void process_tetra_cell(unv::Element& cell_vertices);
-    void process_wedge_cell(unv::Element& cell_vertices);
+    void process_hex_cell(const unv::Element& element);
+    void process_tetra_cell(const unv::Element& element);
+    void process_wedge_cell(const unv::Element& element);
     auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
+    auto process_boundary_face(unv::Element& boundary_face) -> std::size_t;
+    void process_groups();
     auto face_index(const std::vector<std::size_t>& face_vertices)
-        -> std::optional<FaceIndexMap::iterator>;
+        -> std::optional<FaceToIndexMap::iterator>;
 
     unv::Mesh unv_mesh;
-    FaceIndexMap faces_map; // maps a sorted face to its index in `faces` vector
+    FaceToIndexMap face_to_index_map;
+    BoundaryPatchToFacesMap boundary_name_to_faces_map;
+    FaceIndexToUnvIndexMap face_id_to_unv_index_map;
     std::vector<Face> faces;
     std::vector<Cell> cells;
 

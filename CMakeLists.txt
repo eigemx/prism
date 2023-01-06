@@ -4,11 +4,12 @@ project(
     prism
     LANGUAGES CXX
     VERSION 0.0.1
-    DESCRIPTION "A Finite Volume Computational Fluid Dynamics Solver"
+    DESCRIPTION "A Finite Volume Based Navier-Stokes Solver"
 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
 # generate compile_commands.json to be used by clang-tidy
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
