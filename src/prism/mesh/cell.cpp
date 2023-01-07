@@ -1,21 +1,23 @@
 #include "cell.h"
 
+#include <iostream>
+
 namespace prism::mesh {
 Cell::Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
            std::size_t cell_id)
-    : _id(cell_id), faces_ids(std::move(faces_ids)) {
+    : _id(cell_id), _faces_ids(std::move(faces_ids)) {
     Vector3d geo_center {0.0, 0.0, 0.0};
 
     // calculate geometric center
-    for (auto face_id : faces_ids) {
+    for (auto face_id : _faces_ids) {
         geo_center += faces[face_id].center();
     }
 
-    geo_center /= faces_ids.size();
+    geo_center /= _faces_ids.size();
 
     // for each cell face construct a pyramid,
     // with the face as the pyramid base, and cell geometric center as the apex.
-    for (auto face_id : faces_ids) {
+    for (auto face_id : _faces_ids) {
         const auto& face = faces[face_id];
         const auto& face_center = face.center();
         const auto& face_area = face.area();
