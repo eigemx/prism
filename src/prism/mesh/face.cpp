@@ -17,11 +17,11 @@ void Face::set_face_attributes(const std::vector<Vector3d>& face_vertices, Vecto
         const Vector3d& v3 = geo_center;
 
         // calculate subface geometric center
-        Vector3d subface_geo_center = (v1 + v2 + v3) / 3.0;
+        Vector3d subface_geo_center {(v1 + v2 + v3) / 3.0};
 
         // calculate area and normal vector of subface
-        auto subface_normal = (v2 - v1).cross(v3 - v1);
-        auto subface_area = subface_normal.norm() / 2.0;
+        auto subface_normal {(v2 - v1).cross(v3 - v1)};
+        auto subface_area {subface_normal.norm() / 2.0};
 
         _normal += subface_normal;
         _area += subface_area;
@@ -42,7 +42,7 @@ Face::Face(const std::vector<std::size_t>& face,
     face_vertices.reserve(vertices_count);
 
     for (std::size_t i = 0; i < vertices_count; ++i) {
-        auto vertex = vertices[face[i]];
+        const auto& vertex = vertices[face[i]];
         face_vertices.emplace_back(vertex[0], vertex[1], vertex[2]);
         geo_center += face_vertices[i];
     }
@@ -58,7 +58,7 @@ Face::Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& ve
     face_vertices.reserve(vertices_count);
 
     for (std::size_t i = 0; i < vertices_count; ++i) {
-        auto vertex = vertices[face[i]];
+        const auto& vertex = vertices[face[i]];
         face_vertices.emplace_back(vertex);
         geo_center += face_vertices[i];
     }

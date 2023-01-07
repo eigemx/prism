@@ -24,13 +24,42 @@ void UnvToPMesh::report_mesh_stats() const {
     }
     fmt::print("Number of boundary faces: {}\n", num_boundary_faces);
     fmt::print("Number of internal faces: {}\n", faces.size() - num_boundary_faces);
+
+    report_mesh_connectivity();
+    report_boundary_patches();
+
+    // print mesh volume
+    double mesh_volume {0.0};
+    for (const auto& cell : cells) {
+        mesh_volume += cell.volume();
+    }
+    fmt::print("Mesh volume: {:5f}\n", mesh_volume);
+
+    // print mesh surface area
+    double mesh_surface_area {0.0};
+    for (const auto& face : faces) {
+        if (face.neighbor() == std::nullopt) {
+            mesh_surface_area += face.area();
+        }
+    }
+    fmt::print("Mesh surface area: {:5f}\n", mesh_surface_area);
 }
 
 void UnvToPMesh::report_mesh_connectivity() const {
-    // for each face in the mesh, print who owns the face and who is its neighbor (if any)
+    // print number of faces without owners
+    std::size_t num_faces_without_owners {0};
     for (const auto& [face, face_id] : face_to_index_map) {
-        fmt::print("Face {} is owned by cell {} and its neighbor is cell {}\n", face_id,
-                   faces[face_id].owner(), faces[face_id].neighbor().value_or(9999));
+        if (!faces[face_id].has_owner()) {
+            num_faces_without_owners++;
+        }
+    }
+    fmt::print("Number of faces without owners: {}\n", num_faces_without_owners);
+}
+
+void UnvToPMesh::report_boundary_patches() const {
+    // for each boundary patch, print its name and the count of faces it contains
+    for (const auto& [patch_name, faces] : boundary_name_to_faces_map) {
+        fmt::print("Boundary patch {} contains {} faces\n", patch_name, faces.size());
     }
 }
 
@@ -47,23 +76,25 @@ void UnvToPMesh::process_cells() {
                 auto boundary_face_id = process_boundary_face(element);
 
                 // we will need UNV id of this boundary face later when we process groups
-                bface_id_to_unv_index_map[boundary_face_id] = unv_element_counter;
+                unv_id_to_bface_index_map[unv_element_counter] =
+                    // current face has a Unv id of unv_element_counter, and not yet found in a group
+                    std::make_pair(boundary_face_id, false);
                 break;
             }
 
             // Hexagon
             case unv::ElementType::Hex:
-                process_hex_cell(element);
+                process_cell(element, unv::ElementType::Hex);
                 break;
 
             // Tetrahedron
             case unv::ElementType::Tetra:
-                process_tetra_cell(element);
+                process_cell(element, unv::ElementType::Tetra);
                 break;
 
             // Wedge (prism)
             case unv::ElementType::Wedge:
-                process_wedge_cell(element);
+                process_cell(element, unv::ElementType::Wedge);
                 break;
 
             // We shouldn't reach this, as unvpp lib won't allow it.
@@ -81,48 +112,43 @@ void UnvToPMesh::process_cells() {
     }
 }
 
-void UnvToPMesh::process_hex_cell(const unv::Element& element) {
-    // keep track of face ids inside the current hexagonal cell
+void UnvToPMesh::process_cell(const unv::Element& element, unv::ElementType cell_type) {
+    // keep track of face ids inside the current cell
     std::vector<std::size_t> cell_faces_ids;
 
-    // reserve a total of 6 faces
-    cell_faces_ids.reserve(6);
+    switch (cell_type) {
+        case unv::ElementType::Hex: {
+            // reserve a total of 6 faces
+            cell_faces_ids.reserve(6);
+            for (auto& face_vertices : hex_cell_faces(element.vertices_ids())) {
+                auto face_id = process_face(face_vertices);
+                cell_faces_ids.push_back(face_id);
+            }
+            break;
+        }
 
-    for (auto& quad_face_vertices : hex_cell_faces(element.vertices_ids())) {
-        auto face_id = process_face(quad_face_vertices);
-        cell_faces_ids.push_back(face_id);
-    }
+        case unv::ElementType::Tetra: {
+            // reserve a total of 4 faces
+            cell_faces_ids.reserve(4);
+            for (auto& face_vertices : tetra_cell_faces(element.vertices_ids())) {
+                auto face_id = process_face(face_vertices);
+                cell_faces_ids.push_back(face_id);
+            }
+            break;
+        }
 
-    cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
-    cell_id_counter++;
-}
+        case unv::ElementType::Wedge: {
+            // reserve a total of 5 faces
+            cell_faces_ids.reserve(5);
+            for (auto& face_vertices : wedge_cell_faces(element.vertices_ids())) {
+                auto face_id = process_face(face_vertices);
+                cell_faces_ids.push_back(face_id);
+            }
+            break;
+        }
 
-void UnvToPMesh::process_tetra_cell(const unv::Element& element) {
-    // keep track of face ids inside the current tetrahedron cell
-    std::vector<std::size_t> cell_faces_ids;
-
-    // reserve a total of 4 faces
-    cell_faces_ids.reserve(4);
-
-    for (auto& tri_face_vertices : tetra_cell_faces(element.vertices_ids())) {
-        auto face_id = process_face(tri_face_vertices);
-        cell_faces_ids.push_back(face_id);
-    }
-
-    cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
-    cell_id_counter++;
-}
-
-void UnvToPMesh::process_wedge_cell(const unv::Element& element) {
-    // keep track of face ids inside the current wedge cell
-    std::vector<std::size_t> cell_faces_ids;
-
-    // reserve a total of 4 faces
-    cell_faces_ids.reserve(5);
-
-    for (auto& tri_face_vertices : tetra_cell_faces(element.vertices_ids())) {
-        auto face_id = process_face(tri_face_vertices);
-        cell_faces_ids.push_back(face_id);
+        default:
+            break;
     }
 
     cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
@@ -131,7 +157,7 @@ void UnvToPMesh::process_wedge_cell(const unv::Element& element) {
 
 auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t {
     // sort the face indices to be used as a std::map key for searching
-    auto sorted_face_vertices = face_vertices;
+    auto sorted_face_vertices = face_vertices; // copy the face vertices to sort in place
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
 
     // lookup the current face, to check if it has been processed before
@@ -189,7 +215,7 @@ auto UnvToPMesh::process_boundary_face(unv::Element& boundary_face) -> std::size
 }
 
 auto UnvToPMesh::face_index(const std::vector<std::size_t>& face_vertices)
-    -> std::optional<UnvToPMesh::FaceToIndexMap::iterator> {
+    -> std::optional<UnvToPMesh::SortedFaceToIndexMap::iterator> {
     auto face_itr = face_to_index_map.find(face_vertices);
 
     if (face_itr == face_to_index_map.end()) {
@@ -209,30 +235,63 @@ void UnvToPMesh::process_groups() {
             continue;
         }
         const auto& unique_types = group.unique_element_types();
-        bool error = false;
 
-        // unique elements count should be lower than or equal 2, and should be only Quad or Triangle or both
+        bool group_dimension_error = false;
+
+        // unique elements count should be lower than or equal 2,
+        // and should be quad, triangle or both
         if (unique_types.size() > 2) {
-            error = true;
+            group_dimension_error = true;
         }
 
         if (unique_types.size() == 2) {
             if ((unique_types.find(unv::ElementType::Quad) == unique_types.end()) ||
                 (unique_types.find(unv::ElementType::Triangle) == unique_types.end())) {
-                error = true;
+                group_dimension_error = true;
             }
         }
 
-        if (error) {
+        if (group_dimension_error) {
             throw std::runtime_error(
                 "Input UNV contains boundary patches with non-face type elements. "
-                "Prism supports only boundary patches with two-dimensiobal elements.");
+                "Prism supports only boundary patches with two-dimensional elements.");
         }
 
         // process the group
         process_group(group);
     }
+
+    check_boundary_faces();
 }
 
-void UnvToPMesh::process_group(const unv::Group& group) {}
+void UnvToPMesh::process_group(const unv::Group& group) {
+    auto group_items_set = std::unordered_set<std::size_t>();
+    group_items_set.reserve(group.elements_ids().size());
+
+    // copy the group elements ids to group_items_set after transforming them using unv_id_to_bface_index_map
+    for (const auto& element_id : group.elements_ids()) {
+        auto& face_data = unv_id_to_bface_index_map[element_id];
+        group_items_set.insert(face_data.first);
+        face_data.second = true;
+    }
+
+    boundary_name_to_faces_map.insert({group.name(), std::move(group_items_set)});
+}
+
+void UnvToPMesh::check_boundary_faces() {
+    std::size_t undefined_boundary_faces_count = 0;
+
+    for (const auto& [unv_id, face_data] : unv_id_to_bface_index_map) {
+        if (!face_data.second) {
+            undefined_boundary_faces_count++;
+        }
+    }
+
+    if (undefined_boundary_faces_count > 0) {
+        throw std::runtime_error(fmt::format(
+            "Input UNV mesh has {} boundary faces that are not part of any boundary patch!"
+            " Please check your mesh.",
+            undefined_boundary_faces_count));
+    }
+}
 } // namespace prism::mesh

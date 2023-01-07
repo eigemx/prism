@@ -22,19 +22,24 @@ public:
 
     void report_mesh_stats() const;
     void report_mesh_connectivity() const;
+    void report_boundary_patches() const;
 
 private:
     // map a face sorted vertex ids to its index in `faces` vector
-    using FaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
+    using SortedFaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
 
-    // map a boundary face index in `faces` vector to its index in `unv_mesh.elements()`
-    using BFaceIndexToUnvIndexMap = std::map<std::size_t, std::size_t>;
+    // map a boundary face Unv element index to:
+    // 1) its index in `this->faces()`
+    // 2) whether the face is contained in a defined boundary batch or not
+    using BFaceData = std::pair<std::size_t, bool>;
+    using UnvIndexToBFaceIndexMap = std::map<std::size_t, BFaceData>;
 
     // map a patch name to a set of faces ids in `faces` vector
     using BoundaryPatchToFacesMap = std::map<std::string, std::unordered_set<std::size_t>>;
 
     // cells
     void process_cells();
+    void process_cell(const unv::Element& element, unv::ElementType cell_type);
     void process_hex_cell(const unv::Element& element);
     void process_tetra_cell(const unv::Element& element);
     void process_wedge_cell(const unv::Element& element);
@@ -46,13 +51,18 @@ private:
     // groups
     void process_groups();
     void process_group(const unv::Group& group);
-    auto face_index(const std::vector<std::size_t>& face_vertices)
-        -> std::optional<FaceToIndexMap::iterator>;
+    void check_boundary_faces();
 
+    auto face_index(const std::vector<std::size_t>& face_vertices)
+        -> std::optional<SortedFaceToIndexMap::iterator>;
+
+    // fields
     unv::Mesh unv_mesh;
-    FaceToIndexMap face_to_index_map;
+
+    SortedFaceToIndexMap face_to_index_map;
     BoundaryPatchToFacesMap boundary_name_to_faces_map;
-    BFaceIndexToUnvIndexMap bface_id_to_unv_index_map;
+    UnvIndexToBFaceIndexMap unv_id_to_bface_index_map;
+
     std::vector<Face> faces;
     std::vector<Cell> cells;
 
