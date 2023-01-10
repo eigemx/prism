@@ -33,7 +33,7 @@ void UnvToPMesh::report_mesh_stats() const {
     for (const auto& cell : cells) {
         mesh_volume += cell.volume();
     }
-    fmt::print("Mesh volume: {:5f}\n", mesh_volume);
+    fmt::print("Mesh volume = {} L^3\n", mesh_volume);
 
     // print mesh surface area
     double mesh_surface_area {0.0};
@@ -42,7 +42,7 @@ void UnvToPMesh::report_mesh_stats() const {
             mesh_surface_area += face.area();
         }
     }
-    fmt::print("Mesh surface area: {:5f}\n", mesh_surface_area);
+    fmt::print("Mesh surface area: {} L^2\n", mesh_surface_area);
 }
 
 void UnvToPMesh::report_mesh_connectivity() const {
@@ -258,17 +258,17 @@ void UnvToPMesh::process_groups() {
 }
 
 void UnvToPMesh::process_group(const unv::Group& group) {
-    auto group_items_set = std::unordered_set<std::size_t>();
-    group_items_set.reserve(group.elements_ids().size());
+    auto group_faces = std::vector<std::size_t>();
+    group_faces.reserve(group.elements_ids().size());
 
-    // copy the group elements ids to group_items_set after transforming them using unv_id_to_bface_index_map
+    // copy the group elements ids to group_faces after transforming them using unv_id_to_bface_index_map
     for (const auto& element_id : group.elements_ids()) {
         auto& face_data = unv_id_to_bface_index_map[element_id];
-        group_items_set.insert(face_data.first);
+        group_faces.push_back(face_data.first);
         face_data.second = true;
     }
 
-    boundary_name_to_faces_map.insert({group.name(), std::move(group_items_set)});
+    boundary_name_to_faces_map.insert({group.name(), std::move(group_faces)});
 }
 
 void UnvToPMesh::check_boundary_faces() {

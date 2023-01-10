@@ -7,8 +7,7 @@
 #include <map>
 #include <optional>
 #include <string>
-#include <unordered_set>
-#include <utility>
+#include <utility> // std::pair
 
 #include "cell.h"
 #include "face.h"
@@ -31,11 +30,13 @@ private:
     // map a boundary face Unv element index to:
     // 1) its index in `this->faces()`
     // 2) whether the face is contained in a defined boundary batch or not
+    // Later, we use the bool value to check if all boundary faces are contained in a
+    // defined boundary batch or not.
     using BFaceData = std::pair<std::size_t, bool>;
     using UnvIndexToBFaceIndexMap = std::map<std::size_t, BFaceData>;
 
     // map a patch name to a set of faces ids in `faces` vector
-    using BoundaryPatchToFacesMap = std::map<std::string, std::unordered_set<std::size_t>>;
+    using BoundaryPatchToFacesMap = std::map<std::string, std::vector<std::size_t>>;
 
     // cells
     void process_cells();
