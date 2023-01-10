@@ -71,6 +71,7 @@ void UnvToPMesh::process_cells() {
             case unv::ElementType::Line:
                 break;
 
+            // boundary faces
             case unv::ElementType::Quad:
             case unv::ElementType::Triangle: {
                 auto boundary_face_id = process_boundary_face(element);
@@ -82,19 +83,11 @@ void UnvToPMesh::process_cells() {
                 break;
             }
 
-            // Hexagon
+            // cells
             case unv::ElementType::Hex:
-                process_cell(element, unv::ElementType::Hex);
-                break;
-
-            // Tetrahedron
             case unv::ElementType::Tetra:
-                process_cell(element, unv::ElementType::Tetra);
-                break;
-
-            // Wedge (prism)
             case unv::ElementType::Wedge:
-                process_cell(element, unv::ElementType::Wedge);
+                process_cell(element);
                 break;
 
             // We shouldn't reach this, as unvpp lib won't allow it.
@@ -112,11 +105,11 @@ void UnvToPMesh::process_cells() {
     }
 }
 
-void UnvToPMesh::process_cell(const unv::Element& element, unv::ElementType cell_type) {
+void UnvToPMesh::process_cell(const unv::Element& element) {
     // keep track of face ids inside the current cell
     std::vector<std::size_t> cell_faces_ids;
 
-    switch (cell_type) {
+    switch (element.type()) {
         case unv::ElementType::Hex: {
             // reserve a total of 6 faces
             cell_faces_ids.reserve(6);
@@ -189,7 +182,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
     new_face.set_owner(cell_id_counter);
     new_face.set_id(face_id);
 
-    faces.emplace_back(new_face);
+    faces.push_back(std::move(new_face));
 
     face_to_index_map.insert({sorted_face_vertices, face_id});
 
@@ -208,7 +201,7 @@ auto UnvToPMesh::process_boundary_face(unv::Element& boundary_face) -> std::size
 
     // this face does not yet has an owner, this will be set later by process_face()
     new_face.set_id(face_id);
-    faces.emplace_back(new_face);
+    faces.push_back(std::move(new_face));
     face_to_index_map.insert({sorted_face_vertices, face_id});
 
     return face_id;
@@ -289,8 +282,8 @@ void UnvToPMesh::check_boundary_faces() {
 
     if (undefined_boundary_faces_count > 0) {
         throw std::runtime_error(fmt::format(
-            "Input UNV mesh has {} boundary faces that are not part of any boundary patch!"
-            " Please check your mesh.",
+            "Input UNV mesh has {} boundary faces that are not part of any boundary patch. "
+            "Please check your mesh.",
             undefined_boundary_faces_count));
     }
 }
