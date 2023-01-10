@@ -25,7 +25,7 @@ public:
     void report_boundary_patches() const;
 
 private:
-    // map a face sorted vertex ids to its index in `faces` vector
+    // map a face sorted vertex ids to its index in `this->faces` vector
     using SortedFaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
 
     // map a boundary face Unv element index to:
@@ -39,10 +39,7 @@ private:
 
     // cells
     void process_cells();
-    void process_cell(const unv::Element& element, unv::ElementType cell_type);
-    void process_hex_cell(const unv::Element& element);
-    void process_tetra_cell(const unv::Element& element);
-    void process_wedge_cell(const unv::Element& element);
+    void process_cell(const unv::Element& element);
 
     // faces
     auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
@@ -85,6 +82,7 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
     return hfaces;
 }
 
+
 // Array of 4 triangular faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
@@ -111,6 +109,5 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 
     return tfaces;
 }
-
 
 } // namespace prism::mesh

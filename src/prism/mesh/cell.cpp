@@ -1,8 +1,10 @@
 #include "cell.h"
 
+#include <cmath>
 #include <iostream>
 
 namespace prism::mesh {
+
 Cell::Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
            std::size_t cell_id)
     : _id(cell_id), _faces_ids(std::move(faces_ids)) {
@@ -21,14 +23,23 @@ Cell::Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
         const auto& face = faces[face_id];
         const auto& face_center = face.center();
         const auto& face_area = face.area();
+        const auto& face_normal = face.normal();
 
-        Vector3d pyramid_center {(0.75 * face_center) + (0.25 * geo_center)};
-        double pyramid_vol = ((1.0 / 3.0) * face_area) * (face_center - geo_center).norm();
+        double pyramid_vol {0.0};
+
+        // calculate pyramid volume
+        if (face.owner() == _id) {
+            pyramid_vol = face_normal.dot(face_center - geo_center) * face_area;
+        } else {
+            pyramid_vol = face_normal.dot(geo_center - face_center) * face_area;
+        }
+
+        Vector3d pyramid_center {(face_center * 0.75) + (geo_center * 0.25)};
 
         _volume += pyramid_vol;
         _center += (pyramid_vol * pyramid_center);
     }
-
+    _volume /= 3.0;
     _center /= _volume;
 }
 } // namespace prism::mesh
