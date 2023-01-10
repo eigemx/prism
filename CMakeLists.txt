@@ -37,9 +37,11 @@ add_executable(prism
     src/prism/mesh/face.cpp
     src/prism/mesh/cell.cpp
     
+    src/prism/mesh/pmesh.h
     src/prism/mesh/face.h
     src/prism/mesh/cell.h
     src/prism/mesh/from_unv.h
+    src/prism/mesh/boundary.h
 
 )
 
