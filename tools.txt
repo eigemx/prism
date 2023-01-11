@@ -1,8 +1,0 @@
-# clone with submodules
-git clone --recurse-submodules https://github.com/eigemx/prism.git
-
-# update submodules
-git submodule update --force --recursive --init --remote
-
-# clang-tidy
-clang-tidy src/prism/*.cpp -p build/compile_commands.json

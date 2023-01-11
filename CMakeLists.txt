@@ -28,6 +28,11 @@ set(UNVPP_SOURCE_DIR "external/unvpp")
 add_subdirectory(${UNVPP_SOURCE_DIR})
 include_directories(${UNVPP_SOURCE_DIR}/include)
 
+# setup toml++
+set(TOMLPP_SOURCE_DIR "external/tomlplusplus")
+include_directories(${TOMLPP_SOURCE_DIR}/include)
+
+
 add_executable(prism
     src/prism/main.cpp
     src/prism/types.h
