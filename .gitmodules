@@ -12,3 +12,6 @@
 	path = external/unvpp
 	url = https://github.com/eigemx/unvpp.git
 	branch = main
+[submodule "external/tomlplusplus"]
+	path = external/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus
