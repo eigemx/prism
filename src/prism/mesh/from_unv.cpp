@@ -1,23 +1,41 @@
+
 #include "from_unv.h"
 
 #include <algorithm> // std::sort
 #include <stdexcept>
 #include <string_view>
 
+#include "boundary.h"
+
 namespace prism::mesh {
-UnvToPMesh::UnvToPMesh(const std::string& filename) {
+UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filename) {
     unv_mesh = unv::read(filename);
+
     process_cells();
     process_groups();
+
+    // clear unv_mesh to save memory
+    unv_mesh = {};
 }
 
 auto UnvToPMesh::to_pmesh() -> PMesh {
     std::vector<std::string_view> boundary_names;
+
     for (const auto& [name, _] : boundary_name_to_faces_map) {
         boundary_names.push_back(name);
     }
 
-    return {std::move(cells), std::move(faces)};
+    // get cwd from _filename
+    auto cwd = _filename.parent_path();
+    auto boundary_conditions = read_boundary_conditions(cwd / "boundary.txt", boundary_names);
+
+    // for each boundary condition, set the faces of the boundary
+    for (auto& bc : boundary_conditions) {
+        auto& faces = boundary_name_to_faces_map.at(bc.name());
+        bc.set_faces(std::move(faces));
+    }
+
+    return {std::move(cells), std::move(faces), std::move(boundary_conditions)};
 }
 
 void UnvToPMesh::report_mesh_stats() const {
@@ -69,7 +87,7 @@ void UnvToPMesh::report_mesh_connectivity() const {
 void UnvToPMesh::report_boundary_patches() const {
     // for each boundary patch, print its name and the count of faces it contains
     for (const auto& [patch_name, faces] : boundary_name_to_faces_map) {
-        fmt::print("Boundary patch {} contains {} faces\n", patch_name, faces.size());
+        fmt::print("Boundary patch '{}' contains {} faces\n", patch_name, faces.size());
     }
 }
 
