@@ -4,6 +4,7 @@
 #include <unvpp/unvpp.h>
 
 #include <array>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <string>
@@ -18,7 +19,7 @@ namespace prism::mesh {
 class UnvToPMesh {
 public:
     UnvToPMesh() = delete;
-    UnvToPMesh(const std::string& filename);
+    UnvToPMesh(const std::filesystem::path& filename);
 
     auto to_pmesh() -> PMesh;
 
@@ -39,7 +40,7 @@ private:
     using UnvIndexToBFaceIndexMap = std::map<std::size_t, BFaceData>;
 
     // map a patch name to a set of faces ids in `faces` vector
-    using BoundaryPatchToFacesMap = std::map<std::string, std::vector<std::size_t>>;
+    using BoundaryNameToFacesMap = std::map<std::string, std::vector<std::size_t>>;
 
     // cells
     void process_cells();
@@ -58,10 +59,11 @@ private:
         -> std::optional<SortedFaceToIndexMap::iterator>;
 
     // fields
+    std::filesystem::path _filename;
     unv::Mesh unv_mesh;
 
     SortedFaceToIndexMap face_to_index_map;
-    BoundaryPatchToFacesMap boundary_name_to_faces_map;
+    BoundaryNameToFacesMap boundary_name_to_faces_map;
     UnvIndexToBFaceIndexMap unv_id_to_bface_index_map;
 
     std::vector<Face> faces;
