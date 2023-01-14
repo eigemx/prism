@@ -11,6 +11,7 @@
 
 #include "cell.h"
 #include "face.h"
+#include "pmesh.h"
 
 namespace prism::mesh {
 
@@ -18,6 +19,8 @@ class UnvToPMesh {
 public:
     UnvToPMesh() = delete;
     UnvToPMesh(const std::string& filename);
+
+    auto to_pmesh() -> PMesh;
 
     void report_mesh_stats() const;
     void report_mesh_connectivity() const;
@@ -30,7 +33,7 @@ private:
     // map a boundary face Unv element index to:
     // 1) its index in `this->faces()`
     // 2) whether the face is contained in a defined boundary batch or not
-    // Later, we use the bool value to check if all boundary faces are contained in a
+    // we use the bool value to check if all boundary faces are contained in a
     // defined boundary batch or not.
     using BFaceData = std::pair<std::size_t, bool>;
     using UnvIndexToBFaceIndexMap = std::map<std::size_t, BFaceData>;

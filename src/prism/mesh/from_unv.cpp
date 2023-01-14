@@ -2,12 +2,22 @@
 
 #include <algorithm> // std::sort
 #include <stdexcept>
+#include <string_view>
 
 namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::string& filename) {
     unv_mesh = unv::read(filename);
     process_cells();
     process_groups();
+}
+
+auto UnvToPMesh::to_pmesh() -> PMesh {
+    std::vector<std::string_view> boundary_names;
+    for (const auto& [name, _] : boundary_name_to_faces_map) {
+        boundary_names.push_back(name);
+    }
+
+    return {std::move(cells), std::move(faces)};
 }
 
 void UnvToPMesh::report_mesh_stats() const {
@@ -111,7 +121,7 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
 
     switch (element.type()) {
         case unv::ElementType::Hex: {
-            // reserve a total of 6 faces
+            // reserve 6 faces
             cell_faces_ids.reserve(6);
             for (auto& face_vertices : hex_cell_faces(element.vertices_ids())) {
                 auto face_id = process_face(face_vertices);
@@ -121,7 +131,7 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
         }
 
         case unv::ElementType::Tetra: {
-            // reserve a total of 4 faces
+            // reserve 4 faces
             cell_faces_ids.reserve(4);
             for (auto& face_vertices : tetra_cell_faces(element.vertices_ids())) {
                 auto face_id = process_face(face_vertices);
@@ -131,7 +141,7 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
         }
 
         case unv::ElementType::Wedge: {
-            // reserve a total of 5 faces
+            // reserve 5 faces
             cell_faces_ids.reserve(5);
             for (auto& face_vertices : wedge_cell_faces(element.vertices_ids())) {
                 auto face_id = process_face(face_vertices);
@@ -154,11 +164,11 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
 
     // lookup the current face, to check if it has been processed before
-    auto face_id_iter = face_index(sorted_face_vertices);
+    auto face_id_iter {face_index(sorted_face_vertices)};
 
     if (face_id_iter.has_value()) {
-        auto face_id = face_id_iter.value()->second;
-        auto& face = faces[face_id];
+        auto face_id {face_id_iter.value()->second};
+        auto& face {faces[face_id]};
 
         if (face.has_owner()) {
             // face has been visited before and is owned
