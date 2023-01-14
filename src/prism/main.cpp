@@ -12,11 +12,12 @@
 #include <tuple>
 #include <utility>
 
+#include "mesh/boundary.h"
 #include "mesh/from_unv.h"
 
 using namespace std::string_view_literals;
 
-auto main(int argc, char* argv[]) -> int {
+/*auto main(int argc, char* argv[]) -> int {
     std::string filename;
 
     if (argc >= 2) {
@@ -30,22 +31,22 @@ auto main(int argc, char* argv[]) -> int {
     auto pmesh = prism::mesh::UnvToPMesh(filename);
     pmesh.report_mesh_stats();
 
-    static constexpr std::string_view some_toml = R"(
-        [library]
-        name = "toml++"
-        authors = ["Mark Gillard <mark.gillard@outlook.com.au>"]
-        cpp = 17
-    )"sv;
+}*/
 
-    try {
-        // parse directly from a string view:
-        {
-            toml::table tbl = toml::parse(some_toml);
-            std::cout << tbl << "\n";
-        }
+auto main(int argc, char* argv[]) -> int {
+    std::string filename;
 
-    } catch (const toml::parse_error& err) {
-        std::cerr << "Parsing failed:\n" << err << "\n";
-        return 1;
+    if (argc >= 2) {
+        filename = argv[1];
+    } else {
+        std::cout << "No input file found, using default test mesh\n";
+        return -1;
+    }
+    auto bnames_to_look_for =
+        std::vector<std::string_view> {"top", "bottom", "left", "right", "front", "back"};
+    auto bcs = prism::mesh::read_boundary_conditions(filename, bnames_to_look_for);
+
+    for (auto& bc : bcs) {
+        std::cout << bc.name() << "\n";
     }
 }
