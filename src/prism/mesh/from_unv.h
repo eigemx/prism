@@ -23,9 +23,9 @@ public:
 
     auto to_pmesh() -> PMesh;
 
-    void report_mesh_stats() const;
-    void report_mesh_connectivity() const;
-    void report_boundary_patches() const;
+    //void report_mesh_stats() const;
+    //void report_mesh_connectivity() const;
+    //void report_boundary_patches() const;
 
 private:
     // map a face sorted vertex ids to its index in `this->faces` vector
@@ -72,48 +72,5 @@ private:
     std::size_t cell_id_counter {0};
     std::size_t face_id_counter {0};
 };
-
-// Array of 6 quad faces
-template <typename T = std::vector<std::vector<std::size_t>>>
-auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T hfaces(6);
-
-    hfaces[0] = {c[1], c[2], c[6], c[5]};
-    hfaces[1] = {c[0], c[4], c[7], c[3]};
-    hfaces[2] = {c[3], c[7], c[6], c[2]};
-    hfaces[3] = {c[0], c[1], c[5], c[4]};
-    hfaces[4] = {c[4], c[5], c[6], c[7]};
-    hfaces[5] = {c[0], c[3], c[2], c[1]};
-
-    return hfaces;
-}
-
-
-// Array of 4 triangular faces
-template <typename T = std::vector<std::vector<std::size_t>>>
-auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T tfaces(4);
-
-    tfaces[0] = {c[0], c[2], c[1]};
-    tfaces[1] = {c[1], c[2], c[3]};
-    tfaces[2] = {c[0], c[1], c[3]};
-    tfaces[3] = {c[0], c[3], c[2]};
-
-    return tfaces;
-}
-
-// Array of 5 faces (3 quads & 2 triangels)
-template <typename T = std::vector<std::vector<std::size_t>>>
-auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T tfaces(5);
-
-    tfaces[0] = {c[0], c[2], c[1]};
-    tfaces[1] = {c[3], c[4], c[5]};
-    tfaces[2] = {c[3], c[0], c[1], c[4]};
-    tfaces[3] = {c[0], c[3], c[5], c[2]};
-    tfaces[4] = {c[1], c[2], c[5], c[4]};
-
-    return tfaces;
-}
 
 } // namespace prism::mesh

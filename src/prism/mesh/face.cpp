@@ -4,15 +4,15 @@
 namespace prism::mesh {
 
 void Face::set_face_attributes(const std::vector<Vector3d>& face_vertices, Vector3d& geo_center) {
-    // Calculate face geometric center.
-    geo_center = geo_center / vertices_count;
-
     if (vertices_count == 3) {
+        const auto& v0 = face_vertices[0];
+        const auto& v1 = face_vertices[1];
+        const auto& v2 = face_vertices[2];
+
         // calculate area and normal vector of triangle
-        _normal =
-            (face_vertices[1] - face_vertices[0]).cross(face_vertices[2] - face_vertices[0]);
+        _normal = (v1 - v0).cross(v2 - v0);
         _area = _normal.norm() / 2.0;
-        _center = (face_vertices[0] + face_vertices[1] + face_vertices[2]) / 3.0;
+        _center = (v0 + v1 + v2) / 3.0;
         _normal /= _normal.norm();
         return;
     }
@@ -48,7 +48,7 @@ Face::Face(const std::vector<std::size_t>& face,
     : vertices_count(face.size()) {
     Vector3d geo_center {0.0, 0.0, 0.0};
 
-    auto face_vertices = std::vector<Vector3d>();
+    auto face_vertices {std::vector<Vector3d>()};
     face_vertices.reserve(vertices_count);
 
     for (std::size_t i = 0; i < vertices_count; ++i) {
@@ -56,6 +56,9 @@ Face::Face(const std::vector<std::size_t>& face,
         face_vertices.emplace_back(vertex[0], vertex[1], vertex[2]);
         geo_center += face_vertices[i];
     }
+
+    // Calculate face geometric center.
+    geo_center /= vertices_count;
 
     set_face_attributes(face_vertices, geo_center);
 }
@@ -72,6 +75,9 @@ Face::Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& ve
         face_vertices.emplace_back(vertex);
         geo_center += face_vertices[i];
     }
+
+    // Calculate face geometric center.
+    geo_center /= vertices_count;
 
     set_face_attributes(face_vertices, geo_center);
 }

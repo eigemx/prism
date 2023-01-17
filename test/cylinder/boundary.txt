@@ -1,0 +1,11 @@
+[inlet]
+type = "inlet"
+velocity = [0.0, 0.0, 0.1]
+
+[outlet]
+type = "outlet"
+pressure = 0.0
+
+[wall]
+type = "wall"
+velocity = [0.0, 0.0, 0.0]

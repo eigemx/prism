@@ -44,12 +44,14 @@ add_executable(prism
     src/prism/mesh/cell.cpp
     src/prism/mesh/boundary.cpp
     src/prism/mesh/pmesh.cpp 
+    src/prism/mesh/inspector.cpp
     src/prism/mesh/from_unv.cpp
        
     src/prism/mesh/face.h
     src/prism/mesh/cell.h
     src/prism/mesh/boundary.h
     src/prism/mesh/pmesh.h
+    src/prism/mesh/inspector.h
     src/prism/mesh/from_unv.h
 
 )
