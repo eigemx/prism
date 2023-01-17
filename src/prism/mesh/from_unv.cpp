@@ -2,10 +2,54 @@
 #include "from_unv.h"
 
 #include <algorithm> // std::sort
+#include <chrono>
 #include <stdexcept>
 #include <string_view>
 
 #include "boundary.h"
+
+// Array of 6 quad faces
+template <typename T = std::vector<std::vector<std::size_t>>>
+auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
+    T hfaces(6);
+
+    hfaces[0] = {c[1], c[2], c[6], c[5]};
+    hfaces[1] = {c[0], c[4], c[7], c[3]};
+    hfaces[2] = {c[3], c[7], c[6], c[2]};
+    hfaces[3] = {c[0], c[1], c[5], c[4]};
+    hfaces[4] = {c[4], c[5], c[6], c[7]};
+    hfaces[5] = {c[0], c[3], c[2], c[1]};
+
+    return hfaces;
+}
+
+
+// Array of 4 triangular faces
+template <typename T = std::vector<std::vector<std::size_t>>>
+auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
+    T tfaces(4);
+
+    tfaces[0] = {c[0], c[2], c[1]};
+    tfaces[1] = {c[1], c[2], c[3]};
+    tfaces[2] = {c[0], c[1], c[3]};
+    tfaces[3] = {c[0], c[3], c[2]};
+
+    return tfaces;
+}
+
+// Array of 5 faces (3 quads & 2 triangels)
+template <typename T = std::vector<std::vector<std::size_t>>>
+auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
+    T tfaces(5);
+
+    tfaces[0] = {c[0], c[2], c[1]};
+    tfaces[1] = {c[3], c[4], c[5]};
+    tfaces[2] = {c[3], c[0], c[1], c[4]};
+    tfaces[3] = {c[0], c[3], c[5], c[2]};
+    tfaces[4] = {c[1], c[2], c[5], c[4]};
+
+    return tfaces;
+}
 
 namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filename) {
@@ -25,9 +69,10 @@ auto UnvToPMesh::to_pmesh() -> PMesh {
         boundary_names.push_back(name);
     }
 
-    // get cwd from _filename
-    auto cwd = _filename.parent_path();
-    auto boundary_conditions = read_boundary_conditions(cwd / "boundary.txt", boundary_names);
+    // get parent directory from _filename
+    auto parent_dir = _filename.parent_path();
+    auto boundary_conditions =
+        read_boundary_conditions(parent_dir / "boundary.txt", boundary_names);
 
     // for each boundary condition, set the faces of the boundary
     for (auto& bc : boundary_conditions) {
@@ -36,59 +81,6 @@ auto UnvToPMesh::to_pmesh() -> PMesh {
     }
 
     return {std::move(cells), std::move(faces), std::move(boundary_conditions)};
-}
-
-void UnvToPMesh::report_mesh_stats() const {
-    fmt::print("Mesh stats:\n");
-    fmt::print("Number of cells: {}\n", cells.size());
-    fmt::print("Number of faces: {}\n", faces.size());
-    fmt::print("Number of vertices: {}\n", unv_mesh.vertices.size());
-
-    std::size_t num_boundary_faces {0};
-    for (const auto& [face, face_id] : face_to_index_map) {
-        if (faces[face_id].neighbor() == std::nullopt) {
-            num_boundary_faces++;
-        }
-    }
-    fmt::print("Number of boundary faces: {}\n", num_boundary_faces);
-    fmt::print("Number of internal faces: {}\n", faces.size() - num_boundary_faces);
-
-    report_mesh_connectivity();
-    report_boundary_patches();
-
-    // print mesh volume
-    double mesh_volume {0.0};
-    for (const auto& cell : cells) {
-        mesh_volume += cell.volume();
-    }
-    fmt::print("Mesh volume = {} L^3\n", mesh_volume);
-
-    // print mesh surface area
-    double mesh_surface_area {0.0};
-    for (const auto& face : faces) {
-        if (face.neighbor() == std::nullopt) {
-            mesh_surface_area += face.area();
-        }
-    }
-    fmt::print("Mesh surface area: {} L^2\n", mesh_surface_area);
-}
-
-void UnvToPMesh::report_mesh_connectivity() const {
-    // print number of faces without owners
-    std::size_t num_faces_without_owners {0};
-    for (const auto& [face, face_id] : face_to_index_map) {
-        if (!faces[face_id].has_owner()) {
-            num_faces_without_owners++;
-        }
-    }
-    fmt::print("Number of faces without owners: {}\n", num_faces_without_owners);
-}
-
-void UnvToPMesh::report_boundary_patches() const {
-    // for each boundary patch, print its name and the count of faces it contains
-    for (const auto& [patch_name, faces] : boundary_name_to_faces_map) {
-        fmt::print("Boundary patch '{}' contains {} faces\n", patch_name, faces.size());
-    }
 }
 
 void UnvToPMesh::process_cells() {
@@ -205,7 +197,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
     // this a new interior face, we need to call Face() constructor
     // and push the new face to `faces` vector
     auto face_id = face_id_counter++;
-    auto new_face = Face(face_vertices, unv_mesh.vertices);
+    auto new_face {Face(face_vertices, unv_mesh.vertices)};
 
     new_face.set_owner(cell_id_counter);
     new_face.set_id(face_id);
@@ -225,9 +217,9 @@ auto UnvToPMesh::process_boundary_face(unv::Element& boundary_face) -> std::size
     // this a new face, we need to call Face() constructor
     // and push the new face to `faces` vector
     auto face_id = face_id_counter++;
-    auto new_face = Face(boundary_face.vertices_ids(), unv_mesh.vertices);
+    auto new_face {Face(boundary_face.vertices_ids(), unv_mesh.vertices)};
 
-    // this face does not yet has an owner, this will be set later by process_face()
+    // this face does not yet have an owner, this will be set later by process_face()
     new_face.set_id(face_id);
     faces.push_back(std::move(new_face));
     face_to_index_map.insert({sorted_face_vertices, face_id});
@@ -237,7 +229,7 @@ auto UnvToPMesh::process_boundary_face(unv::Element& boundary_face) -> std::size
 
 auto UnvToPMesh::face_index(const std::vector<std::size_t>& face_vertices)
     -> std::optional<UnvToPMesh::SortedFaceToIndexMap::iterator> {
-    auto face_itr = face_to_index_map.find(face_vertices);
+    auto face_itr {face_to_index_map.find(face_vertices)};
 
     if (face_itr == face_to_index_map.end()) {
         return std::nullopt;
