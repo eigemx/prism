@@ -2,13 +2,12 @@
 #include "from_unv.h"
 
 #include <algorithm> // std::sort
-#include <chrono>
 #include <stdexcept>
 #include <string_view>
 
 #include "boundary.h"
 
-// Array of 6 quad faces
+// Vector of 6 quad faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
     T hfaces(6);
@@ -24,7 +23,7 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
 }
 
 
-// Array of 4 triangular faces
+// Vector of 4 triangular faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
     T tfaces(4);
@@ -37,7 +36,7 @@ auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
     return tfaces;
 }
 
-// Array of 5 faces (3 quads & 2 triangels)
+// Vector of 5 faces (3 quads & 2 triangels)
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
     T tfaces(5);
@@ -209,7 +208,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
     return face_id;
 }
 
-auto UnvToPMesh::process_boundary_face(unv::Element& boundary_face) -> std::size_t {
+auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std::size_t {
     // sort the face indices to be used as a std::map key for searching
     auto sorted_face_vertices = boundary_face.vertices_ids();
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
