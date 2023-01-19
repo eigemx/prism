@@ -48,7 +48,7 @@ private:
 
     // faces
     auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
-    auto process_boundary_face(unv::Element& boundary_face) -> std::size_t;
+    auto process_boundary_face(const unv::Element& boundary_face) -> std::size_t;
 
     // groups
     void process_groups();
