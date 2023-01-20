@@ -10,7 +10,6 @@ namespace prism::mesh {
 
 class Face {
 public:
-    Face() = delete;
     Face(const std::vector<std::size_t>& face,
          const std::vector<std::array<double, 3>>& vertices);
     Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& vertices);
@@ -24,6 +23,8 @@ public:
 
     auto inline owner() const -> std::size_t { return _owner.value(); }
     void inline set_owner(std::size_t owner_id) { _owner = owner_id; }
+
+    // Each face must have an owner, so this will return false if something is wrong
     auto inline has_owner() const -> bool { return _owner.has_value(); }
 
     auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }

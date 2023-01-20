@@ -1,1 +1,1 @@
-Hello, World!
+Development repository for Prism, a CFD library using finite volume method
