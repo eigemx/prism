@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <numeric>
 
 #include "mesh/boundary.h"
 #include "mesh/from_unv.h"
@@ -27,10 +28,10 @@ auto boundary_type_to_string(prism::mesh::BoundaryConditionType type) -> std::st
 auto main() -> int {
     try {
         // load unv mesh file in "./test/diffusion_cube_2D/mesh.unv"
-        auto mesh_file = std::filesystem::path {"./test/slice_2d/mesh.unv"};
+        auto mesh_file = std::filesystem::path {"./test/cylinder/mesh.unv"};
 
         fmt::print("Loading mesh file: ");
-        fmt::print(fg(fmt::color::dark_cyan), "{}\n", mesh_file.string());
+        fmt::print(fg(fmt::color::dark_cyan), "{}\n\n", mesh_file.string());
 
         auto unv_mesh = prism::mesh::UnvToPMesh(mesh_file);
         //unv_mesh.report_mesh_stats();
@@ -39,8 +40,38 @@ auto main() -> int {
         auto prism_mesh = unv_mesh.to_pmesh();
 
         // print number of cells and faces
-        fmt::print("Number of cells: {}\n", prism_mesh.cells().size());
-        fmt::print("Number of faces: {}\n\n", prism_mesh.faces().size());
+        fmt::print("Elements stats:\n");
+        fmt::print("---------------\n");
+        fmt::print("Number of cells = {} cell\n", prism_mesh.cells().size());
+        fmt::print("Number of faces = {} face\n\n", prism_mesh.faces().size());
+
+        // calculate total volume of mesh
+        auto total_volume = 0.0;
+        double min_vol {std::numeric_limits<double>::infinity()};
+        double max_vol {0.0};
+        for (const auto& cell : prism_mesh.cells()) {
+            auto cell_vol = cell.volume();
+            if (cell_vol < min_vol) {
+                min_vol = cell_vol;
+            }
+
+            if (cell_vol > max_vol) {
+                max_vol = cell_vol;
+            }
+            total_volume += cell_vol;
+        }
+        fmt::print("Total volume of mesh: {:.2f} L^3\n", total_volume);
+        fmt::print("Max. cell volume = {} L^3\n", max_vol);
+        fmt::print("Min. cell volume = {} L^3\n", min_vol);
+
+        // calculate surface area of mesh, using boundary faces area
+        auto total_surface_area = 0.0;
+        for (const auto& face : prism_mesh.faces()) {
+            if (!face.neighbor().has_value()) {
+                total_surface_area += face.area();
+            }
+        }
+        fmt::print("Total surface area of mesh: {:.2f} L^2\n\n", total_surface_area);
 
         // print number of faces with zero owners
         auto n_zero_owner_faces =
@@ -57,6 +88,7 @@ auto main() -> int {
 
         // print boundary conditions
         fmt::print("Mesh boundary patches:\n");
+        fmt::print("----------------------\n");
         for (const auto& bc : prism_mesh.boundary_conditions()) {
             fmt::print("  - {} (type: {})\n", bc.name(), boundary_type_to_string(bc.type()));
         }

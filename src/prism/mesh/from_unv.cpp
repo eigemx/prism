@@ -14,7 +14,7 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
 
     hfaces[0] = {c[1], c[2], c[6], c[5]};
     hfaces[1] = {c[0], c[4], c[7], c[3]};
-    hfaces[2] = {c[3], c[7], c[6], c[2]};
+    hfaces[2] = {c[2], c[3], c[7], c[6]};
     hfaces[3] = {c[0], c[1], c[5], c[4]};
     hfaces[4] = {c[4], c[5], c[6], c[7]};
     hfaces[5] = {c[0], c[3], c[2], c[1]};
@@ -43,7 +43,7 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 
     tfaces[0] = {c[0], c[2], c[1]};
     tfaces[1] = {c[3], c[4], c[5]};
-    tfaces[2] = {c[3], c[0], c[1], c[4]};
+    tfaces[2] = {c[0], c[1], c[4], c[3]};
     tfaces[3] = {c[0], c[3], c[5], c[2]};
     tfaces[4] = {c[1], c[2], c[5], c[4]};
 
@@ -111,7 +111,7 @@ void UnvToPMesh::process_cells() {
 
             // We shouldn't reach this, as unvpp lib won't allow it.
             default:
-                throw std::runtime_error("Input UNV mesh has an unsupported element type!");
+                throw std::runtime_error("Input UNV mesh contains an unsupported element type!");
                 break;
         }
 
@@ -195,7 +195,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
 
     // this a new interior face, we need to call Face() constructor
     // and push the new face to `faces` vector
-    auto face_id = face_id_counter++;
+    auto face_id {face_id_counter++};
     auto new_face {Face(face_vertices, unv_mesh.vertices)};
 
     new_face.set_owner(cell_id_counter);

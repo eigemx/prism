@@ -1,6 +1,7 @@
 [inlet]
 type = "inlet"
 velocity = [0.0, 0.0, 0.1]
+temperature = 300
 
 [outlet]
 type = "outlet"

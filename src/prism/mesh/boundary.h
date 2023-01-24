@@ -78,7 +78,6 @@ private:
 
 using BoundaryConditions = std::vector<BoundaryCondition>;
 
-auto read_boundary_conditions(const std::filesystem::path& path) -> BoundaryConditions;
 auto read_boundary_conditions(const std::filesystem::path& path,
                               const std::vector<std::string_view>& boundary_names)
     -> BoundaryConditions;
