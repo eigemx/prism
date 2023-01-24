@@ -32,46 +32,61 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
     return BoundaryConditionType::Unknown;
 }
 
+template <typename T = const toml::node_view<const toml::node>>
+void check_velocity_or_temp(T velocity, T temperature, std::string_view bname,
+                            std::string_view btype) {
+    if (!velocity && !temperature) {
+        throw std::runtime_error(
+            fmt::format("Boundary '{}' is defined as a '{}' and has no velocity or temperature",
+                        bname, btype));
+    }
+}
+inline auto get_real_value(const toml::node_view<const toml::node>& node, std::string_view bname,
+                           std::string_view btype, std::string_view value_type) -> double {
+    if (!node.is_floating_point() && !node.is_number()) {
+        throw std::runtime_error(fmt::format(
+            "{} boundary '{}' has a {} that is not a numeric value", btype, bname, value_type));
+    }
+
+    return node.value<double>().value();
+}
+
+inline auto get_velocity(const toml::node_view<const toml::node>& velocity,
+                         std::string_view bname, std::string_view btype) -> Vector3d {
+    // check if velocity is a vector
+    if (!velocity.is_array() || velocity.as_array()->size() != 3) {
+        throw std::runtime_error(
+            fmt::format("{} boundary '{}' has a velocity that is not a 3D vector", btype, bname));
+    }
+
+    // check if velocity is a vector of numbers
+    for (std::size_t i = 0; i < 3; ++i) {
+        if (!velocity[i].is_floating_point() && !velocity[i].is_number()) {
+            throw std::runtime_error(
+                fmt::format("{} boundary '{}' has a velocity that is not a 3D vector of numbers",
+                            btype, bname));
+        }
+    }
+
+    return Vector3d {velocity[0].value<double>().value(), velocity[1].value<double>().value(),
+                     velocity[2].value<double>().value()};
+}
+
 auto parse_wall(const toml::table& doc, std::string_view bname) -> WallBoundaryData {
     auto velocity = doc[bname]["velocity"];
     auto temperature = doc[bname]["temperature"];
 
-    if (!velocity && !temperature) {
-        throw std::runtime_error(fmt::format(
-            "Boundary '{}' is defined as a wall and has no velocity or temperature", bname));
-    }
+    check_velocity_or_temp(velocity, temperature, bname, "Wall");
 
     std::optional<Vector3d> velocity_vec {std::nullopt};
     std::optional<double> temperature_val {std::nullopt};
 
     if (velocity) {
-        // check if velocity is a vector
-        if (!velocity.is_array() || velocity.as_array()->size() != 3) {
-            throw std::runtime_error(
-                fmt::format("Wall boundary '{}' has a velocity that is not a 3D vector", bname));
-        }
-
-        // check if velocity is a vector of numbers
-        for (std::size_t i = 0; i < 3; ++i) {
-            if (!velocity[i].is_floating_point() && !velocity[i].is_number()) {
-                throw std::runtime_error(fmt::format(
-                    "Wall boundary '{}' has a velocity that is not a 3D vector of numbers",
-                    bname));
-            }
-        }
-
-        velocity_vec =
-            Vector3d {velocity[0].value<double>().value(), velocity[1].value<double>().value(),
-                      velocity[2].value<double>().value()};
+        velocity_vec = get_velocity(velocity, bname, "Wall");
     }
 
     if (temperature) {
-        if (!temperature.is_floating_point() && !temperature.is_number()) {
-            throw std::runtime_error(fmt::format(
-                "Wall boundary '{}' has a temperature that is not a numeric value", bname));
-        }
-
-        temperature_val = temperature.value<double>().value();
+        temperature_val = get_real_value(temperature, bname, "Wall", "temperature");
     }
 
     return WallBoundaryData {velocity_vec, temperature_val};
@@ -81,42 +96,17 @@ auto parse_inlet(const toml::table& doc, std::string_view bname) -> InletBoundar
     auto velocity = doc[bname]["velocity"];
     auto temperature = doc[bname]["temperature"];
 
-    if (!velocity && !temperature) {
-        throw std::runtime_error(fmt::format(
-            "Boundary '{}' is defined as an inlet but has no velocity or temperature", bname));
-    }
+    check_velocity_or_temp(velocity, temperature, bname, "Inlet");
 
     std::optional<Vector3d> velocity_vec {std::nullopt};
     std::optional<double> temperature_val {std::nullopt};
 
     if (velocity) {
-        // check if velocity is a vector
-        if (!velocity.is_array() || velocity.as_array()->size() != 3) {
-            throw std::runtime_error(
-                fmt::format("Inlet boundary '{}' has a velocity that is not a 3D vector", bname));
-        }
-
-        // check if velocity is a vector of numbers
-        for (std::size_t i = 0; i < 3; ++i) {
-            if (!velocity[i].is_floating_point()) {
-                throw std::runtime_error(fmt::format(
-                    "Inlet boundary '{}' has a velocity that is not a 3D vector of numbers",
-                    bname));
-            }
-        }
-
-        velocity_vec =
-            Vector3d {velocity[0].value<double>().value(), velocity[1].value<double>().value(),
-                      velocity[2].value<double>().value()};
+        velocity_vec = get_velocity(velocity, bname, "Inlet");
     }
 
     if (temperature) {
-        if (!temperature.is_floating_point() || !temperature.is_number()) {
-            throw std::runtime_error(
-                fmt::format("Inlet boundary '{}' has a temperature that is not a number", bname));
-        }
-
-        temperature_val = temperature.value<double>().value();
+        temperature_val = get_real_value(temperature, bname, "Inlet", "temperature");
     }
 
     return InletBoundaryData {velocity_vec, temperature_val};
@@ -130,61 +120,9 @@ auto parse_outlet(const toml::table& doc, std::string_view bname) -> OutletBound
             "Boundary '{}' is defined as an outlet but has no pressure value", bname));
     }
 
-    if (!pressure.is_floating_point()) {
-        throw std::runtime_error(fmt::format(
-            "Outlet boundary '{}' has a pressure that is not a numeric value", bname));
-    }
+    double pressure_val = get_real_value(pressure, bname, "Outlet", "pressure");
 
-    return OutletBoundaryData {pressure.value<double>().value()};
-}
-
-auto parse_gradient(const toml::table& doc, std::string_view bname) -> GradientBoundaryData {
-    // check velocity_gradient, pressure_gradient, and heat flux
-    auto velocity_gradient = doc[bname]["velocity_gradient"];
-    auto pressure_gradient = doc[bname]["pressure_gradient"];
-    auto heat_flux = doc[bname]["heat_flux"];
-
-    if (!velocity_gradient && !pressure_gradient && !heat_flux) {
-        throw std::runtime_error(fmt::format(
-            "Boundary '{}' is defined as a gradient but has no velocity gradient, pressure "
-            "gradient, or heat flux",
-            bname));
-    }
-
-    std::optional<double> velocity_gradient_val {std::nullopt};
-    std::optional<double> pressure_gradient_val {std::nullopt};
-    std::optional<double> heat_flux_val {std::nullopt};
-
-    if (velocity_gradient) {
-        if (!velocity_gradient.is_floating_point() && !velocity_gradient.is_number()) {
-            throw std::runtime_error(fmt::format(
-                "Gradient boundary '{}' has a velocity gradient that is not a numeric value",
-                bname));
-        }
-
-        velocity_gradient_val = velocity_gradient.value<double>().value();
-    }
-
-    if (pressure_gradient) {
-        if (!pressure_gradient.is_floating_point() && !pressure_gradient.is_number()) {
-            throw std::runtime_error(fmt::format(
-                "Gradient boundary '{}' has a pressure gradient that is not a numeric value",
-                bname));
-        }
-
-        pressure_gradient_val = pressure_gradient.value<double>().value();
-    }
-
-    if (heat_flux) {
-        if (!heat_flux.is_floating_point() && !heat_flux.is_number()) {
-            throw std::runtime_error(fmt::format(
-                "Gradient boundary '{}' has a heat flux that is not a numeric value", bname));
-        }
-
-        heat_flux_val = heat_flux.value<double>().value();
-    }
-
-    return GradientBoundaryData {velocity_gradient_val, pressure_gradient_val, heat_flux_val};
+    return OutletBoundaryData {pressure_val};
 }
 
 auto parse_boundary_data(const toml::table& table, std::string_view bname,
@@ -200,7 +138,7 @@ auto parse_boundary_data(const toml::table& table, std::string_view bname,
             return parse_outlet(table, bname);
 
         case BoundaryConditionType::Gradient:
-            return parse_gradient(table, bname);
+            throw std::runtime_error("Gradient boundary condition is not implemented");
 
         case BoundaryConditionType::Symmetry:
             return SymmetryBoundaryData {};
@@ -251,16 +189,20 @@ auto read_boundary_conditions(const std::filesystem::path& path,
 
     toml::table doc;
 
+    // parse boundary TOML file
     try {
         doc = toml::parse(fstream);
     } catch (const toml::parse_error& e) {
+        // file cannot be parsed
         throw std::runtime_error(
             fmt::format("Failed to parse boundary condition file: '{}', complete error: {}",
                         path.string(), e.what()));
     }
 
+    // for each defined boundary, get its relevant BoundaryData object
     for (const auto& bname : boundary_names) {
         auto table {doc[bname.data()]};
+
         if (!table) {
             throw std::runtime_error(
                 fmt::format("Coudln't find definition for boundary patch '{}' in boundary "

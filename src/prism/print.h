@@ -2,7 +2,6 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
-#include <cstdlib>
 #include <string_view>
 
 namespace prism {
