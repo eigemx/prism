@@ -41,6 +41,7 @@ void check_velocity_or_temp(T velocity, T temperature, std::string_view bname,
                         bname, btype));
     }
 }
+
 inline auto get_real_value(const toml::node_view<const toml::node>& node, std::string_view bname,
                            std::string_view btype, std::string_view value_type) -> double {
     if (!node.is_floating_point() && !node.is_number()) {
