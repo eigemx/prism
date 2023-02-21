@@ -31,3 +31,4 @@ BraceWrapping:
   IndentBraces:    false
 DerivePointerAlignment: false
 PointerAlignment: Left
+SortUsingDeclarationsOptions: true
