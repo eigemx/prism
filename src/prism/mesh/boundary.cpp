@@ -3,38 +3,36 @@
 #include <fmt/format.h>
 #include <toml++/toml.h>
 
+#include <any>
 #include <fstream>
 #include <iostream>
 #include <string_view>
-
+#include <unordered_map>
 
 namespace prism::mesh {
+
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
-    if (type == "wall") {
-        return BoundaryConditionType::Wall;
-    }
-    if (type == "inlet") {
-        return BoundaryConditionType::Inlet;
-    }
-    if (type == "outlet") {
-        return BoundaryConditionType::Outlet;
-    }
-    if (type == "gradient") {
-        return BoundaryConditionType::Gradient;
-    }
-    if (type == "symmetry") {
-        return BoundaryConditionType::Symmetry;
-    }
-    if (type == "empty") {
-        return BoundaryConditionType::Empty;
+    const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryConditionType> {
+        {"wall", BoundaryConditionType::Wall},
+        {"inlet", BoundaryConditionType::Inlet},
+        {"outlet", BoundaryConditionType::Outlet},
+        {"gradient", BoundaryConditionType::Gradient},
+        {"symmetry", BoundaryConditionType::Symmetry},
+        {"empty", BoundaryConditionType::Empty},
+    };
+
+    auto it = bc_type_map.find(type);
+
+    if (it == bc_type_map.end()) {
+        return BoundaryConditionType::Unknown;
     }
 
-    return BoundaryConditionType::Unknown;
+    return it->second;
 }
 
 template <typename T = const toml::node_view<const toml::node>>
-void check_velocity_or_temp(T velocity, T temperature, std::string_view bname,
-                            std::string_view btype) {
+inline void check_velocity_or_temp(T velocity, T temperature, std::string_view bname,
+                                   std::string_view btype) {
     if (!velocity && !temperature) {
         throw std::runtime_error(
             fmt::format("Boundary '{}' is defined as a '{}' and has no velocity or temperature",
