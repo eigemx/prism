@@ -10,9 +10,7 @@ namespace prism::mesh {
 
 class Face {
 public:
-    Face(const std::vector<std::size_t>& face,
-         const std::vector<std::array<double, 3>>& vertices);
-    Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& vertices);
+    Face(const std::vector<Vector3d>& face_vertices);
 
     auto inline area() const -> const double& { return _area; }
     auto inline normal() const -> const Vector3d& { return _normal; }
