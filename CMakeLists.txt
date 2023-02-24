@@ -32,28 +32,12 @@ include_directories(${UNVPP_SOURCE_DIR}/include)
 set(TOMLPP_SOURCE_DIR "external/tomlplusplus")
 include_directories(${TOMLPP_SOURCE_DIR}/include)
 
+# setup cxxopts
+set(CXXOPTS_SOURCE_DIR "external/cxxopts")
+include_directories(${CXXOPTS_SOURCE_DIR}/include)
 
-add_executable(prism
-    # core
-    src/prism/main.cpp
-    src/prism/types.h
-    src/prism/print.h
-    
-    # mesh module
-    src/prism/mesh/face.cpp
-    src/prism/mesh/cell.cpp
-    src/prism/mesh/boundary.cpp
-    src/prism/mesh/pmesh.cpp 
-    src/prism/mesh/inspector.cpp
-    src/prism/mesh/from_unv.cpp
-       
-    src/prism/mesh/face.h
-    src/prism/mesh/cell.h
-    src/prism/mesh/boundary.h
-    src/prism/mesh/pmesh.h
-    src/prism/mesh/inspector.h
-    src/prism/mesh/from_unv.h
+add_subdirectory(src/prism)
+include_directories(src/)
 
-)
-
-target_link_libraries(prism fmt unvpp)
+# apps
+add_subdirectory(src/apps/pmesh)
