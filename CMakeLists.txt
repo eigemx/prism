@@ -36,6 +36,10 @@ include_directories(${TOMLPP_SOURCE_DIR}/include)
 set(CXXOPTS_SOURCE_DIR "external/cxxopts")
 include_directories(${CXXOPTS_SOURCE_DIR}/include)
 
+# setup tabulate
+set(TABULATE_SOURCE_DIR "external/tabulate")
+include_directories(${TABULATE_SOURCE_DIR}/single_include)
+
 add_subdirectory(src/prism)
 include_directories(src/)
 

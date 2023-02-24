@@ -14,10 +14,10 @@ type = "empty"
 type = "empty"
 
 [left]
-type = "gradient"
-heat_flux = 0.0
+type = "wall"
+temperature = 300.0
 
 [right]
-type = "gradient"
-heat_flux = 0.0
+type = "wall"
+temperature = 300.0
 
