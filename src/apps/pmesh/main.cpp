@@ -63,6 +63,21 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
         // convert unv mesh to prism mesh
         auto prism_mesh = unv_mesh.to_pmesh();
 
+        auto total_vol =
+            std::accumulate(prism_mesh.cells().begin(), prism_mesh.cells().end(), 0.0,
+                            [](double acc, const auto& cell) { return acc + cell.volume(); });
+
+        auto surface_area = std::accumulate(prism_mesh.faces().begin(), prism_mesh.faces().end(),
+                                            0.0, [](double acc, const auto& face) {
+                                                if (face.has_neighbor()) {
+                                                    return acc;
+                                                }
+                                                return acc + face.area();
+                                            });
+
+        fmt::print("Total volume  = {:.4f} L^3\n", total_vol);
+        fmt::print("Surface area  = {:.4f} L^2\n", surface_area);
+
 
     } catch (const std::exception& e) {
         prism::error(e.what());

@@ -43,17 +43,10 @@ void Face::set_face_attributes(const std::vector<Vector3d>& face_vertices, Vecto
     _normal /= _normal.norm();
 }
 
-Face::Face(const std::vector<std::size_t>& face,
-           const std::vector<std::array<double, 3>>& vertices)
-    : vertices_count(face.size()) {
+Face::Face(const std::vector<Vector3d>& face_vertices) : vertices_count(face_vertices.size()) {
     Vector3d geo_center {0.0, 0.0, 0.0};
 
-    auto face_vertices {std::vector<Vector3d>()};
-    face_vertices.reserve(vertices_count);
-
     for (std::size_t i = 0; i < vertices_count; ++i) {
-        const auto& vertex = vertices[face[i]];
-        face_vertices.emplace_back(vertex[0], vertex[1], vertex[2]);
         geo_center += face_vertices[i];
     }
 
@@ -63,22 +56,4 @@ Face::Face(const std::vector<std::size_t>& face,
     set_face_attributes(face_vertices, geo_center);
 }
 
-Face::Face(const std::vector<std::size_t>& face, const std::vector<Vector3d>& vertices)
-    : vertices_count(face.size()) {
-    Vector3d geo_center {0.0, 0.0, 0.0};
-
-    auto face_vertices = std::vector<Vector3d>();
-    face_vertices.reserve(vertices_count);
-
-    for (std::size_t i = 0; i < vertices_count; ++i) {
-        const auto& vertex = vertices[face[i]];
-        face_vertices.emplace_back(vertex);
-        geo_center += face_vertices[i];
-    }
-
-    // Calculate face geometric center.
-    geo_center /= vertices_count;
-
-    set_face_attributes(face_vertices, geo_center);
-}
 } // namespace prism::mesh

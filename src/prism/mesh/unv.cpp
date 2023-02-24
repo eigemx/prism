@@ -167,13 +167,13 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
     cell_id_counter++;
 }
 
-auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t {
+auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids) -> std::size_t {
     // sort the face indices to be used as a std::map key for searching
-    auto sorted_face_vertices = face_vertices; // copy the face vertices to sort in place
-    std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
+    auto sorted_face_vertices_ids = face_vertices_ids; // copy the face vertices to sort in place
+    std::sort(sorted_face_vertices_ids.begin(), sorted_face_vertices_ids.end());
 
     // lookup the current face, to check if it has been processed before
-    auto face_id_iter {face_index(sorted_face_vertices)};
+    auto face_id_iter {face_index(sorted_face_vertices_ids)};
 
     if (face_id_iter.has_value()) {
         auto face_id {face_id_iter.value()->second};
@@ -196,14 +196,22 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices) -> 
     // this a new interior face, we need to call Face() constructor
     // and push the new face to `faces` vector
     auto face_id {face_id_counter++};
-    auto new_face {Face(face_vertices, unv_mesh.vertices)};
+
+    std::vector<Vector3d> face_vertices;
+
+    for (const auto& vertex_id : face_vertices_ids) {
+        const auto& vec = unv_mesh.vertices[vertex_id];
+        face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
+    }
+
+    auto new_face {Face(face_vertices)};
 
     new_face.set_owner(cell_id_counter);
     new_face.set_id(face_id);
 
     faces.push_back(std::move(new_face));
 
-    face_to_index_map.insert({sorted_face_vertices, face_id});
+    face_to_index_map.insert({sorted_face_vertices_ids, face_id});
 
     return face_id;
 }
@@ -216,7 +224,15 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
     // this a new face, we need to call Face() constructor
     // and push the new face to `faces` vector
     auto face_id = face_id_counter++;
-    auto new_face {Face(boundary_face.vertices_ids(), unv_mesh.vertices)};
+
+    std::vector<Vector3d> face_vertices;
+
+    for (const auto& vertex_id : boundary_face.vertices_ids()) {
+        const auto& vec = unv_mesh.vertices[vertex_id];
+        face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
+    }
+
+    auto new_face {Face(face_vertices)};
 
     // this face does not yet have an owner, this will be set later by process_face()
     new_face.set_id(face_id);
