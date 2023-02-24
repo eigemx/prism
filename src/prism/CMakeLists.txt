@@ -3,6 +3,7 @@ add_library(prism-core
     visitor.cpp
     types.h
     print.h
+    version.h
     visitor.h
     
     # mesh module

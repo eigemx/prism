@@ -1,6 +1,8 @@
 #include <prism/mesh/boundary.h>
 #include <prism/mesh/unv.h>
 #include <prism/print.h>
+#include <toml++/toml.h>
+#include <unvpp/unvpp.h>
 
 #include <algorithm>
 #include <cxxopts.hpp>
@@ -46,6 +48,39 @@ auto min_max(const std::vector<T>& vec) -> std::pair<T, T> {
     }
 
     return {min, max};
+}
+
+void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
+    std::string filename = "boundary.txt";
+
+    // check if there are already a boundary conditions file in the same directory
+    auto boundary_file = mesh_file.parent_path() / filename;
+
+    if (std::filesystem::exists(boundary_file)) {
+        prism::error(fmt::format(
+            "Boundary conditions file `{}` already exists, please remove to proceed.", filename));
+        return;
+    }
+
+    auto unv_mesh = unv::read(mesh_file);
+
+    if (!unv_mesh.groups || unv_mesh.groups.value().empty()) {
+        prism::error("No groups found in mesh file");
+        return;
+    }
+
+    toml::table table;
+
+    for (const auto& group : unv_mesh.groups.value()) {
+        table.insert(group.name(), toml::table {
+                                       {"type", "wall"},
+                                       {"velocity", toml::array {0.0, 0.0, 0.0}},
+                                   });
+    }
+
+    std::ofstream file(boundary_file);
+    file << table;
+    file.close();
 }
 
 void check_pmesh(const std::filesystem::path& mesh_file) {
@@ -130,10 +165,12 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
 }
 
 auto main(int argc, char* argv[]) -> int {
+    prism::print_header();
+
     try {
         cxxopts::Options options("pmesh", "A mesh utility for PMesh files");
 
-        options.set_width(100).set_tab_expansion().allow_unrecognised_options().add_options()
+        options.set_width(100).set_tab_expansion().add_options()
             // check input mesh and print quality stats
             ("c,check", "Check mesh file", cxxopts::value<std::string>())
             // create new boundary conditions file for the given input mesh, if not found
@@ -145,7 +182,7 @@ auto main(int argc, char* argv[]) -> int {
         auto result = options.parse(argc, argv);
 
         if (argc == 1) {
-            fmt::print("{}\n", options.help());
+            fmt::print("Too few arguments, run with --help to see available options\n");
             return 0;
         }
 
@@ -161,7 +198,7 @@ auto main(int argc, char* argv[]) -> int {
 
         if (result.count("new-boundary") > 0) {
             auto filename = result["new-boundary"].as<std::string>();
-            fmt::print("Creating new boundary conditions file for mesh: {}\n", filename);
+            create_boundary_conditions_file(filename);
         }
     }
 
