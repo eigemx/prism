@@ -1,9 +1,10 @@
 #pragma once
 
+#include <cmath>
+
 #include "boundary.h"
 #include "cell.h"
 #include "face.h"
-
 namespace prism::mesh {
 class PMesh {
 public:
@@ -20,9 +21,14 @@ public:
     void set_boundary_conditions(BoundaryConditions&& boundary_patches);
     void set_boundary_conditions(const BoundaryConditions& boundary_patches);
 
+    auto non_ortho(std::size_t face_id) const -> double;
+    auto non_ortho(const Face& face) const -> double;
+
+
 private:
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
     BoundaryConditions _boundary_conditions;
+    const double pi {std::atan(1) * 4};
 };
 } // namespace prism::mesh

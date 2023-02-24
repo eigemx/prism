@@ -1,9 +1,14 @@
+#include <prism/mesh/boundary.h>
+#include <prism/mesh/unv.h>
+#include <prism/print.h>
+
+#include <algorithm>
+#include <cxxopts.hpp>
 #include <filesystem>
 #include <numeric>
-
-#include "mesh/boundary.h"
-#include "mesh/from_unv.h"
-#include "print.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 
 auto boundary_type_to_string(prism::mesh::BoundaryConditionType type) -> std::string {
@@ -25,16 +30,30 @@ auto boundary_type_to_string(prism::mesh::BoundaryConditionType type) -> std::st
     }
 }
 
-auto main() -> int {
-    try {
-        // load unv mesh file in "./test/diffusion_cube_2D/mesh.unv"
-        auto mesh_file = std::filesystem::path {"./test/cylinder/mesh.unv"};
+template <typename T>
+auto min_max(const std::vector<T>& vec) -> std::pair<T, T> {
+    auto min = std::numeric_limits<T>::infinity();
+    auto max = -std::numeric_limits<T>::infinity();
 
+    for (const auto& val : vec) {
+        if (val < min) {
+            min = val;
+        }
+
+        if (val > max) {
+            max = val;
+        }
+    }
+
+    return {min, max};
+}
+
+void check_pmesh(const std::filesystem::path& mesh_file) {
+    try {
         fmt::print("Loading mesh file: ");
         fmt::print(fg(fmt::color::dark_cyan), "{}\n\n", mesh_file.string());
 
         auto unv_mesh = prism::mesh::UnvToPMesh(mesh_file);
-        //unv_mesh.report_mesh_stats();
 
         // convert unv mesh to prism mesh
         auto prism_mesh = unv_mesh.to_pmesh();
@@ -65,12 +84,9 @@ auto main() -> int {
         fmt::print("Min. cell volume = {} L^3\n", min_vol);
 
         // calculate surface area of mesh, using boundary faces area
-        auto total_surface_area = 0.0;
-        for (const auto& face : prism_mesh.faces()) {
-            if (!face.neighbor().has_value()) {
-                total_surface_area += face.area();
-            }
-        }
+        auto total_surface_area =
+            std::accumulate(prism_mesh.faces().begin(), prism_mesh.faces().end(), 0.0,
+                            [](auto acc, const auto& face) { return acc + face.area(); });
         fmt::print("Total surface area of mesh: {:.2f} L^2\n\n", total_surface_area);
 
         // print number of faces with zero owners
@@ -92,8 +108,67 @@ auto main() -> int {
         for (const auto& bc : prism_mesh.boundary_conditions()) {
             fmt::print("  - {} (type: {})\n", bc.name(), boundary_type_to_string(bc.type()));
         }
+
+        // calculate min and max non-orthogonality
+        std::vector<double> non_ortho;
+        for (const auto& face : prism_mesh.faces()) {
+            if (face.neighbor()) {
+                non_ortho.push_back(prism_mesh.non_ortho(face));
+            }
+        }
+
+        auto [min_non_orth, max_non_orth] = min_max(non_ortho);
+        fmt::print("\n");
+        fmt::print("Max. non-orthogonality = {}\n", max_non_orth);
+        fmt::print("Min. non-orthogonality = {}\n", min_non_orth);
+
+
     } catch (const std::exception& e) {
         prism::error(e.what());
-        return -1;
+        return;
+    }
+}
+
+auto main(int argc, char* argv[]) -> int {
+    try {
+        cxxopts::Options options("pmesh", "A mesh utility for PMesh files");
+
+        options.set_width(100).set_tab_expansion().allow_unrecognised_options().add_options()
+            // check input mesh and print quality stats
+            ("c,check", "Check mesh file", cxxopts::value<std::string>())
+            // create new boundary conditions file for the given input mesh, if not found
+            ("n,new-boundary", "Create new boundary conditions file for the given input mesh",
+             cxxopts::value<std::string>())
+            // print help
+            ("h,help", "Print help");
+
+        auto result = options.parse(argc, argv);
+
+        if (argc == 1) {
+            fmt::print("{}\n", options.help());
+            return 0;
+        }
+
+        if (result.count("help") > 0) {
+            fmt::print("{}\n", options.help());
+            return 0;
+        }
+
+        if (result.count("check") > 0) {
+            auto filename = result["check"].as<std::string>();
+            check_pmesh(filename);
+        }
+
+        if (result.count("new-boundary") > 0) {
+            auto filename = result["new-boundary"].as<std::string>();
+            fmt::print("Creating new boundary conditions file for mesh: {}\n", filename);
+        }
+    }
+
+    catch (const cxxopts::exceptions::exception& e) {
+        prism::error(fmt::format("Error parsing options: {}\n", e.what()));
+        fmt::print("Run with --help to see available options\n");
+
+        return 1;
     }
 }

@@ -6,14 +6,12 @@
 #include "pmesh.h"
 
 namespace prism::mesh {
+
+auto non_ortho(std::size_t face_a_id, std::size_t face_b_id) -> double;
 class PMeshInspector {
 public:
     PMeshInspector() = delete;
     PMeshInspector(const PMesh& pmesh) : pmesh(pmesh) {}
-
-    void report_mesh_stats() const;
-    void report_mesh_connectivity() const;
-    void report_boundary_patches() const;
 
 private:
     const PMesh& pmesh;
