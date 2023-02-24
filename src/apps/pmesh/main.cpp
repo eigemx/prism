@@ -9,63 +9,33 @@
 #include <filesystem>
 #include <numeric>
 #include <string>
+#include <tabulate/tabulate.hpp>
 #include <utility>
 #include <vector>
 
 
-auto boundary_type_to_string(prism::mesh::BoundaryConditionType type) -> std::string {
-    switch (type) {
-        case prism::mesh::BoundaryConditionType::Wall:
-            return "wall";
-        case prism::mesh::BoundaryConditionType::Inlet:
-            return "inlet";
-        case prism::mesh::BoundaryConditionType::Outlet:
-            return "outlet";
-        case prism::mesh::BoundaryConditionType::Gradient:
-            return "gradient";
-        case prism::mesh::BoundaryConditionType::Symmetry:
-            return "symmetry";
-        case prism::mesh::BoundaryConditionType::Empty:
-            return "empty";
-        case prism::mesh::BoundaryConditionType::Unknown:
-            return "unknown";
-    }
-}
-
-template <typename T>
-auto min_max(const std::vector<T>& vec) -> std::pair<T, T> {
-    auto min = std::numeric_limits<T>::infinity();
-    auto max = -std::numeric_limits<T>::infinity();
-
-    for (const auto& val : vec) {
-        if (val < min) {
-            min = val;
-        }
-
-        if (val > max) {
-            max = val;
-        }
-    }
-
-    return {min, max};
-}
-
 void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
-    std::string filename = "boundary.txt";
+    // if mesh file extension is not .unv, warn user
+    if (mesh_file.extension() != ".unv") {
+        prism::warn(fmt::format("Input mesh file extension is not `.unv`."));
+    }
+
+    std::string bc_filename = "boundary.txt";
 
     // check if there are already a boundary conditions file in the same directory
-    auto boundary_file = mesh_file.parent_path() / filename;
+    auto bc_filepath = mesh_file.parent_path() / bc_filename;
 
-    if (std::filesystem::exists(boundary_file)) {
-        prism::error(fmt::format(
-            "Boundary conditions file `{}` already exists, please remove to proceed.", filename));
+    if (std::filesystem::exists(bc_filepath)) {
+        prism::error(
+            fmt::format("Boundary conditions file `{}` already exists, please remove to proceed.",
+                        bc_filename));
         return;
     }
 
     auto unv_mesh = unv::read(mesh_file);
 
     if (!unv_mesh.groups || unv_mesh.groups.value().empty()) {
-        prism::error("No groups found in mesh file");
+        prism::error("No groups were found in mesh file");
         return;
     }
 
@@ -78,7 +48,7 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
                                    });
     }
 
-    std::ofstream file(boundary_file);
+    std::ofstream file(bc_filepath);
     file << table;
     file.close();
 }
@@ -93,70 +63,6 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
         // convert unv mesh to prism mesh
         auto prism_mesh = unv_mesh.to_pmesh();
 
-        // print number of cells and faces
-        fmt::print("Elements stats:\n");
-        fmt::print("---------------\n");
-        fmt::print("Number of cells = {} cell\n", prism_mesh.cells().size());
-        fmt::print("Number of faces = {} face\n\n", prism_mesh.faces().size());
-
-        // calculate total volume of mesh
-        auto total_volume = 0.0;
-        double min_vol {std::numeric_limits<double>::infinity()};
-        double max_vol {0.0};
-        for (const auto& cell : prism_mesh.cells()) {
-            auto cell_vol = cell.volume();
-            if (cell_vol < min_vol) {
-                min_vol = cell_vol;
-            }
-
-            if (cell_vol > max_vol) {
-                max_vol = cell_vol;
-            }
-            total_volume += cell_vol;
-        }
-        fmt::print("Total volume of mesh: {:.2f} L^3\n", total_volume);
-        fmt::print("Max. cell volume = {} L^3\n", max_vol);
-        fmt::print("Min. cell volume = {} L^3\n", min_vol);
-
-        // calculate surface area of mesh, using boundary faces area
-        auto total_surface_area =
-            std::accumulate(prism_mesh.faces().begin(), prism_mesh.faces().end(), 0.0,
-                            [](auto acc, const auto& face) { return acc + face.area(); });
-        fmt::print("Total surface area of mesh: {:.2f} L^2\n\n", total_surface_area);
-
-        // print number of faces with zero owners
-        auto n_zero_owner_faces =
-            std::count_if(prism_mesh.faces().begin(), prism_mesh.faces().end(),
-                          [](const auto& face) { return !face.has_owner(); });
-
-        // print number of faces with zero owners, and add in green (Ok) or red (Error) at the end of line
-        fmt::print("Number of faces with zero owners: {} ", n_zero_owner_faces);
-        if (n_zero_owner_faces == 0) {
-            fmt::print(fg(fmt::color::green), "(Ok)\n\n");
-        } else {
-            fmt::print(fg(fmt::color::red), "(Error)\n\n");
-        }
-
-        // print boundary conditions
-        fmt::print("Mesh boundary patches:\n");
-        fmt::print("----------------------\n");
-        for (const auto& bc : prism_mesh.boundary_conditions()) {
-            fmt::print("  - {} (type: {})\n", bc.name(), boundary_type_to_string(bc.type()));
-        }
-
-        // calculate min and max non-orthogonality
-        std::vector<double> non_ortho;
-        for (const auto& face : prism_mesh.faces()) {
-            if (face.neighbor()) {
-                non_ortho.push_back(prism_mesh.non_ortho(face));
-            }
-        }
-
-        auto [min_non_orth, max_non_orth] = min_max(non_ortho);
-        fmt::print("\n");
-        fmt::print("Max. non-orthogonality = {}\n", max_non_orth);
-        fmt::print("Min. non-orthogonality = {}\n", min_non_orth);
-
 
     } catch (const std::exception& e) {
         prism::error(e.what());
@@ -167,6 +73,8 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
 auto main(int argc, char* argv[]) -> int {
     prism::print_header();
 
+    // TODO: running with input file without argument does nothing, should print help
+
     try {
         cxxopts::Options options("pmesh", "A mesh utility for PMesh files");
 
@@ -174,7 +82,7 @@ auto main(int argc, char* argv[]) -> int {
             // check input mesh and print quality stats
             ("c,check", "Check mesh file", cxxopts::value<std::string>())
             // create new boundary conditions file for the given input mesh, if not found
-            ("n,new-boundary", "Create new boundary conditions file for the given input mesh",
+            ("n,new-boundary", "Create dummy boundary conditions file for the given input mesh",
              cxxopts::value<std::string>())
             // print help
             ("h,help", "Print help");

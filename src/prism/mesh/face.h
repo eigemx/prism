@@ -24,16 +24,18 @@ public:
     auto inline owner() const -> std::size_t { return _owner.value(); }
     void inline set_owner(std::size_t owner_id) { _owner = owner_id; }
 
-    // Each face must have an owner, so this will return false if something is wrong
+    // This function is added mainly for debugging purposes,
+    // because ach face must have an owner, so this will return false if something is wrong
     auto inline has_owner() const -> bool { return _owner.has_value(); }
 
     auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
+    auto inline has_neighbor() const -> bool { return _neighbor.has_value(); }
     auto inline set_neighbor(std::size_t nei_id) { _neighbor = nei_id; }
 
 private:
     void inline set_face_attributes(const std::vector<Vector3d>& face_vertices,
                                     Vector3d& geo_center);
-    std::size_t vertices_count;
+    std::size_t vertices_count {0};
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};
     Vector3d _center {0.0, 0.0, 0.0};

@@ -7,7 +7,7 @@
 #include "version.h"
 
 namespace prism {
-void inline warning(std::string_view msg) {
+void inline warn(std::string_view msg) {
     fmt::print(fg(fmt::color::yellow), "Warning: ");
     fmt::print("{}\n", msg);
 }
@@ -19,7 +19,9 @@ void inline error(std::string_view msg) {
 
 void inline print_header() {
     fmt::print(fg(fmt::color::cyan), "Prism ");
-    fmt::print("v{} - A finite volume CFD framework\n\n", PRISM_VERSION_STR);
+    fmt::print("v{}\n", PRISM_VERSION_STR);
+    fmt::print("A finite volume CFD framework | MIT License\n");
+    fmt::print("--------------------------------------------\n");
 }
 
 } // namespace prism

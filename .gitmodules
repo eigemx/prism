@@ -12,9 +12,16 @@
 	path = external/unvpp
 	url = https://github.com/eigemx/unvpp.git
 	branch = main
+
 [submodule "external/tomlplusplus"]
 	path = external/tomlplusplus
 	url = https://github.com/marzer/tomlplusplus
+
 [submodule "external/cxxopts"]
 	path = external/cxxopts
 	url = https://github.com/jarro2783/cxxopts
+
+[submodule "external/tabulate"]
+	path = external/tabulate
+	url = https://github.com/p-ranav/tabulate
+
