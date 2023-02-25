@@ -204,7 +204,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids)
         face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
     }
 
-    auto new_face {Face(face_vertices)};
+    auto new_face {Face(std::move(face_vertices))};
 
     new_face.set_owner(cell_id_counter);
     new_face.set_id(face_id);
@@ -232,7 +232,7 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
         face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
     }
 
-    auto new_face {Face(face_vertices)};
+    auto new_face {Face(std::move(face_vertices))};
 
     // this face does not yet have an owner, this will be set later by process_face()
     new_face.set_id(face_id);

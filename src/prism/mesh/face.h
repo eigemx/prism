@@ -10,14 +10,16 @@ namespace prism::mesh {
 
 class Face {
 public:
-    Face(const std::vector<Vector3d>& face_vertices);
+    Face(std::vector<Vector3d>&& face_vertices) noexcept;
+    Face(const std::vector<Vector3d>& face_vertices) noexcept;
 
-    auto inline area() const -> const double& { return _area; }
-    auto inline normal() const -> const Vector3d& { return _normal; }
-    auto inline center() const -> const Vector3d& { return _center; }
+    auto inline area() const noexcept -> const double& { return _area; }
+    auto inline normal() const noexcept -> const Vector3d& { return _normal; }
+    auto inline center() const noexcept -> const Vector3d& { return _center; }
+    auto aspect_ratio() const noexcept -> double;
 
-    auto inline id() const -> std::size_t { return _id; }
-    void inline set_id(std::size_t face_id) { _id = face_id; }
+    auto inline id() const noexcept -> std::size_t { return _id; }
+    void inline set_id(std::size_t face_id) noexcept { _id = face_id; }
 
     auto inline owner() const -> std::size_t { return _owner.value(); }
     void inline set_owner(std::size_t owner_id) { _owner = owner_id; }
@@ -28,12 +30,13 @@ public:
 
     auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
     auto inline has_neighbor() const -> bool { return _neighbor.has_value(); }
-    auto inline set_neighbor(std::size_t nei_id) { _neighbor = nei_id; }
+    auto inline set_neighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
 
 private:
-    void inline set_face_attributes(const std::vector<Vector3d>& face_vertices,
-                                    Vector3d& geo_center);
+    void set_face_attributes();
+
     std::size_t vertices_count {0};
+    std::vector<Vector3d> _vertices;
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};
     Vector3d _center {0.0, 0.0, 0.0};

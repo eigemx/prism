@@ -39,6 +39,7 @@ Cell::Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
         _volume += pyramid_vol;
         _center += (pyramid_vol * pyramid_center);
     }
+
     _volume /= 3.0;
     _center /= _volume;
 }

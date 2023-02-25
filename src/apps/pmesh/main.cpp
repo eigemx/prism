@@ -53,6 +53,48 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
     file.close();
 }
 
+auto min_max_face_aspect_ratio(const prism::mesh::PMesh& prism_mesh) {
+    auto min_max = std::minmax_element(prism_mesh.faces().begin(), prism_mesh.faces().end(),
+                                       [](const auto& face1, const auto& face2) {
+                                           return face1.aspect_ratio() < face2.aspect_ratio();
+                                       });
+
+    return std::make_pair(min_max.first->aspect_ratio(), min_max.second->aspect_ratio());
+}
+
+auto min_max_face_area(const prism::mesh::PMesh& prism_mesh) {
+    auto min_max = std::minmax_element(
+        prism_mesh.faces().begin(), prism_mesh.faces().end(),
+        [](const auto& face1, const auto& face2) { return face1.area() < face2.area(); });
+
+    return std::make_pair(min_max.first->area(), min_max.second->area());
+}
+
+auto min_max_face_non_ortho(const prism::mesh::PMesh& prism_mesh) {
+    // return min and max non orthogonality of faces for internal faces only
+    auto min_non_ortho = std::numeric_limits<double>::max();
+    auto max_non_ortho = std::numeric_limits<double>::min();
+
+    for (const auto& face : prism_mesh.faces()) {
+        if (!face.has_neighbor()) {
+            continue;
+        }
+
+        auto non_ortho = prism_mesh.non_ortho(face);
+
+        if (non_ortho < min_non_ortho) {
+            min_non_ortho = non_ortho;
+        }
+
+        if (non_ortho > max_non_ortho) {
+            max_non_ortho = non_ortho;
+        }
+    }
+
+    return std::make_pair(min_non_ortho, max_non_ortho);
+}
+
+
 void check_pmesh(const std::filesystem::path& mesh_file) {
     try {
         fmt::print("Loading mesh file: ");
@@ -62,6 +104,13 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
 
         // convert unv mesh to prism mesh
         auto prism_mesh = unv_mesh.to_pmesh();
+
+        auto n_boundary_faces =
+            std::count_if(prism_mesh.faces().begin(), prism_mesh.faces().end(),
+                          [](const auto& face) { return !face.has_neighbor(); });
+
+        fmt::print("Mesh has {} faces (including {} boundary faces) & {} cells\n\n",
+                   prism_mesh.faces().size(), n_boundary_faces, prism_mesh.cells().size());
 
         auto total_vol =
             std::accumulate(prism_mesh.cells().begin(), prism_mesh.cells().end(), 0.0,
@@ -76,8 +125,19 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
                                             });
 
         fmt::print("Total volume  = {:.4f} L^3\n", total_vol);
-        fmt::print("Surface area  = {:.4f} L^2\n", surface_area);
+        fmt::print("Surface area  = {:.4f} L^2\n\n", surface_area);
 
+        auto [min_face_area, max_face_area] = min_max_face_area(prism_mesh);
+        auto [min_face_aspect_ratio, max_face_aspect_ratio] =
+            min_max_face_aspect_ratio(prism_mesh);
+        auto [min_face_non_ortho, max_face_non_ortho] = min_max_face_non_ortho(prism_mesh);
+
+        fmt::print("Max face area = {} L^2 and min face area = {} L^2\n", max_face_area,
+                   min_face_area);
+        fmt::print("Max face aspect ratio = {} and min face aspect ratio = {}\n",
+                   max_face_aspect_ratio, min_face_aspect_ratio);
+        fmt::print("Max face non orthogonality = {} and min face non orthogonality = {}\n",
+                   max_face_non_ortho, min_face_non_ortho);
 
     } catch (const std::exception& e) {
         prism::error(e.what());

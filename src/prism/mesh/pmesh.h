@@ -5,7 +5,9 @@
 #include "boundary.h"
 #include "cell.h"
 #include "face.h"
+
 namespace prism::mesh {
+
 class PMesh {
 public:
     PMesh() = delete;
