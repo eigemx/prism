@@ -3,7 +3,6 @@
 #include <fmt/format.h>
 #include <toml++/toml.h>
 
-#include <any>
 #include <fstream>
 #include <iostream>
 #include <string_view>
@@ -31,17 +30,22 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
 }
 
 template <typename T = const toml::node_view<const toml::node>>
-inline void check_velocity_or_temp(T velocity, T temperature, std::string_view bname,
+inline void check_velocity_or_temp(T velocity,
+                                   T temperature,
+                                   std::string_view bname,
                                    std::string_view btype) {
     if (!velocity && !temperature) {
         throw std::runtime_error(
             fmt::format("Boundary '{}' is defined as a '{}' and has no velocity or temperature",
-                        bname, btype));
+                        bname,
+                        btype));
     }
 }
 
-inline auto get_real_value(const toml::node_view<const toml::node>& node, std::string_view bname,
-                           std::string_view btype, std::string_view value_type) -> double {
+inline auto get_real_value(const toml::node_view<const toml::node>& node,
+                           std::string_view bname,
+                           std::string_view btype,
+                           std::string_view value_type) -> double {
     if (!node.is_floating_point() && !node.is_number()) {
         throw std::runtime_error(fmt::format(
             "{} boundary '{}' has a {} that is not a numeric value", btype, bname, value_type));
@@ -51,7 +55,8 @@ inline auto get_real_value(const toml::node_view<const toml::node>& node, std::s
 }
 
 inline auto get_velocity(const toml::node_view<const toml::node>& velocity,
-                         std::string_view bname, std::string_view btype) -> Vector3d {
+                         std::string_view bname,
+                         std::string_view btype) -> Vector3d {
     // check if velocity is a vector
     if (!velocity.is_array() || velocity.as_array()->size() != 3) {
         throw std::runtime_error(
@@ -63,13 +68,16 @@ inline auto get_velocity(const toml::node_view<const toml::node>& velocity,
         if (!velocity[i].is_floating_point() && !velocity[i].is_number()) {
             throw std::runtime_error(
                 fmt::format("{} boundary '{}' has a velocity that is not a 3D vector of numbers",
-                            btype, bname));
+                            btype,
+                            bname));
         }
     }
 
-    return Vector3d {velocity[0].value<double>().value(), velocity[1].value<double>().value(),
+    return Vector3d {velocity[0].value<double>().value(),
+                     velocity[1].value<double>().value(),
                      velocity[2].value<double>().value()};
 }
+
 
 auto parse_wall(const toml::table& doc, std::string_view bname) -> WallBoundaryData {
     auto velocity = doc[bname]["velocity"];
@@ -124,7 +132,8 @@ auto parse_outlet(const toml::table& doc, std::string_view bname) -> OutletBound
     return OutletBoundaryData {pressure_val};
 }
 
-auto parse_boundary_data(const toml::table& table, std::string_view bname,
+auto parse_boundary_data(const toml::table& table,
+                         std::string_view bname,
                          BoundaryConditionType bc_type) -> BoundaryData {
     switch (bc_type) {
         case BoundaryConditionType::Wall:
@@ -195,7 +204,8 @@ auto read_boundary_conditions(const std::filesystem::path& path,
         // file cannot be parsed
         throw std::runtime_error(
             fmt::format("Failed to parse boundary condition file: '{}', complete error: {}",
-                        path.string(), e.what()));
+                        path.string(),
+                        e.what()));
     }
 
     // for each defined boundary, get its relevant BoundaryData object
@@ -206,7 +216,8 @@ auto read_boundary_conditions(const std::filesystem::path& path,
             throw std::runtime_error(
                 fmt::format("Coudln't find definition for boundary patch '{}' in boundary "
                             "conditions file '{}'",
-                            bname, path.string()));
+                            bname,
+                            path.string()));
         }
 
         auto type {doc[bname]["type"].value<std::string_view>()};
@@ -215,7 +226,8 @@ auto read_boundary_conditions(const std::filesystem::path& path,
             throw std::runtime_error(fmt::format(
                 "Boundary conditions for patch '{}' does not have a type in boundary condition "
                 "file '{}'",
-                bname, path.string()));
+                bname,
+                path.string()));
         }
 
         auto bc_data {parse_boundary_data(doc, bname, boundary_type_str_to_enum(type.value()))};

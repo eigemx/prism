@@ -9,7 +9,7 @@
 namespace prism::mesh {
 
 class Face {
-public:
+  public:
     Face(std::vector<Vector3d>&& face_vertices) noexcept;
     Face(const std::vector<Vector3d>& face_vertices) noexcept;
 
@@ -32,7 +32,7 @@ public:
     auto inline has_neighbor() const -> bool { return _neighbor.has_value(); }
     auto inline set_neighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
 
-private:
+  private:
     void set_face_attributes();
 
     std::size_t vertices_count {0};

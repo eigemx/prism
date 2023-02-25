@@ -63,10 +63,12 @@ void inline Face::set_face_attributes() {
 
 auto Face::aspect_ratio() const noexcept -> double {
     // find the bounding box of the face, and calculate its aspect ratio.
-    Vector3d min {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+    Vector3d min {std::numeric_limits<double>::max(),
+                  std::numeric_limits<double>::max(),
                   std::numeric_limits<double>::max()};
 
-    Vector3d max {std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+    Vector3d max {std::numeric_limits<double>::lowest(),
+                  std::numeric_limits<double>::lowest(),
                   std::numeric_limits<double>::lowest()};
 
     for (const auto& vertex : _vertices) {

@@ -5,7 +5,8 @@
 
 namespace prism::mesh {
 
-Cell::Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
+Cell::Cell(const std::vector<Face>& faces,
+           std::vector<std::size_t>&& faces_ids,
            std::size_t cell_id)
     : _id(cell_id), _faces_ids(std::move(faces_ids)) {
     Vector3d geo_center {0.0, 0.0, 0.0};

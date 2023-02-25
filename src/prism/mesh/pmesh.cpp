@@ -5,7 +5,8 @@ namespace prism::mesh {
 PMesh::PMesh(std::vector<Cell>&& cells, std::vector<Face>&& faces)
     : _cells(std::move(cells)), _faces(std::move(faces)) {}
 
-PMesh::PMesh(std::vector<Cell>&& cells, std::vector<Face>&& faces,
+PMesh::PMesh(std::vector<Cell>&& cells,
+             std::vector<Face>&& faces,
              BoundaryConditions&& boundary_patches)
     : _cells(std::move(cells)),
       _faces(std::move(faces)),

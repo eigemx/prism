@@ -7,15 +7,16 @@
 
 namespace prism::mesh {
 class Cell {
-public:
-    Cell(const std::vector<Face>& faces, std::vector<std::size_t>&& faces_ids,
+  public:
+    Cell(const std::vector<Face>& faces,
+         std::vector<std::size_t>&& faces_ids,
          std::size_t cell_id);
 
     auto inline volume() const -> double { return _volume; }
     auto inline center() const -> const Vector3d& { return _center; }
     auto inline id() const -> std::size_t { return _id; }
 
-private:
+  private:
     std::size_t _id {0};
     std::size_t vertices_count {0};
     double _volume {0.0};

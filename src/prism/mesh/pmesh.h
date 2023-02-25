@@ -9,10 +9,11 @@
 namespace prism::mesh {
 
 class PMesh {
-public:
+  public:
     PMesh() = delete;
     PMesh(std::vector<Cell>&& cells, std::vector<Face>&& faces);
-    PMesh(std::vector<Cell>&& cells, std::vector<Face>&& faces,
+    PMesh(std::vector<Cell>&& cells,
+          std::vector<Face>&& faces,
           BoundaryConditions&& boundary_patches);
 
     [[nodiscard]] auto inline cells() const -> const std::vector<Cell>& { return _cells; }
@@ -27,10 +28,11 @@ public:
     auto non_ortho(const Face& face) const -> double;
 
 
-private:
+  private:
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
     BoundaryConditions _boundary_conditions;
     const double pi {std::atan(1) * 4};
 };
+
 } // namespace prism::mesh

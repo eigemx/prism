@@ -32,3 +32,15 @@ BraceWrapping:
 DerivePointerAlignment: false
 PointerAlignment: Left
 SortUsingDeclarationsOptions: true
+AccessModifierOffset: -2
+
+# https://stackoverflow.com/q/29483626/2839539
+# Allow putting all parameters of a function declaration onto the next line even if BinPackParameters is false.
+AllowAllParametersOfDeclarationOnNextLine: false
+ExperimentalAutoDetectBinPacking: false
+
+# If false, a function call’s arguments will either be all on the same line or will have one line each.
+BinPackArguments: false
+# If false, a function call’s arguments will either be all
+# on the same line or will have one line each.
+BinPackParameters: false
