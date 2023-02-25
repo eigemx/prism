@@ -17,17 +17,13 @@
 namespace prism::mesh {
 
 class UnvToPMesh {
-public:
+  public:
     UnvToPMesh() = delete;
     UnvToPMesh(const std::filesystem::path& filename);
 
     auto to_pmesh() -> PMesh;
 
-    //void report_mesh_stats() const;
-    //void report_mesh_connectivity() const;
-    //void report_boundary_patches() const;
-
-private:
+  private:
     // map a face sorted vertex ids to its index in `this->faces` vector
     using SortedFaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
 

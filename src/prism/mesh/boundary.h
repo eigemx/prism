@@ -43,11 +43,15 @@ struct GradientBoundaryData {
 struct SymmetryBoundaryData {};
 struct EmptyBoundaryData {};
 
-using BoundaryData = std::variant<WallBoundaryData, InletBoundaryData, OutletBoundaryData,
-                                  GradientBoundaryData, SymmetryBoundaryData, EmptyBoundaryData>;
+using BoundaryData = std::variant<WallBoundaryData,
+                                  InletBoundaryData,
+                                  OutletBoundaryData,
+                                  GradientBoundaryData,
+                                  SymmetryBoundaryData,
+                                  EmptyBoundaryData>;
 
 class BoundaryCondition {
-public:
+  public:
     BoundaryCondition() = delete;
     // constructor without faces
     BoundaryCondition(std::string&& name, BoundaryData&& data)
@@ -68,7 +72,7 @@ public:
     void set_faces(std::vector<std::size_t>&& faces) { _faces = std::move(faces); }
 
 
-private:
+  private:
     auto static infer_boundary_type(const BoundaryData& data) -> BoundaryConditionType;
     std::string _name;
     std::vector<std::size_t> _faces;
