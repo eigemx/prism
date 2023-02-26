@@ -74,9 +74,15 @@ auto UnvToPMesh::to_pmesh() -> PMesh {
         read_boundary_conditions(parent_dir / "boundary.txt", boundary_names);
 
     // for each boundary condition, set the faces of the boundary
+    std::size_t boundary_index {0};
     for (auto& bc : boundary_conditions) {
-        auto& faces = boundary_name_to_faces_map.at(bc.name());
-        bc.set_faces(std::move(faces));
+        auto& faces_ids = boundary_name_to_faces_map.at(bc.name());
+
+        for (auto face_id : faces_ids) {
+            faces[face_id].set_boundary_patch_id(boundary_index);
+        }
+
+        ++boundary_index;
     }
 
     return {std::move(cells), std::move(faces), std::move(boundary_conditions)};

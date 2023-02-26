@@ -24,11 +24,8 @@ auto main(int argc, char* argv[]) -> int {
     auto diffusion_scheme =
         prism::LinearDiffusionScheme(1.0, mesh, eqn.coeff_matrix(), eqn.lhs_vector());
 
-    auto diff_ptr = std::make_shared<prism::LinearDiffusionScheme>(diffusion_scheme);
-
-    auto schemes = std::vector<std::shared_ptr<prism::FVScheme>> {};
-    schemes.push_back(diff_ptr);
-
-    auto visitor = prism::CellVisitor(mesh, eqn, schemes);
+    auto visitor = prism::CellVisitor(mesh, eqn);
+    visitor.add_scheme(diffusion_scheme);
+    visitor.visit_cells();
     visitor.visit_cells();
 }

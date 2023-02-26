@@ -60,26 +60,13 @@ class BoundaryPatch {
         _type = infer_boundary_type(_data);
     };
 
-    BoundaryPatch(std::string name, std::vector<std::size_t> faces, BoundaryData data)
-        : _name(std::move(name)), _data(std::move(data)) {
-        _type = infer_boundary_type(_data);
-        _faces = std::unordered_set<std::size_t>(faces.begin(), faces.end());
-    };
-
     [[nodiscard]] auto name() const -> const std::string& { return _name; }
-    [[nodiscard]] auto faces() const -> const std::unordered_set<std::size_t>& { return _faces; }
     [[nodiscard]] auto type() const -> BoundaryPatchType { return _type; }
     [[nodiscard]] auto data() const -> const BoundaryData& { return _data; }
-
-    void set_faces(std::vector<std::size_t> faces) {
-        _faces = std::unordered_set<std::size_t>(faces.begin(), faces.end());
-    }
-
 
   private:
     auto static infer_boundary_type(const BoundaryData& data) -> BoundaryPatchType;
     std::string _name;
-    std::unordered_set<std::size_t> _faces;
     BoundaryPatchType _type;
     BoundaryData _data;
 };

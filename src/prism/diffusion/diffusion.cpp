@@ -11,7 +11,7 @@ void LinearDiffusionScheme::apply_interior(const mesh::Cell& cell, const mesh::F
 void LinearDiffusionScheme::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const {
     // apply orthogonal-like diffusion
     auto cell_id = cell.id();
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _mesh.face_boundary_patch(face); // TODO: This is awfully slow
 
     switch (boundary_patch.type()) {
         case mesh::BoundaryPatchType::Empty:

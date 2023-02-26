@@ -32,6 +32,13 @@ class Face {
     auto inline has_neighbor() const -> bool { return _neighbor.has_value(); }
     auto inline set_neighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
 
+    auto inline boundary_patch_id() const -> const std::optional<std::size_t>& {
+        return _boundary_patch_id;
+    }
+    void inline set_boundary_patch_id(std::size_t boundary_patch_id) noexcept {
+        _boundary_patch_id = boundary_patch_id;
+    }
+
   private:
     void set_face_attributes();
 
@@ -43,5 +50,6 @@ class Face {
     std::size_t _id {0};
     std::optional<std::size_t> _owner {std::nullopt};
     std::optional<std::size_t> _neighbor {std::nullopt};
+    std::optional<std::size_t> _boundary_patch_id {std::nullopt};
 };
 } // namespace prism::mesh

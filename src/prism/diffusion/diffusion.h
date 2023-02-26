@@ -27,8 +27,6 @@ class LinearDiffusionScheme : public FVScheme, public DiffusionSchemeBase {
     const mesh::PMesh& _mesh;
     SparseMatrix& _coeffs;
     VectorXd& _b;
-
-    bool _first_run_completed {false};
 };
 
 } // namespace prism
