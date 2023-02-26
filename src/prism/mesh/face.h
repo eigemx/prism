@@ -10,8 +10,7 @@ namespace prism::mesh {
 
 class Face {
   public:
-    Face(std::vector<Vector3d>&& face_vertices) noexcept;
-    Face(const std::vector<Vector3d>& face_vertices) noexcept;
+    Face(std::vector<Vector3d> face_vertices) noexcept;
 
     auto inline area() const noexcept -> const double& { return _area; }
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
@@ -22,7 +21,7 @@ class Face {
     void inline set_id(std::size_t face_id) noexcept { _id = face_id; }
 
     auto inline owner() const -> std::size_t { return _owner.value(); }
-    void inline set_owner(std::size_t owner_id) { _owner = owner_id; }
+    void inline set_owner(std::size_t owner_id) noexcept { _owner = owner_id; }
 
     // This function is added mainly for debugging purposes,
     // because ach face must have an owner, so this will return false if something is wrong
@@ -42,12 +41,12 @@ class Face {
   private:
     void set_face_attributes();
 
+    std::size_t _id {0};
     std::size_t vertices_count {0};
-    std::vector<Vector3d> _vertices;
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};
     Vector3d _center {0.0, 0.0, 0.0};
-    std::size_t _id {0};
+    std::vector<Vector3d> _vertices;
     std::optional<std::size_t> _owner {std::nullopt};
     std::optional<std::size_t> _neighbor {std::nullopt};
     std::optional<std::size_t> _boundary_patch_id {std::nullopt};

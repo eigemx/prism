@@ -10,13 +10,16 @@ namespace prism::mesh {
 
 class PMesh {
   public:
-    PMesh() = delete;
     PMesh(std::vector<Cell> cells, std::vector<Face> faces);
     PMesh(std::vector<Cell> cells, std::vector<Face> faces, BoundaryPatches boundary_patches);
 
-    [[nodiscard]] auto inline cells() const -> const std::vector<Cell>& { return _cells; }
-    [[nodiscard]] auto inline faces() const -> const std::vector<Face>& { return _faces; }
-    [[nodiscard]] auto inline boundary_conditions() const -> const BoundaryPatches& {
+    [[nodiscard]] auto inline cells() const noexcept -> const std::vector<Cell>& {
+        return _cells;
+    }
+    [[nodiscard]] auto inline faces() const noexcept -> const std::vector<Face>& {
+        return _faces;
+    }
+    [[nodiscard]] auto inline boundary_conditions() const noexcept -> const BoundaryPatches& {
         return _boundary_patches;
     }
     void set_boundary_conditions(BoundaryPatches boundary_patches);

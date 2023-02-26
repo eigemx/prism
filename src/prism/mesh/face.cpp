@@ -3,13 +3,8 @@
 
 namespace prism::mesh {
 
-Face::Face(std::vector<Vector3d>&& face_vertices) noexcept
+Face::Face(std::vector<Vector3d> face_vertices) noexcept
     : vertices_count(face_vertices.size()), _vertices(std::move(face_vertices)) {
-    set_face_attributes();
-}
-
-Face::Face(const std::vector<Vector3d>& face_vertices) noexcept
-    : vertices_count(face_vertices.size()), _vertices(face_vertices) {
     set_face_attributes();
 }
 

@@ -18,7 +18,8 @@ enum BoundaryPatchType {
     Symmetry,
     Empty,
     Gradient,
-    Unknown, // for error handling
+    // for error handling
+    Unknown,
 };
 
 struct WallBoundaryData {
@@ -54,15 +55,15 @@ using BoundaryData = std::variant<WallBoundaryData,
 class BoundaryPatch {
   public:
     BoundaryPatch() = delete;
-    // constructor without faces
+
     BoundaryPatch(std::string name, BoundaryData data)
         : _name(std::move(name)), _data(std::move(data)) {
         _type = infer_boundary_type(_data);
     };
 
-    [[nodiscard]] auto name() const -> const std::string& { return _name; }
-    [[nodiscard]] auto type() const -> BoundaryPatchType { return _type; }
-    [[nodiscard]] auto data() const -> const BoundaryData& { return _data; }
+    [[nodiscard]] auto name() const noexcept -> const std::string& { return _name; }
+    [[nodiscard]] auto type() const noexcept -> BoundaryPatchType { return _type; }
+    [[nodiscard]] auto data() const noexcept -> const BoundaryData& { return _data; }
 
   private:
     auto static infer_boundary_type(const BoundaryData& data) -> BoundaryPatchType;
