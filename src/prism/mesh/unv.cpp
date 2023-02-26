@@ -1,10 +1,10 @@
-
 #include "unv.h"
 
 #include <algorithm> // std::sort
 #include <stdexcept>
 #include <string_view>
 
+#include "../print.h"
 #include "boundary.h"
 
 // Vector of 6 quad faces
@@ -103,7 +103,7 @@ void UnvToPMesh::process_cells() {
 
                 // we will need UNV id of this boundary face later when we process groups
                 unv_id_to_bface_index_map[unv_element_counter] =
-                    // current face has a Unv id of unv_element_counter, and not yet found in a group
+                    // current face has a UNV id equals unv_element_counter, and not yet found in a group
                     std::make_pair(boundary_face_id, false);
                 break;
             }
@@ -322,7 +322,7 @@ void UnvToPMesh::check_boundary_faces() {
     }
 
     if (undefined_boundary_faces_count > 0) {
-        throw std::runtime_error(fmt::format(
+        throw std::runtime_error(format(
             "Input UNV mesh has {} boundary faces that are not part of any boundary patch. "
             "Please check your mesh.",
             undefined_boundary_faces_count));

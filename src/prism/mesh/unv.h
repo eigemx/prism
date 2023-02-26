@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fmt/core.h>
 #include <unvpp/unvpp.h>
 
 #include <array>
