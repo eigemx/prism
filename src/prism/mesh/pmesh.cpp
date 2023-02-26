@@ -45,19 +45,7 @@ auto PMesh::face_boundary_patch(const Face& face) const -> const BoundaryPatch& 
         throw std::runtime_error("PMesh::boundary_patch() was called on an interior face.");
     }
 
-    auto face_id = face.id();
-
-    for (const auto& patch : _boundary_patches) {
-        if (std::find(patch.faces().begin(), patch.faces().end(), face_id) !=
-            patch.faces().end()) {
-            return patch;
-        }
-    }
-
-    throw std::runtime_error(
-        "PMesh::boundary_patch() could not find a boundary patch for the "
-        "face with id " +
-        std::to_string(face_id));
+    return _boundary_patches.at(face.boundary_patch_id().value());
 }
 
 
