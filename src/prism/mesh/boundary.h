@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -10,7 +11,7 @@
 
 namespace prism::mesh {
 
-enum BoundaryConditionType {
+enum BoundaryPatchType {
     Wall,
     Inlet,
     Outlet,
@@ -50,40 +51,43 @@ using BoundaryData = std::variant<WallBoundaryData,
                                   SymmetryBoundaryData,
                                   EmptyBoundaryData>;
 
-class BoundaryCondition {
+class BoundaryPatch {
   public:
-    BoundaryCondition() = delete;
+    BoundaryPatch() = delete;
     // constructor without faces
-    BoundaryCondition(std::string&& name, BoundaryData&& data)
+    BoundaryPatch(std::string name, BoundaryData data)
         : _name(std::move(name)), _data(std::move(data)) {
         _type = infer_boundary_type(_data);
     };
 
-    BoundaryCondition(std::string&& name, std::vector<std::size_t>&& faces, BoundaryData&& data)
-        : _name(std::move(name)), _faces(std::move(faces)), _data(std::move(data)) {
+    BoundaryPatch(std::string name, std::vector<std::size_t> faces, BoundaryData data)
+        : _name(std::move(name)), _data(std::move(data)) {
         _type = infer_boundary_type(_data);
+        _faces = std::unordered_set<std::size_t>(faces.begin(), faces.end());
     };
 
     [[nodiscard]] auto name() const -> const std::string& { return _name; }
-    [[nodiscard]] auto faces() const -> const std::vector<std::size_t>& { return _faces; }
-    [[nodiscard]] auto type() const -> BoundaryConditionType { return _type; }
+    [[nodiscard]] auto faces() const -> const std::unordered_set<std::size_t>& { return _faces; }
+    [[nodiscard]] auto type() const -> BoundaryPatchType { return _type; }
     [[nodiscard]] auto data() const -> const BoundaryData& { return _data; }
 
-    void set_faces(std::vector<std::size_t>&& faces) { _faces = std::move(faces); }
+    void set_faces(std::vector<std::size_t> faces) {
+        _faces = std::unordered_set<std::size_t>(faces.begin(), faces.end());
+    }
 
 
   private:
-    auto static infer_boundary_type(const BoundaryData& data) -> BoundaryConditionType;
+    auto static infer_boundary_type(const BoundaryData& data) -> BoundaryPatchType;
     std::string _name;
-    std::vector<std::size_t> _faces;
-    BoundaryConditionType _type;
+    std::unordered_set<std::size_t> _faces;
+    BoundaryPatchType _type;
     BoundaryData _data;
 };
 
-using BoundaryConditions = std::vector<BoundaryCondition>;
+using BoundaryPatches = std::vector<BoundaryPatch>;
 
 auto read_boundary_conditions(const std::filesystem::path& path,
                               const std::vector<std::string_view>& boundary_names)
-    -> BoundaryConditions;
+    -> BoundaryPatches;
 
 } // namespace prism::mesh
