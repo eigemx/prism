@@ -15,6 +15,7 @@ class Cell {
     auto inline volume() const -> double { return _volume; }
     auto inline center() const -> const Vector3d& { return _center; }
     auto inline id() const -> std::size_t { return _id; }
+    auto inline faces_ids() const -> const std::vector<std::size_t>& { return _faces_ids; }
 
   private:
     std::size_t _id {0};

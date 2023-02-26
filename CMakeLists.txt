@@ -45,3 +45,6 @@ include_directories(src/)
 
 # apps
 add_subdirectory(src/apps/pmesh)
+
+# solvers
+add_subdirectory(src/solvers/diffsolver)

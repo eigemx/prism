@@ -83,7 +83,7 @@ auto min_max_face_non_ortho(const prism::mesh::PMesh& prism_mesh) {
             continue;
         }
 
-        auto non_ortho = prism_mesh.non_ortho(face);
+        auto non_ortho = prism_mesh.face_non_ortho(face);
 
         if (non_ortho < min_non_ortho) {
             min_non_ortho = non_ortho;

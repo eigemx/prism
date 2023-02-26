@@ -2,29 +2,27 @@
 
 namespace prism::mesh {
 // define all functions in PMesh class in pmesh.h
-PMesh::PMesh(std::vector<Cell>&& cells, std::vector<Face>&& faces)
+PMesh::PMesh(std::vector<Cell> cells, std::vector<Face> faces)
     : _cells(std::move(cells)), _faces(std::move(faces)) {}
 
-PMesh::PMesh(std::vector<Cell>&& cells,
-             std::vector<Face>&& faces,
-             BoundaryConditions&& boundary_patches)
+PMesh::PMesh(std::vector<Cell> cells, std::vector<Face> faces, BoundaryPatches boundary_patches)
     : _cells(std::move(cells)),
       _faces(std::move(faces)),
-      _boundary_conditions(std::move(boundary_patches)) {}
+      _boundary_patches(std::move(boundary_patches)) {}
 
-void PMesh::set_boundary_conditions(BoundaryConditions&& boundary_patches) {
-    _boundary_conditions = std::move(boundary_patches);
+void PMesh::set_boundary_conditions(BoundaryPatches boundary_patches) {
+    _boundary_patches = std::move(boundary_patches);
 }
 
-void PMesh::set_boundary_conditions(const BoundaryConditions& boundary_patches) {
-    _boundary_conditions = boundary_patches;
+void PMesh::set_boundary_conditions(const BoundaryPatches& boundary_patches) {
+    _boundary_patches = boundary_patches;
 }
 
-auto PMesh::non_ortho(std::size_t face_id) const -> double {
-    return non_ortho(_faces.at(face_id));
+auto PMesh::face_non_ortho(std::size_t face_id) const -> double {
+    return face_non_ortho(_faces.at(face_id));
 }
 
-auto PMesh::non_ortho(const Face& face) const -> double {
+auto PMesh::face_non_ortho(const Face& face) const -> double {
     if (!face.neighbor()) {
         throw std::runtime_error("PMesh::non_ortho() was called on a boundary face.");
     }
@@ -36,6 +34,30 @@ auto PMesh::non_ortho(const Face& face) const -> double {
     auto v_norm = v.norm();
 
     return std::acos(v.dot(face.normal()) / v_norm) * (180. / pi);
+}
+
+auto PMesh::face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch& {
+    return face_boundary_patch(_faces.at(face_id));
+}
+
+auto PMesh::face_boundary_patch(const Face& face) const -> const BoundaryPatch& {
+    if (face.neighbor()) {
+        throw std::runtime_error("PMesh::boundary_patch() was called on an interior face.");
+    }
+
+    auto face_id = face.id();
+
+    for (const auto& patch : _boundary_patches) {
+        if (std::find(patch.faces().begin(), patch.faces().end(), face_id) !=
+            patch.faces().end()) {
+            return patch;
+        }
+    }
+
+    throw std::runtime_error(
+        "PMesh::boundary_patch() could not find a boundary patch for the "
+        "face with id " +
+        std::to_string(face_id));
 }
 
 

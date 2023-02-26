@@ -3,6 +3,13 @@ add_library(prism-core
     types.h
     print.h
     version.h
+    visitor.h
+    fvscheme.h
+    equation.h
+
+    visitor.cpp
+    fvscheme.cpp
+    equation.cpp
     
     # mesh module
     mesh/face.cpp
@@ -16,4 +23,7 @@ add_library(prism-core
     mesh/boundary.h
     mesh/pmesh.h
     mesh/unv.h
+
+    diffusion/diffusion.h
+    diffusion/diffusion.cpp
 )

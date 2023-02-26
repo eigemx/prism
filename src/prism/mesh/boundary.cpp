@@ -10,20 +10,20 @@
 
 namespace prism::mesh {
 
-auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
-    const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryConditionType> {
-        {"wall", BoundaryConditionType::Wall},
-        {"inlet", BoundaryConditionType::Inlet},
-        {"outlet", BoundaryConditionType::Outlet},
-        {"gradient", BoundaryConditionType::Gradient},
-        {"symmetry", BoundaryConditionType::Symmetry},
-        {"empty", BoundaryConditionType::Empty},
+auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
+    const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryPatchType> {
+        {"wall", BoundaryPatchType::Wall},
+        {"inlet", BoundaryPatchType::Inlet},
+        {"outlet", BoundaryPatchType::Outlet},
+        {"gradient", BoundaryPatchType::Gradient},
+        {"symmetry", BoundaryPatchType::Symmetry},
+        {"empty", BoundaryPatchType::Empty},
     };
 
     auto it = bc_type_map.find(type);
 
     if (it == bc_type_map.end()) {
-        return BoundaryConditionType::Unknown;
+        return BoundaryPatchType::Unknown;
     }
 
     return it->second;
@@ -134,57 +134,57 @@ auto parse_outlet(const toml::table& doc, std::string_view bname) -> OutletBound
 
 auto parse_boundary_data(const toml::table& table,
                          std::string_view bname,
-                         BoundaryConditionType bc_type) -> BoundaryData {
+                         BoundaryPatchType bc_type) -> BoundaryData {
     switch (bc_type) {
-        case BoundaryConditionType::Wall:
+        case BoundaryPatchType::Wall:
             return parse_wall(table, bname);
 
-        case BoundaryConditionType::Inlet:
+        case BoundaryPatchType::Inlet:
             return parse_inlet(table, bname);
 
-        case BoundaryConditionType::Outlet:
+        case BoundaryPatchType::Outlet:
             return parse_outlet(table, bname);
 
-        case BoundaryConditionType::Gradient:
+        case BoundaryPatchType::Gradient:
             throw std::runtime_error("Gradient boundary condition is not implemented");
 
-        case BoundaryConditionType::Symmetry:
+        case BoundaryPatchType::Symmetry:
             return SymmetryBoundaryData {};
 
-        case BoundaryConditionType::Empty:
+        case BoundaryPatchType::Empty:
             return EmptyBoundaryData {};
 
-        case BoundaryConditionType::Unknown:
+        case BoundaryPatchType::Unknown:
             throw std::runtime_error("Unknown boundary condition type");
     }
 }
 
-auto BoundaryCondition::infer_boundary_type(const BoundaryData& data) -> BoundaryConditionType {
+auto BoundaryPatch::infer_boundary_type(const BoundaryData& data) -> BoundaryPatchType {
     if (std::holds_alternative<WallBoundaryData>(data)) {
-        return BoundaryConditionType::Wall;
+        return BoundaryPatchType::Wall;
     }
     if (std::holds_alternative<InletBoundaryData>(data)) {
-        return BoundaryConditionType::Inlet;
+        return BoundaryPatchType::Inlet;
     }
     if (std::holds_alternative<OutletBoundaryData>(data)) {
-        return BoundaryConditionType::Outlet;
+        return BoundaryPatchType::Outlet;
     }
     if (std::holds_alternative<GradientBoundaryData>(data)) {
-        return BoundaryConditionType::Gradient;
+        return BoundaryPatchType::Gradient;
     }
     if (std::holds_alternative<SymmetryBoundaryData>(data)) {
-        return BoundaryConditionType::Symmetry;
+        return BoundaryPatchType::Symmetry;
     }
     if (std::holds_alternative<EmptyBoundaryData>(data)) {
-        return BoundaryConditionType::Empty;
+        return BoundaryPatchType::Empty;
     }
     throw std::runtime_error("Non-implemented boundary type");
 }
 
 auto read_boundary_conditions(const std::filesystem::path& path,
                               const std::vector<std::string_view>& boundary_names)
-    -> BoundaryConditions {
-    BoundaryConditions bcs;
+    -> BoundaryPatches {
+    BoundaryPatches bcs;
     bcs.reserve(boundary_names.size());
 
     auto fstream {std::ifstream {path}};
