@@ -17,7 +17,6 @@ namespace prism::mesh {
 
 class UnvToPMesh {
   public:
-    UnvToPMesh() = delete;
     UnvToPMesh(const std::filesystem::path& filename);
 
     auto to_pmesh() -> PMesh;

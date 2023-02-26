@@ -12,6 +12,8 @@
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
+    print_header();
+    print("diffsolver - A steady state temperature diffusion solver\n");
 
     std::vector<std::string> args(argv, argv + argc);
 
