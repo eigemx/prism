@@ -26,4 +26,7 @@ add_library(prism-core
 
     diffusion/diffusion.h
     diffusion/diffusion.cpp
+
+    gradient/gradient.h
+    gradient/gradient.cpp
 )

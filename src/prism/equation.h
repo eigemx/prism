@@ -16,12 +16,6 @@ class LinearSystem {
 
     virtual auto lhs_vector() const -> const VectorXd& = 0;
     virtual auto lhs_vector() -> VectorXd& = 0;
-
-    virtual auto A() const -> const SparseMatrix& = 0;
-    virtual auto A() -> SparseMatrix& = 0;
-
-    virtual auto b() const -> const VectorXd& = 0;
-    virtual auto b() -> VectorXd& = 0;
 };
 
 class ConservedScalarSteadyEquation : public LinearSystem {
@@ -31,14 +25,8 @@ class ConservedScalarSteadyEquation : public LinearSystem {
     auto coeff_matrix() const -> const SparseMatrix& override { return _coeff_matrix; }
     auto coeff_matrix() -> SparseMatrix& override { return _coeff_matrix; }
 
-    auto A() const -> const SparseMatrix& override { return _coeff_matrix; }
-    auto A() -> SparseMatrix& override { return _coeff_matrix; }
-
     auto lhs_vector() const -> const VectorXd& override { return _b; }
     auto lhs_vector() -> VectorXd& override { return _b; }
-
-    auto b() const -> const VectorXd& override { return _b; }
-    auto b() -> VectorXd& override { return _b; }
 
   private:
     mesh::PMesh& _mesh;
