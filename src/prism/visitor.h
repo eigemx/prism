@@ -10,8 +10,8 @@ namespace prism {
 class CellVisitor {
   public:
     CellVisitor(const mesh::PMesh& mesh,
-                const std::vector<std::shared_ptr<FVScheme>>& schemes,
-                const LinearSystem& system)
+                const LinearSystem& system,
+                const std::vector<std::shared_ptr<FVScheme>>& schemes)
         : _mesh(mesh), _schemes(schemes), _system(system) {}
 
     void visit_cells();
