@@ -4,24 +4,40 @@
 
 #include <string_view>
 
-#include "version.h"
+#include "meta.h"
 
 namespace prism {
+
+using fmt::format;
+using fmt::print;
+
 void inline warn(std::string_view msg) {
-    fmt::print(fg(fmt::color::yellow), "Warning: ");
-    fmt::print("{}\n", msg);
+    print(fg(fmt::color::yellow), "Warning: ");
+    print("{}\n", msg);
 }
 
 void inline error(std::string_view msg) {
-    fmt::print(fg(fmt::color::red), "Error: ");
-    fmt::print("{}\n", msg);
+    print(fg(fmt::color::red), "Error: ");
+    print("{}\n", msg);
+}
+
+void inline debug(std::string_view msg) {
+#ifdef PRISM_DEBUG
+    print(fg(fmt::color::dark_magenta), "Info: ");
+    print("{}\n", msg);
+#endif
+}
+
+void inline info(std::string_view msg) {
+    print(fg(fmt::color::dark_cyan), "Info: ");
+    print("{}\n", msg);
 }
 
 void inline print_header() {
-    fmt::print(fg(fmt::color::cyan), "Prism ");
-    fmt::print("v{}\n", PRISM_VERSION_STR);
-    fmt::print("A finite volume CFD framework | MIT License\n");
-    fmt::print("--------------------------------------------\n");
+    print(fg(fmt::color::cyan), "Prism ");
+    print("v{}\n", PRISM_VERSION_STR);
+    print("A finite volume CFD framework | MIT License\n");
+    print("--------------------------------------------\n");
 }
 
 } // namespace prism

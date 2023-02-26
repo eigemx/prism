@@ -2,7 +2,7 @@ add_library(prism-core
     # core
     types.h
     print.h
-    version.h
+    meta.h
     visitor.h
     fvscheme.h
     equation.h

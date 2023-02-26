@@ -19,7 +19,9 @@ void CellVisitor::visit_cells() {
 
     // first run is now complete, we need to mark schemes that require just one run as such
     for (auto& scheme : _schemes) {
-        scheme->set_first_run_complete();
+        if (scheme->run_once()) {
+            scheme->set_first_run_complete();
+        }
     }
 }
 } // namespace prism
