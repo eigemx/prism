@@ -1,8 +1,8 @@
 #include "diffusion.h"
 
-namespace prism {
+namespace prism::diffusion {
 
-void LinearDiffusionScheme::apply_interior(const mesh::Cell& cell, const mesh::Face& face) const {
+void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) const {
     auto cell_id = cell.id();
     auto adj_cell_id = face.neighbor();
 
@@ -10,7 +10,7 @@ void LinearDiffusionScheme::apply_interior(const mesh::Cell& cell, const mesh::F
     auto is_owned = (face.owner() == cell_id);
 }
 
-void LinearDiffusionScheme::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const {
+void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const {
     auto cell_id = cell.id();
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
 

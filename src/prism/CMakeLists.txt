@@ -1,5 +1,6 @@
 add_library(prism-core
     # core
+    core.h
     types.h
     print.h
     meta.h

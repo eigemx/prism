@@ -1,6 +1,4 @@
-#include <prism/mesh/boundary.h>
-#include <prism/mesh/unv.h>
-#include <prism/print.h>
+#include <prism/core.h>
 #include <toml++/toml.h>
 #include <unvpp/unvpp.h>
 

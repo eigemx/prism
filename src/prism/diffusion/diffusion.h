@@ -4,16 +4,16 @@
 #include "../mesh/pmesh.h"
 #include "../types.h"
 
-namespace prism {
+namespace prism::diffusion {
 
 class DiffusionSchemeBase {};
 
-class LinearDiffusionScheme : public FVScheme, public DiffusionSchemeBase {
+class Linear : public FVScheme, public DiffusionSchemeBase {
   public:
-    LinearDiffusionScheme(double diffusion_coefficient,
-                          const mesh::PMesh& mesh,
-                          SparseMatrix& coeffs,
-                          VectorXd& b)
+    Linear(double diffusion_coefficient,
+           const mesh::PMesh& mesh,
+           SparseMatrix& coeffs,
+           VectorXd& b)
         : _diffusion_coefficient(diffusion_coefficient), _mesh(mesh), _coeffs(coeffs), _b(b) {}
 
 
@@ -29,4 +29,4 @@ class LinearDiffusionScheme : public FVScheme, public DiffusionSchemeBase {
     VectorXd& _b;
 };
 
-} // namespace prism
+} // namespace prism::diffusion
