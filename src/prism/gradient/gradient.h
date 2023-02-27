@@ -4,12 +4,12 @@
 #include "../mesh/pmesh.h"
 #include "../types.h"
 
-namespace prism {
+namespace prism::gradient {
 class GradientSchemeBase {};
 
-class LeastSquaresGradientScheme : public FVScheme, public GradientSchemeBase {
+class GreenGauss : public FVScheme, public GradientSchemeBase {
   public:
-    LeastSquaresGradientScheme(const mesh::PMesh& mesh, SparseMatrix& coeffs, VectorXd& b)
+    GreenGauss(const mesh::PMesh& mesh, SparseMatrix& coeffs, VectorXd& b)
         : _mesh(mesh), _coeffs(coeffs), _b(b) {}
 
     auto run_once() const -> bool override { return false; }
@@ -24,4 +24,4 @@ class LeastSquaresGradientScheme : public FVScheme, public GradientSchemeBase {
 
     bool _first_run_completed {false};
 };
-} // namespace prism
+} // namespace prism::gradient
