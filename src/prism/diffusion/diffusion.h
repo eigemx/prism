@@ -10,11 +10,8 @@ class DiffusionSchemeBase {};
 
 class Linear : public FVScheme, public DiffusionSchemeBase {
   public:
-    Linear(double diffusion_coefficient,
-           const mesh::PMesh& mesh,
-           SparseMatrix& coeffs,
-           VectorXd& b)
-        : _diffusion_coefficient(diffusion_coefficient), _mesh(mesh), _coeffs(coeffs), _b(b) {}
+    Linear(double kappa, const mesh::PMesh& mesh, SparseMatrix& coeffs, VectorXd& b)
+        : _kappa(kappa), _mesh(mesh), _coeffs(coeffs), _b(b) {}
 
 
     auto run_once() const -> bool override { return true; }
@@ -23,7 +20,7 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) const override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const override;
 
-    double _diffusion_coefficient;
+    double _kappa;
     const mesh::PMesh& _mesh;
     SparseMatrix& _coeffs;
     VectorXd& _b;
