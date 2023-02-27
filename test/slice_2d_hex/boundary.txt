@@ -1,0 +1,21 @@
+[back]
+type = 'empty'
+
+[bottom]
+type = 'wall'
+temperature = 900.0
+
+[front]
+type = 'empty'
+
+[left]
+type = 'wall'
+temperature = 500.0
+
+[right]
+type = 'wall'
+temperature = 500.0
+
+[top]
+type = 'wall'
+temperature = 300.0
