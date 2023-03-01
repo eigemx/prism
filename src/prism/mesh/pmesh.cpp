@@ -2,11 +2,17 @@
 
 namespace prism::mesh {
 // define all functions in PMesh class in pmesh.h
-PMesh::PMesh(std::vector<Cell> cells, std::vector<Face> faces)
-    : _cells(std::move(cells)), _faces(std::move(faces)) {}
+PMesh::PMesh(std::vector<Vector3d> vertices,
+             std::vector<Cell> cells,
+             std::vector<Face> faces) noexcept
+    : _vertices(std::move(vertices)), _cells(std::move(cells)), _faces(std::move(faces)) {}
 
-PMesh::PMesh(std::vector<Cell> cells, std::vector<Face> faces, BoundaryPatches boundary_patches)
-    : _cells(std::move(cells)),
+PMesh::PMesh(std::vector<Vector3d> vertices,
+             std::vector<Cell> cells,
+             std::vector<Face> faces,
+             BoundaryPatches boundary_patches) noexcept
+    : _vertices(std::move(vertices)),
+      _cells(std::move(cells)),
       _faces(std::move(faces)),
       _boundary_patches(std::move(boundary_patches)) {}
 

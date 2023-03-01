@@ -57,6 +57,12 @@ UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filena
     process_cells();
     process_groups();
 
+    // get a copy of unv_mesh.vertices
+    // TODO: use _vertices instead of unv_mesh.vertices after construction
+    for (const auto& v : unv_mesh.vertices) {
+        _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
+    }
+
     // clear unv_mesh to save memory
     unv_mesh = {};
 }
@@ -64,7 +70,7 @@ UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filena
 auto UnvToPMesh::to_pmesh() -> PMesh {
     std::vector<std::string_view> boundary_names;
 
-    for (const auto& [name, _] : boundary_name_to_faces_map) {
+    for (const auto& [name, _] : _boundary_name_to_faces_map) {
         boundary_names.push_back(name);
     }
 
@@ -76,16 +82,19 @@ auto UnvToPMesh::to_pmesh() -> PMesh {
     // for each boundary condition, set the faces of the boundary
     std::size_t boundary_index {0};
     for (auto& bc : boundary_conditions) {
-        auto& faces_ids = boundary_name_to_faces_map.at(bc.name());
+        auto& faces_ids = _boundary_name_to_faces_map.at(bc.name());
 
         for (auto face_id : faces_ids) {
-            faces[face_id].set_boundary_patch_id(boundary_index);
+            _faces[face_id].set_boundary_patch_id(boundary_index);
         }
 
         ++boundary_index;
     }
 
-    return {std::move(cells), std::move(faces), std::move(boundary_conditions)};
+    return {std::move(_vertices),
+            std::move(_cells),
+            std::move(_faces),
+            std::move(boundary_conditions)};
 }
 
 void UnvToPMesh::process_cells() {
@@ -102,7 +111,7 @@ void UnvToPMesh::process_cells() {
                 auto boundary_face_id = process_boundary_face(element);
 
                 // we will need UNV id of this boundary face later when we process groups
-                unv_id_to_bface_index_map[unv_element_counter] =
+                _unv_id_to_bface_index_map[unv_element_counter] =
                     // current face has a UNV id equals unv_element_counter, and not yet found in a group
                     std::make_pair(boundary_face_id, false);
                 break;
@@ -124,7 +133,7 @@ void UnvToPMesh::process_cells() {
         unv_element_counter++;
     }
 
-    if (cells.empty()) {
+    if (_cells.empty()) {
         throw std::runtime_error(
             "Input UNV mesh is either empty or two dimensional. Prism acceptes only 3D meshes");
     }
@@ -169,8 +178,8 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
             break;
     }
 
-    cells.emplace_back(faces, std::move(cell_faces_ids), cell_id_counter);
-    cell_id_counter++;
+    _cells.emplace_back(_faces, std::move(cell_faces_ids), _cell_id_counter);
+    _cell_id_counter++;
 }
 
 auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids) -> std::size_t {
@@ -183,25 +192,25 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids)
 
     if (face_id_iter.has_value()) {
         auto face_id {face_id_iter.value()->second};
-        auto& face {faces[face_id]};
+        auto& face {_faces[face_id]};
 
         if (face.has_owner()) {
             // face has been visited before and is owned
             // we update its neighbor and return
-            face.set_neighbor(cell_id_counter);
+            face.set_neighbor(_cell_id_counter);
 
         } else {
             // face is not owned but has been processed, then it's a boundary face
             // we set the current cell as its owner and return
-            face.set_owner(cell_id_counter);
+            face.set_owner(_cell_id_counter);
         }
 
         return face_id;
     }
 
     // this a new interior face, we need to call Face() constructor
-    // and push the new face to `faces` vector
-    auto face_id {face_id_counter++};
+    // and push the new face to `_faces` vector
+    auto face_id {_face_id_counter++};
 
     std::vector<Vector3d> face_vertices;
 
@@ -212,12 +221,12 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids)
 
     auto new_face {Face(std::move(face_vertices))};
 
-    new_face.set_owner(cell_id_counter);
+    new_face.set_owner(_cell_id_counter);
     new_face.set_id(face_id);
 
-    faces.push_back(std::move(new_face));
+    _faces.push_back(std::move(new_face));
 
-    face_to_index_map.insert({sorted_face_vertices_ids, face_id});
+    _face_to_index_map.insert({sorted_face_vertices_ids, face_id});
 
     return face_id;
 }
@@ -228,8 +237,8 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
 
     // this a new face, we need to call Face() constructor
-    // and push the new face to `faces` vector
-    auto face_id = face_id_counter++;
+    // and push the new face to `_faces` vector
+    auto face_id = _face_id_counter++;
 
     std::vector<Vector3d> face_vertices;
 
@@ -242,17 +251,17 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
 
     // this face does not yet have an owner, this will be set later by process_face()
     new_face.set_id(face_id);
-    faces.push_back(std::move(new_face));
-    face_to_index_map.insert({sorted_face_vertices, face_id});
+    _faces.push_back(std::move(new_face));
+    _face_to_index_map.insert({sorted_face_vertices, face_id});
 
     return face_id;
 }
 
 auto UnvToPMesh::face_index(const std::vector<std::size_t>& face_vertices)
     -> std::optional<UnvToPMesh::SortedFaceToIndexMap::iterator> {
-    auto face_itr {face_to_index_map.find(face_vertices)};
+    auto face_itr {_face_to_index_map.find(face_vertices)};
 
-    if (face_itr == face_to_index_map.end()) {
+    if (face_itr == _face_to_index_map.end()) {
         return std::nullopt;
     }
 
@@ -302,20 +311,20 @@ void UnvToPMesh::process_group(const unv::Group& group) {
     auto group_faces = std::vector<std::size_t>();
     group_faces.reserve(group.elements_ids().size());
 
-    // copy the group elements ids to group_faces after transforming them using unv_id_to_bface_index_map
+    // copy the group elements ids to group_faces after transforming them using _unv_id_to_bface_index_map
     for (const auto& element_id : group.elements_ids()) {
-        auto& face_data = unv_id_to_bface_index_map[element_id];
+        auto& face_data = _unv_id_to_bface_index_map[element_id];
         group_faces.push_back(face_data.first);
         face_data.second = true;
     }
 
-    boundary_name_to_faces_map.insert({group.name(), std::move(group_faces)});
+    _boundary_name_to_faces_map.insert({group.name(), std::move(group_faces)});
 }
 
 void UnvToPMesh::check_boundary_faces() {
     std::size_t undefined_boundary_faces_count = 0;
 
-    for (const auto& [unv_id, face_data] : unv_id_to_bface_index_map) {
+    for (const auto& [unv_id, face_data] : _unv_id_to_bface_index_map) {
         if (!face_data.second) {
             undefined_boundary_faces_count++;
         }

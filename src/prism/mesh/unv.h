@@ -15,14 +15,14 @@
 
 namespace prism::mesh {
 
-class UnvToPMesh {
+class UnvToPMesh : public ToPMeshConverter {
   public:
     UnvToPMesh(const std::filesystem::path& filename);
 
-    auto to_pmesh() -> PMesh;
+    auto to_pmesh() -> PMesh override;
 
   private:
-    // map a face sorted vertex ids to its index in `this->faces` vector
+    // map a face sorted vertex ids to its index in `this->_faces` vector
     using SortedFaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
 
     // map a boundary face Unv element index to:
@@ -33,7 +33,7 @@ class UnvToPMesh {
     using BFaceData = std::pair<std::size_t, bool>;
     using UnvIndexToBFaceIndexMap = std::map<std::size_t, BFaceData>;
 
-    // map a patch name to a set of faces ids in `faces` vector
+    // map a patch name to a set of faces ids in `_faces` vector
     using BoundaryNameToFacesMap = std::map<std::string, std::vector<std::size_t>>;
 
     // cells
@@ -56,15 +56,16 @@ class UnvToPMesh {
     std::filesystem::path _filename;
     unv::Mesh unv_mesh;
 
-    SortedFaceToIndexMap face_to_index_map;
-    BoundaryNameToFacesMap boundary_name_to_faces_map;
-    UnvIndexToBFaceIndexMap unv_id_to_bface_index_map;
+    SortedFaceToIndexMap _face_to_index_map;
+    BoundaryNameToFacesMap _boundary_name_to_faces_map;
+    UnvIndexToBFaceIndexMap _unv_id_to_bface_index_map;
 
-    std::vector<Face> faces;
-    std::vector<Cell> cells;
+    std::vector<Vector3d> _vertices;
+    std::vector<Face> _faces;
+    std::vector<Cell> _cells;
 
-    std::size_t cell_id_counter {0};
-    std::size_t face_id_counter {0};
+    std::size_t _cell_id_counter {0};
+    std::size_t _face_id_counter {0};
 };
 
 } // namespace prism::mesh
