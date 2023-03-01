@@ -46,6 +46,7 @@ class Face {
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};
     Vector3d _center {0.0, 0.0, 0.0};
+
     std::vector<Vector3d> _vertices;
     std::optional<std::size_t> _owner {std::nullopt};
     std::optional<std::size_t> _neighbor {std::nullopt};
