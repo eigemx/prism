@@ -25,3 +25,6 @@
 	path = external/tabulate
 	url = https://github.com/p-ranav/tabulate
 
+[submodule "external/vtu11"]
+	path = external/vtu11
+	url = https://github.com/phmkopp/vtu11

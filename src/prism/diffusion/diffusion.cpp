@@ -40,7 +40,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) cons
 }
 
 void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const {
-    /*auto cell_id = cell.id();
+    auto cell_id = cell.id();
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
 
     switch (boundary_patch.type()) {
@@ -48,10 +48,29 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) cons
             break;
 
         case mesh::BoundaryPatchType::Wall:
-            break;
+            auto T_wall =
+                std::get<mesh::WallBoundaryData>(boundary_patch.data()).temperature.value();
+            apply_wall_boundary(cell, face, T_wall);
+    }
+}
 
-        default:
-            throw std::runtime_error("Non-implemented boundary patch type");
-    }*/
+void Linear::apply_wall_boundary(const mesh::Cell& cell,
+                                 const mesh::Face& face,
+                                 double phi_wall) const {
+    auto cell_id = cell.id();
+
+    // face area vector
+    auto S_f = face.area() * face.normal();
+    auto S_f_norm = face.area();
+
+    auto d_CF = face.center() - cell.center();
+    auto d_CF_norm = d_CF.norm();
+
+    // diffusion factor
+    auto g_diff = -_kappa * S_f_norm / (d_CF_norm + 1e-8);
+
+    // update coefficients matrix
+    _coeffs.coeffRef(cell_id, cell_id) += -g_diff;
+    _b[cell_id] += -g_diff * phi_wall;
 }
 } // namespace prism::diffusion

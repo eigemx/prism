@@ -7,7 +7,6 @@
 #include <filesystem>
 #include <numeric>
 #include <string>
-#include <tabulate/tabulate.hpp>
 #include <utility>
 #include <vector>
 
@@ -99,7 +98,7 @@ auto min_max_face_non_ortho(const prism::mesh::PMesh& prism_mesh) {
 void check_pmesh(const std::filesystem::path& mesh_file) {
     try {
         prism::print("Loading mesh file: ");
-        prism::print(fg(fmt::color::dark_cyan), "{}\n\n", mesh_file.string());
+        prism::print(fg(fmt::color::dark_cyan), "`{}`...\n\n", mesh_file.string());
 
         auto unv_mesh = prism::mesh::UnvToPMesh(mesh_file);
 
@@ -111,10 +110,12 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
                 return !face.has_neighbor();
             });
 
-        prism::print("Mesh has {} faces (including {} boundary faces) & {} cells\n\n",
+        prism::print("Mesh Elements:\n");
+        prism::print(" - Vertices count = {} vertices\n", prism_mesh.vertices().size());
+        prism::print(" - Faces count =  {} faces (including {} boundary faces)\n",
                      prism_mesh.faces().size(),
-                     n_boundary_faces,
-                     prism_mesh.cells().size());
+                     n_boundary_faces);
+        prism::print(" - Cells count = {} cells\n\n", prism_mesh.cells().size());
 
         auto total_vol =
             std::accumulate(prism_mesh.cells().begin(),
@@ -165,13 +166,15 @@ auto main(int argc, char* argv[]) -> int {
 
         options.set_width(100).set_tab_expansion().add_options()
             // check input mesh and print quality stats
-            ("c,check", "Check mesh file", cxxopts::value<std::string>())
+            ("c,check", "Check mesh file", cxxopts::value<std::string>())(
+                "e,export-vtu", "Export pmesh to vtu file", cxxopts::value<std::string>())
             // create new boundary conditions file for the given input mesh, if not found
             ("n,new-boundary",
              "Create dummy boundary conditions file for the given input mesh",
              cxxopts::value<std::string>())
             // print help
             ("h,help", "Print help");
+
 
         auto result = options.parse(argc, argv);
 

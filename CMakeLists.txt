@@ -40,6 +40,10 @@ include_directories(${CXXOPTS_SOURCE_DIR}/include)
 set(TABULATE_SOURCE_DIR "external/tabulate")
 include_directories(${TABULATE_SOURCE_DIR}/single_include)
 
+# setup vtu11
+set(VTU11_SOURCE_DIR "external/vtu11")
+add_subdirectory(${VTU11_SOURCE_DIR})
+
 add_subdirectory(src/prism)
 include_directories(src/)
 

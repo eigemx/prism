@@ -19,6 +19,9 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) const override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const override;
+    void apply_wall_boundary(const mesh::Cell& cell,
+                             const mesh::Face& face,
+                             double phi_wall) const;
 
     double _kappa;
     const mesh::PMesh& _mesh;
