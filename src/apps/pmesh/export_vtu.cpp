@@ -1,5 +1,6 @@
 #include "export_vtu.h"
 
+#include <set>
 #include <vector>
 #include <vtu11/vtu11.hpp>
 
@@ -8,5 +9,12 @@ void export_to_vtu(const prism::mesh::PMesh& pmesh, const std::string& vtu_filen
     offsets.reserve(pmesh.cells().size());
 
     for (const auto& cell : pmesh.cells()) {
+        auto cell_faces = std::set<std::size_t> {};
+
+        // for each face in cell, get the vertices defining the face
+        for (auto face_id : cell.faces_ids()) {
+            const auto& face = pmesh.faces()[face_id];
+            face.
         }
+    }
 }
