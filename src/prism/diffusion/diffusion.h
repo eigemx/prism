@@ -14,8 +14,6 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
         : _kappa(kappa), _mesh(mesh), _coeffs(coeffs), _b(b) {}
 
 
-    auto run_once() const -> bool override { return true; }
-
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) const override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const override;
