@@ -6,7 +6,9 @@
 
 namespace prism::diffusion {
 
-void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) const {
+auto Linear::apply_interior(const mesh::Cell& cell,
+                            const mesh::Face& face,
+                            const mesh::PMesh& mesh) const -> AlteredCoeffs {
     auto cell_id = cell.id();
 
     // does `cell` own `face` or it is a neighbor?
@@ -15,7 +17,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) cons
 
     // get adjacent cell shaing `face` with `cell`
     auto adj_cell_id = is_owned ? face.neighbor().value() : face.owner();
-    auto adj_cell = _mesh.cells()[adj_cell_id];
+    auto adj_cell = mesh.cells()[adj_cell_id];
 
     // face area vector
     auto S_f = face.area() * face.normal();
@@ -34,29 +36,33 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) cons
     auto g_diff = (-E_f.norm() * _kappa) / (d_CF_norm + 1e-8);
     g_diff *= std::pow(-1., own_factor);
 
-    // update coefficients matrix
-    _coeffs.coeffRef(cell_id, cell_id) += -g_diff;
-    _coeffs.coeffRef(cell_id, adj_cell_id) += g_diff;
+    AlteredCoeffs res;
+    res.central = -g_diff;
+    res.neighbor = {adj_cell_id, g_diff};
+
+    return res;
 }
 
-void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const {
+auto Linear::apply_boundary(const mesh::Cell& cell,
+                            const mesh::Face& face,
+                            const mesh::PMesh& mesh) const -> AlteredCoeffs {
     auto cell_id = cell.id();
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = mesh.face_boundary_patch(face);
 
     switch (boundary_patch.type()) {
         case mesh::BoundaryPatchType::Empty:
-            break;
+            return AlteredCoeffs {};
 
         case mesh::BoundaryPatchType::Wall:
             auto T_wall =
                 std::get<mesh::WallBoundaryData>(boundary_patch.data()).temperature.value();
-            apply_wall_boundary(cell, face, T_wall);
+            return apply_wall_boundary(cell, face, T_wall);
     }
 }
 
-void Linear::apply_wall_boundary(const mesh::Cell& cell,
+auto Linear::apply_wall_boundary(const mesh::Cell& cell,
                                  const mesh::Face& face,
-                                 double phi_wall) const {
+                                 double phi_wall) const -> AlteredCoeffs {
     auto cell_id = cell.id();
 
     // face area vector
@@ -69,8 +75,10 @@ void Linear::apply_wall_boundary(const mesh::Cell& cell,
     // diffusion factor
     auto g_diff = -_kappa * S_f_norm / (d_CF_norm + 1e-8);
 
-    // update coefficients matrix
-    _coeffs.coeffRef(cell_id, cell_id) += -g_diff;
-    _b[cell_id] += -g_diff * phi_wall;
+    AlteredCoeffs res;
+    res.central = -g_diff;
+    res.b = -g_diff * phi_wall;
+
+    return res;
 }
 } // namespace prism::diffusion

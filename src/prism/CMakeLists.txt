@@ -4,12 +4,9 @@ add_library(prism-core
     types.h
     print.h
     meta.h
-    visitor.h
     fvscheme.h
     equation.h
 
-    visitor.cpp
-    fvscheme.cpp
     equation.cpp
     
     # mesh module
@@ -29,5 +26,4 @@ add_library(prism-core
     diffusion/diffusion.cpp
 
     gradient/gradient.h
-    gradient/gradient.cpp
 )

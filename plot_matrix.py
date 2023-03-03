@@ -8,7 +8,7 @@ if __name__ == '__main__':
     
     mat = mat.reshape((m, m))
     
-    plt.imshow(mat, interpolation='nearest', cmap='gray')
+    plt.imshow(mat, cmap='gray')
     plt.show()
 
     
