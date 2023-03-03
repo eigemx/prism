@@ -9,18 +9,8 @@ void CellVisitor::visit_cells() {
             const auto& face = _mesh.faces()[face_id];
 
             for (auto& scheme : _schemes) {
-                if (scheme->run_once() && scheme->is_first_run_complete()) {
-                    continue;
-                }
                 scheme->apply(cell, face);
             }
-        }
-    }
-
-    // first run is now complete, we need to mark schemes that require just one run as such
-    for (auto& scheme : _schemes) {
-        if (scheme->run_once()) {
-            scheme->set_first_run_complete();
         }
     }
 }
