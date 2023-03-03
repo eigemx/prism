@@ -10,15 +10,18 @@ namespace prism::mesh {
 
 class Face {
   public:
-    Face(std::vector<Vector3d> face_vertices) noexcept;
+    Face(const std::vector<Vector3d>& face_vertices,
+         std::vector<std::size_t> face_vertices_ids) noexcept;
 
     auto inline area() const noexcept -> const double& { return _area; }
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }
-    auto aspect_ratio() const noexcept -> double;
 
     auto inline id() const noexcept -> std::size_t { return _id; }
     void inline set_id(std::size_t face_id) noexcept { _id = face_id; }
+    auto inline vertices_ids() const noexcept -> const std::vector<std::size_t>& {
+        return _vertices_ids;
+    }
 
     auto inline owner() const -> std::size_t { return _owner.value(); }
     void inline set_owner(std::size_t owner_id) noexcept { _owner = owner_id; }
@@ -39,15 +42,15 @@ class Face {
     }
 
   private:
-    void set_face_attributes();
+    void set_face_attributes(const std::vector<Vector3d>& vertices);
 
     std::size_t _id {0};
-    std::size_t vertices_count {0};
+    std::size_t _vertices_count {0};
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};
     Vector3d _center {0.0, 0.0, 0.0};
 
-    std::vector<Vector3d> _vertices;
+    std::vector<std::size_t> _vertices_ids;
     std::optional<std::size_t> _owner {std::nullopt};
     std::optional<std::size_t> _neighbor {std::nullopt};
     std::optional<std::size_t> _boundary_patch_id {std::nullopt};

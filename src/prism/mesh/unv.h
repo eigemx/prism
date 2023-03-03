@@ -41,7 +41,7 @@ class UnvToPMesh : public ToPMeshConverter {
     void process_cell(const unv::Element& element);
 
     // faces
-    auto process_face(const std::vector<std::size_t>& face_vertices) -> std::size_t;
+    auto process_face(std::vector<std::size_t>& face_vertices) -> std::size_t;
     auto process_boundary_face(const unv::Element& boundary_face) -> std::size_t;
 
     // groups
