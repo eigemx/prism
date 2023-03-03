@@ -11,28 +11,38 @@ namespace prism {
 
 class LinearSystem {
   public:
-    virtual auto coeff_matrix() const -> const SparseMatrix& = 0;
-    virtual auto coeff_matrix() -> SparseMatrix& = 0;
+    virtual auto coeff_matrix() const -> const SparseMatrix& { return _coeff_matrix; }
+    virtual auto coeff_matrix() -> SparseMatrix& { return _coeff_matrix; }
 
-    virtual auto lhs_vector() const -> const VectorXd& = 0;
-    virtual auto lhs_vector() -> VectorXd& = 0;
+    virtual auto lhs_vector() const -> const VectorXd& { return _b; }
+    virtual auto lhs_vector() -> VectorXd& { return _b; }
+
+    virtual void update_coeffs() = 0;
+
+  private:
+    SparseMatrix _coeff_matrix;
+    VectorXd _b;
 };
 
-class ConservedScalarSteadyEquation : public LinearSystem {
+class SchemeCollector {
   public:
-    ConservedScalarSteadyEquation(std::string scalar_name, mesh::PMesh& mesh);
+    template <typename Scheme>
+    void add_scheme(Scheme& scheme) {
+        _schemes.emplace_back(std::make_shared<Scheme>(scheme));
+    }
+    auto schemes() const -> const std::vector<std::shared_ptr<FVScheme>>& { return _schemes; }
 
-    auto coeff_matrix() const -> const SparseMatrix& override { return _coeff_matrix; }
-    auto coeff_matrix() -> SparseMatrix& override { return _coeff_matrix; }
+  private:
+    std::vector<std::shared_ptr<FVScheme>> _schemes {};
+};
 
-    auto lhs_vector() const -> const VectorXd& override { return _b; }
-    auto lhs_vector() -> VectorXd& override { return _b; }
+class SteadyConservedScalar : public LinearSystem, public SchemeCollector {
+  public:
+    SteadyConservedScalar(std::string scalar_name, mesh::PMesh& mesh);
+    void update_coeffs() override;
 
   private:
     mesh::PMesh& _mesh;
     std::string _scalar_name;
-
-    SparseMatrix _coeff_matrix;
-    VectorXd _b;
 };
 } // namespace prism

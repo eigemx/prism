@@ -9,17 +9,15 @@ class GradientSchemeBase {};
 
 class GreenGauss : public FVScheme, public GradientSchemeBase {
   public:
-    GreenGauss(const mesh::PMesh& mesh, SparseMatrix& coeffs, VectorXd& b)
-        : _mesh(mesh), _coeffs(coeffs), _b(b) {}
+    GreenGauss() = default;
 
   private:
-    void apply_interior(const mesh::Cell& cell, const mesh::Face& face) const override;
-    void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) const override;
+    auto apply_interior(const mesh::Cell& cell,
+                        const mesh::Face& face,
+                        const mesh::PMesh& mesh) const -> AlteredCoeffs override;
 
-    const mesh::PMesh& _mesh;
-    SparseMatrix& _coeffs;
-    VectorXd& _b;
-
-    bool _first_run_completed {false};
+    auto apply_boundary(const mesh::Cell& cell,
+                        const mesh::Face& face,
+                        const mesh::PMesh& mesh) const -> AlteredCoeffs override;
 };
 } // namespace prism::gradient

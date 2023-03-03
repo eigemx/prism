@@ -26,25 +26,22 @@ auto main(int argc, char* argv[]) -> int {
 
     // setup steady diffusion equation for temperature
     // this will create a linear system of equations A * T = b
-    auto eqn = ConservedScalarSteadyEquation("T", mesh);
+    auto eqn = SteadyConservedScalar("T", mesh);
 
     // Add diffusion term (∇.k∇T) (linear diffusion interpolation scheme)
-    auto diff_scheme = diffusion::Linear(1.0, mesh, eqn.coeff_matrix(), eqn.lhs_vector());
+    auto diff_scheme = diffusion::Linear(1.0);
 
     // add explicit gradient scheme (to calculate ∇T in non-orthogonal corrections)
-    auto grad_scheme = gradient::GreenGauss(mesh, eqn.coeff_matrix(), eqn.lhs_vector());
+    auto grad_scheme = gradient::GreenGauss();
 
     // prepare cell visitor and connect to the scheme
-    auto visitor = CellVisitor(mesh, eqn);
-    visitor.add_scheme(diff_scheme);
-    //visitor.add_scheme(grad_scheme);
+    eqn.add_scheme(diff_scheme);
 
-    // visit cells and adjust coefficients matrix A and rhs vector b -> A * T = b
-    visitor.visit_cells();
+    eqn.update_coeffs();
 
     // export coefficients matrix A to csv file `matrix.csv`
     SparseMatrix& A = eqn.coeff_matrix();
-    std::ofstream matrix_file("matrix.csv");
+    std::ofstream matrix_file("matrix_u.csv");
     matrix_file << A;
     matrix_file.close();
 }
