@@ -6,10 +6,12 @@
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <numeric>
+#include <regex>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "export_vtu.h"
 
 void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
     // if mesh file extension is not .unv, warn user
@@ -49,16 +51,6 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
     std::ofstream file(bc_filepath);
     file << table;
     file.close();
-}
-
-auto min_max_face_aspect_ratio(const prism::mesh::PMesh& prism_mesh) {
-    auto min_max = std::minmax_element(prism_mesh.faces().begin(),
-                                       prism_mesh.faces().end(),
-                                       [](const auto& face1, const auto& face2) {
-                                           return face1.aspect_ratio() < face2.aspect_ratio();
-                                       });
-
-    return std::make_pair(min_max.first->aspect_ratio(), min_max.second->aspect_ratio());
 }
 
 auto min_max_face_area(const prism::mesh::PMesh& prism_mesh) {
@@ -137,15 +129,11 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
         prism::print("Surface area  = {:.4f} L^2\n\n", surface_area);
 
         auto [min_face_area, max_face_area] = min_max_face_area(prism_mesh);
-        auto [min_face_aspect_ratio, max_face_aspect_ratio] =
-            min_max_face_aspect_ratio(prism_mesh);
         auto [min_face_non_ortho, max_face_non_ortho] = min_max_face_non_ortho(prism_mesh);
 
         prism::print(
             "Max face area = {} L^2 and min face area = {} L^2\n", max_face_area, min_face_area);
-        prism::print("Max face aspect ratio = {} and min face aspect ratio = {}\n",
-                     max_face_aspect_ratio,
-                     min_face_aspect_ratio);
+
         prism::print("Max face non orthogonality = {} and min face non orthogonality = {}\n",
                      max_face_non_ortho,
                      min_face_non_ortho);
@@ -199,6 +187,29 @@ auto main(int argc, char* argv[]) -> int {
             create_boundary_conditions_file(filename);
             prism::print("File `boundary.txt` was created successfully for mesh file: {}\n",
                          filename);
+        }
+
+        if (result.count("export-vtu") > 0) {
+            // TODO: clean this mess
+            auto filename = result["export-vtu"].as<std::string>();
+
+            // remove .unv extension if exists and add .vtu extension
+            filename = std::regex_replace(filename, std::regex("\\.unv$"), "");
+            filename += ".vtu";
+
+            prism::print("Loading mesh file: ");
+            prism::print(
+                fg(fmt::color::dark_cyan), "`{}`...\n", result["export-vtu"].as<std::string>());
+
+            auto unv_mesh = prism::mesh::UnvToPMesh(result["export-vtu"].as<std::string>());
+
+            // convert unv mesh to prism mesh
+            auto prism_mesh = unv_mesh.to_pmesh();
+
+            prism::print("Exporting mesh to vtu file...\n");
+
+            export_to_vtu(prism_mesh, filename);
+            prism::print("File `{}` was created successfully\n", filename);
         }
     }
 

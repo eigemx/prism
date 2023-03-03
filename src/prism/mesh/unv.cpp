@@ -147,8 +147,8 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
         case unv::ElementType::Hex: {
             // reserve 6 faces
             cell_faces_ids.reserve(6);
-            for (auto& face_vertices : hex_cell_faces(element.vertices_ids())) {
-                auto face_id = process_face(face_vertices);
+            for (auto& face_vertices_ids : hex_cell_faces(element.vertices_ids())) {
+                auto face_id = process_face(face_vertices_ids);
                 cell_faces_ids.push_back(face_id);
             }
             break;
@@ -157,8 +157,8 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
         case unv::ElementType::Tetra: {
             // reserve 4 faces
             cell_faces_ids.reserve(4);
-            for (auto& face_vertices : tetra_cell_faces(element.vertices_ids())) {
-                auto face_id = process_face(face_vertices);
+            for (auto& face_vertices_ids : tetra_cell_faces(element.vertices_ids())) {
+                auto face_id = process_face(face_vertices_ids);
                 cell_faces_ids.push_back(face_id);
             }
             break;
@@ -167,8 +167,8 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
         case unv::ElementType::Wedge: {
             // reserve 5 faces
             cell_faces_ids.reserve(5);
-            for (auto& face_vertices : wedge_cell_faces(element.vertices_ids())) {
-                auto face_id = process_face(face_vertices);
+            for (auto& face_vertices_ids : wedge_cell_faces(element.vertices_ids())) {
+                auto face_id = process_face(face_vertices_ids);
                 cell_faces_ids.push_back(face_id);
             }
             break;
@@ -178,11 +178,12 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
             break;
     }
 
-    _cells.emplace_back(_faces, std::move(cell_faces_ids), _cell_id_counter);
+    _cells.emplace_back(
+        _faces, std::move(cell_faces_ids), element.vertices_ids(), _cell_id_counter);
     _cell_id_counter++;
 }
 
-auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids) -> std::size_t {
+auto UnvToPMesh::process_face(std::vector<std::size_t>& face_vertices_ids) -> std::size_t {
     // sort the face indices to be used as a std::map key for searching
     auto sorted_face_vertices_ids = face_vertices_ids; // copy the face vertices to sort in place
     std::sort(sorted_face_vertices_ids.begin(), sorted_face_vertices_ids.end());
@@ -219,7 +220,7 @@ auto UnvToPMesh::process_face(const std::vector<std::size_t>& face_vertices_ids)
         face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
     }
 
-    auto new_face {Face(std::move(face_vertices))};
+    auto new_face {Face(face_vertices, std::move(face_vertices_ids))};
 
     new_face.set_owner(_cell_id_counter);
     new_face.set_id(face_id);
@@ -247,7 +248,7 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
         face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
     }
 
-    auto new_face {Face(std::move(face_vertices))};
+    auto new_face {Face(face_vertices, boundary_face.vertices_ids())};
 
     // this face does not yet have an owner, this will be set later by process_face()
     new_face.set_id(face_id);
