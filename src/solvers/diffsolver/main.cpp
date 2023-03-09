@@ -35,9 +35,17 @@ auto main(int argc, char* argv[]) -> int {
     auto grad_scheme = gradient::GreenGauss();
 
     // prepare cell visitor and connect to the scheme
-    eqn.add_scheme(diff_scheme);
+    //eqn.add_scheme(diff_scheme);
+    eqn.add_scheme(diffusion::Linear(1.0));
 
     eqn.update_coeffs();
+
+    // export right hand side vector b to csv file `vector.csv`
+    prism::print("Exporting vector_u.csv");
+    auto b = eqn.lhs_vector();
+    std::ofstream vector_file("vector_u.csv");
+    vector_file << b;
+    vector_file.close();
 
     // export coefficients matrix A to csv file `matrix.csv`
     SparseMatrix& A = eqn.coeff_matrix();

@@ -30,6 +30,12 @@ class SchemeCollector {
     void add_scheme(Scheme& scheme) {
         _schemes.emplace_back(std::make_shared<Scheme>(scheme));
     }
+
+    template <typename Scheme>
+    void add_scheme(Scheme&& scheme) {
+        _schemes.emplace_back(std::make_shared<Scheme>(scheme));
+    }
+
     auto schemes() const -> const std::vector<std::shared_ptr<FVScheme>>& { return _schemes; }
 
   private:
