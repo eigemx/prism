@@ -28,7 +28,7 @@ void SteadyConservedScalar::update_coeffs() {
                 // update cell coefficient
                 coeff_matrix().coeffRef(cell.id(), cell.id()) += altered_coeffs.central;
 
-                // update neighbour coefficients
+                // update neighbour coefficients (in case of interior face)
                 if (altered_coeffs.neighbor.has_value()) {
                     auto nei_cell_id = altered_coeffs.neighbor.value().first;
                     auto coeff = altered_coeffs.neighbor.value().second;

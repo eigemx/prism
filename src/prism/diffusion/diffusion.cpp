@@ -13,7 +13,7 @@ auto Linear::apply_interior(const mesh::Cell& cell,
 
     // does `cell` own `face` or it is a neighbor?
     auto is_owned = (face.owner() == cell_id);
-    auto own_factor = is_owned ? 0.0 : 1.0;
+    auto own_factor = is_owned ? 1.0 : 0.0;
 
     // get adjacent cell shaing `face` with `cell`
     auto adj_cell_id = is_owned ? face.neighbor().value() : face.owner();
@@ -38,7 +38,7 @@ auto Linear::apply_interior(const mesh::Cell& cell,
 
     AlteredCoeffs res;
     res.central = -g_diff;
-    res.neighbor = {adj_cell_id, g_diff};
+    res.neighbor = {adj_cell_id, -g_diff};
 
     return res;
 }
@@ -58,6 +58,8 @@ auto Linear::apply_boundary(const mesh::Cell& cell,
                 std::get<mesh::WallBoundaryData>(boundary_patch.data()).temperature.value();
             return apply_wall_boundary(cell, face, T_wall);
     }
+
+    return AlteredCoeffs {};
 }
 
 auto Linear::apply_wall_boundary(const mesh::Cell& cell,
@@ -76,8 +78,8 @@ auto Linear::apply_wall_boundary(const mesh::Cell& cell,
     auto g_diff = -_kappa * S_f_norm / (d_CF_norm + 1e-8);
 
     AlteredCoeffs res;
-    res.central = -g_diff;
-    res.b = -g_diff * phi_wall;
+    res.central = g_diff;
+    res.b = g_diff * phi_wall;
 
     return res;
 }
