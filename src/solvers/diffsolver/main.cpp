@@ -51,4 +51,18 @@ auto main(int argc, char* argv[]) -> int {
     std::ofstream matrix_file("matrix_u.csv");
     matrix_file << A;
     matrix_file.close();
+
+    // check that for each row of matrix A, the row sums to zero
+    // (this is a requirement for the linear system to be solvable)
+    for (int i = 0; i < A.rows(); i++) {
+        double row_sum = 0.0;
+        for (int j = 0; j < A.cols(); j++) {
+            row_sum += A.coeff(i, j);
+        }
+
+        row_sum -= b[i];
+        if (std::abs(row_sum) > 1e-8) {
+            error(format("Row {} of matrix A does not sum to zero", i));
+        }
+    }
 }
