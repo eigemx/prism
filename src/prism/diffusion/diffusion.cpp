@@ -33,11 +33,11 @@ auto Linear::apply_interior(const mesh::Cell& cell,
     auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + 1e-8))) * e;
 
     // diffusion factor
-    auto g_diff = (-E_f.norm() * _kappa) / (d_CF_norm + 1e-8);
+    auto g_diff = (E_f.norm() * _kappa) / (d_CF_norm + 1e-8);
     g_diff *= std::pow(-1., own_factor);
 
     AlteredCoeffs res;
-    res.central = -g_diff;
+    res.central = g_diff;
     res.neighbor = {adj_cell_id, -g_diff};
 
     return res;

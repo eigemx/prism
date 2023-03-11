@@ -41,7 +41,6 @@ auto main(int argc, char* argv[]) -> int {
     eqn.update_coeffs();
 
     // export right hand side vector b to csv file `vector.csv`
-    prism::print("Exporting vector_u.csv");
     auto b = eqn.lhs_vector();
     std::ofstream vector_file("vector_u.csv");
     vector_file << b;
