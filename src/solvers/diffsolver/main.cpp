@@ -54,15 +54,25 @@ auto main(int argc, char* argv[]) -> int {
 
     // check that for each row of matrix A, the row sums to zero
     // (this is a requirement for the linear system to be solvable)
+    std::size_t n_row_non_zero = 0;
+
     for (int i = 0; i < A.rows(); i++) {
+        if ((b[i] > 1e-8) || (b[i] < -1e-8)) {
+            continue;
+        }
         double row_sum = 0.0;
         for (int j = 0; j < A.cols(); j++) {
             row_sum += A.coeff(i, j);
         }
 
-        row_sum -= b[i];
         if (std::abs(row_sum) > 1e-8) {
-            error(format("Row {} of matrix A does not sum to zero", i));
+            n_row_non_zero++;
         }
+    }
+
+    if (n_row_non_zero > 0) {
+        error(format("Matrix A has {} rows that do not sum to zero", n_row_non_zero));
+    } else {
+        info("Matrix A is solvable\n");
     }
 }
