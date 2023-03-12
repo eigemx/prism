@@ -16,17 +16,23 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
 
 
   private:
-    auto apply_interior(const mesh::Cell& cell,
+    void apply_interior(const mesh::Cell& cell,
                         const mesh::Face& face,
-                        const mesh::PMesh& mesh) const -> AlteredCoeffs override;
+                        const mesh::PMesh& mesh,
+                        SparseMatrix& coeffs_matrix,
+                        VectorXd& rhs_vec) const override;
 
-    auto apply_boundary(const mesh::Cell& cell,
+    void apply_boundary(const mesh::Cell& cell,
                         const mesh::Face& face,
-                        const mesh::PMesh& mesh) const -> AlteredCoeffs override;
+                        const mesh::PMesh& mesh,
+                        SparseMatrix& coeffs_matrix,
+                        VectorXd& rhs_vec) const override;
 
-    auto apply_wall_boundary(const mesh::Cell& cell,
+    void apply_wall_boundary(const mesh::Cell& cell,
                              const mesh::Face& face,
-                             double phi_wall) const -> AlteredCoeffs;
+                             const mesh::PMesh& mesh,
+                             SparseMatrix& coeffs_matrix,
+                             VectorXd& rhs_vec) const;
 
     double _kappa;
 };

@@ -18,22 +18,30 @@ struct AlteredCoeffs {
 
 class FVScheme {
   public:
-    virtual auto apply(const mesh::Cell& cell,
+    virtual void apply(const mesh::Cell& cell,
                        const mesh::Face& face,
-                       const mesh::PMesh& mesh) const -> AlteredCoeffs {
-        if (!face.has_neighbor()) {
-            return apply_boundary(cell, face, mesh);
+                       const mesh::PMesh& mesh,
+                       SparseMatrix& coeffs_matrix,
+                       VectorXd& rhs_vec) const {
+        if (face.has_neighbor()) {
+            apply_interior(cell, face, mesh, coeffs_matrix, rhs_vec);
+        } else {
+            apply_boundary(cell, face, mesh, coeffs_matrix, rhs_vec);
         }
-        return apply_interior(cell, face, mesh);
     }
 
   private:
-    virtual auto apply_interior(const mesh::Cell& cell,
+    virtual void apply_interior(const mesh::Cell& cell,
                                 const mesh::Face& face,
-                                const mesh::PMesh& mesh) const -> AlteredCoeffs = 0;
-    virtual auto apply_boundary(const mesh::Cell& cell,
+                                const mesh::PMesh& mesh,
+                                SparseMatrix& coeffs_matrix,
+                                VectorXd& rhs_vec) const = 0;
+
+    virtual void apply_boundary(const mesh::Cell& cell,
                                 const mesh::Face& face,
-                                const mesh::PMesh& mesh) const -> AlteredCoeffs = 0;
+                                const mesh::PMesh& mesh,
+                                SparseMatrix& coeffs_matrix,
+                                VectorXd& rhs_vec) const = 0;
 };
 
 } // namespace prism
