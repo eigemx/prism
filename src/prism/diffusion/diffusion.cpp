@@ -11,13 +11,18 @@ auto Linear::apply_interior(const mesh::Cell& cell,
                             const mesh::PMesh& mesh) const -> AlteredCoeffs {
     auto cell_id = cell.id();
 
-    // does `cell` own `face` or it is a neighbor?
-    auto is_owned = (face.owner() == cell_id);
-    auto own_factor = is_owned ? 1.0 : 0.0;
-
     // get adjacent cell shaing `face` with `cell`
-    auto adj_cell_id = is_owned ? face.neighbor().value() : face.owner();
-    auto adj_cell = mesh.cells()[adj_cell_id];
+    std::size_t adj_cell_id {};
+
+    if (face.owner() == cell_id) {
+        // `face` is owned by `cell`, get the neighbor cell id
+        adj_cell_id = face.neighbor().value();
+    } else {
+        // `face` is a neighbor to `cell`, get its owner id
+        adj_cell_id = face.owner();
+    }
+
+    const auto& adj_cell = mesh.cells()[adj_cell_id];
 
     // face area vector
     auto S_f = face.area() * face.normal();
@@ -34,8 +39,8 @@ auto Linear::apply_interior(const mesh::Cell& cell,
 
     // diffusion factor
     auto g_diff = (E_f.norm() * _kappa) / (d_CF_norm + 1e-8);
-    g_diff *= std::pow(-1., own_factor);
 
+    // g_diff * (Φ_c - Φ_f)
     AlteredCoeffs res;
     res.central = g_diff;
     res.neighbor = {adj_cell_id, -g_diff};
@@ -50,13 +55,18 @@ auto Linear::apply_boundary(const mesh::Cell& cell,
     const auto& boundary_patch = mesh.face_boundary_patch(face);
 
     switch (boundary_patch.type()) {
-        case mesh::BoundaryPatchType::Empty:
+        case mesh::BoundaryPatchType::Empty: {
             return AlteredCoeffs {};
+        }
 
-        case mesh::BoundaryPatchType::Wall:
+        case mesh::BoundaryPatchType::Wall: {
             auto T_wall =
                 std::get<mesh::WallBoundaryData>(boundary_patch.data()).temperature.value();
             return apply_wall_boundary(cell, face, T_wall);
+        }
+
+        default:
+            throw std::runtime_error("Unsupported boundary type");
     }
 
     return AlteredCoeffs {};
@@ -75,7 +85,7 @@ auto Linear::apply_wall_boundary(const mesh::Cell& cell,
     auto d_CF_norm = d_CF.norm();
 
     // diffusion factor
-    auto g_diff = -_kappa * S_f_norm / (d_CF_norm + 1e-8);
+    auto g_diff = (_kappa * S_f_norm) / (d_CF_norm + 1e-8);
 
     AlteredCoeffs res;
     res.central = g_diff;
