@@ -23,20 +23,7 @@ void SteadyConservedScalar::update_coeffs() {
             // iterate over all schemes
             for (const auto& scheme : schemes()) {
                 // apply the scheme to the cell and face
-                auto altered_coeffs = scheme->apply(cell, face, _mesh);
-
-                // update cell coefficient
-                coeff_matrix().coeffRef(cell.id(), cell.id()) += altered_coeffs.central;
-
-                // update neighbour coefficients (in case of interior face)
-                if (altered_coeffs.neighbor.has_value()) {
-                    auto nei_cell_id = altered_coeffs.neighbor.value().first;
-                    auto coeff = altered_coeffs.neighbor.value().second;
-                    coeff_matrix().coeffRef(cell.id(), nei_cell_id) += coeff;
-                }
-
-                // update right hand side vector
-                lhs_vector()(cell.id()) += altered_coeffs.b;
+                scheme->apply(cell, face, _mesh, coeff_matrix(), lhs_vector());
             }
         }
     }
