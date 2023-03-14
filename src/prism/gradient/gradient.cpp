@@ -7,9 +7,9 @@ inline auto boundary_face_phi(const mesh::Face& face,
     const auto& boundary_patch = mesh.face_boundary_patch(face);
 
     switch (boundary_patch.type()) {
-        case mesh::BoundaryPatchType::Wall:
-            auto phi_wall =
-                std::get<mesh::WallBoundaryData>(boundary_patch.data()).temperature.value();
+        //case mesh::BoundaryPatchType::Wall:
+        //    auto phi_wall =
+        //        std::get<mesh::WallBoundaryData>(boundary_patch.data()).temperature.value();
     }
 }
 auto GreenGauss::gradient(const mesh::Cell& c,

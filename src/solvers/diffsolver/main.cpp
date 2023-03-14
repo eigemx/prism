@@ -7,7 +7,7 @@
 #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
-    using namespace prism;
+    /*using namespace prism;
 
     print_header();
     print("diffsolver - A steady state temperature diffusion solver\n");
@@ -74,5 +74,24 @@ auto main(int argc, char* argv[]) -> int {
         error(format("Matrix A has {} rows that do not sum to zero", n_row_non_zero));
     } else {
         info("Matrix A is solvable\n");
+    }*/
+
+    auto bps = prism::mesh::read_boundary_conditions(
+        "test_cases/slice_2d_hex_coarse/boundary.txt",
+        {"left", "right", "top", "bottom", "front", "back"});
+
+    for (const auto& bp : bps) {
+        prism::print("name: {}\n", bp.name());
+        for (const auto& atr : bp.attributes()) {
+            prism::print(" {}\n", atr.name());
+            switch (atr.type()) {
+                case prism::mesh::BoundaryAttributeType::Scalar:
+                    prism::print("  scalar\n");
+                    break;
+                case prism::mesh::BoundaryAttributeType::Vector:
+                    prism::print("  vector\n");
+                    break;
+            }
+        }
     }
 }
