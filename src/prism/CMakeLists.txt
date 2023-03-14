@@ -26,4 +26,5 @@ add_library(prism-core
 
     # gradient module
     gradient/gradient.h
+    gradient/gradient.cpp
 )
