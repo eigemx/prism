@@ -77,8 +77,9 @@ void Linear::apply_wall_boundary(const mesh::Cell& cell,
                                  VectorXd& rhs_vec) const {
     const auto& boundary_patch = mesh.face_boundary_patch(face);
 
-    const auto& wall_bdata = std::get<mesh::WallBoundaryData>(boundary_patch.data());
-    auto phi_wall = wall_bdata.temperature.value();
+    //const auto& wall_bdata = std::get<mesh::WallBoundaryData>(boundary_patch.data());
+    //auto phi_wall = wall_bdata.temperature.value();
+    auto phi_wall = 1000.0; // TODO: fix me
 
     auto cell_id = cell.id();
 

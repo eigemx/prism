@@ -29,156 +29,51 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
     return it->second;
 }
 
-template <typename T = const toml::node_view<const toml::node>>
-inline void check_velocity_or_temp(T velocity,
-                                   T temperature,
-                                   std::string_view bname,
-                                   std::string_view btype) {
-    if (!velocity && !temperature) {
-        throw std::runtime_error(
-            fmt::format("Boundary '{}' is defined as a '{}' and has no velocity or temperature",
-                        bname,
-                        btype));
-    }
-}
+auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
+    -> BoundaryPatchAttributes {
+    BoundaryPatchAttributes attributes;
 
-inline auto get_real_value(const toml::node_view<const toml::node>& node,
-                           std::string_view bname,
-                           std::string_view btype,
-                           std::string_view value_type) -> double {
-    if (!node.is_floating_point() && !node.is_number()) {
-        throw std::runtime_error(fmt::format(
-            "{} boundary '{}' has a {} that is not a numeric value", btype, bname, value_type));
-    }
+    // read all toml nodes in table, if of type double or array and of size 3, add to attributes
+    const auto& toml_nodes = table[bname].as_table();
+    for (auto&& [key, value] : *toml_nodes) {
+        if (key == "type") {
+            continue;
+        }
 
-    return node.value<double>().value();
-}
+        if (value.is_number() || value.is_floating_point()) {
+            double attr_float_val = value.value<double>().value();
+            attributes.emplace_back(
+                std::string(key), BoundaryAttributeType::Scalar, attr_float_val);
+        }
 
-inline auto get_velocity(const toml::node_view<const toml::node>& velocity,
-                         std::string_view bname,
-                         std::string_view btype) -> Vector3d {
-    // check if velocity is a vector
-    if (!velocity.is_array() || velocity.as_array()->size() != 3) {
-        throw std::runtime_error(
-            fmt::format("{} boundary '{}' has a velocity that is not a 3D vector", btype, bname));
-    }
+        else if (value.is_array()) {
+            const auto& array = value.as_array();
 
-    // check if velocity is a vector of numbers
-    for (std::size_t i = 0; i < 3; ++i) {
-        if (!velocity[i].is_floating_point() && !velocity[i].is_number()) {
+            if (array->size() != 3) {
+                throw std::runtime_error(
+                    fmt::format("Boundary condition '{}' for patch '{}' is not a 3D vector",
+                                key.str(),
+                                bname));
+            }
+
+            attributes.emplace_back(std::string(key),
+                                    BoundaryAttributeType::Vector,
+                                    Vector3d {
+                                        array->at(0).value<double>().value(),
+                                        array->at(1).value<double>().value(),
+                                        array->at(2).value<double>().value(),
+                                    });
+        }
+
+        else {
             throw std::runtime_error(
-                fmt::format("{} boundary '{}' has a velocity that is not a 3D vector of numbers",
-                            btype,
+                fmt::format("Boundary condition '{}' for patch '{}' is not a scalar or vector",
+                            key.str(),
                             bname));
         }
     }
 
-    return Vector3d {velocity[0].value<double>().value(),
-                     velocity[1].value<double>().value(),
-                     velocity[2].value<double>().value()};
-}
-
-
-auto parse_wall(const toml::table& doc, std::string_view bname) -> WallBoundaryData {
-    auto velocity = doc[bname]["velocity"];
-    auto temperature = doc[bname]["temperature"];
-
-    check_velocity_or_temp(velocity, temperature, bname, "Wall");
-
-    std::optional<Vector3d> velocity_vec {std::nullopt};
-    std::optional<double> temperature_val {std::nullopt};
-
-    if (velocity) {
-        velocity_vec = get_velocity(velocity, bname, "Wall");
-    }
-
-    if (temperature) {
-        temperature_val = get_real_value(temperature, bname, "Wall", "temperature");
-    }
-
-    return WallBoundaryData {velocity_vec, temperature_val};
-}
-
-auto parse_inlet(const toml::table& doc, std::string_view bname) -> InletBoundaryData {
-    auto velocity = doc[bname]["velocity"];
-    auto temperature = doc[bname]["temperature"];
-
-    check_velocity_or_temp(velocity, temperature, bname, "Inlet");
-
-    std::optional<Vector3d> velocity_vec {std::nullopt};
-    std::optional<double> temperature_val {std::nullopt};
-
-    if (velocity) {
-        velocity_vec = get_velocity(velocity, bname, "Inlet");
-    }
-
-    if (temperature) {
-        temperature_val = get_real_value(temperature, bname, "Inlet", "temperature");
-    }
-
-    return InletBoundaryData {velocity_vec, temperature_val};
-}
-
-auto parse_outlet(const toml::table& doc, std::string_view bname) -> OutletBoundaryData {
-    auto pressure = doc[bname]["pressure"];
-
-    if (!pressure) {
-        throw std::runtime_error(fmt::format(
-            "Boundary '{}' is defined as an outlet but has no pressure value", bname));
-    }
-
-    double pressure_val = get_real_value(pressure, bname, "Outlet", "pressure");
-
-    return OutletBoundaryData {pressure_val};
-}
-
-auto parse_boundary_data(const toml::table& table,
-                         std::string_view bname,
-                         BoundaryPatchType bc_type) -> BoundaryData {
-    switch (bc_type) {
-        case BoundaryPatchType::Wall:
-            return parse_wall(table, bname);
-
-        case BoundaryPatchType::Inlet:
-            return parse_inlet(table, bname);
-
-        case BoundaryPatchType::Outlet:
-            return parse_outlet(table, bname);
-
-        case BoundaryPatchType::Gradient:
-            throw std::runtime_error("Gradient boundary condition is not implemented");
-
-        case BoundaryPatchType::Symmetry:
-            return SymmetryBoundaryData {};
-
-        case BoundaryPatchType::Empty:
-            return EmptyBoundaryData {};
-
-        case BoundaryPatchType::Unknown:
-            throw std::runtime_error("Unknown boundary condition type");
-    }
-}
-
-auto BoundaryPatch::infer_boundary_type(const BoundaryData& data) -> BoundaryPatchType {
-    if (std::holds_alternative<WallBoundaryData>(data)) {
-        return BoundaryPatchType::Wall;
-    }
-    if (std::holds_alternative<InletBoundaryData>(data)) {
-        return BoundaryPatchType::Inlet;
-    }
-    if (std::holds_alternative<OutletBoundaryData>(data)) {
-        return BoundaryPatchType::Outlet;
-    }
-    if (std::holds_alternative<GradientBoundaryData>(data)) {
-        return BoundaryPatchType::Gradient;
-    }
-    if (std::holds_alternative<SymmetryBoundaryData>(data)) {
-        return BoundaryPatchType::Symmetry;
-    }
-    if (std::holds_alternative<EmptyBoundaryData>(data)) {
-        return BoundaryPatchType::Empty;
-    }
-    throw std::runtime_error("Non-implemented boundary type");
+    return attributes;
 }
 
 auto read_boundary_conditions(const std::filesystem::path& path,
@@ -214,7 +109,7 @@ auto read_boundary_conditions(const std::filesystem::path& path,
 
         if (!table) {
             throw std::runtime_error(
-                fmt::format("Coudln't find definition for boundary patch '{}' in boundary "
+                fmt::format("Couldn't find definition for boundary patch '{}' in boundary "
                             "conditions file '{}'",
                             bname,
                             path.string()));
@@ -230,9 +125,10 @@ auto read_boundary_conditions(const std::filesystem::path& path,
                 path.string()));
         }
 
-        auto bc_data {parse_boundary_data(doc, bname, boundary_type_str_to_enum(type.value()))};
+        auto boundary_patch_type = boundary_type_str_to_enum(type.value());
+        auto bp_attributes = parse_boundary_attributes(doc, bname);
 
-        bcs.emplace_back(std::string(bname), std::move(bc_data));
+        bcs.emplace_back(std::string(bname), std::move(bp_attributes), boundary_patch_type);
     }
 
     return bcs;

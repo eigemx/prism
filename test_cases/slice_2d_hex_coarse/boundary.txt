@@ -19,3 +19,4 @@ temperature = 500
 [top]
 type = 'wall'
 temperature = 900
+velocity = [1, 0, 0]

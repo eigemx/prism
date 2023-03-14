@@ -18,58 +18,49 @@ enum class BoundaryPatchType {
     Symmetry,
     Empty,
     Gradient,
-    // for error handling
-    Unknown,
+    Unknown, // for error handling
 };
 
-struct WallBoundaryData {
-    std::optional<Vector3d> velocity {std::nullopt};
-    std::optional<double> temperature {std::nullopt};
+enum class BoundaryAttributeType { Scalar, Vector };
+
+using BoundaryAttributeData = std::variant<double, Vector3d>;
+
+class BoundaryPatchAttribute {
+  public:
+    BoundaryPatchAttribute(std::string name,
+                           BoundaryAttributeType type,
+                           BoundaryAttributeData data)
+        : _name(std::move(name)), _type(type), _data(std::move(data)) {}
+
+    [[nodiscard]] auto name() const noexcept -> const std::string& { return _name; }
+    [[nodiscard]] auto type() const noexcept -> BoundaryAttributeType { return _type; }
+    [[nodiscard]] auto data() const noexcept -> const BoundaryAttributeData& { return _data; }
+
+  private:
+    std::string _name;
+    BoundaryAttributeType _type;
+    BoundaryAttributeData _data;
 };
 
-struct InletBoundaryData {
-    std::optional<Vector3d> velocity {std::nullopt};
-    std::optional<double> temperature {std::nullopt};
-};
-
-struct OutletBoundaryData {
-    double pressure {0.0};
-};
-
-struct GradientBoundaryData {
-    std::optional<double> velocity_gradient {std::nullopt};
-    std::optional<double> pressure_gradient {std::nullopt};
-    std::optional<double> heat_flux {std::nullopt};
-};
-
-struct SymmetryBoundaryData {};
-struct EmptyBoundaryData {};
-
-using BoundaryData = std::variant<WallBoundaryData,
-                                  InletBoundaryData,
-                                  OutletBoundaryData,
-                                  GradientBoundaryData,
-                                  SymmetryBoundaryData,
-                                  EmptyBoundaryData>;
+using BoundaryPatchAttributes = std::vector<BoundaryPatchAttribute>;
 
 class BoundaryPatch {
   public:
     BoundaryPatch() = delete;
 
-    BoundaryPatch(std::string name, BoundaryData data)
-        : _name(std::move(name)), _data(std::move(data)) {
-        _type = infer_boundary_type(_data);
-    };
+    BoundaryPatch(std::string name, BoundaryPatchAttributes attributes, BoundaryPatchType type)
+        : _name(std::move(name)), _attributes(std::move(attributes)), _type(type) {};
 
     [[nodiscard]] auto name() const noexcept -> const std::string& { return _name; }
     [[nodiscard]] auto type() const noexcept -> BoundaryPatchType { return _type; }
-    [[nodiscard]] auto data() const noexcept -> const BoundaryData& { return _data; }
+    [[nodiscard]] auto attributes() const noexcept -> const BoundaryPatchAttributes& {
+        return _attributes;
+    }
 
   private:
-    auto static infer_boundary_type(const BoundaryData& data) -> BoundaryPatchType;
     std::string _name;
     BoundaryPatchType _type;
-    BoundaryData _data;
+    BoundaryPatchAttributes _attributes;
 };
 
 using BoundaryPatches = std::vector<BoundaryPatch>;
