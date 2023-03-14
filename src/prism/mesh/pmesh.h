@@ -44,6 +44,7 @@ class PMesh {
 
     auto face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch&;
     auto face_boundary_patch(const Face& face) const -> const BoundaryPatch&;
+    static auto cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double;
 
   private:
     std::vector<Vector3d> _vertices;

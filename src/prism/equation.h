@@ -24,8 +24,10 @@ class LinearSystem {
     VectorXd _b;
 };
 
+
 class SchemeCollector {
   public:
+    // TODO: make template `Scheme` accept only types derived from FVScheme
     template <typename Scheme>
     void add_scheme(Scheme& scheme) {
         _schemes.emplace_back(std::make_shared<Scheme>(scheme));

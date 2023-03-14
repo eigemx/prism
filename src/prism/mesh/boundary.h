@@ -11,7 +11,7 @@
 
 namespace prism::mesh {
 
-enum BoundaryPatchType {
+enum class BoundaryPatchType {
     Wall,
     Inlet,
     Outlet,
