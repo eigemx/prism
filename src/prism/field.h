@@ -15,6 +15,7 @@ class VectorField;
 class VectorField {
   public:
     VectorField(std::string name, const mesh::PMesh& mesh);
+    VectorField(std::string name, const mesh::PMesh& mesh, Vector3d data);
     VectorField(std::string name, const mesh::PMesh& mesh, MatrixX3d data);
     VectorField(std::string name, const mesh::PMesh& mesh, double value);
 
@@ -23,9 +24,9 @@ class VectorField {
     auto inline data() -> MatrixX3d& { return _data; }
 
     // return the first column of data
-    auto inline x() const -> ScalarField;
-    auto inline y() const -> ScalarField;
-    auto inline z() const -> ScalarField;
+    auto x() const -> ScalarField;
+    auto y() const -> ScalarField;
+    auto z() const -> ScalarField;
 
   private:
     const mesh::PMesh& _mesh;

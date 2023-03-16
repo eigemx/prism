@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -76,22 +77,31 @@ auto main(int argc, char* argv[]) -> int {
         info("Matrix A is solvable\n");
     }*/
 
-    auto bps = prism::mesh::read_boundary_conditions(
-        "test_cases/slice_2d_hex_coarse/boundary.txt",
-        {"left", "right", "top", "bottom", "front", "back"});
+    using namespace prism;
 
-    for (const auto& bp : bps) {
-        prism::print("name: {}\n", bp.name());
-        for (const auto& atr : bp.attributes()) {
-            prism::print(" {}\n", atr.name());
-            switch (atr.type()) {
-                case prism::mesh::BoundaryAttributeType::Scalar:
-                    prism::print("  scalar\n");
-                    break;
-                case prism::mesh::BoundaryAttributeType::Vector:
-                    prism::print("  vector\n");
-                    break;
-            }
-        }
+    std::vector<std::string> args(argv, argv + argc);
+
+    if (argc < 2) {
+        error("Usage: diffsolver [unv-file]");
+        return 1;
     }
+
+    auto unv_file_name = args[1];
+
+    // read mesh
+    auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
+
+    auto T = ScalarField("T", mesh, 300.0);
+    auto V = VectorField("V", mesh, Vector3d {1.0, 2.0, 3.0});
+
+    auto V_x = V.x();
+
+    // update values of V_x by adding 10.0 to each elelment, using Eigen::VectorXd methods
+    for (auto& val : V_x.data()) {
+        val += 10.0;
+    }
+
+    V_x.update_parent_vec_field();
+
+    std::cout << V.data() << std::endl;
 }

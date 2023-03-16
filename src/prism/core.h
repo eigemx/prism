@@ -2,6 +2,7 @@
 
 #include "diffusion/diffusion.h"
 #include "equation.h"
+#include "field.h"
 #include "fvscheme.h"
 #include "gradient/gradient.h"
 #include "mesh/pmesh.h"
