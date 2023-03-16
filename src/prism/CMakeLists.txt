@@ -6,9 +6,9 @@ add_library(prism-core
     meta.h
     fvscheme.h
     equation.h
-    equation.cpp
     field.h
     field.cpp
+    equation.cpp
     
     # mesh module
     mesh/face.cpp
@@ -16,11 +16,13 @@ add_library(prism-core
     mesh/boundary.cpp
     mesh/pmesh.cpp 
     mesh/unv.cpp
+    mesh/trie.cpp
     mesh/face.h
     mesh/cell.h
     mesh/boundary.h
     mesh/pmesh.h
     mesh/unv.h
+    mesh/trie.h
 
     # diffusion module
     diffusion/diffusion.h

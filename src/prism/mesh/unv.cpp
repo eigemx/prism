@@ -53,6 +53,7 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filename) {
     unv_mesh = unv::read(filename);
+    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(unv_mesh.vertices.size());
 
     process_cells();
     process_groups();
@@ -62,6 +63,7 @@ UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filena
     for (const auto& v : unv_mesh.vertices) {
         _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
     }
+
 
     // clear unv_mesh to save memory
     unv_mesh = {};
@@ -189,10 +191,10 @@ auto UnvToPMesh::process_face(std::vector<std::size_t>& face_vertices_ids) -> st
     std::sort(sorted_face_vertices_ids.begin(), sorted_face_vertices_ids.end());
 
     // lookup the current face, to check if it has been processed before
-    auto face_id_iter {face_index(sorted_face_vertices_ids)};
+    auto face_id_opt {face_index(sorted_face_vertices_ids)};
 
-    if (face_id_iter.has_value()) {
-        auto face_id {face_id_iter.value()->second};
+    if (face_id_opt.has_value()) {
+        auto face_id {face_id_opt.value()};
         auto& face {_faces[face_id]};
 
         if (face.has_owner()) {
@@ -227,7 +229,7 @@ auto UnvToPMesh::process_face(std::vector<std::size_t>& face_vertices_ids) -> st
 
     _faces.push_back(std::move(new_face));
 
-    _face_to_index_map.insert({sorted_face_vertices_ids, face_id});
+    _faces_lookup_trie->insert(sorted_face_vertices_ids, face_id);
 
     return face_id;
 }
@@ -253,20 +255,18 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
     // this face does not yet have an owner, this will be set later by process_face()
     new_face.set_id(face_id);
     _faces.push_back(std::move(new_face));
-    _face_to_index_map.insert({sorted_face_vertices, face_id});
+    _faces_lookup_trie->insert(sorted_face_vertices, face_id);
 
     return face_id;
 }
 
 auto UnvToPMesh::face_index(const std::vector<std::size_t>& face_vertices)
-    -> std::optional<UnvToPMesh::SortedFaceToIndexMap::iterator> {
-    auto face_itr {_face_to_index_map.find(face_vertices)};
-
-    if (face_itr == _face_to_index_map.end()) {
-        return std::nullopt;
+    -> std::optional<std::size_t> {
+    auto res = _faces_lookup_trie->find(face_vertices);
+    if (res.has_value()) {
+        return res.value();
     }
-
-    return face_itr;
+    return std::nullopt;
 }
 
 void UnvToPMesh::process_groups() {

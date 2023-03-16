@@ -12,6 +12,7 @@
 #include "cell.h"
 #include "face.h"
 #include "pmesh.h"
+#include "trie.h"
 
 namespace prism::mesh {
 
@@ -22,9 +23,6 @@ class UnvToPMesh : public ToPMeshConverter {
     auto to_pmesh() -> PMesh override;
 
   private:
-    // map a face sorted vertex ids to its index in `this->_faces` vector
-    using SortedFaceToIndexMap = std::map<std::vector<std::size_t>, std::size_t>;
-
     // map a boundary face Unv element index to:
     // 1) its index in `this->faces()`
     // 2) whether the face is contained in a defined boundary batch or not
@@ -49,16 +47,15 @@ class UnvToPMesh : public ToPMeshConverter {
     void process_group(const unv::Group& group);
     void check_boundary_faces();
 
-    auto face_index(const std::vector<std::size_t>& face_vertices)
-        -> std::optional<SortedFaceToIndexMap::iterator>;
+    auto face_index(const std::vector<std::size_t>& face_vertices) -> std::optional<std::size_t>;
 
     // fields
     std::filesystem::path _filename;
     unv::Mesh unv_mesh;
 
-    SortedFaceToIndexMap _face_to_index_map;
     BoundaryNameToFacesMap _boundary_name_to_faces_map;
     UnvIndexToBFaceIndexMap _unv_id_to_bface_index_map;
+    std::unique_ptr<FacesLookupTrie> _faces_lookup_trie;
 
     std::vector<Vector3d> _vertices;
     std::vector<Face> _faces;
