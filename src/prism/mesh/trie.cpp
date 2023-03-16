@@ -14,11 +14,12 @@ FacesLookupTrie::FacesLookupTrie(std::size_t n_vertices) {
 
 void FacesLookupTrie::insert(const std::vector<std::size_t>& face_labels, std::size_t face_id) {
     auto root_node_id = face_labels[0];
+    auto face_labels_size = face_labels.size();
     auto& root_node = _root_nodes[root_node_id];
 
     auto* current_node = &root_node;
 
-    for (std::size_t i = 1; i < face_labels.size(); ++i) {
+    for (std::size_t i = 1; i < face_labels_size; ++i) {
         auto v_id = face_labels[i];
         auto it = std::find_if(current_node->children.begin(),
                                current_node->children.end(),
@@ -47,11 +48,12 @@ void FacesLookupTrie::insert(const std::vector<std::size_t>& face_labels, std::s
 auto FacesLookupTrie::find(const std::vector<std::size_t>& face_labels) const
     -> std::optional<std::size_t> {
     auto root_node_id = face_labels[0];
+    auto face_labels_size = face_labels.size();
     const auto& root_node = _root_nodes[root_node_id];
 
     const auto* current_node = &root_node;
 
-    for (std::size_t i = 1; i < face_labels.size(); ++i) {
+    for (std::size_t i = 1; i < face_labels_size; ++i) {
         auto v_id = face_labels[i];
         auto it = std::find_if(current_node->children.begin(),
                                current_node->children.end(),
