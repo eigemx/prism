@@ -18,6 +18,8 @@ ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh, double value
 
 void ScalarField::update_parent_vec_field() {
     if (_parent_vec_field == nullptr) {
+        warn(format("ScalarField::update_parent_vec_field: '{}' has no parent vector field.",
+                    _name));
         return;
     }
 

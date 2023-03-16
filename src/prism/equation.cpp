@@ -3,29 +3,46 @@
 #include "print.h"
 
 namespace prism {
-SteadyConservedScalar::SteadyConservedScalar(std::string scalar_name, const mesh::PMesh& mesh)
-    : _scalar_name(std::move(scalar_name)), _mesh(mesh) {
-    // reserve space for the coefficient matrix with the size of mesh cells
-    auto n_cells = mesh.cells().size();
-    coeff_matrix() = SparseMatrix(n_cells, n_cells);
 
-    // reserve space for the right hand side vector with the size of mesh cells
-    lhs_vector().resize(n_cells);
-    lhs_vector().setZero();
+Equation::Equation(std::vector<FVScheme*> schemes) : _schemes(std::move(schemes)) {
+    if (_schemes.empty()) {
+        throw std::runtime_error(
+            format("Equation constructor was called with an empty schemes vector. No matrix "
+                   "initialization was performed."));
+    }
+
+    const auto& mesh = _schemes[0]->mesh();
+    auto n_cells = mesh.cells().size();
+    _unified_coeff_matrix = SparseMatrix(n_cells, n_cells);
+    _unified_rhs_vector = VectorXd::Zero(n_cells);
 }
 
-void SteadyConservedScalar::update_coeffs() {
+void Equation::update_coeffs() {
+    if (_schemes.empty()) {
+        throw std::runtime_error(
+            "Equation::update_coeffs(): Attempting to update matrix coefficients with no FV "
+            "schemes");
+    }
+
+    const auto& mesh = _schemes[0]->mesh();
+
     // iterate over all cells
-    for (const auto& cell : _mesh.cells()) {
+    for (const auto& cell : mesh.cells()) {
         for (auto face_id : cell.faces_ids()) {
-            const auto& face = _mesh.faces()[face_id];
+            const auto& face = mesh.faces()[face_id];
 
             // iterate over all schemes
-            for (const auto& scheme : schemes()) {
+            for (auto& scheme : _schemes) {
                 // apply the scheme to the cell and face
-                scheme->apply(cell, face, _mesh, coeff_matrix(), lhs_vector());
+                scheme->apply(cell, face);
             }
         }
+    }
+
+    for (auto* scheme : _schemes) {
+        _unified_coeff_matrix += scheme->coeff_matrix();
+        _unified_rhs_vector += scheme->rhs_vector();
+        scheme->finalize();
     }
 }
 } // namespace prism

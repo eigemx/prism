@@ -8,7 +8,7 @@
 #include <vector>
 
 auto main(int argc, char* argv[]) -> int {
-    /*using namespace prism;
+    using namespace prism;
 
     print_header();
     print("diffsolver - A steady state temperature diffusion solver\n");
@@ -25,31 +25,22 @@ auto main(int argc, char* argv[]) -> int {
     // read mesh
     auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
 
-    // setup steady diffusion equation for temperature
-    // this will create a linear system of equations A * T = b
-    auto eqn = SteadyConservedScalar("T", mesh);
+    auto T = ScalarField("temperature", mesh, 300.0);
 
-    // Add diffusion term (∇.k∇T) (linear diffusion interpolation scheme)
-    auto diff_scheme = diffusion::Linear(1.0);
+    auto diff = diffusion::Linear(1.0, T);
 
-    // add explicit gradient scheme (to calculate ∇T in non-orthogonal corrections)
-    auto grad_scheme = gradient::GreenGauss();
-
-    // prepare cell visitor and connect to the scheme
-    //eqn.add_scheme(diff_scheme);
-    eqn.add_scheme(diffusion::Linear(1.0));
-
+    auto eqn = Equation({&diff});
     eqn.update_coeffs();
 
     // export right hand side vector b to csv file `vector.csv`
-    auto b = eqn.lhs_vector();
-    std::ofstream vector_file("vector_u.csv");
+    auto b = eqn.rhs_vector();
+    std::ofstream vector_file("vector.csv");
     vector_file << b;
     vector_file.close();
 
     // export coefficients matrix A to csv file `matrix.csv`
     SparseMatrix& A = eqn.coeff_matrix();
-    std::ofstream matrix_file("matrix_u.csv");
+    std::ofstream matrix_file("matrix.csv");
     matrix_file << A;
     matrix_file.close();
 
@@ -74,34 +65,6 @@ auto main(int argc, char* argv[]) -> int {
     if (n_row_non_zero > 0) {
         error(format("Matrix A has {} rows that do not sum to zero", n_row_non_zero));
     } else {
-        info("Matrix A is solvable\n");
-    }*/
-
-    using namespace prism;
-
-    std::vector<std::string> args(argv, argv + argc);
-
-    if (argc < 2) {
-        error("Usage: diffsolver [unv-file]");
-        return 1;
+        info("Matrix A is solvable.");
     }
-
-    auto unv_file_name = args[1];
-
-    // read mesh
-    auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
-
-    auto T = ScalarField("T", mesh, 300.0);
-    auto V = VectorField("V", mesh, Vector3d {1.0, 2.0, 3.0});
-
-    auto V_x = V.x();
-
-    // update values of V_x by adding 10.0 to each elelment, using Eigen::VectorXd methods
-    for (auto& val : V_x.data()) {
-        val += 10.0;
-    }
-
-    V_x.update_parent_vec_field();
-
-    std::cout << V.data() << std::endl;
 }

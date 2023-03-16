@@ -12,7 +12,7 @@
 namespace prism::mesh {
 
 enum class BoundaryPatchType {
-    Wall,
+    Fixed,
     Inlet,
     Outlet,
     Symmetry,
@@ -32,9 +32,9 @@ class BoundaryPatchAttribute {
                            BoundaryAttributeData data)
         : _name(std::move(name)), _type(type), _data(std::move(data)) {}
 
-    [[nodiscard]] auto name() const noexcept -> const std::string& { return _name; }
-    [[nodiscard]] auto type() const noexcept -> BoundaryAttributeType { return _type; }
-    [[nodiscard]] auto data() const noexcept -> const BoundaryAttributeData& { return _data; }
+    auto name() const noexcept -> const std::string& { return _name; }
+    auto type() const noexcept -> BoundaryAttributeType { return _type; }
+    auto data() const noexcept -> const BoundaryAttributeData& { return _data; }
 
   private:
     std::string _name;
@@ -51,11 +51,11 @@ class BoundaryPatch {
     BoundaryPatch(std::string name, BoundaryPatchAttributes attributes, BoundaryPatchType type)
         : _name(std::move(name)), _attributes(std::move(attributes)), _type(type) {};
 
-    [[nodiscard]] auto name() const noexcept -> const std::string& { return _name; }
-    [[nodiscard]] auto type() const noexcept -> BoundaryPatchType { return _type; }
-    [[nodiscard]] auto attributes() const noexcept -> const BoundaryPatchAttributes& {
-        return _attributes;
-    }
+    auto name() const noexcept -> const std::string& { return _name; }
+    auto type() const noexcept -> BoundaryPatchType { return _type; }
+    auto attributes() const noexcept -> const BoundaryPatchAttributes& { return _attributes; }
+    auto get_scalar_attribute(const std::string& name) const -> double;
+    auto get_vector_attribute(const std::string& name) const -> Vector3d;
 
   private:
     std::string _name;

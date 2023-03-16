@@ -9,49 +9,22 @@
 
 namespace prism {
 
-class LinearSystem {
+class Equation {
   public:
-    virtual auto coeff_matrix() const -> const SparseMatrix& { return _coeff_matrix; }
-    virtual auto coeff_matrix() -> SparseMatrix& { return _coeff_matrix; }
+    Equation() = default;
+    Equation(std::vector<FVScheme*> schemes);
 
-    virtual auto lhs_vector() const -> const VectorXd& { return _b; }
-    virtual auto lhs_vector() -> VectorXd& { return _b; }
+    void update_coeffs();
 
-    virtual void update_coeffs() = 0;
+    auto coeff_matrix() const -> const SparseMatrix& { return _unified_coeff_matrix; }
+    auto coeff_matrix() -> SparseMatrix& { return _unified_coeff_matrix; }
+
+    auto rhs_vector() const -> const VectorXd& { return _unified_rhs_vector; }
+    auto rhs_vector() -> VectorXd& { return _unified_rhs_vector; }
 
   private:
-    SparseMatrix _coeff_matrix;
-    VectorXd _b;
-};
-
-
-class SchemeCollector {
-  public:
-    template <typename Scheme>
-    void add_scheme(Scheme& scheme) {
-        _schemes.emplace_back(std::make_shared<Scheme>(scheme));
-    }
-
-    template <typename Scheme>
-    void add_scheme(Scheme&& scheme) {
-        _schemes.emplace_back(std::make_shared<Scheme>(scheme));
-    }
-
-    auto schemes() const -> const std::vector<std::shared_ptr<FVScheme>>& { return _schemes; }
-
-  private:
-    std::vector<std::shared_ptr<FVScheme>> _schemes {};
-};
-
-
-class SteadyConservedScalar : public LinearSystem, public SchemeCollector {
-  public:
-    SteadyConservedScalar(std::string scalar_name, const mesh::PMesh& mesh);
-    void update_coeffs() override;
-    auto scalar_name() const -> const std::string& { return _scalar_name; }
-
-  private:
-    const mesh::PMesh& _mesh;
-    std::string _scalar_name;
+    SparseMatrix _unified_coeff_matrix;
+    VectorXd _unified_rhs_vector;
+    std::vector<FVScheme*> _schemes;
 };
 } // namespace prism
