@@ -8,14 +8,6 @@
 
 namespace prism {
 
-using CoeffPair = std::pair<std::size_t, double>;
-
-struct AlteredCoeffs {
-    double central {0.0};
-    std::optional<CoeffPair> neighbor {std::nullopt};
-    double b {0.0};
-};
-
 class FVScheme {
   public:
     virtual void apply(const mesh::Cell& cell,

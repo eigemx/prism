@@ -3,7 +3,7 @@
 #include "print.h"
 
 namespace prism {
-SteadyConservedScalar::SteadyConservedScalar(std::string scalar_name, mesh::PMesh& mesh)
+SteadyConservedScalar::SteadyConservedScalar(std::string scalar_name, const mesh::PMesh& mesh)
     : _scalar_name(std::move(scalar_name)), _mesh(mesh) {
     // reserve space for the coefficient matrix with the size of mesh cells
     auto n_cells = mesh.cells().size();

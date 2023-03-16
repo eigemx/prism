@@ -7,6 +7,8 @@ add_library(prism-core
     fvscheme.h
     equation.h
     equation.cpp
+    field.h
+    field.cpp
     
     # mesh module
     mesh/face.cpp
