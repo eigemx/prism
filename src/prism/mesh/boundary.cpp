@@ -1,6 +1,5 @@
 #include "boundary.h"
 
-#include <fmt/format.h>
 #include <toml++/toml.h>
 
 #include <fstream>
@@ -8,11 +7,35 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "../print.h"
+
 namespace prism::mesh {
+
+auto BoundaryPatch::get_scalar_attribute(const std::string& name) const -> double {
+    for (const auto& attr : _attributes) {
+        if (attr.name() == name && attr.type() == BoundaryAttributeType::Scalar) {
+            return std::get<double>(attr.data());
+        }
+    }
+
+    throw std::runtime_error(
+        format("Boundary patch '{}' does not have scalar attribute '{}'", _name, name));
+}
+
+auto BoundaryPatch::get_vector_attribute(const std::string& name) const -> Vector3d {
+    for (const auto& attr : _attributes) {
+        if (attr.name() == name && attr.type() == BoundaryAttributeType::Vector) {
+            return std::get<Vector3d>(attr.data());
+        }
+    }
+
+    throw std::runtime_error(
+        format("Boundary patch '{}' does not have vector attribute '{}'", _name, name));
+}
 
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
     const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryPatchType> {
-        {"wall", BoundaryPatchType::Wall},
+        {"wall", BoundaryPatchType::Fixed},
         {"inlet", BoundaryPatchType::Inlet},
         {"outlet", BoundaryPatchType::Outlet},
         {"gradient", BoundaryPatchType::Gradient},
@@ -51,9 +74,9 @@ auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
 
             if (array->size() != 3) {
                 throw std::runtime_error(
-                    fmt::format("Boundary condition '{}' for patch '{}' is not a 3D vector",
-                                key.str(),
-                                bname));
+                    format("Boundary condition '{}' for patch '{}' is not a 3D vector",
+                           key.str(),
+                           bname));
             }
 
             attributes.emplace_back(std::string(key),
@@ -67,9 +90,9 @@ auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
 
         else {
             throw std::runtime_error(
-                fmt::format("Boundary condition '{}' for patch '{}' is not a scalar or vector",
-                            key.str(),
-                            bname));
+                format("Boundary condition '{}' for patch '{}' is not a scalar or vector",
+                       key.str(),
+                       bname));
         }
     }
 
@@ -87,7 +110,7 @@ auto read_boundary_conditions(const std::filesystem::path& path,
     // throw if file doesn't exist
     if (!fstream) {
         throw std::runtime_error(
-            fmt::format("Failed to open boundary conditions file '{}'", path.string()));
+            format("Failed to open boundary conditions file '{}'", path.string()));
     }
 
     toml::table doc;
@@ -98,9 +121,9 @@ auto read_boundary_conditions(const std::filesystem::path& path,
     } catch (const toml::parse_error& e) {
         // file cannot be parsed
         throw std::runtime_error(
-            fmt::format("Failed to parse boundary condition file: '{}', complete error: {}",
-                        path.string(),
-                        e.what()));
+            format("Failed to parse boundary condition file: '{}', complete error: {}",
+                   path.string(),
+                   e.what()));
     }
 
     // for each defined boundary, get its relevant BoundaryData object
@@ -109,16 +132,16 @@ auto read_boundary_conditions(const std::filesystem::path& path,
 
         if (!table) {
             throw std::runtime_error(
-                fmt::format("Couldn't find definition for boundary patch '{}' in boundary "
-                            "conditions file '{}'",
-                            bname,
-                            path.string()));
+                format("Couldn't find definition for boundary patch '{}' in boundary "
+                       "conditions file '{}'",
+                       bname,
+                       path.string()));
         }
 
         auto type {doc[bname]["type"].value<std::string_view>()};
 
         if (!type) {
-            throw std::runtime_error(fmt::format(
+            throw std::runtime_error(format(
                 "Boundary conditions for patch '{}' does not have a type in boundary condition "
                 "file '{}'",
                 bname,

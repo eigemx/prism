@@ -22,6 +22,7 @@ class VectorField {
     auto inline name() const -> const std::string& { return _name; }
     auto inline data() const -> const MatrixX3d& { return _data; }
     auto inline data() -> MatrixX3d& { return _data; }
+    auto inline mesh() const -> const mesh::PMesh& { return _mesh; }
 
     // return the first column of data
     auto x() const -> ScalarField;
@@ -43,6 +44,7 @@ class ScalarField {
     auto inline name() const -> const std::string& { return _name; }
     auto inline data() const -> const VectorXd& { return _data; }
     auto inline data() -> VectorXd& { return _data; }
+    auto inline mesh() const -> const mesh::PMesh& { return _mesh; }
     void inline set_parent_vec_field(VectorField* parent) { _parent_vec_field = parent; }
     void update_parent_vec_field();
 
@@ -52,6 +54,5 @@ class ScalarField {
     VectorXd _data;
     VectorField* _parent_vec_field = nullptr;
 };
-
 
 } // namespace prism

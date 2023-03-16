@@ -2,5 +2,6 @@ Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines
          -readability-magic-numbers, 
          -cppcoreguidelines-avoid-magic-numbers, 
          -cppcoreguidelines-narrowing-conversions,
+         -cppcoreguidelines-pro-type-const-cast,
          -modernize-use-nodiscard'
 WarningsAsErrors: '*'
