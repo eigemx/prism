@@ -64,25 +64,25 @@ VectorField::VectorField(std::string name, const mesh::PMesh& mesh, double value
     _data = MatrixX3d::Constant(mesh.cells().size(), 3, value);
 }
 
-auto VectorField::x() const -> ScalarField {
+auto VectorField::x() -> ScalarField {
     auto x = ScalarField {_name + "_x", _mesh};
-    x.set_parent_vec_field(const_cast<VectorField*>(this));
+    x.set_parent_vec_field(this);
     x.data() = _data.col(0);
 
     return x;
 }
 
-auto VectorField::y() const -> ScalarField {
+auto VectorField::y() -> ScalarField {
     auto y = ScalarField {_name + "_y", _mesh};
-    y.set_parent_vec_field(const_cast<VectorField*>(this));
+    y.set_parent_vec_field(this);
     y.data() = _data.col(1);
 
     return y;
 }
 
-auto VectorField::z() const -> ScalarField {
+auto VectorField::z() -> ScalarField {
     auto z = ScalarField {_name + "_z", _mesh};
-    z.set_parent_vec_field(const_cast<VectorField*>(this));
+    z.set_parent_vec_field(this);
     z.data() = _data.col(2);
 
     return z;

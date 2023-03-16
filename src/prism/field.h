@@ -24,10 +24,9 @@ class VectorField {
     auto inline data() -> MatrixX3d& { return _data; }
     auto inline mesh() const -> const mesh::PMesh& { return _mesh; }
 
-    // return the first column of data
-    auto x() const -> ScalarField;
-    auto y() const -> ScalarField;
-    auto z() const -> ScalarField;
+    auto x() -> ScalarField;
+    auto y() -> ScalarField;
+    auto z() -> ScalarField;
 
   private:
     const mesh::PMesh& _mesh;
