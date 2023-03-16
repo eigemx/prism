@@ -1,0 +1,13 @@
+auto T = Field("T", Scalar, mesh);
+auto V = Field("V", Vector, mesh);
+
+auto T_transport_eqn = Equation({
+    diffusion::Linear(kappa, T),
+    convection::Quick(V, T)
+})
+
+
+auto x_momentum_eqn = Equation({
+    convection::Quick(V, V.x()),
+    diffusion::Linear(mu, V.x())
+})
