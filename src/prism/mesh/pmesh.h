@@ -20,19 +20,13 @@ class PMesh {
           std::vector<Face> faces,
           BoundaryPatches boundary_patches) noexcept;
 
-    [[nodiscard]] auto inline vertices() const noexcept -> const std::vector<Vector3d>& {
-        return _vertices;
-    }
+    auto inline vertices() const noexcept -> const std::vector<Vector3d>& { return _vertices; }
 
-    [[nodiscard]] auto inline cells() const noexcept -> const std::vector<Cell>& {
-        return _cells;
-    }
+    auto inline cells() const noexcept -> const std::vector<Cell>& { return _cells; }
 
-    [[nodiscard]] auto inline faces() const noexcept -> const std::vector<Face>& {
-        return _faces;
-    }
+    auto inline faces() const noexcept -> const std::vector<Face>& { return _faces; }
 
-    [[nodiscard]] auto inline boundary_conditions() const noexcept -> const BoundaryPatches& {
+    auto inline boundary_conditions() const noexcept -> const BoundaryPatches& {
         return _boundary_patches;
     }
 
