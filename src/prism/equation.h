@@ -27,7 +27,6 @@ class LinearSystem {
 
 class SchemeCollector {
   public:
-    // TODO: make template `Scheme` accept only types derived from FVScheme
     template <typename Scheme>
     void add_scheme(Scheme& scheme) {
         _schemes.emplace_back(std::make_shared<Scheme>(scheme));
@@ -44,13 +43,15 @@ class SchemeCollector {
     std::vector<std::shared_ptr<FVScheme>> _schemes {};
 };
 
+
 class SteadyConservedScalar : public LinearSystem, public SchemeCollector {
   public:
-    SteadyConservedScalar(std::string scalar_name, mesh::PMesh& mesh);
+    SteadyConservedScalar(std::string scalar_name, const mesh::PMesh& mesh);
     void update_coeffs() override;
+    auto scalar_name() const -> const std::string& { return _scalar_name; }
 
   private:
-    mesh::PMesh& _mesh;
+    const mesh::PMesh& _mesh;
     std::string _scalar_name;
 };
 } // namespace prism
