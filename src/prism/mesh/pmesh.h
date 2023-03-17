@@ -26,7 +26,7 @@ class PMesh {
 
     auto inline faces() const noexcept -> const std::vector<Face>& { return _faces; }
 
-    auto inline boundary_conditions() const noexcept -> const BoundaryPatches& {
+    auto inline boundary_patches() const noexcept -> const BoundaryPatches& {
         return _boundary_patches;
     }
 

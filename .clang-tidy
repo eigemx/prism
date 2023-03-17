@@ -4,4 +4,5 @@ Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines
          -cppcoreguidelines-narrowing-conversions,
          -cppcoreguidelines-pro-type-const-cast,
          -modernize-use-nodiscard'
+
 WarningsAsErrors: '*'
