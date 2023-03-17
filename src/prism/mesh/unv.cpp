@@ -78,12 +78,11 @@ auto UnvToPMesh::to_pmesh() -> PMesh {
 
     // get parent directory from _filename
     auto parent_dir = _filename.parent_path();
-    auto boundary_conditions =
-        read_boundary_conditions(parent_dir / "boundary.txt", boundary_names);
+    auto boundary_patches = read_boundary_conditions(parent_dir / "boundary.txt", boundary_names);
 
     // for each boundary condition, set the faces of the boundary
     std::size_t boundary_index {0};
-    for (auto& bc : boundary_conditions) {
+    for (auto& bc : boundary_patches) {
         auto& faces_ids = _boundary_name_to_faces_map.at(bc.name());
 
         for (auto face_id : faces_ids) {
@@ -93,10 +92,8 @@ auto UnvToPMesh::to_pmesh() -> PMesh {
         ++boundary_index;
     }
 
-    return {std::move(_vertices),
-            std::move(_cells),
-            std::move(_faces),
-            std::move(boundary_conditions)};
+    return {
+        std::move(_vertices), std::move(_cells), std::move(_faces), std::move(boundary_patches)};
 }
 
 void UnvToPMesh::process_cells() {

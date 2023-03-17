@@ -1,5 +1,5 @@
 add_library(prism-core
-    # core
+    # core headers
     core.h
     types.h
     print.h
@@ -7,22 +7,25 @@ add_library(prism-core
     fvscheme.h
     equation.h
     field.h
+
+    # core sources
     field.cpp
     equation.cpp
     
-    # mesh module
-    mesh/face.cpp
-    mesh/cell.cpp
-    mesh/boundary.cpp
-    mesh/pmesh.cpp 
-    mesh/unv.cpp
-    mesh/trie.cpp
+    # mesh module headers
     mesh/face.h
     mesh/cell.h
     mesh/boundary.h
     mesh/pmesh.h
     mesh/unv.h
     mesh/trie.h
+
+    mesh/face.cpp
+    mesh/cell.cpp
+    mesh/boundary.cpp
+    mesh/pmesh.cpp 
+    mesh/unv.cpp
+    mesh/trie.cpp
 
     # diffusion module
     diffusion/diffusion.h

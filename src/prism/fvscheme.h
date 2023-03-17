@@ -11,10 +11,10 @@ namespace prism {
 class FVScheme {
   public:
     virtual inline void apply(const mesh::Cell& cell, const mesh::Face& face) {
-        if (face.has_neighbor()) {
-            apply_interior(cell, face);
-        } else {
+        if (face.is_boundary()) {
             apply_boundary(cell, face);
+        } else {
+            apply_interior(cell, face);
         }
     }
 
