@@ -24,24 +24,22 @@ void FacesLookupTrie::insert(const std::vector<std::size_t>& face_labels, std::s
         auto it = std::find_if(current_node->children.begin(),
                                current_node->children.end(),
                                [v_id](const auto& child) {
-                                   return static_cast<VertexNode*>(child.get())->v_id == v_id;
+                                   return std::get_if<VertexNode>(&child) != nullptr &&
+                                          std::get<VertexNode>(child).v_id == v_id;
                                });
 
         if (it == current_node->children.end()) {
-            auto new_node = std::make_unique<VertexNode>();
-            new_node->v_id = v_id;
-            current_node->children.push_back(std::move(new_node));
-            current_node = static_cast<VertexNode*>(current_node->children.back().get());
+            current_node->children.emplace_back(VertexNode {v_id, {}, false});
+            current_node = &std::get<VertexNode>(current_node->children.back());
         }
 
         else {
-            current_node = static_cast<VertexNode*>(it->get());
+            current_node = &std::get<VertexNode>(*it);
         }
     }
 
-    auto tail_node = std::make_unique<TailNode>();
-    tail_node->face_id = face_id;
-    current_node->children.push_back(std::move(tail_node));
+    auto tail_node = TailNode {face_id};
+    current_node->children.emplace_back(tail_node);
     current_node->is_end = true;
 }
 
@@ -58,20 +56,19 @@ auto FacesLookupTrie::find(const std::vector<std::size_t>& face_labels) const
         auto it = std::find_if(current_node->children.begin(),
                                current_node->children.end(),
                                [v_id](const auto& child) {
-                                   return static_cast<VertexNode*>(child.get())->v_id == v_id;
+                                   return std::get_if<VertexNode>(&child) != nullptr &&
+                                          std::get<VertexNode>(child).v_id == v_id;
                                });
 
         if (it == current_node->children.end()) {
             return std::nullopt;
         }
 
-        else {
-            current_node = static_cast<VertexNode*>(it->get());
-        }
+        current_node = &std::get<VertexNode>(*it);
     }
 
     if (current_node->is_end) {
-        return static_cast<TailNode*>(current_node->children[0].get())->face_id;
+        return std::get<TailNode>(current_node->children[0]).face_id;
     }
 
     return std::nullopt;
