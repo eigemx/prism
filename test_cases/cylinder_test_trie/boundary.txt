@@ -1,3 +1,0 @@
-[walls]
-type = 'wall'
-velocity = [ 0.0, 0.0, 0.0 ]
