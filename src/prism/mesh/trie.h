@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
 
 namespace prism::mesh {
@@ -13,15 +14,18 @@ class FacesLookupTrie {
     auto find(const std::vector<std::size_t>& face_labels) const -> std::optional<std::size_t>;
 
   private:
-    struct Node {};
+    // forward declaration
+    struct VertexNode;
+    struct TailNode;
+    using Node = std::variant<VertexNode, TailNode>;
 
-    struct VertexNode : Node {
+    struct VertexNode {
         std::size_t v_id;
-        std::vector<std::unique_ptr<Node>> children;
+        std::vector<Node> children;
         bool is_end {false};
     };
 
-    struct TailNode : Node {
+    struct TailNode {
         std::size_t face_id;
     };
 
