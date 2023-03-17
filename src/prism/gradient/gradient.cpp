@@ -34,7 +34,7 @@ auto boundary_face_phi(const mesh::Cell& cell, const mesh::Face& f, const Scalar
 }
 
 auto GreenGauss::gradient(const mesh::Cell& cell, const ScalarField& field) -> Vector3d {
-    auto grad = Vector3d::Zero();
+    auto grad = Vector3d {0., 0., 0.};
     const auto& mesh = field.mesh();
 
     for (auto face_id : cell.faces_ids()) {
@@ -67,8 +67,7 @@ auto GreenGauss::gradient(const mesh::Cell& cell, const ScalarField& field) -> V
         grad += Sf * face_phi;
     }
 
-    grad /= cell.volume();
-    return grad;
+    return grad / cell.volume();
 }
 
 } // namespace prism::gradient
