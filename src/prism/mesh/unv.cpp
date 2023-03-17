@@ -59,7 +59,6 @@ UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filena
     process_groups();
 
     // get a copy of unv_mesh.vertices
-    // TODO: use _vertices instead of unv_mesh.vertices after construction
     for (const auto& v : unv_mesh.vertices) {
         _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
     }
@@ -215,8 +214,8 @@ auto UnvToPMesh::process_face(std::vector<std::size_t>& face_vertices_ids) -> st
     std::vector<Vector3d> face_vertices;
 
     for (const auto& vertex_id : face_vertices_ids) {
-        const auto& vec = unv_mesh.vertices[vertex_id];
-        face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
+        const auto& vec = _vertices[vertex_id];
+        face_vertices.push_back(vec);
     }
 
     auto new_face {Face(face_vertices, std::move(face_vertices_ids))};
@@ -243,8 +242,8 @@ auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std
     std::vector<Vector3d> face_vertices;
 
     for (const auto& vertex_id : boundary_face.vertices_ids()) {
-        const auto& vec = unv_mesh.vertices[vertex_id];
-        face_vertices.emplace_back(Vector3d(vec[0], vec[1], vec[2]));
+        const auto& vec = _vertices[vertex_id];
+        face_vertices.push_back(vec);
     }
 
     auto new_face {Face(face_vertices, boundary_face.vertices_ids())};
