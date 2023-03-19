@@ -29,10 +29,21 @@ auto main(int argc, char* argv[]) -> int {
 
     auto diff = diffusion::Linear(1.0, T);
 
-    auto eqn = Equation({&diff});
-    eqn.update_coeffs();
+    auto eqn = Equation(T, {&diff});
 
-    // export right hand side vector b to csv file `vector.csv`
+    auto solver = solver::GaussSeidel();
+    solver.solve(eqn, 5, 1e-5);
+
+    prism::export_field(eqn.scalar_field(), "sol.vtu");
+
+
+    const auto& result = eqn.scalar_field().data();
+    std::ofstream file("temperature.csv");
+    file << result;
+    file.close();
+
+
+    /*// export right hand side vector b to csv file `vector.csv`
     auto b = eqn.rhs_vector();
     std::ofstream vector_file("vector.csv");
     vector_file << b;
@@ -66,5 +77,5 @@ auto main(int argc, char* argv[]) -> int {
         error(format("Matrix A has {} rows that do not sum to zero", n_row_non_zero));
     } else {
         info("Matrix A is solvable.");
-    }
+    }*/
 }

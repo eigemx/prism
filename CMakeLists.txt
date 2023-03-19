@@ -4,7 +4,7 @@ project(
     prism
     LANGUAGES CXX
     VERSION 0.0.1
-    DESCRIPTION "A Finite Volume Based Navier-Stokes Solver"
+    DESCRIPTION "A Finite Volume Based CFD Framework"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -43,6 +43,8 @@ include_directories(${TABULATE_SOURCE_DIR}/single_include)
 # setup vtu11
 set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})
+include_directories(${VTU11_SOURCE_DIR}/)
+
 
 add_subdirectory(src/prism)
 include_directories(src/)

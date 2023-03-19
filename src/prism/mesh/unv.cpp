@@ -53,16 +53,16 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filename) {
     unv_mesh = unv::read(filename);
-    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(unv_mesh.vertices.size());
-
-    process_cells();
-    process_groups();
 
     // get a copy of unv_mesh.vertices
     for (const auto& v : unv_mesh.vertices) {
         _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
     }
 
+    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(unv_mesh.vertices.size());
+
+    process_cells();
+    process_groups();
 
     // clear unv_mesh to save memory
     unv_mesh = {};
