@@ -11,8 +11,8 @@ namespace prism {
 
 class Equation {
   public:
-    Equation() = default;
-    Equation(std::vector<FVScheme*> schemes);
+    Equation(ScalarField& phi) : _phi(phi) {};
+    Equation(ScalarField& phi, std::vector<FVScheme*> schemes);
 
     void update_coeffs();
 
@@ -22,9 +22,15 @@ class Equation {
     auto rhs_vector() const -> const VectorXd& { return _unified_rhs_vector; }
     auto rhs_vector() -> VectorXd& { return _unified_rhs_vector; }
 
+    auto scalar_field() const -> const ScalarField& { return _phi; }
+    auto scalar_field() -> ScalarField& { return _phi; }
+
+    void reset();
+
   private:
     SparseMatrix _unified_coeff_matrix;
     VectorXd _unified_rhs_vector;
     std::vector<FVScheme*> _schemes;
+    ScalarField& _phi;
 };
 } // namespace prism

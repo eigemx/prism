@@ -7,10 +7,12 @@ add_library(prism-core
     fvscheme.h
     equation.h
     field.h
+    export.h
 
     # core sources
     field.cpp
     equation.cpp
+    export.cpp
     
     # mesh module headers
     mesh/face.h
@@ -34,4 +36,8 @@ add_library(prism-core
     # gradient module
     gradient/gradient.h
     gradient/gradient.cpp
+
+    # solver module
+    solver/solver.h
+    solver/solver.cpp
 )

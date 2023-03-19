@@ -47,6 +47,9 @@ class ScalarField {
     void inline set_parent_vec_field(VectorField* parent) { _parent_vec_field = parent; }
     void update_parent_vec_field();
 
+    auto inline operator[](std::size_t i) const -> const double& { return _data[i]; }
+    auto inline operator[](std::size_t i) -> double& { return _data[i]; }
+
   private:
     const mesh::PMesh& _mesh;
     std::string _name;

@@ -2,10 +2,12 @@
 
 #include "diffusion/diffusion.h"
 #include "equation.h"
+#include "export.h"
 #include "field.h"
 #include "fvscheme.h"
 #include "gradient/gradient.h"
 #include "mesh/pmesh.h"
 #include "mesh/unv.h"
 #include "print.h"
+#include "solver/solver.h"
 #include "types.h"
