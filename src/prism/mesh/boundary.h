@@ -21,46 +21,44 @@ enum class BoundaryPatchType {
     Unknown, // for error handling
 };
 
-enum class BoundaryAttributeType { Scalar, Vector };
+enum class BoundaryConditionType { Scalar, Vector };
 
-using BoundaryAttributeData = std::variant<double, Vector3d>;
+using BoundaryConditionData = std::variant<double, Vector3d>;
 
-class BoundaryPatchAttribute {
+class BoundaryCondition {
   public:
-    BoundaryPatchAttribute(std::string name,
-                           BoundaryAttributeType type,
-                           BoundaryAttributeData data)
+    BoundaryCondition(std::string name, BoundaryConditionType type, BoundaryConditionData data)
         : _name(std::move(name)), _type(type), _data(std::move(data)) {}
 
     auto name() const noexcept -> const std::string& { return _name; }
-    auto type() const noexcept -> BoundaryAttributeType { return _type; }
-    auto data() const noexcept -> const BoundaryAttributeData& { return _data; }
+    auto type() const noexcept -> BoundaryConditionType { return _type; }
+    auto data() const noexcept -> const BoundaryConditionData& { return _data; }
 
   private:
     std::string _name;
-    BoundaryAttributeType _type;
-    BoundaryAttributeData _data;
+    BoundaryConditionType _type;
+    BoundaryConditionData _data;
 };
 
-using BoundaryPatchAttributes = std::vector<BoundaryPatchAttribute>;
+using BoundaryConditions = std::vector<BoundaryCondition>;
 
 class BoundaryPatch {
   public:
     BoundaryPatch() = delete;
 
-    BoundaryPatch(std::string name, BoundaryPatchAttributes attributes, BoundaryPatchType type)
-        : _name(std::move(name)), _attributes(std::move(attributes)), _type(type) {};
+    BoundaryPatch(std::string name, BoundaryConditions attributes, BoundaryPatchType type)
+        : _name(std::move(name)), _bcs(std::move(attributes)), _type(type) {};
 
     auto name() const noexcept -> const std::string& { return _name; }
     auto type() const noexcept -> BoundaryPatchType { return _type; }
-    auto attributes() const noexcept -> const BoundaryPatchAttributes& { return _attributes; }
-    auto get_scalar_attribute(const std::string& name) const -> double;
-    auto get_vector_attribute(const std::string& name) const -> Vector3d;
+    auto boundary_conditions() const noexcept -> const BoundaryConditions& { return _bcs; }
+    auto get_scalar_bc(const std::string& name) const -> double;
+    auto get_vector_bc(const std::string& name) const -> Vector3d;
 
   private:
     std::string _name;
     BoundaryPatchType _type;
-    BoundaryPatchAttributes _attributes;
+    BoundaryConditions _bcs;
 };
 
 using BoundaryPatches = std::vector<BoundaryPatch>;

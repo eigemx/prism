@@ -52,7 +52,7 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 
 namespace prism::mesh {
 UnvToPMesh::UnvToPMesh(const std::filesystem::path& filename) : _filename(filename) {
-    unv_mesh = unv::read(filename);
+    unv_mesh = unvpp::read(filename);
 
     // get a copy of unv_mesh.vertices
     for (const auto& v : unv_mesh.vertices) {
@@ -100,12 +100,12 @@ void UnvToPMesh::process_cells() {
 
     for (auto& element : unv_mesh.elements.value()) {
         switch (element.type()) {
-            case unv::ElementType::Line:
+            case unvpp::ElementType::Line:
                 break;
 
             // boundary faces
-            case unv::ElementType::Quad:
-            case unv::ElementType::Triangle: {
+            case unvpp::ElementType::Quad:
+            case unvpp::ElementType::Triangle: {
                 auto boundary_face_id = process_boundary_face(element);
 
                 // we will need UNV id of this boundary face later when we process groups
@@ -116,9 +116,9 @@ void UnvToPMesh::process_cells() {
             }
 
             // cells
-            case unv::ElementType::Hex:
-            case unv::ElementType::Tetra:
-            case unv::ElementType::Wedge:
+            case unvpp::ElementType::Hex:
+            case unvpp::ElementType::Tetra:
+            case unvpp::ElementType::Wedge:
                 process_cell(element);
                 break;
 
@@ -137,12 +137,12 @@ void UnvToPMesh::process_cells() {
     }
 }
 
-void UnvToPMesh::process_cell(const unv::Element& element) {
+void UnvToPMesh::process_cell(const unvpp::Element& element) {
     // keep track of face ids inside the current cell
     std::vector<std::size_t> cell_faces_ids;
 
     switch (element.type()) {
-        case unv::ElementType::Hex: {
+        case unvpp::ElementType::Hex: {
             // reserve 6 faces
             cell_faces_ids.reserve(6);
             for (auto& face_vertices_ids : hex_cell_faces(element.vertices_ids())) {
@@ -152,7 +152,7 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
             break;
         }
 
-        case unv::ElementType::Tetra: {
+        case unvpp::ElementType::Tetra: {
             // reserve 4 faces
             cell_faces_ids.reserve(4);
             for (auto& face_vertices_ids : tetra_cell_faces(element.vertices_ids())) {
@@ -162,7 +162,7 @@ void UnvToPMesh::process_cell(const unv::Element& element) {
             break;
         }
 
-        case unv::ElementType::Wedge: {
+        case unvpp::ElementType::Wedge: {
             // reserve 5 faces
             cell_faces_ids.reserve(5);
             for (auto& face_vertices_ids : wedge_cell_faces(element.vertices_ids())) {
@@ -230,7 +230,7 @@ auto UnvToPMesh::process_face(std::vector<std::size_t>& face_vertices_ids) -> st
     return face_id;
 }
 
-auto UnvToPMesh::process_boundary_face(const unv::Element& boundary_face) -> std::size_t {
+auto UnvToPMesh::process_boundary_face(const unvpp::Element& boundary_face) -> std::size_t {
     // sort the face indices to be used as a std::map key for searching
     auto sorted_face_vertices = boundary_face.vertices_ids();
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
@@ -271,7 +271,7 @@ void UnvToPMesh::process_groups() {
     }
 
     for (auto& group : unv_mesh.groups.value()) {
-        if (group.type() == unv::GroupType::Vertex) {
+        if (group.type() == unvpp::GroupType::Vertex) {
             continue;
         }
         const auto& unique_types = group.unique_element_types();
@@ -285,8 +285,8 @@ void UnvToPMesh::process_groups() {
         }
 
         if (unique_types.size() == 2) {
-            if ((unique_types.find(unv::ElementType::Quad) == unique_types.end()) ||
-                (unique_types.find(unv::ElementType::Triangle) == unique_types.end())) {
+            if ((unique_types.find(unvpp::ElementType::Quad) == unique_types.end()) ||
+                (unique_types.find(unvpp::ElementType::Triangle) == unique_types.end())) {
                 group_dimension_error = true;
             }
         }
@@ -304,7 +304,7 @@ void UnvToPMesh::process_groups() {
     check_boundary_faces();
 }
 
-void UnvToPMesh::process_group(const unv::Group& group) {
+void UnvToPMesh::process_group(const unvpp::Group& group) {
     auto group_faces = std::vector<std::size_t>();
     group_faces.reserve(group.elements_ids().size());
 

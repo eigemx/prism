@@ -13,6 +13,7 @@ auto main(int argc, char* argv[]) -> int {
     print_header();
     print("diffsolver - A steady state temperature diffusion solver\n");
 
+    // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
@@ -23,7 +24,9 @@ auto main(int argc, char* argv[]) -> int {
     auto unv_file_name = args[1];
 
     // read mesh
+    print("Loading mesh file {}...", unv_file_name);
     auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
+    print("Okay.\n");
 
     auto T = ScalarField("temperature", mesh, 300.0);
 
@@ -32,19 +35,24 @@ auto main(int argc, char* argv[]) -> int {
     auto eqn = Equation(T, {&diff});
 
     auto solver = solver::GaussSeidel();
-    solver.solve(eqn, 5, 1e-5);
+    solver.solve(eqn, 2000, 1e-4);
 
     prism::export_field(eqn.scalar_field(), "sol.vtu");
 
+    /*for (std::size_t i = 0; i < 3; ++i) {
+        eqn.update_coeffs();
 
-    const auto& result = eqn.scalar_field().data();
-    std::ofstream file("temperature.csv");
-    file << result;
-    file.close();
+        print("Completed iteration number: {}\n", i);
+    }*/
+
+    //const auto& result = eqn.scalar_field().data();
+    //std::ofstream file("temperature.csv");
+    //file << result;
+    //file.close();
 
 
-    /*// export right hand side vector b to csv file `vector.csv`
-    auto b = eqn.rhs_vector();
+    // export right hand side vector b to csv file `vector.csv`
+    /*auto b = eqn.rhs_vector();
     std::ofstream vector_file("vector.csv");
     vector_file << b;
     vector_file.close();

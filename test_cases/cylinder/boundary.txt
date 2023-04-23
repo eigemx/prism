@@ -1,12 +1,14 @@
 [inlet]
-type = "inlet"
+type = "wall"
 velocity = [0.0, 0.0, 0.1]
 temperature = 300
 
 [outlet]
-type = "outlet"
-pressure = 0.0
+type = "wall"
+pressure = 100.0
+temperature=300.0
 
 [wall]
 type = "wall"
 velocity = [0.0, 0.0, 0.0]
+temperature=200

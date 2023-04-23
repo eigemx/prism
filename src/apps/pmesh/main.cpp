@@ -31,7 +31,7 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
         return;
     }
 
-    auto unv_mesh = unv::read(mesh_file);
+    auto unv_mesh = unvpp::read(mesh_file);
 
     if (!unv_mesh.groups || unv_mesh.groups.value().empty()) {
         prism::error("No groups were found in mesh file");

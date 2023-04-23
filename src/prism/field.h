@@ -11,7 +11,6 @@ namespace prism {
 class ScalarField;
 class VectorField;
 
-
 class VectorField {
   public:
     VectorField(std::string name, const mesh::PMesh& mesh);

@@ -17,7 +17,7 @@ auto boundary_face_phi(const mesh::Cell& cell, const mesh::Face& f, const Scalar
 
         case mesh::BoundaryPatchType::Fixed: {
             const auto& phi_name = field.name();
-            return boundary_patch.get_scalar_attribute(phi_name);
+            return boundary_patch.get_scalar_bc(phi_name);
         }
 
         case mesh::BoundaryPatchType::Symmetry: {
@@ -67,7 +67,8 @@ auto GreenGauss::gradient(const mesh::Cell& cell, const ScalarField& field) -> V
         grad += Sf * face_phi;
     }
 
-    return grad / cell.volume();
+    //return grad / cell.volume();
+    return grad;
 }
 
 } // namespace prism::gradient
