@@ -4,6 +4,8 @@
 #include <vector>
 #include <vtu11/vtu11.hpp>
 
+#include "print.h"
+
 namespace prism {
 void export_field(const ScalarField& field, const std::string& file_name) {
     const auto& pmesh = field.mesh();
@@ -23,6 +25,8 @@ void export_field(const ScalarField& field, const std::string& file_name) {
     offsets.reserve(pmesh.cells().size());
 
     // set all cell types to 12 (hexahedron)
+    warn("Assuming all cells are hexahedra for vtu export.");
+
     std::vector<vtu11::VtkCellType> types(pmesh.cells().size(), 12);
 
     for (const auto& cell : pmesh.cells()) {

@@ -15,30 +15,27 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
         auto& b = eqn.rhs_vector();
         auto& phi = eqn.scalar_field();
 
-        // start the i-th iteration
-        for (std::size_t j = 0; j < n_cells; j++) {
-            double sum = 0.0;
+        // solve linear system A * phi = b, and check for convergence
+        res = (A * phi.data()) - b;
+        auto res_norm = res.norm();
 
-            for (SparseMatrix::InnerIterator it(A, j); it; ++it) {
-                if (it.row() != it.col()) {
-                    sum += it.value() * phi[it.row()];
+        if (res_norm < eps) {
+            print("Converged after {} iterations\n", i);
+            break;
+        }
+
+        // solve linear system A * phi = b
+        for (int j = 0; j < A.rows(); j++) {
+            double row_sum = 0.0;
+            for (int k = 0; k < A.cols(); k++) {
+                if (j != k) {
+                    row_sum += A.coeff(j, k) * phi.data()[k];
                 }
             }
-            phi[j] = (b[j] - sum) / A.coeff(j, j);
-
-            // update the jth residual
-            res[j] = std::abs(b[j] - (A.row(j) * phi.data()).sum());
+            phi[j] = (b[j] - row_sum) / A.coeff(j, j);
         }
 
-        // check root mean square of residual
-        double rms = res.norm() / std::sqrt(n_cells);
-
-        print("Iteration {}: RMS = {}\n", i, rms);
-
-        if (rms < eps) {
-            print("Converged in {} iterations\n", i);
-            return;
-        }
+        print("Completed iteration number: {} - residuals norm = {}\n", i, res_norm);
     }
 }
 } // namespace prism::solver

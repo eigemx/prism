@@ -14,12 +14,21 @@ class DiffusionSchemeBase {};
 
 class Linear : public FVScheme, public DiffusionSchemeBase {
   public:
-    Linear(double kappa, ScalarField& phi);
+    Linear(double kappa, ScalarField& phi)
+        : _kappa(kappa),
+          _phi(phi),
+          _mesh(phi.mesh()),
+          _gradient_scheme(std::make_unique<gradient::GreenGauss>()) {}
 
     template <typename GradientScheme>
-    Linear(double kappa, ScalarField& phi, const GradientScheme& gradient_scheme);
+    Linear(double kappa, ScalarField& phi, const GradientScheme& gradient_scheme)
+        : _kappa(kappa),
+          _phi(phi),
+          _mesh(phi.mesh()),
+          _gradient_scheme(std::make_unique<GradientScheme>(gradient_scheme)) {}
 
-    void finalize() override;
+    inline void finalize() override { _main_coeffs_calculated = true; }
+
     inline auto mesh() const -> const mesh::PMesh& override { return _mesh; }
 
   private:
@@ -40,6 +49,7 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
     ScalarField& _phi;
     const mesh::PMesh& _mesh;
     std::unique_ptr<gradient::GradientSchemeBase> _gradient_scheme;
+    bool _main_coeffs_calculated {false};
 };
 
 } // namespace prism::diffusion

@@ -8,25 +8,23 @@ Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
     : _schemes(std::move(schemes)), _phi(phi) {
     if (_schemes.empty()) {
         throw std::runtime_error(
-            format("Equation constructor was called with an empty schemes vector. No matrix "
+            format("Equation constructor was called with an empty FV schemes vector. No matrix "
                    "initialization was performed."));
     }
 
     const auto& mesh = _phi.mesh();
     auto n_cells = mesh.cells().size();
 
-    _unified_coeff_matrix = SparseMatrix(n_cells, n_cells);
-    _unified_rhs_vector = VectorXd::Zero(n_cells);
+    _coeff_matrix = SparseMatrix(n_cells, n_cells);
+    _rhs_vector = VectorXd::Zero(n_cells);
+
+    for (auto* scheme : _schemes) {
+        scheme->connect_linear_system(_coeff_matrix, _rhs_vector);
+    }
 }
 
 void Equation::update_coeffs() {
-    if (_schemes.empty()) {
-        throw std::runtime_error(
-            "Equation::update_coeffs(): Attempting to update matrix coefficients with no FV "
-            "schemes");
-    }
-
-    const auto& mesh = _schemes[0]->mesh();
+    const auto& mesh = _phi.mesh();
 
     // iterate over all cells
     for (const auto& cell : mesh.cells()) {
@@ -41,21 +39,15 @@ void Equation::update_coeffs() {
         }
     }
 
-    // zero out the matrix and vector for the linear system
-    reset();
-
     for (auto* scheme : _schemes) {
-        _unified_coeff_matrix += scheme->coeff_matrix();
-        _unified_rhs_vector += scheme->rhs_vector();
-
         // prepare the scheme for the next iteration
         scheme->finalize();
     }
 }
 
-void Equation::reset() {
-    _unified_coeff_matrix.setZero();
-    _unified_rhs_vector.setZero();
+void Equation::reset_coeffs() {
+    _coeff_matrix.setZero();
+    _rhs_vector.setZero();
 }
 
 } // namespace prism

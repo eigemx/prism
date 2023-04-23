@@ -9,10 +9,13 @@ project(
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
-# generate compile_commands.json to be used by clang-tidy
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# check if prism is being the main project
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    set(PRISM_MAIN_PROJECT ON)
+else()
+    set(PRISM_MAIN_PROJECT OFF)
+endif()
 
 # setup eigen
 set(EIGEN_SOURCE_DIR "external/eigen")
@@ -44,6 +47,36 @@ include_directories(${TABULATE_SOURCE_DIR}/single_include)
 set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})
 include_directories(${VTU11_SOURCE_DIR}/)
+
+# set build type to release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# define PRISM_DEBUG for debug builds
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DPRISM_DEBUG)
+endif()
+
+# set optimization flags for release builds for gcc, clang and msvc
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+    endif()
+endif()
+
+if (PRISM_MAIN_PROJECT)
+    # generate compile_commands.json to be used by clang-tidy
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+    # set output directories
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+endif()
 
 
 add_subdirectory(src/prism)

@@ -11,9 +11,9 @@
 
 namespace prism::mesh {
 
-auto BoundaryPatch::get_scalar_attribute(const std::string& name) const -> double {
-    for (const auto& attr : _attributes) {
-        if (attr.name() == name && attr.type() == BoundaryAttributeType::Scalar) {
+auto BoundaryPatch::get_scalar_bc(const std::string& name) const -> double {
+    for (const auto& attr : _bcs) {
+        if (attr.name() == name && attr.type() == BoundaryConditionType::Scalar) {
             return std::get<double>(attr.data());
         }
     }
@@ -22,9 +22,9 @@ auto BoundaryPatch::get_scalar_attribute(const std::string& name) const -> doubl
         format("Boundary patch '{}' does not have scalar attribute '{}'", _name, name));
 }
 
-auto BoundaryPatch::get_vector_attribute(const std::string& name) const -> Vector3d {
-    for (const auto& attr : _attributes) {
-        if (attr.name() == name && attr.type() == BoundaryAttributeType::Vector) {
+auto BoundaryPatch::get_vector_bc(const std::string& name) const -> Vector3d {
+    for (const auto& attr : _bcs) {
+        if (attr.name() == name && attr.type() == BoundaryConditionType::Vector) {
             return std::get<Vector3d>(attr.data());
         }
     }
@@ -53,10 +53,10 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
 }
 
 auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
-    -> BoundaryPatchAttributes {
-    BoundaryPatchAttributes attributes;
+    -> BoundaryConditions {
+    BoundaryConditions boundary_conditions;
 
-    // read all toml nodes in table, if of type double or array and of size 3, add to attributes
+    // read all toml nodes in table, if of type double or array and of size 3, add to boundary_conditions
     const auto& toml_nodes = table[bname].as_table();
     for (auto&& [key, value] : *toml_nodes) {
         if (key == "type") {
@@ -65,8 +65,8 @@ auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
 
         if (value.is_number() || value.is_floating_point()) {
             double attr_float_val = value.value<double>().value();
-            attributes.emplace_back(
-                std::string(key), BoundaryAttributeType::Scalar, attr_float_val);
+            boundary_conditions.emplace_back(
+                std::string(key), BoundaryConditionType::Scalar, attr_float_val);
         }
 
         else if (value.is_array()) {
@@ -79,13 +79,13 @@ auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
                            bname));
             }
 
-            attributes.emplace_back(std::string(key),
-                                    BoundaryAttributeType::Vector,
-                                    Vector3d {
-                                        array->at(0).value<double>().value(),
-                                        array->at(1).value<double>().value(),
-                                        array->at(2).value<double>().value(),
-                                    });
+            boundary_conditions.emplace_back(std::string(key),
+                                             BoundaryConditionType::Vector,
+                                             Vector3d {
+                                                 array->at(0).value<double>().value(),
+                                                 array->at(1).value<double>().value(),
+                                                 array->at(2).value<double>().value(),
+                                             });
         }
 
         else {
@@ -96,7 +96,7 @@ auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
         }
     }
 
-    return attributes;
+    return boundary_conditions;
 }
 
 auto read_boundary_conditions(const std::filesystem::path& path,

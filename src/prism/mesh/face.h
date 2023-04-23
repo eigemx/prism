@@ -13,7 +13,7 @@ class Face {
     Face(const std::vector<Vector3d>& face_vertices,
          std::vector<std::size_t> face_vertices_ids) noexcept;
 
-    auto inline area() const noexcept -> const double& { return _area; }
+    auto inline area() const noexcept -> double { return _area; }
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }
     auto inline area_vector() const noexcept -> Vector3d { return _area * _normal; }
