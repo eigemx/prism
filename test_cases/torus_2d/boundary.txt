@@ -1,0 +1,15 @@
+[back]
+type = 'empty'
+temperature = [ 0.0, 0.0, 0.0 ]
+
+[front]
+type = 'empty'
+temperature = [ 0.0, 0.0, 0.0 ]
+
+[inner]
+type = 'wall'
+temperature = 900
+
+[outer]
+type = 'wall'
+temperature = 300
