@@ -13,7 +13,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     std::size_t adj_cell_id {};
 
     if (face.owner() == cell_id) {
-        // `face` is owned by `cell`, get the neighbor cell id
+        // `face` is owned by `cell`, get its neighbor cell id
         adj_cell_id = face.neighbor().value();
     } else {
         // `face` is a neighbor to `cell`, get its owner id

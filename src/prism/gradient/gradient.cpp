@@ -5,6 +5,14 @@
 namespace prism::gradient {
 auto boundary_face_phi(const mesh::Cell& cell, const mesh::Face& f, const ScalarField& field)
     -> std::optional<double> {
+    /** @brief Calculates the value of the field at the boundary face
+     *
+     * @param cell Cell containing the face
+     * @param f Boundary face
+     * @param field Field to calculate the value
+     * @return std::optional<double> Value of the field at the boundary face
+     */
+
     const auto& mesh = field.mesh();
 
     auto face_boundary_patch_id = f.boundary_patch_id().value();
@@ -34,12 +42,19 @@ auto boundary_face_phi(const mesh::Cell& cell, const mesh::Face& f, const Scalar
 }
 
 auto GreenGauss::gradient(const mesh::Cell& cell, const ScalarField& field) -> Vector3d {
-    auto grad = Vector3d {0., 0., 0.};
+    /** @brief Calculates the gradient of a scalar field using Green Gauss theorem
+     *
+     * @param cell Cell to calculate the gradient at its center
+     * @param field Field to calculate the gradient
+     * @return Vector3d Gradient of the field at the cell center
+     */
+
+    Vector3d grad {0., 0., 0.};
     const auto& mesh = field.mesh();
 
     for (auto face_id : cell.faces_ids()) {
         const auto& face = mesh.faces()[face_id];
-        auto Sf = face.normal() * face.area();
+        auto Sf = face.area_vector();
 
         if (face.is_boundary()) {
             auto phi_opt = boundary_face_phi(cell, face, field);
@@ -67,8 +82,7 @@ auto GreenGauss::gradient(const mesh::Cell& cell, const ScalarField& field) -> V
         grad += Sf * face_phi;
     }
 
-    //return grad / cell.volume();
-    return grad;
+    return grad / cell.volume();
 }
 
 } // namespace prism::gradient
