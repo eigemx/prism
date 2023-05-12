@@ -24,9 +24,6 @@ void export_field(const ScalarField& field, const std::string& file_name) {
     std::vector<vtu11::VtkIndexType> offsets;
     offsets.reserve(pmesh.cells().size());
 
-    // set all cell types to 12 (hexahedron)
-    warn("Assuming all cells are hexahedra for vtu export.");
-
     std::vector<vtu11::VtkCellType> types;
     types.reserve(pmesh.cells().size());
 

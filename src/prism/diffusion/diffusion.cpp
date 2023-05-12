@@ -10,17 +10,17 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     auto cell_id = cell.id();
 
     // get adjacent cell sharing `face` with `cell`
-    std::size_t adj_cell_id {};
+    std::size_t adjacent_cell_id {};
 
     if (face.owner() == cell_id) {
         // `face` is owned by `cell`, get its neighbor cell id
-        adj_cell_id = face.neighbor().value();
+        adjacent_cell_id = face.neighbor().value();
     } else {
         // `face` is a neighbor to `cell`, get its owner id
-        adj_cell_id = face.owner();
+        adjacent_cell_id = face.owner();
     }
 
-    const auto& adj_cell = _mesh.cells()[adj_cell_id];
+    const auto& adj_cell = _mesh.cells()[adjacent_cell_id];
 
     // face area vector
     const auto& S_f = face.area_vector();
@@ -46,7 +46,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
 
         // g_diff * (Φ_c - Φ_f)
         coeff_matrix().coeffRef(cell_id, cell_id) += g_diff;
-        coeff_matrix().coeffRef(cell_id, adj_cell_id) += -g_diff;
+        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff;
     }
 
     correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
@@ -57,9 +57,16 @@ void Linear::correct_non_orhto_interior(const mesh::Cell& cell,
                                         const mesh::Cell& nei_cell,
                                         const mesh::Face& face,
                                         const Vector3d& T_f) {
-    auto grad_c = _gradient_scheme->gradient(cell, _phi);
-    auto grad_n = _gradient_scheme->gradient(nei_cell, _phi);
+    // gradient of field phi at cell center
+    auto grad_c = _gradient_scheme->gradient(cell);
+
+    // gradient of field phi at neighbor cell center
+    auto grad_n = _gradient_scheme->gradient(nei_cell);
+
+    // weighting factor for the two cells sharing the face
     auto gc = mesh::PMesh::cells_weighting_factor(cell, nei_cell, face);
+
+    // weighted average of the two gradients at the face center
     auto grad_f = (gc * grad_c) + ((1 - gc) * grad_n);
 
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
@@ -100,16 +107,14 @@ void Linear::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face
     auto e = d_CF / d_CF_norm;
 
     auto E_f = ((S_f.dot(S_f) / e.dot(S_f))) * e;
-
+    auto g_diff = (E_f.norm() * _kappa) / (d_CF_norm);
 
     if (!_main_coeffs_calculated) {
         // diffusion factor
-        auto g_diff = (E_f.norm() * _kappa) / (d_CF_norm);
-
         coeff_matrix().coeffRef(cell_id, cell_id) += g_diff;
-        rhs_vector()[cell_id] += g_diff * phi_wall;
     }
 
+    rhs_vector()[cell_id] += g_diff * phi_wall;
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
 
@@ -124,7 +129,9 @@ void Linear::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
     auto e = d_CF / d_CF_norm;
 
     // now we need to calculate the gradient of phi at the face center
+    // TODO: this is very ugly
     const auto& face_boundary_patch = _mesh.boundary_patches()[face.boundary_patch_id().value()];
+
     auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
     auto phi_c = _phi[cell.id()];
 

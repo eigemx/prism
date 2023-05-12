@@ -1,10 +1,8 @@
 [back]
 type = 'empty'
-temperature = [ 0.0, 0.0, 0.0 ]
 
 [front]
 type = 'empty'
-temperature = [ 0.0, 0.0, 0.0 ]
 
 [inner]
 type = 'wall'
