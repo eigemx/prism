@@ -18,7 +18,7 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::make_unique<gradient::GreenGauss>()) {}
+          _gradient_scheme(std::make_unique<gradient::GreenGauss>(phi)) {}
 
     template <typename GradientScheme>
     Linear(double kappa, ScalarField& phi, const GradientScheme& gradient_scheme)

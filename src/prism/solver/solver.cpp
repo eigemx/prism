@@ -36,6 +36,11 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
         }
 
         print("Completed iteration number: {} - residuals norm = {}\n", i, res_norm);
+        print("Average temperature = {}\n", phi.data().sum() / n_cells);
+
+        // zero out the right hand side vector b, so that it can be recalculated
+        // in the next iteration using non-orthogonal corrections (if any)
+        eqn.rhs_vector().setZero();
     }
 }
 } // namespace prism::solver

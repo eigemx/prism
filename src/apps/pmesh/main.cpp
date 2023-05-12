@@ -131,12 +131,14 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
         auto [min_face_area, max_face_area] = min_max_face_area(prism_mesh);
         auto [min_face_non_ortho, max_face_non_ortho] = min_max_face_non_ortho(prism_mesh);
 
-        prism::print(
-            "Max face area = {} L^2 and min face area = {} L^2\n", max_face_area, min_face_area);
+        prism::print("Max face area = {:.4f} L^2 and min face area = {:.4f} L^2\n",
+                     max_face_area,
+                     min_face_area);
 
-        prism::print("Max face non orthogonality = {} and min face non orthogonality = {}\n",
-                     max_face_non_ortho,
-                     min_face_non_ortho);
+        prism::print(
+            "Max face non orthogonality = {:.4f} and min face non orthogonality = {:.4f}\n",
+            max_face_non_ortho,
+            min_face_non_ortho);
 
     } catch (const std::exception& e) {
         prism::error(e.what());

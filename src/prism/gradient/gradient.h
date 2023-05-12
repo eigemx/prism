@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "../field.h"
 #include "../mesh/pmesh.h"
@@ -18,11 +19,16 @@ class GradientSchemeBase {
 
     virtual ~GradientSchemeBase() = default;
 
-    virtual auto gradient(const mesh::Cell& c, const ScalarField& field) -> Vector3d = 0;
+    virtual auto gradient(const mesh::Cell& c) -> Vector3d = 0;
 };
 
 class GreenGauss : public GradientSchemeBase {
   public:
-    auto gradient(const mesh::Cell& cell, const ScalarField& field) -> Vector3d override;
+    GreenGauss(const ScalarField& field);
+    auto gradient(const mesh::Cell& cell) -> Vector3d override;
+
+  private:
+    const ScalarField& _field;
+    std::vector<Vector3d> _cell_gradients;
 };
 } // namespace prism::gradient
