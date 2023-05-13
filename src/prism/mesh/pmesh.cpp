@@ -1,7 +1,5 @@
 #include "pmesh.h"
 
-#include <iostream>
-
 namespace prism::mesh {
 // define all functions in PMesh class in pmesh.h
 PMesh::PMesh(std::vector<Vector3d> vertices,
@@ -12,17 +10,17 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
 PMesh::PMesh(std::vector<Vector3d> vertices,
              std::vector<Cell> cells,
              std::vector<Face> faces,
-             BoundaryPatches boundary_patches) noexcept
+             std::vector<BoundaryPatch> boundary_patches) noexcept
     : _vertices(std::move(vertices)),
       _cells(std::move(cells)),
       _faces(std::move(faces)),
       _boundary_patches(std::move(boundary_patches)) {}
 
-void PMesh::set_boundary_conditions(BoundaryPatches boundary_patches) {
+void PMesh::set_boundary_conditions(std::vector<BoundaryPatch> boundary_patches) {
     _boundary_patches = std::move(boundary_patches);
 }
 
-void PMesh::set_boundary_conditions(const BoundaryPatches& boundary_patches) {
+void PMesh::set_boundary_conditions(const std::vector<BoundaryPatch>& boundary_patches) {
     _boundary_patches = boundary_patches;
 }
 

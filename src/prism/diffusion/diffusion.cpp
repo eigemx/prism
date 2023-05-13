@@ -127,8 +127,8 @@ void Linear::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
     auto e = d_CF / d_CF_norm;
 
     // now we need to calculate the gradient of phi at the face center
-    // TODO: this is very ugly
-    const auto& face_boundary_patch = _mesh.boundary_patches()[face.boundary_patch_id().value()];
+    auto boundary_patch_id = face.boundary_patch_id().value();
+    const auto& face_boundary_patch = _mesh.boundary_patches()[boundary_patch_id];
 
     auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
     auto phi_c = _phi[cell.id()];

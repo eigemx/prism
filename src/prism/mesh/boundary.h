@@ -61,10 +61,8 @@ class BoundaryPatch {
     BoundaryConditions _bcs;
 };
 
-using BoundaryPatches = std::vector<BoundaryPatch>;
-
 auto read_boundary_conditions(const std::filesystem::path& path,
                               const std::vector<std::string_view>& boundary_names)
-    -> BoundaryPatches;
+    -> std::vector<BoundaryPatch>;
 
 } // namespace prism::mesh
