@@ -43,6 +43,7 @@ class ScalarField {
     auto inline data() const -> const VectorXd& { return _data; }
     auto inline data() -> VectorXd& { return _data; }
     auto inline mesh() const -> const mesh::PMesh& { return _mesh; }
+
     void inline set_parent_vec_field(VectorField* parent) { _parent_vec_field = parent; }
     void update_parent_vec_field();
 

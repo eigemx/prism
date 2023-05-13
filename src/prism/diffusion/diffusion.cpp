@@ -7,10 +7,17 @@
 namespace prism::diffusion {
 
 void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
+    /**
+     * @brief Apply the discretized diffusion equation to the cell, 
+     * when the face is an interior face.
+     * 
+     * @param cell The cell which the equation is applied to.
+     * @param face The (interior) face shared by the cell and its neighbor.
+     */
     auto cell_id = cell.id();
 
     // get adjacent cell sharing `face` with `cell`
-    std::size_t adjacent_cell_id {};
+    std::size_t adjacent_cell_id {0};
 
     if (face.owner() == cell_id) {
         // `face` is owned by `cell`, get its neighbor cell id
@@ -69,46 +76,66 @@ void Linear::correct_non_orhto_interior(const mesh::Cell& cell,
     // weighted average of the two gradients at the face center
     auto grad_f = (gc * grad_c) + ((1 - gc) * grad_n);
 
+    // cross-diffusion term is added to the right hand side of the equation
+    // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
 
 
 void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
-    auto cell_id = cell.id();
+    /**
+     * @brief Applies boundary discretized diffusion equation to the cell,
+     * when the current face is a boundary face. The function iteself does not
+     * apply the discretized equation, rather it calls the appropriate function
+     * based on the boundary type.
+     *
+     * @param cell The cell to which the boundary conditions are applied.
+     * @param face The boundary face.
+     */
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
 
     switch (boundary_patch.type()) {
+        // empty boundary patch, do nothing
         case mesh::BoundaryPatchType::Empty: {
             return;
         }
+
+        // fixed boundary patch, or Dirichlet boundary condition
         case mesh::BoundaryPatchType::Fixed: {
             apply_boundary_fixed(cell, face);
             return;
         }
+
         default:
-            throw std::runtime_error("Unsupported boundary type");
+            throw std::runtime_error(
+                format("diffusion::Linear::apply_boundary: "
+                       "Non-implemented boundary type for boundary patch: {}",
+                       boundary_patch.name()));
     }
 }
 
 
 void Linear::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+    // get the fixed phi variable associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
+
+    // all the following variable names are based on the notation used in
+    // function Linear::apply_interior
     auto cell_id = cell.id();
 
-    // face area vector
     const auto& S_f = face.area_vector();
     auto S_f_norm = face.area();
 
-    auto d_CF = face.center() - cell.center();
-    auto d_CF_norm = d_CF.norm();
-    auto e = d_CF / d_CF_norm;
-
+    // vector joining the centers of the cell and the face
+    auto d_Cf = face.center() - cell.center();
+    auto d_Cf_norm = d_Cf.norm();
+    auto e = d_Cf / d_Cf_norm;
     auto E_f = ((S_f.dot(S_f) / e.dot(S_f))) * e;
-    auto g_diff = (E_f.norm() * _kappa) / (d_CF_norm);
+
+    auto g_diff = (E_f.norm() * _kappa) / (d_Cf_norm);
 
     if (!_main_coeffs_calculated) {
-        // diffusion factor
         coeff_matrix().coeffRef(cell_id, cell_id) += g_diff;
     }
 
@@ -137,4 +164,5 @@ void Linear::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
 
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
+
 } // namespace prism::diffusion
