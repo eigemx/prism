@@ -60,6 +60,8 @@ void export_field(const ScalarField& field, const std::string& file_name) {
     vtu11::Vtu11UnstructuredMesh mesh {points, connectivity, offsets, types};
 
     // Create some data associated to points and cells
+    // TODO: this is a dummy data, either find a way in vtu11 to avoid this, or
+    //       implement an alternative vtu11 writer.
     std::vector<double> pointData(pmesh.vertices().size(), 0.0);
     std::vector<double> cellData(pmesh.cells().size());
 

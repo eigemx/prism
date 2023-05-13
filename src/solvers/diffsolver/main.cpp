@@ -24,18 +24,19 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
     print("Okay.\n");
 
-    // Set up the temperature field
+    // Set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
 
-    // Solve for temperature diffision
+    // Solve for temperature diffision: κ(∇.T)
+    // where κ is the thermal conductivity and ∇.T is the divergence of the temperature field
     auto diff = diffusion::Linear(4e-5, T);
 
-    // Construct the equation
+    // Construct the equation: κ(∇.T) = 0
     auto eqn = Equation(T, {&diff});
 
     // solve
     auto solver = solver::GaussSeidel();
     solver.solve(eqn, 5000, 1e-10);
 
-    prism::export_field(eqn.scalar_field(), "sol.vtu");
+    prism::export_field(eqn.scalar_field(), "solution.vtu");
 }
