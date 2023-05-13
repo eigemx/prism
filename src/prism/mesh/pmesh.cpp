@@ -1,5 +1,7 @@
 #include "pmesh.h"
 
+#include <iostream>
+
 namespace prism::mesh {
 // define all functions in PMesh class in pmesh.h
 PMesh::PMesh(std::vector<Vector3d> vertices,
@@ -55,7 +57,7 @@ auto PMesh::face_boundary_patch(const Face& face) const -> const BoundaryPatch& 
 }
 
 auto PMesh::cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double {
-    // this method calculates the geometric weighting factor between two cells
+    // this method calculates the geometric weighting factor between two cells `c` and `n`
     // sharing a face `f`.
     return (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
 }

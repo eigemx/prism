@@ -27,9 +27,9 @@ class Cell {
 
   private:
     std::size_t _id {0};
-    std::size_t _vertices_count {0};
     double _volume {0.0};
     Vector3d _center {0.0, 0.0, 0.0};
+
     std::vector<std::size_t> _faces_ids;
     std::vector<std::size_t> _vertices_ids;
 };

@@ -73,6 +73,11 @@ if (PRISM_MAIN_PROJECT)
     # generate compile_commands.json to be used by clang-tidy
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+    # turn off asserts for release builds
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_definitions(-DNDEBUG)
+    endif()
+
     # set output directories
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
