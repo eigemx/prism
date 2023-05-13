@@ -14,6 +14,11 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
      * @param cell The cell which the equation is applied to.
      * @param face The (interior) face shared by the cell and its neighbor.
      */
+
+    // Note that variable names in this function will be used in other functions
+    // found in this file. To avoid repeating the same comments, we will only
+    // comment on the first occurrence of each variable name.
+
     auto cell_id = cell.id();
 
     // get adjacent cell sharing `face` with `cell`
@@ -42,7 +47,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     // orthogonal-like normal vector E_f using over-relaxed approach
     auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + 1e-8))) * e;
 
-    // The matrix coefficients of the discretized diffusion term need to be calculated only once
+    // The matrix coefficients of the discretized diffusion term need to be calculated once
     // in the first iteration. After that, we only need to perform non-orthogonal correction.
     // Non-orthogonal correction only updates the right hand side vector b in AΦ = b.
     // This should be a performance boost to avoid unnecessarily accessing and updating
@@ -120,8 +125,6 @@ void Linear::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
-    // all the following variable names are based on the notation used in
-    // function Linear::apply_interior
     auto cell_id = cell.id();
 
     const auto& S_f = face.area_vector();
