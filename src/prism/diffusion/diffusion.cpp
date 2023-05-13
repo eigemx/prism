@@ -81,12 +81,10 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
         case mesh::BoundaryPatchType::Empty: {
             return;
         }
-
         case mesh::BoundaryPatchType::Fixed: {
             apply_boundary_fixed(cell, face);
             return;
         }
-
         default:
             throw std::runtime_error("Unsupported boundary type");
     }

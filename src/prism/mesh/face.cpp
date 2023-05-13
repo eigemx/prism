@@ -1,6 +1,5 @@
 #include "face.h"
 
-
 namespace prism::mesh {
 
 Face::Face(const std::vector<Vector3d>& face_vertices,

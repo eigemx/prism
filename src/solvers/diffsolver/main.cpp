@@ -30,12 +30,12 @@ auto main(int argc, char* argv[]) -> int {
 
     auto T = ScalarField("temperature", mesh, 300.0);
 
-    auto diff = diffusion::Linear(1.0, T);
+    auto diff = diffusion::Linear(1, T);
 
     auto eqn = Equation(T, {&diff});
 
     auto solver = solver::GaussSeidel();
-    solver.solve(eqn, 10000, 1e-6);
+    solver.solve(eqn, 1000, 1e-6);
 
     prism::export_field(eqn.scalar_field(), "sol.vtu");
 

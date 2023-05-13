@@ -1,12 +1,16 @@
 #include "gradient.h"
 
+#include <cassert>
+#include <iostream>
+
 #include "../print.h"
 
 namespace prism::gradient {
 
 
-auto boundary_face_phi(const mesh::Cell& cell, const mesh::Face& f, const ScalarField& field)
-    -> std::optional<double> {
+auto inline boundary_face_phi(const mesh::Cell& cell,
+                              const mesh::Face& f,
+                              const ScalarField& field) -> std::optional<double> {
     const auto& mesh = field.mesh();
 
     auto face_boundary_patch_id = f.boundary_patch_id().value();
@@ -35,10 +39,22 @@ auto boundary_face_phi(const mesh::Cell& cell, const mesh::Face& f, const Scalar
     return std::nullopt;
 }
 
-auto internal_face_phi(const mesh::Cell& cell, const mesh::Face& f) -> double {}
+auto inline skewness_correction(const mesh::Cell& C,
+                                const mesh::Cell& F,
+                                const mesh::Face& f,
+                                const std::vector<Vector3d>& grad_field) -> double {
+    auto grad_sum = grad_field[C.id()] + grad_field[F.id()];
+    auto vec = f.center() - (0.5 * (C.center() + F.center()));
+
+    return 0.5 * grad_sum.dot(vec);
+}
 
 GreenGauss::GreenGauss(const ScalarField& field) : _field(field) {
     _cell_gradients.resize(field.mesh().cells().size());
+
+    for (auto& cell_gradient : _cell_gradients) {
+        cell_gradient = Vector3d {0., 0., 0.};
+    }
 }
 
 auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
@@ -61,22 +77,28 @@ auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
             continue;
         }
 
+        // This is an internal face
         auto neighbor_cell_id =
             (face.owner() == cell.id()) ? face.neighbor().value() : face.owner();
+
         const auto& neighbor_cell = mesh.cells()[neighbor_cell_id];
 
-        // gradient without skewness correction
-        // TODO: implement skewness correction
         auto gc = mesh::PMesh::cells_weighting_factor(cell, neighbor_cell, face);
 
-        // phi_f = gc * phi_c + (1 - gc) * phi_n
-        auto face_phi = gc * _field.data()[cell.id()];
-        face_phi += (1 - gc) * _field.data()[neighbor_cell_id];
+        // phi_f = gc * phi_c + (1 - gc) * phi_n (Page 278)
+        //auto face_phi = (gc * _field[cell.id()]) + ((1 - gc) * _field[neighbor_cell_id]);
+        auto face_phi = 0.5 * (_field[cell.id()] + _field[neighbor_cell_id]);
+
+        // skewness correction
+        face_phi += skewness_correction(cell, neighbor_cell, face, _cell_gradients);
 
         grad += Sf * face_phi;
     }
 
-    return grad / cell.volume();
+    grad /= cell.volume();
+    _cell_gradients[cell.id()] = grad;
+
+    return grad;
 }
 
 } // namespace prism::gradient
