@@ -73,13 +73,19 @@ auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
                 continue;
             }
 
+            // TODO: this only works for fixed boundary conditions
             grad += Sf * face_phi.value();
             continue;
         }
 
         // This is an internal face
-        auto neighbor_cell_id =
-            (face.owner() == cell.id()) ? face.neighbor().value() : face.owner();
+        bool is_cell_owner = face.owner() == cell.id();
+        auto neighbor_cell_id = is_cell_owner ? face.neighbor().value() : face.owner();
+
+        // update normal vector to always be pointing out of the cell
+        if (!is_cell_owner) {
+            Sf *= -1;
+        }
 
         const auto& neighbor_cell = mesh.cells()[neighbor_cell_id];
 
