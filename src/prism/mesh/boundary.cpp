@@ -101,8 +101,8 @@ auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
 
 auto read_boundary_conditions(const std::filesystem::path& path,
                               const std::vector<std::string_view>& boundary_names)
-    -> BoundaryPatches {
-    BoundaryPatches bcs;
+    -> std::vector<BoundaryPatch> {
+    std::vector<BoundaryPatch> bcs;
     bcs.reserve(boundary_names.size());
 
     auto fstream {std::ifstream {path}};

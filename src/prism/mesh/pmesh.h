@@ -18,7 +18,7 @@ class PMesh {
     PMesh(std::vector<Vector3d> vertices,
           std::vector<Cell> cells,
           std::vector<Face> faces,
-          BoundaryPatches boundary_patches) noexcept;
+          std::vector<BoundaryPatch> boundary_patches) noexcept;
 
     auto inline vertices() const noexcept -> const std::vector<Vector3d>& { return _vertices; }
 
@@ -26,12 +26,12 @@ class PMesh {
 
     auto inline faces() const noexcept -> const std::vector<Face>& { return _faces; }
 
-    auto inline boundary_patches() const noexcept -> const BoundaryPatches& {
+    auto inline boundary_patches() const noexcept -> const std::vector<BoundaryPatch>& {
         return _boundary_patches;
     }
 
-    void set_boundary_conditions(BoundaryPatches boundary_patches);
-    void set_boundary_conditions(const BoundaryPatches& boundary_patches);
+    void set_boundary_conditions(std::vector<BoundaryPatch> boundary_patches);
+    void set_boundary_conditions(const std::vector<BoundaryPatch>& boundary_patches);
 
     auto face_non_ortho(std::size_t face_id) const -> double;
     auto face_non_ortho(const Face& face) const -> double;
@@ -44,7 +44,7 @@ class PMesh {
     std::vector<Vector3d> _vertices;
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
-    BoundaryPatches _boundary_patches;
+    std::vector<BoundaryPatch> _boundary_patches;
     const double pi {std::atan(1) * 4};
 };
 

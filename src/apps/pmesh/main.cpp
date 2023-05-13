@@ -38,13 +38,15 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
         return;
     }
 
+    prism::print("Creating boundary conditions file...\n");
+
     toml::table table;
 
     for (const auto& group : unv_mesh.groups.value()) {
         table.insert(group.name(),
                      toml::table {
                          {"type", "wall"},
-                         {"velocity", toml::array {0.0, 0.0, 0.0}},
+                         {"phi", 0.0},
                      });
     }
 
@@ -185,7 +187,6 @@ auto main(int argc, char* argv[]) -> int {
 
         if (result.count("new-boundary") > 0) {
             auto filename = result["new-boundary"].as<std::string>();
-            prism::print("Creating boundary conditions file...\n");
             create_boundary_conditions_file(filename);
             prism::print("File `boundary.txt` was created successfully for mesh file: {}\n",
                          filename);

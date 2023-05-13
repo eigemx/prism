@@ -58,6 +58,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DPRISM_DEBUG)
 endif()
 
+# if option SHOW_DEBUG_INFO is set, define PRISM_DEBUG
+if(SHOW_DEBUG_INFO)
+    message(STATUS "SHOW_DEBUG_INFO is set, all debug info will be shown.")
+    add_definitions(-DPRISM_DEBUG)
+endif()
+
 # set optimization flags for release builds for gcc, clang and msvc
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
