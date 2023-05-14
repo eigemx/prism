@@ -45,6 +45,8 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
                                           const mesh::Face& face,
                                           const Vector3d& T_f);
 
+    void apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face);
+
     double _kappa;
     ScalarField& _phi;
     const mesh::PMesh& _mesh;
