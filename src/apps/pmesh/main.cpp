@@ -11,8 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "export_vtu.h"
-
 void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
     // if mesh file extension is not .unv, warn user
     if (mesh_file.extension() != ".unv") {
@@ -158,8 +156,8 @@ auto main(int argc, char* argv[]) -> int {
 
         options.set_width(100).set_tab_expansion().add_options()
             // check input mesh and print quality stats
-            ("c,check", "Check mesh file", cxxopts::value<std::string>())(
-                "e,export-vtu", "Export pmesh to vtu file", cxxopts::value<std::string>())
+            ("c,check", "Check mesh file", cxxopts::value<std::string>())
+
             // create new boundary conditions file for the given input mesh, if not found
             ("n,new-boundary",
              "Create dummy boundary conditions file for the given input mesh",
@@ -192,28 +190,6 @@ auto main(int argc, char* argv[]) -> int {
                          filename);
         }
 
-        if (result.count("export-vtu") > 0) {
-            // TODO: clean this mess
-            auto filename = result["export-vtu"].as<std::string>();
-
-            // remove .unv extension if exists and add .vtu extension
-            filename = std::regex_replace(filename, std::regex("\\.unv$"), "");
-            filename += ".vtu";
-
-            prism::print("Loading mesh file: ");
-            prism::print(
-                fg(fmt::color::dark_cyan), "`{}`...\n", result["export-vtu"].as<std::string>());
-
-            auto unv_mesh = prism::mesh::UnvToPMesh(result["export-vtu"].as<std::string>());
-
-            // convert unv mesh to prism mesh
-            auto prism_mesh = unv_mesh.to_pmesh();
-
-            prism::print("Exporting mesh to vtu file...\n");
-
-            export_to_vtu(prism_mesh, filename);
-            prism::print("File `{}` was created successfully\n", filename);
-        }
     }
 
     catch (const cxxopts::exceptions::exception& e) {

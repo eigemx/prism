@@ -8,17 +8,18 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
     auto n_cells = eqn.scalar_field().data().size();
     auto res = VectorXd(n_cells);
 
+    const auto& A = eqn.coeff_matrix();
+    auto& phi = eqn.scalar_field();
+    auto& b = eqn.rhs_vector();
+
     for (std::size_t i = 0; i < n_iter; i++) {
         eqn.update_coeffs();
 
-        auto& A = eqn.coeff_matrix();
-        auto& b = eqn.rhs_vector();
-        auto& phi = eqn.scalar_field();
-
-        // solve linear system A * phi = b, and check for convergence
+        // calculate the norm of the residuals
         res = (A * phi.data()) - b;
         auto res_norm = res.norm();
 
+        // check for convergence
         if (res_norm < eps) {
             print("Converged after {} iterations\n", i);
             break;
@@ -39,7 +40,7 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
 
         // zero out the right hand side vector b, so that it can be recalculated
         // in the next iteration using non-orthogonal corrections (if any)
-        eqn.rhs_vector().setZero();
+        b.setZero();
     }
 }
 } // namespace prism::solver
