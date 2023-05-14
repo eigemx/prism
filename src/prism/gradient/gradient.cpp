@@ -7,38 +7,6 @@
 
 namespace prism::gradient {
 
-
-auto inline boundary_face_phi(const mesh::Cell& cell,
-                              const mesh::Face& f,
-                              const ScalarField& field) -> std::optional<double> {
-    const auto& mesh = field.mesh();
-
-    auto face_boundary_patch_id = f.boundary_patch_id().value();
-    const auto& boundary_patch = mesh.boundary_patches()[face_boundary_patch_id];
-
-    switch (boundary_patch.type()) {
-        case mesh::BoundaryPatchType::Empty: {
-            return std::nullopt;
-        }
-
-        case mesh::BoundaryPatchType::Fixed: {
-            const auto& phi_name = field.name();
-            return boundary_patch.get_scalar_bc(phi_name);
-        }
-
-        case mesh::BoundaryPatchType::Symmetry: {
-            return field.data()[cell.id()];
-        }
-
-        default: {
-            throw std::runtime_error(format("Non-Implemented boundary type for boundary patch {}",
-                                            boundary_patch.name()));
-        }
-    }
-
-    return std::nullopt;
-}
-
 auto inline skewness_correction(const mesh::Cell& C,
                                 const mesh::Cell& F,
                                 const mesh::Face& f,
@@ -47,6 +15,62 @@ auto inline skewness_correction(const mesh::Cell& C,
     auto vec = f.center() - (0.5 * (C.center() + F.center()));
 
     return 0.5 * grad_sum.dot(vec);
+}
+
+auto inline boundary_face_gradient(const mesh::Face& face, const ScalarField& field) -> Vector3d {
+    const auto& mesh = field.mesh();
+
+    auto face_boundary_patch_id = face.boundary_patch_id().value();
+    const auto& boundary_patch = mesh.boundary_patches()[face_boundary_patch_id];
+
+    switch (boundary_patch.type()) {
+        case mesh::BoundaryPatchType::Empty:
+        case mesh::BoundaryPatchType::Symmetry: {
+            return Vector3d {0., 0., 0.};
+        }
+
+        case mesh::BoundaryPatchType::Fixed: {
+            const auto& phi_name = field.name();
+            auto phi = boundary_patch.get_scalar_bc(phi_name);
+            return phi * face.area_vector();
+        }
+
+        case mesh::BoundaryPatchType::FixedGradient: {
+            const auto& phi_name = field.name();
+            auto flux = boundary_patch.get_scalar_bc(phi_name + "-flux");
+            return flux * face.area_vector();
+        }
+
+        default:
+            throw std::runtime_error(
+                format("gradient/gradient.cpp boundary_face_gradient(): "
+                       "Non-implemented boundary type for boundary patch: '{}'",
+                       boundary_patch.name()));
+    }
+}
+
+auto inline interior_face_gradient(const mesh::Cell& cell,
+                                   const mesh::Face& face,
+                                   const mesh::PMesh& mesh,
+                                   const ScalarField& field,
+                                   const std::vector<Vector3d>& grad_field) -> Vector3d {
+    auto Sf = face.area_vector();
+    bool is_cell_owner = face.owner() == cell.id();
+    auto neighbor_cell_id = is_cell_owner ? face.neighbor().value() : face.owner();
+
+    // update normal vector to always be pointing out of the cell
+    if (!is_cell_owner) {
+        Sf *= -1;
+    }
+
+    const auto& neighbor_cell = mesh.cells()[neighbor_cell_id];
+
+    auto face_phi = 0.5 * (field[cell.id()] + field[neighbor_cell_id]);
+
+    // skewness correction
+    face_phi += skewness_correction(cell, neighbor_cell, face, grad_field);
+
+    return Sf * face_phi;
 }
 
 GreenGauss::GreenGauss(const ScalarField& field) : _field(field) {
@@ -65,43 +89,19 @@ auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
         const auto& face = mesh.faces()[face_id];
         auto Sf = face.area_vector();
 
+        // This is a boundary face
         if (face.is_boundary()) {
-            const auto& face_phi = boundary_face_phi(cell, face, _field);
-
-            // skip empty boundary faces
-            if (!face_phi.has_value()) {
-                continue;
-            }
-
-            // TODO: this only works for fixed boundary conditions
-            grad += Sf * face_phi.value();
+            grad += boundary_face_gradient(face, _field);
             continue;
         }
 
         // This is an internal face
-        bool is_cell_owner = face.owner() == cell.id();
-        auto neighbor_cell_id = is_cell_owner ? face.neighbor().value() : face.owner();
-
-        // update normal vector to always be pointing out of the cell
-        if (!is_cell_owner) {
-            Sf *= -1;
-        }
-
-        const auto& neighbor_cell = mesh.cells()[neighbor_cell_id];
-
-        auto gc = mesh::PMesh::cells_weighting_factor(cell, neighbor_cell, face);
-
-        // phi_f = gc * phi_c + (1 - gc) * phi_n (Page 278)
-        //auto face_phi = (gc * _field[cell.id()]) + ((1 - gc) * _field[neighbor_cell_id]);
-        auto face_phi = 0.5 * (_field[cell.id()] + _field[neighbor_cell_id]);
-
-        // skewness correction
-        face_phi += skewness_correction(cell, neighbor_cell, face, _cell_gradients);
-
-        grad += Sf * face_phi;
+        grad += interior_face_gradient(cell, face, mesh, _field, _cell_gradients);
     }
 
     grad /= cell.volume();
+
+    // store the gradient to use it in next iterations, for skewness correction
     _cell_gradients[cell.id()] = grad;
 
     return grad;

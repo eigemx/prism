@@ -116,16 +116,22 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
         // where the gradient of the field is zero at the boundary (flux is zero),
         // and will not result in any contribution to the right hand side of the equation,
         // or the matrix coefficients. and no need for non-orthogonal correction.
-        // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph.
-        // and paragraph 8.6.8.2 - Chapter 8 in same reference
+        // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph,
+        // and paragraph 8.6.8.2 - Chapter 8 in same reference.
         case mesh::BoundaryPatchType::Symmetry: {
+            return;
+        }
+
+        // general Von Neumann boundary condition, or fixed gradient boundary condition.
+        case mesh::BoundaryPatchType::FixedGradient: {
+            apply_boundary_gradient(cell, face);
             return;
         }
 
         default:
             throw std::runtime_error(
                 format("diffusion::Linear::apply_boundary: "
-                       "Non-implemented boundary type for boundary patch: {}",
+                       "Non-implemented boundary type for boundary patch: '{}'",
                        boundary_patch.name()));
     }
 }
@@ -178,5 +184,18 @@ void Linear::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
 
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
+
+void Linear::apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face) {
+    // get the fixed gradient (flux) value associated with the face
+    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    auto flux_wall = boundary_patch.get_scalar_bc(_phi.name() + "-flux");
+
+    auto cell_id = cell.id();
+
+    // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
+    // and paragraph 8.6.8.2
+    rhs_vector()[cell_id] += -flux_wall * face.area();
+}
+
 
 } // namespace prism::diffusion

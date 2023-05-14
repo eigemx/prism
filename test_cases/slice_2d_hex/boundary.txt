@@ -13,7 +13,9 @@ type = 'wall'
 temperature = 500.0
 
 [right]
-type = 'symmetry'
+type = 'gradient'
+# minus sign means flux is into the domain (opposite to normal vector, which is always pointing outside the domain)
+temperature-flux = -0.01    
 
 [top]
 type = 'wall'
