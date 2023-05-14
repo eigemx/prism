@@ -111,6 +111,17 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
             return;
         }
 
+        // Symmetry boundary patch, or zero gradient boundary condition.
+        // This is a special case of the general Neumann boundary condition,
+        // where the gradient of the field is zero at the boundary (flux is zero),
+        // and will not result in any contribution to the right hand side of the equation,
+        // or the matrix coefficients. and no need for non-orthogonal correction.
+        // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph.
+        // and paragraph 8.6.8.2 - Chapter 8 in same reference
+        case mesh::BoundaryPatchType::Symmetry: {
+            return;
+        }
+
         default:
             throw std::runtime_error(
                 format("diffusion::Linear::apply_boundary: "

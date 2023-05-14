@@ -38,7 +38,7 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
         {"wall", BoundaryPatchType::Fixed},
         {"inlet", BoundaryPatchType::Inlet},
         {"outlet", BoundaryPatchType::Outlet},
-        {"gradient", BoundaryPatchType::Gradient},
+        {"gradient", BoundaryPatchType::FixedGradient},
         {"symmetry", BoundaryPatchType::Symmetry},
         {"empty", BoundaryPatchType::Empty},
     };
