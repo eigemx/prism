@@ -13,8 +13,7 @@ type = 'wall'
 temperature = 500.0
 
 [right]
-type = 'wall'
-temperature = 500.0
+type = 'symmetry'
 
 [top]
 type = 'wall'

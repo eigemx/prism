@@ -17,7 +17,7 @@ enum class BoundaryPatchType {
     Outlet,
     Symmetry,
     Empty,
-    Gradient,
+    FixedGradient,
     Unknown, // for error handling
 };
 
