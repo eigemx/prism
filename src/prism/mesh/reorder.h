@@ -1,6 +1,5 @@
 #pragma once
 
-#include <map>
 
 #include "../types.h"
 #include "pmesh.h"
@@ -10,10 +9,11 @@ namespace prism::mesh {
 class CuthillMckee {
   public:
     CuthillMckee(PMesh& mesh);
-    auto permute() -> std::vector<std::size_t>;
-    auto reorder() -> void;
+    auto reorder(bool reverse = false) -> void;
 
   private:
+    auto permute() -> std::vector<std::size_t>;
+
     class Node {
       public:
         Node(std::size_t id, std::size_t degree) : _id(id), _degree(degree) {}

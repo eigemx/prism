@@ -1,10 +1,8 @@
 #include "reorder.h"
 
 #include <algorithm>
-#include <iostream>
+#include <map>
 #include <queue>
-
-#include "../print.h"
 
 namespace prism::mesh {
 CuthillMckee::CuthillMckee(PMesh& mesh) : _mesh(mesh) {
@@ -28,7 +26,7 @@ CuthillMckee::CuthillMckee(PMesh& mesh) : _mesh(mesh) {
             node.neighbors().push_back(neighbor_cell_id);
             node.degree()++;
         }
-        //std::sort(node.neighbors().begin(), node.neighbors().end());
+
         _nodes.push_back(node);
     }
 
@@ -95,21 +93,30 @@ auto CuthillMckee::permute() -> std::vector<std::size_t> {
     return permutations;
 }
 
-void CuthillMckee::reorder() {
+void CuthillMckee::reorder(bool reverse) {
     auto perms = permute();
+    auto n_cells = perms.size();
+
+    // reverse CutHill-McKee permutation if needed
+    if (reverse) {
+        std::reverse(perms.begin(), perms.end());
+    }
 
     std::map<std::size_t, std::size_t> old_to_new;
-    for (auto i = 0; i < perms.size(); ++i) {
+    for (auto i = 0; i < n_cells; ++i) {
         old_to_new[perms[i]] = i;
     }
 
-    // update order of cells vector using the permutation vector
+    // update order of cells vector using the permutation map
     auto& cells = _mesh.cells();
+
     std::vector<Cell> new_cells;
     new_cells.resize(cells.size());
 
-    for (const auto& cell : cells) {
-        new_cells[old_to_new[cell.id()]] = cell;
+    for (auto& cell : cells) {
+        auto new_id = old_to_new[cell.id()];
+        cell.set_id(new_id);
+        new_cells[new_id] = cell;
     }
 
     // swap the old cells vector with the new one
@@ -122,11 +129,6 @@ void CuthillMckee::reorder() {
         if (face.has_neighbor()) {
             face.set_neighbor(old_to_new[face.neighbor().value()]);
         }
-    }
-
-    // reorder cells
-    for (auto& cell : _mesh.cells()) {
-        cell.set_id(old_to_new[cell.id()]);
     }
 }
 } // namespace prism::mesh
