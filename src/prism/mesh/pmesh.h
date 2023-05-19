@@ -23,8 +23,10 @@ class PMesh {
     auto inline vertices() const noexcept -> const std::vector<Vector3d>& { return _vertices; }
 
     auto inline cells() const noexcept -> const std::vector<Cell>& { return _cells; }
+    auto inline cells() noexcept -> std::vector<Cell>& { return _cells; }
 
     auto inline faces() const noexcept -> const std::vector<Face>& { return _faces; }
+    auto inline faces() noexcept -> std::vector<Face>& { return _faces; }
 
     auto inline boundary_patches() const noexcept -> const std::vector<BoundaryPatch>& {
         return _boundary_patches;

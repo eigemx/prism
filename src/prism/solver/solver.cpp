@@ -13,6 +13,7 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
     auto& b = eqn.rhs_vector();
 
     for (std::size_t i = 0; i < n_iter; i++) {
+        // Warning: This corrects non-orthogonality in each iteration.
         eqn.update_coeffs();
 
         // calculate the norm of the residuals

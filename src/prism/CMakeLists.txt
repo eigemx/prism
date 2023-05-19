@@ -21,6 +21,7 @@ add_library(prism-core
     mesh/pmesh.h
     mesh/unv.h
     mesh/trie.h
+    mesh/reorder.h
 
     mesh/face.cpp
     mesh/cell.cpp
@@ -28,6 +29,7 @@ add_library(prism-core
     mesh/pmesh.cpp 
     mesh/unv.cpp
     mesh/trie.cpp
+    mesh/reorder.cpp
 
     # diffusion module
     diffusion/diffusion.h
