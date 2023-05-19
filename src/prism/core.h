@@ -7,6 +7,7 @@
 #include "fvscheme.h"
 #include "gradient/gradient.h"
 #include "mesh/pmesh.h"
+#include "mesh/reorder.h"
 #include "mesh/unv.h"
 #include "print.h"
 #include "solver/solver.h"
