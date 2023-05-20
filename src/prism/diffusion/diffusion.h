@@ -14,6 +14,8 @@ class DiffusionSchemeBase {};
 
 class Linear : public FVScheme, public DiffusionSchemeBase {
   public:
+    // TODO: Change the gradient scheme to either a template parameter or a pointer
+    // instead of a unique_ptr.
     Linear(double kappa, ScalarField& phi)
         : _kappa(kappa),
           _phi(phi),
@@ -28,8 +30,6 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
           _gradient_scheme(std::make_unique<GradientScheme>(gradient_scheme)) {}
 
     inline void finalize() override { _main_coeffs_calculated = true; }
-
-    inline auto mesh() const -> const mesh::PMesh& override { return _mesh; }
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;

@@ -32,7 +32,7 @@ void Equation::update_coeffs() {
             const auto& face = mesh.faces()[face_id];
 
             // iterate over all equation finite volume schemes
-            for (auto& scheme : _schemes) {
+            for (auto* scheme : _schemes) {
                 // apply the scheme to the cell and face
                 scheme->apply(cell, face);
             }

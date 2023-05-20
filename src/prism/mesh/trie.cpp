@@ -1,7 +1,5 @@
 #include "trie.h"
 
-#include <fmt/core.h>
-
 #include <algorithm>
 
 namespace prism::mesh {
