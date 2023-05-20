@@ -31,9 +31,6 @@ class FVScheme {
     inline auto rhs_vector() const -> const VectorXd& { return *b; }
     inline auto rhs_vector() -> VectorXd& { return *b; }
 
-    virtual auto mesh() const -> const mesh::PMesh& = 0;
-
-
   private:
     virtual void apply_interior(const mesh::Cell& cell, const mesh::Face& face) = 0;
     virtual void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) = 0;

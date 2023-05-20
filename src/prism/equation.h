@@ -2,7 +2,8 @@
 
 #include <string>
 
-#include "diffusion/diffusion.h"
+#include "field.h"
+#include "fvscheme.h"
 #include "mesh/pmesh.h"
 #include "types.h"
 
@@ -15,14 +16,14 @@ class Equation {
     void update_coeffs();
     void reset_coeffs();
 
-    auto coeff_matrix() const -> const SparseMatrix& { return _coeff_matrix; }
-    auto coeff_matrix() -> SparseMatrix& { return _coeff_matrix; }
+    auto inline coeff_matrix() const -> const SparseMatrix& { return _coeff_matrix; }
+    auto inline coeff_matrix() -> SparseMatrix& { return _coeff_matrix; }
 
-    auto rhs_vector() const -> const VectorXd& { return _rhs_vector; }
-    auto rhs_vector() -> VectorXd& { return _rhs_vector; }
+    auto inline rhs_vector() const -> const VectorXd& { return _rhs_vector; }
+    auto inline rhs_vector() -> VectorXd& { return _rhs_vector; }
 
-    auto scalar_field() const -> const ScalarField& { return _phi; }
-    auto scalar_field() -> ScalarField& { return _phi; }
+    auto inline scalar_field() const -> const ScalarField& { return _phi; }
+    auto inline scalar_field() -> ScalarField& { return _phi; }
 
 
   private:

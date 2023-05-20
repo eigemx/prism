@@ -12,11 +12,10 @@ namespace prism::gradient {
 class GradientSchemeBase {
   public:
     GradientSchemeBase() = default;
-    GradientSchemeBase(const GradientSchemeBase& g) = delete;
-    GradientSchemeBase(GradientSchemeBase&& g) = delete;
-    auto operator=(GradientSchemeBase&& g) -> GradientSchemeBase& = delete;
-    auto operator=(const GradientSchemeBase& g) -> GradientSchemeBase& = delete;
-
+    GradientSchemeBase(const GradientSchemeBase& g) = default;
+    GradientSchemeBase(GradientSchemeBase&& g) = default;
+    auto operator=(GradientSchemeBase&& g) -> GradientSchemeBase& = default;
+    auto operator=(const GradientSchemeBase& g) -> GradientSchemeBase& = default;
     virtual ~GradientSchemeBase() = default;
 
     virtual auto gradient(const mesh::Cell& c) -> Vector3d = 0;

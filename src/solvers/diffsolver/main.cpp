@@ -36,7 +36,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::GaussSeidel();
-    solver.solve(eqn, 1000, 1e-6);
+    solver.solve(eqn, 1000, 1e-10);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 
