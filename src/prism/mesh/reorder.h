@@ -17,10 +17,13 @@ class CuthillMckee {
     class Node {
       public:
         Node(std::size_t id, std::size_t degree) : _id(id), _degree(degree) {}
+
         auto inline id() const -> std::size_t { return _id; }
         auto inline id() -> std::size_t& { return _id; }
+
         auto inline degree() const -> std::size_t { return _degree; }
         auto inline degree() -> std::size_t& { return _degree; }
+
         auto inline neighbors() const -> const std::vector<std::size_t>& { return _neighbors; }
         auto inline neighbors() -> std::vector<std::size_t>& { return _neighbors; }
 
