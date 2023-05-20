@@ -1,7 +1,5 @@
 #include <prism/core.h>
 
-#include <Eigen/Core>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -26,19 +24,19 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
     print("Okay.\n");
 
-    // Set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
+    // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
 
-    // Solve for temperature diffision: κ(∇.T)
-    // where κ is the thermal conductivity and ∇.T is the divergence of the temperature field
+    // solve for temperature diffision: -∇.(κ ∇T) = 0
+    // where κ is the diffusion coefficient
     auto diff = diffusion::Linear(4e-5, T);
 
-    // Construct the equation: κ(∇.T) = 0
+    // assemble the equation
     auto eqn = Equation(T, {&diff});
 
     // solve
     auto solver = solver::GaussSeidel();
-    solver.solve(eqn, 1000, 1e-10);
+    solver.solve(eqn, 1000, 1e-6);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 

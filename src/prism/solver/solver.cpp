@@ -26,16 +26,21 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
             break;
         }
 
-        // solve linear system A * phi = b
-        for (int j = 0; j < A.rows(); j++) {
-            double row_sum = 0.0;
-            for (int k = 0; k < A.cols(); k++) {
-                if (j != k) {
-                    row_sum += A.coeff(j, k) * phi.data()[k];
-                }
-            }
-            phi[j] = (b[j] - row_sum) / A.coeff(j, j);
+        // iterate over the rows of A
+        for (std::size_t j = 0; j < n_cells; j++) {
+            // dot product the j-th row of A with the solution vector phi using Eigen dot
+            auto row_dot_phi = A.row(j).dot(phi.data());
+
+            // subtract the a_jj * phi_j term from the dot product
+            auto a_jj = A.coeff(j, j);
+            auto& phi_j = phi[j];
+            row_dot_phi -= a_jj * phi_j;
+
+            // subtract the dot product from the right hand side vector b
+            // and divide by the diagonal element of the j-th row of A
+            phi_j = (b[j] - row_dot_phi) / a_jj;
         }
+
 
         print("Completed iteration number: {} - residuals norm = {}\n", i, res_norm);
 
