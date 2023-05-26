@@ -27,6 +27,8 @@ class VectorField {
     auto y() -> ScalarField;
     auto z() -> ScalarField;
 
+    auto inline operator[](std::size_t i) const -> const Vector3d& { return _data.row(i); }
+
   private:
     const mesh::PMesh& _mesh;
     std::string _name;

@@ -9,6 +9,9 @@
 #include "../types.h"
 
 namespace prism::gradient {
+
+// Base class for gradient schemes for explicity calculating the cell gradient of a scalar field.
+// All gradient schemes should inherit from this class and define gradient() function.
 class GradientSchemeBase {
   public:
     GradientSchemeBase() = default;
