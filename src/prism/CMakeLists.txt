@@ -39,6 +39,10 @@ add_library(prism-core
     gradient/gradient.h
     gradient/gradient.cpp
 
+    # convection module
+    convection/convection.h
+    
+
     # solver module
     solver/solver.h
     solver/solver.cpp
