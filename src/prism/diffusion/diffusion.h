@@ -14,20 +14,21 @@ class DiffusionSchemeBase {};
 
 class Linear : public FVScheme, public DiffusionSchemeBase {
   public:
-    // TODO: Change the gradient scheme to either a template parameter or a pointer
-    // instead of a unique_ptr.
+    // Default explicit gradient scheme is Green-Gauss
     Linear(double kappa, ScalarField& phi)
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
           _gradient_scheme(std::make_unique<gradient::GreenGauss>(phi)) {}
 
-    template <typename GradientScheme>
-    Linear(double kappa, ScalarField& phi, const GradientScheme& gradient_scheme)
+    // Explicit gradient scheme is provided by the user
+    template <typename G,
+              typename = std::enable_if_t<std::is_base_of_v<gradient::GradientSchemeBase, G>>>
+    Linear(double kappa, ScalarField& phi, const G& gradient_scheme)
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::make_unique<GradientScheme>(gradient_scheme)) {}
+          _gradient_scheme(std::make_unique<G>(gradient_scheme)) {}
 
     inline void finalize() override { _main_coeffs_calculated = true; }
 

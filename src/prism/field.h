@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <variant>
 
 #include "mesh/pmesh.h"
 #include "types.h"
@@ -26,8 +25,6 @@ class VectorField {
     auto x() -> ScalarField;
     auto y() -> ScalarField;
     auto z() -> ScalarField;
-
-    auto inline operator[](std::size_t i) const -> const Vector3d& { return _data(i); }
 
   private:
     const mesh::PMesh& _mesh;
