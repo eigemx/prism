@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "mesh/pmesh.h"
+#include "print.h"
 #include "types.h"
 
 namespace prism {
@@ -19,6 +20,10 @@ class FVScheme {
     }
 
     inline void connect_linear_system(SparseMatrix& A, VectorXd& b) noexcept {
+        if (this->A != nullptr || this->b != nullptr) {
+            warn("FVScheme::connect_linear_system() called more than once.");
+        }
+
         this->A = &A;
         this->b = &b;
     }
