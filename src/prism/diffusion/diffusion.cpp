@@ -32,7 +32,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
         adjacent_cell_id = face.owner();
     }
 
-    const auto& adj_cell = _mesh.cells()[adjacent_cell_id];
+    const auto& adj_cell = _mesh.cell(adjacent_cell_id);
 
     // face area vector
     const auto& S_f = face.area_vector();

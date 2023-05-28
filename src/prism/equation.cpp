@@ -8,8 +8,8 @@ Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
     : _schemes(std::move(schemes)), _phi(phi) {
     if (_schemes.empty()) {
         throw std::runtime_error(
-            format("Equation constructor was called with an empty FV schemes vector. No matrix "
-                   "initialization was performed."));
+            format("Equation constructor was called with an empty FV schemes vector. "
+                   "No matrix initialization was performed."));
     }
 
     const auto& mesh = _phi.mesh();
@@ -29,7 +29,7 @@ void Equation::update_coeffs() {
     // iterate over all cells
     for (const auto& cell : mesh.cells()) {
         for (auto face_id : cell.faces_ids()) {
-            const auto& face = mesh.faces()[face_id];
+            const auto& face = mesh.face(face_id);
 
             // iterate over all equation finite volume schemes
             for (auto* scheme : _schemes) {
