@@ -10,8 +10,8 @@ namespace prism::gradient {
 auto inline skewness_correction(const mesh::Cell& C,
                                 const mesh::Cell& F,
                                 const mesh::Face& f,
-                                const std::vector<Vector3d>& grad_field) -> double {
-    auto grad_sum = grad_field[C.id()] + grad_field[F.id()];
+                                const MatrixX3d& grad_field) -> double {
+    auto grad_sum = grad_field.row(C.id()) + grad_field.row(F.id());
     auto vec = f.center() - (0.5 * (C.center() + F.center()));
 
     return 0.5 * grad_sum.dot(vec);
@@ -53,7 +53,7 @@ auto inline interior_face_gradient(const mesh::Cell& cell,
                                    const mesh::Face& face,
                                    const mesh::PMesh& mesh,
                                    const ScalarField& field,
-                                   const std::vector<Vector3d>& grad_field) -> Vector3d {
+                                   const MatrixX3d& grad_field) -> Vector3d {
     auto Sf = face.area_vector();
     bool is_cell_owner = face.owner() == cell.id();
     auto neighbor_cell_id = is_cell_owner ? face.neighbor().value() : face.owner();
@@ -74,11 +74,7 @@ auto inline interior_face_gradient(const mesh::Cell& cell,
 }
 
 GreenGauss::GreenGauss(const ScalarField& field) : _field(field) {
-    _cell_gradients.resize(field.mesh().cells().size());
-
-    for (auto& cell_gradient : _cell_gradients) {
-        cell_gradient = Vector3d {0., 0., 0.};
-    }
+    _cell_gradients = MatrixX3d::Zero(_field.mesh().cells().size(), 3);
 }
 
 auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
@@ -102,9 +98,20 @@ auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
     grad /= cell.volume();
 
     // store the gradient to use it in next iterations, for skewness correction
-    _cell_gradients[cell.id()] = grad;
+    _cell_gradients.row(cell.id()) = grad;
 
     return grad;
+}
+
+auto GreenGauss::field() -> VectorField {
+    auto grad_field_name = _field.name() + "_grad";
+    VectorField grad_field {grad_field_name, _field.mesh()};
+
+    for (const auto& cell : _field.mesh().cells()) {
+        grad_field.data().row(cell.id()) = gradient(cell);
+    }
+
+    return grad_field;
 }
 
 } // namespace prism::gradient
