@@ -20,16 +20,18 @@ class GradientSchemeBase {
     virtual ~GradientSchemeBase() = default;
 
     virtual auto gradient(const mesh::Cell& c) -> Vector3d = 0;
+    virtual auto field() -> VectorField = 0;
 };
 
 class GreenGauss : public GradientSchemeBase {
   public:
     GreenGauss(const ScalarField& field);
     auto gradient(const mesh::Cell& cell) -> Vector3d override;
+    auto field() -> VectorField override;
 
   private:
     const ScalarField& _field;
-    std::vector<Vector3d> _cell_gradients;
+    MatrixX3d _cell_gradients;
 };
 
 

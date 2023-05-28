@@ -24,9 +24,17 @@ class PMesh {
 
     auto inline cells() const noexcept -> const std::vector<Cell>& { return _cells; }
     auto inline cells() noexcept -> std::vector<Cell>& { return _cells; }
+    auto inline cell(std::size_t cell_id) const noexcept -> const Cell& {
+        return _cells[cell_id];
+    }
+    auto inline cell(std::size_t cell_id) noexcept -> Cell& { return _cells[cell_id]; }
 
     auto inline faces() const noexcept -> const std::vector<Face>& { return _faces; }
     auto inline faces() noexcept -> std::vector<Face>& { return _faces; }
+    auto inline face(std::size_t face_id) const noexcept -> const Face& {
+        return _faces[face_id];
+    }
+    auto inline face(std::size_t face_id) noexcept -> Face& { return _faces[face_id]; }
 
     auto inline boundary_patches() const noexcept -> const std::vector<BoundaryPatch>& {
         return _boundary_patches;
