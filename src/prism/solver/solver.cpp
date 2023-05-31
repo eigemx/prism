@@ -13,11 +13,11 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
     auto& phi = eqn.scalar_field();
     auto& b = eqn.rhs_vector();
 
-    eqn.update_coeffs();
+    //eqn.update_coeffs();
 
     for (std::size_t i = 0; i < n_iter; i++) {
         // Warning: This corrects non-orthogonality in each iteration.
-        //eqn.update_coeffs();
+        eqn.update_coeffs();
 
         // calculate the norm of the residuals
         res = (A * phi.data()) - b;
@@ -38,7 +38,7 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
         print("Iteration: {}, Residual: {}\n", i, res_norm);
 
         // zero out the right hand side vector, so that the next iteration can be performed
-        //b.setZero();
+        b.setZero();
     }
 }
 } // namespace prism::solver
