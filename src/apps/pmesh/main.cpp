@@ -92,7 +92,7 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
         prism::print("Loading mesh file: ");
         prism::print(fg(fmt::color::dark_cyan), "`{}`...\n\n", mesh_file.string());
 
-        auto unv_mesh = prism::mesh::UnvToPMesh(mesh_file);
+        auto unv_mesh = prism::mesh::UnvToPMeshConverter(mesh_file);
 
         // convert unv mesh to prism mesh
         auto prism_mesh = unv_mesh.to_pmesh();

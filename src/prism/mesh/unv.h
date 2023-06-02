@@ -16,9 +16,9 @@
 
 namespace prism::mesh {
 
-class UnvToPMesh : public ToPMeshConverter {
+class UnvToPMeshConverter : public ToPMeshConverter {
   public:
-    UnvToPMesh(const std::filesystem::path& filename);
+    UnvToPMeshConverter(const std::filesystem::path& filename);
 
     auto to_pmesh() -> PMesh override;
 
