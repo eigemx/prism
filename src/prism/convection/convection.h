@@ -2,6 +2,7 @@
 
 #include "../field.h"
 #include "../fvscheme.h"
+#include "../mesh/pmesh.h"
 
 namespace prism::convection {
 
@@ -9,38 +10,47 @@ class ConvectionSchemeBase {};
 
 class CentralDifference : public FVScheme, public ConvectionSchemeBase {
   public:
-    CentralDifference(VectorField& U, ScalarField& phi) : _U(U), _phi(phi) {}
+    CentralDifference(double rho, VectorField& U, ScalarField& phi)
+        : _rho(rho), _U(U), _phi(phi), _mesh(phi.mesh()) {}
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
 
+    double _rho;
     VectorField& _U;
     ScalarField& _phi;
+    mesh::PMesh _mesh;
 };
 
 class Upwind : public FVScheme, public ConvectionSchemeBase {
   public:
-    Upwind(VectorField& U, ScalarField& phi) : _U(U), _phi(phi) {}
+    Upwind(double rho, VectorField& U, ScalarField& phi)
+        : _rho(rho), _U(U), _phi(phi), _mesh(phi.mesh()) {}
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
 
+    double _rho;
     VectorField& _U;
     ScalarField& _phi;
+    mesh::PMesh _mesh;
 };
 
 class SecondOrderUpwind : public FVScheme, public ConvectionSchemeBase {
   public:
-    SecondOrderUpwind(VectorField& U, ScalarField& phi) : _U(U), _phi(phi) {}
+    SecondOrderUpwind(double rho, VectorField& U, ScalarField& phi)
+        : _rho(rho), _U(U), _phi(phi), _mesh(phi.mesh()) {}
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
 
+    double _rho;
     VectorField& _U;
     ScalarField& _phi;
+    mesh::PMesh _mesh;
 };
 
 

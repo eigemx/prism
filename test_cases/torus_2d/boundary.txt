@@ -5,7 +5,7 @@ type = 'empty'
 type = 'empty'
 
 [inner]
-type = 'wall'
+type = 'inlet'
 temperature = 900
 
 [outer]

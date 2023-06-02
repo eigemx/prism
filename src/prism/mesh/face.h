@@ -29,6 +29,9 @@ class Face {
     // This function is added mainly for debugging purposes,
     // because ach face must have an owner, so this will return false if something is wrong
     auto inline has_owner() const -> bool { return _owner.has_value(); }
+    auto inline is_owned_by(const std::size_t& cell_id) const -> bool {
+        return _owner.value() == cell_id;
+    }
 
     auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
     auto inline has_neighbor() const -> bool { return _neighbor.has_value(); }
