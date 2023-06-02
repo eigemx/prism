@@ -9,8 +9,14 @@ namespace prism::mesh {
 
 class Face {
   public:
+    Face() = delete;
     Face(const std::vector<Vector3d>& face_vertices,
          std::vector<std::size_t> face_vertices_ids) noexcept;
+    Face(const Face& other) = default;
+    Face(Face&& other) noexcept = default;
+    auto operator=(const Face& other) -> Face& = default;
+    auto operator=(Face&& other) noexcept -> Face& = default;
+    ~Face() noexcept = default;
 
     auto inline area() const noexcept -> double { return _area; }
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
