@@ -22,15 +22,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     auto cell_id = cell.id();
 
     // get adjacent cell sharing `face` with `cell`
-    std::size_t adjacent_cell_id {0};
-
-    if (face.owner() == cell_id) {
-        // `face` is owned by `cell`, get its neighbor cell id
-        adjacent_cell_id = face.neighbor().value();
-    } else {
-        // `face` is a neighbor to `cell`, get its owner id
-        adjacent_cell_id = face.owner();
-    }
+    auto adjacent_cell_id = face.is_owned_by(cell_id) ? face.neighbor().value() : face.owner();
 
     const auto& adj_cell = _mesh.cell(adjacent_cell_id);
 
@@ -111,6 +103,11 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
             return;
         }
 
+        case mesh::BoundaryPatchType::Inlet: {
+            apply_boundary_fixed(cell, face);
+            return;
+        }
+
         // Symmetry boundary patch, or zero gradient boundary condition.
         // This is a special case of the general Neumann boundary condition,
         // where the gradient of the field is zero at the boundary (flux is zero),
@@ -118,7 +115,8 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
         // or the matrix coefficients. and no need for non-orthogonal correction.
         // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph,
         // and paragraph 8.6.8.2 - Chapter 8 in same reference.
-        case mesh::BoundaryPatchType::Symmetry: {
+        case mesh::BoundaryPatchType::Symmetry:
+        case mesh::BoundaryPatchType::Outlet: {
             return;
         }
 
@@ -130,7 +128,7 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
 
         default:
             throw std::runtime_error(
-                format("diffusion::Linear::apply_boundary: "
+                format("diffusion::Linear::apply_boundary(): "
                        "Non-implemented boundary type for boundary patch: '{}'",
                        boundary_patch.name()));
     }

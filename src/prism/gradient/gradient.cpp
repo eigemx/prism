@@ -25,11 +25,13 @@ auto inline boundary_face_gradient(const mesh::Face& face, const ScalarField& fi
 
     switch (boundary_patch.type()) {
         case mesh::BoundaryPatchType::Empty:
+        case mesh::BoundaryPatchType::Outlet:
         case mesh::BoundaryPatchType::Symmetry: {
             return Vector3d {0., 0., 0.};
         }
 
-        case mesh::BoundaryPatchType::Fixed: {
+        case mesh::BoundaryPatchType::Fixed:
+        case mesh::BoundaryPatchType::Inlet: {
             const auto& phi_name = field.name();
             auto phi = boundary_patch.get_scalar_bc(phi_name);
             return phi * face.area_vector();

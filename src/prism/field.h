@@ -52,31 +52,31 @@ class VectorField {
         return Vector3d {(*_x)[i], (*_y)[i], (*_z)[i]};
     }
 
-    class VectorFieldRowProxy {
-      public:
-        VectorFieldRowProxy(VectorField& vector_field, std::size_t index)
-            : _vector_field(vector_field), _index(index) {}
-
-        auto operator=(const Vector3d& value) -> VectorFieldRowProxy& {
-            _vector_field._x->operator[](_index) = value[0];
-            _vector_field._y->operator[](_index) = value[1];
-            _vector_field._z->operator[](_index) = value[2];
-            return *this;
-        }
-
-        friend auto operator<<(std::ostream& os, const VectorFieldRowProxy& v) -> std::ostream& {
-            return os << format("({}, {}, {})",
-                                v._vector_field.x()[v._index],
-                                v._vector_field.y()[v._index],
-                                v._vector_field.z()[v._index]);
-        }
-
-      private:
-        VectorField& _vector_field;
-        std::size_t _index;
-    };
-
-    auto operator[](std::size_t index) -> VectorFieldRowProxy { return {*this, index}; }
+    //class VectorFieldRowProxy {
+    //  public:
+    //    VectorFieldRowProxy(VectorField& vector_field, std::size_t index)
+    //        : _vector_field(vector_field), _index(index) {}
+    //
+    //    auto operator=(const Vector3d& value) -> VectorFieldRowProxy& {
+    //        _vector_field._x->operator[](_index) = value[0];
+    //        _vector_field._y->operator[](_index) = value[1];
+    //        _vector_field._z->operator[](_index) = value[2];
+    //        return *this;
+    //    }
+    //
+    //    friend auto operator<<(std::ostream& os, const VectorFieldRowProxy& v) -> std::ostream& {
+    //        return os << format("({}, {}, {})",
+    //                            v._vector_field.x()[v._index],
+    //                            v._vector_field.y()[v._index],
+    //                            v._vector_field.z()[v._index]);
+    //    }
+    //
+    //  private:
+    //    VectorField& _vector_field;
+    //    std::size_t _index;
+    //};
+    //
+    //auto operator[](std::size_t index) -> VectorFieldRowProxy { return {*this, index}; }
 
   private:
     const mesh::PMesh& _mesh;
