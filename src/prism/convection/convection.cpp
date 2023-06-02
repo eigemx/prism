@@ -35,7 +35,8 @@ void CentralDifference::apply_boundary(const mesh::Cell& cell, const mesh::Face&
             return;
         }
 
-        case mesh::BoundaryPatchType::Fixed: {
+        case mesh::BoundaryPatchType::Fixed:
+        case mesh::BoundaryPatchType::Inlet: {
         }
 
         default:
@@ -46,5 +47,19 @@ void CentralDifference::apply_boundary(const mesh::Cell& cell, const mesh::Face&
     }
 }
 
+void CentralDifference::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
+    auto cell_id = cell.id();
 
+    // face area vector
+    const auto& S_f = face.area_vector();
+
+    // interpolated velocity vector at face centroid
+    const auto& U_f = _U[cell_id];
+
+    auto m_dot_f = face_flow_rate(_rho, U_f, S_f);
+
+    coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
+}
 } // namespace prism::convection
