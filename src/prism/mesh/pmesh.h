@@ -11,6 +11,7 @@ namespace prism::mesh {
 
 class PMesh {
   public:
+    PMesh() = delete;
     PMesh(std::vector<Vector3d> vertices,
           std::vector<Cell> cells,
           std::vector<Face> faces) noexcept;
@@ -19,6 +20,13 @@ class PMesh {
           std::vector<Cell> cells,
           std::vector<Face> faces,
           std::vector<BoundaryPatch> boundary_patches) noexcept;
+
+    PMesh(const PMesh& other) = default;
+    PMesh(PMesh&& other) noexcept = default;
+    auto operator=(const PMesh& other) -> PMesh& = default;
+    auto operator=(PMesh&& other) noexcept -> PMesh& = default;
+    ~PMesh() noexcept = default;
+
 
     auto inline vertices() const noexcept -> const std::vector<Vector3d>& { return _vertices; }
 
@@ -55,7 +63,7 @@ class PMesh {
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
     std::vector<BoundaryPatch> _boundary_patches;
-    const double pi {std::atan(1) * 4};
+    double pi {std::atan(1) * 4};
 };
 
 class ToPMeshConverter {

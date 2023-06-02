@@ -36,19 +36,6 @@ void CentralDifference::apply_boundary(const mesh::Cell& cell, const mesh::Face&
         }
 
         case mesh::BoundaryPatchType::Fixed: {
-            // This could be a wall for example with either a slip or no-slip condition
-        }
-
-        case mesh::BoundaryPatchType::Inlet: {
-        }
-
-        case mesh::BoundaryPatchType::Outlet: {
-        }
-
-        case mesh::BoundaryPatchType::Symmetry: {
-        }
-
-        case mesh::BoundaryPatchType::FixedGradient: {
         }
 
         default:
@@ -58,4 +45,6 @@ void CentralDifference::apply_boundary(const mesh::Cell& cell, const mesh::Face&
                        boundary_patch.name()));
     }
 }
+
+
 } // namespace prism::convection

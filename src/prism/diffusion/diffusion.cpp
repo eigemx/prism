@@ -98,11 +98,7 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
         }
 
         // fixed boundary patch, or Dirichlet boundary condition
-        case mesh::BoundaryPatchType::Fixed: {
-            apply_boundary_fixed(cell, face);
-            return;
-        }
-
+        case mesh::BoundaryPatchType::Fixed:
         case mesh::BoundaryPatchType::Inlet: {
             apply_boundary_fixed(cell, face);
             return;
