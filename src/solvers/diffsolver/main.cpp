@@ -22,7 +22,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // read mesh
     print("Loading mesh file {}...", unv_file_name);
-    auto mesh = mesh::UnvToPMesh(unv_file_name).to_pmesh();
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name).to_pmesh();
     print("Okay.\n");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
