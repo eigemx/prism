@@ -12,14 +12,42 @@
 namespace prism::mesh {
 
 auto BoundaryPatch::get_scalar_bc(const std::string& name) const -> double {
-    for (const auto& attr : _bcs) {
-        if (attr.name() == name && attr.type() == BoundaryConditionType::Scalar) {
-            return std::get<double>(attr.data());
+    for (const auto& boundary_condition : _bcs) {
+        // In case we are looking for a scalar boundary condition, like temperature.
+        if (boundary_condition.name() == name &&
+            boundary_condition.type() == BoundaryConditionType::Scalar) {
+            return std::get<double>(boundary_condition.data());
+        }
+
+        // In case we are looking for a scalar boundary condition, inside a vector boundary condition, like velocity.
+        // For example, we are looking for x-component of inlet velocity.
+        // in that case `name` parameter will end with `_x` and we need to remove that `_x` suffix.
+        // and then check if the name matches and also the boundary condition type is vector.
+        // if yes, then we return the x or y or z component of the vector (depending on the suffix).
+        if (boundary_condition.name() == name.substr(0, name.size() - 2) &&
+            boundary_condition.type() == BoundaryConditionType::Vector) {
+            auto vector = std::get<Vector3d>(boundary_condition.data());
+            auto suffix = std::string_view(name).substr(name.size() - 2, 2);
+
+            if (suffix == "_x") {
+                return vector.x();
+            }
+
+            if (suffix == "_y") {
+                return vector.y();
+            }
+
+            if (suffix == "_z") {
+                return vector.z();
+            }
         }
     }
 
     throw std::runtime_error(
-        format("Boundary patch '{}' does not have scalar attribute '{}'", _name, name));
+        format("mesh::BoundaryPatch::get_scalar_bc(): "
+               "Boundary patch '{}' does not have boundary condition '{}'",
+               _name,
+               name));
 }
 
 auto BoundaryPatch::get_vector_bc(const std::string& name) const -> Vector3d {
@@ -30,7 +58,10 @@ auto BoundaryPatch::get_vector_bc(const std::string& name) const -> Vector3d {
     }
 
     throw std::runtime_error(
-        format("Boundary patch '{}' does not have vector attribute '{}'", _name, name));
+        format("mesh::BoundaryPatch::get_vector_bc(): "
+               "Boundary patch '{}' does not have boundary condition '{}'",
+               _name,
+               name));
 }
 
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
@@ -52,7 +83,7 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
     return it->second;
 }
 
-auto parse_boundary_attributes(const toml::table& table, std::string_view bname)
+auto parse_boundary_conditions(const toml::table& table, std::string_view bname)
     -> BoundaryConditions {
     BoundaryConditions boundary_conditions;
 
@@ -149,7 +180,7 @@ auto read_boundary_conditions(const std::filesystem::path& path,
         }
 
         auto boundary_patch_type = boundary_type_str_to_enum(type.value());
-        auto bp_attributes = parse_boundary_attributes(doc, bname);
+        auto bp_attributes = parse_boundary_conditions(doc, bname);
 
         bcs.emplace_back(std::string(bname), std::move(bp_attributes), boundary_patch_type);
     }

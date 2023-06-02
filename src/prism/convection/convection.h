@@ -13,6 +13,8 @@ class CentralDifference : public FVScheme, public ConvectionSchemeBase {
     CentralDifference(double rho, VectorField& U, ScalarField& phi)
         : _rho(rho), _U(U), _phi(phi), _mesh(phi.mesh()) {}
 
+    void inline finalize() override {}
+
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
