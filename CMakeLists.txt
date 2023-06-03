@@ -98,3 +98,4 @@ add_subdirectory(src/apps/pmesh)
 
 # solvers
 add_subdirectory(src/solvers/diffsolver)
+add_subdirectory(src/solvers/convsolver)

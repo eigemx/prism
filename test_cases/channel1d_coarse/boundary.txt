@@ -1,0 +1,11 @@
+[empty]
+type = 'empty'
+
+[inlet]
+type = 'inlet'
+temperature = 900.0
+velocity = [0.001, 0.0, 0.0]
+
+[outlet]
+type = 'outlet'
+temperature = 300.0
