@@ -90,8 +90,9 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
      * @param face The boundary face.
      */
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
-    switch (boundary_patch.type()) {
+    switch (boundary_condition.patch_type()) {
         // empty boundary patch, do nothing
         case mesh::BoundaryPatchType::Empty: {
             return;

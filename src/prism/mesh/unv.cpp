@@ -70,6 +70,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& filename)
 }
 
 auto UnvToPMeshConverter::to_pmesh() -> PMesh {
+    // TODO: accept custom boundar file path as an argument
     std::vector<std::string_view> boundary_names;
 
     for (const auto& [name, _] : _boundary_name_to_faces_map) {
@@ -78,12 +79,12 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
 
     // get parent directory from _filename
     auto parent_dir = _filename.parent_path();
-    auto boundary_patches = read_boundary_conditions(parent_dir / "boundary.txt", boundary_names);
+    auto boundary_patches = read_boundary_data_file(parent_dir / "boundary.txt", boundary_names);
 
-    // for each boundary condition, set the faces of the boundary
+    // for each boundary patch, set the faces that belong to it
     std::size_t boundary_index {0};
-    for (auto& bc : boundary_patches) {
-        auto& faces_ids = _boundary_name_to_faces_map.at(bc.name());
+    for (auto& patch : boundary_patches) {
+        auto& faces_ids = _boundary_name_to_faces_map.at(patch.name());
 
         for (auto face_id : faces_ids) {
             _faces[face_id].set_boundary_patch_id(boundary_index);

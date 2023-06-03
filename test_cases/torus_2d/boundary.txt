@@ -1,13 +1,17 @@
 [back]
+[back.temperature]
 type = 'empty'
 
 [front]
+[front.temperature]
 type = 'empty'
 
 [inner]
-type = 'inlet'
-temperature = 900
+[inner.temperature]
+type = 'fixed'
+value = 900
 
 [outer]
-type = 'wall'
-temperature = 300
+[outer.temperature]
+type = 'fixed'
+value = 300
