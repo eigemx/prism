@@ -22,8 +22,10 @@ auto inline boundary_face_gradient(const mesh::Face& face, const ScalarField& fi
 
     auto face_boundary_patch_id = face.boundary_patch_id().value();
     const auto& boundary_patch = mesh.boundary_patches()[face_boundary_patch_id];
+    const auto& boundary_condition = boundary_patch.get_bc(field.name());
+    auto patch_type = boundary_condition.patch_type();
 
-    switch (boundary_patch.type()) {
+    switch (patch_type) {
         case mesh::BoundaryPatchType::Empty:
         case mesh::BoundaryPatchType::Outlet:
         case mesh::BoundaryPatchType::Symmetry: {

@@ -1,5 +1,6 @@
 #include "convection.h"
 
+
 namespace prism::convection {
 
 auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S) -> double {
@@ -29,8 +30,9 @@ void CentralDifference::apply_interior(const mesh::Cell& cell, const mesh::Face&
 
 void CentralDifference::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_condition = boundary_patch.get_bc(_U.name());
 
-    switch (boundary_patch.type()) {
+    switch (boundary_condition.patch_type()) {
         case mesh::BoundaryPatchType::Empty: {
             return;
         }

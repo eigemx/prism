@@ -1,3 +1,5 @@
+// TODO: boundary file reading results in segmenation fault in case boundary file is not as per the
+// expected format.
 #include "boundary.h"
 
 #include <toml++/toml.h>
@@ -10,63 +12,19 @@
 #include "../print.h"
 
 namespace prism::mesh {
+auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType;
+auto parse_boundary_patch(const toml::table& table, const std::string& patch_name)
+    -> BoundaryPatch;
+auto parse_nested_boundary_conditions(const toml::table& table, const std::string& patch_name)
+    -> BoundaryPatch;
+auto parse_field_boundary_condition(const toml::table& table,
+                                    const std::string& patch_name,
+                                    const std::string& field_name) -> BoundaryCondition;
 
-auto BoundaryPatch::get_scalar_bc(const std::string& name) const -> double {
-    for (const auto& boundary_condition : _bcs) {
-        // In case we are looking for a scalar boundary condition, like temperature.
-        if (boundary_condition.name() == name &&
-            boundary_condition.type() == BoundaryConditionType::Scalar) {
-            return std::get<double>(boundary_condition.data());
-        }
-
-        // In case we are looking for a scalar boundary condition, inside a vector boundary condition, like velocity.
-        // For example, we are looking for x-component of inlet velocity.
-        // in that case `name` parameter will end with `_x` and we need to remove that `_x` suffix.
-        // and then check if the name matches and also the boundary condition type is vector.
-        // if yes, then we return the x or y or z component of the vector (depending on the suffix).
-        if (boundary_condition.name() == name.substr(0, name.size() - 2) &&
-            boundary_condition.type() == BoundaryConditionType::Vector) {
-            auto vector = std::get<Vector3d>(boundary_condition.data());
-            auto suffix = std::string_view(name).substr(name.size() - 2, 2);
-
-            if (suffix == "_x") {
-                return vector.x();
-            }
-
-            if (suffix == "_y") {
-                return vector.y();
-            }
-
-            if (suffix == "_z") {
-                return vector.z();
-            }
-        }
-    }
-
-    throw std::runtime_error(
-        format("mesh::BoundaryPatch::get_scalar_bc(): "
-               "Boundary patch '{}' does not have boundary condition '{}'",
-               _name,
-               name));
-}
-
-auto BoundaryPatch::get_vector_bc(const std::string& name) const -> Vector3d {
-    for (const auto& attr : _bcs) {
-        if (attr.name() == name && attr.type() == BoundaryConditionType::Vector) {
-            return std::get<Vector3d>(attr.data());
-        }
-    }
-
-    throw std::runtime_error(
-        format("mesh::BoundaryPatch::get_vector_bc(): "
-               "Boundary patch '{}' does not have boundary condition '{}'",
-               _name,
-               name));
-}
 
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
     const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryPatchType> {
-        {"wall", BoundaryPatchType::Fixed},
+        {"fixed", BoundaryPatchType::Fixed},
         {"inlet", BoundaryPatchType::Inlet},
         {"outlet", BoundaryPatchType::Outlet},
         {"gradient", BoundaryPatchType::FixedGradient},
@@ -83,58 +41,111 @@ auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
     return it->second;
 }
 
-auto parse_boundary_conditions(const toml::table& table, std::string_view bname)
-    -> BoundaryConditions {
-    BoundaryConditions boundary_conditions;
+auto parse_boundary_patch(const toml::table& table, const std::string& patch_name)
+    -> BoundaryPatch {
+    return parse_nested_boundary_conditions(table, patch_name);
+}
 
-    // read all toml nodes in table, if of type double or array and of size 3, add to boundary_conditions
-    const auto& toml_nodes = table[bname].as_table();
-    for (auto&& [key, value] : *toml_nodes) {
-        if (key == "type") {
-            continue;
-        }
+auto parse_nested_boundary_conditions(const toml::table& table, const std::string& patch_name)
+    -> BoundaryPatch {
+    // for each subtable, get its type and data
+    std::map<std::string, BoundaryCondition> field_name_to_bc_map;
+    const auto& patch_table = *(table[patch_name].as_table());
 
-        if (value.is_number() || value.is_floating_point()) {
-            double attr_float_val = value.value<double>().value();
-            boundary_conditions.emplace_back(
-                std::string(key), BoundaryConditionType::Scalar, attr_float_val);
-        }
+    for (const auto& [field_name_key, field_table] : patch_table) {
+        const auto& field_name = std::string(field_name_key.str());
+        auto field_bc = parse_field_boundary_condition(table, patch_name, field_name);
 
-        else if (value.is_array()) {
-            const auto& array = value.as_array();
+        field_name_to_bc_map.insert({field_name, field_bc});
 
-            if (array->size() != 3) {
-                throw std::runtime_error(
-                    format("Boundary condition '{}' for patch '{}' is not a 3D vector",
-                           key.str(),
-                           bname));
-            }
-
-            boundary_conditions.emplace_back(std::string(key),
-                                             BoundaryConditionType::Vector,
-                                             Vector3d {
-                                                 array->at(0).value<double>().value(),
-                                                 array->at(1).value<double>().value(),
-                                                 array->at(2).value<double>().value(),
-                                             });
-        }
-
-        else {
-            throw std::runtime_error(
-                format("Boundary condition '{}' for patch '{}' is not a scalar or vector",
-                       key.str(),
-                       bname));
+        if (field_bc.type() == BoundaryConditionValueType::Vector) {
+            // to make it easier to access the x, y, z boundary conditions for a vector field
+            auto vec_value = std::get<Vector3d>(field_bc.data());
+            field_name_to_bc_map.insert({field_name + "_x",
+                                         BoundaryCondition {
+                                             BoundaryConditionValueType::Scalar,
+                                             vec_value.x(),
+                                             field_bc.patch_type(),
+                                         }});
+            field_name_to_bc_map.insert({field_name + "_y",
+                                         BoundaryCondition {
+                                             BoundaryConditionValueType::Scalar,
+                                             vec_value.y(),
+                                             field_bc.patch_type(),
+                                         }});
+            field_name_to_bc_map.insert({field_name + "_z",
+                                         BoundaryCondition {
+                                             BoundaryConditionValueType::Scalar,
+                                             vec_value.z(),
+                                             field_bc.patch_type(),
+                                         }});
         }
     }
 
-    return boundary_conditions;
+    return BoundaryPatch {patch_name, field_name_to_bc_map};
 }
 
-auto read_boundary_conditions(const std::filesystem::path& path,
-                              const std::vector<std::string_view>& boundary_names)
+auto parse_field_boundary_condition(const toml::table& table,
+                                    const std::string& patch_name,
+                                    const std::string& field_name) -> BoundaryCondition {
+    const auto& field_table = *(table[patch_name][field_name].as_table());
+    if (!field_table.contains("type")) {
+        throw std::runtime_error(
+            format("boundary.cpp parse_field_boundary_condition(): "
+                   "Boundary patch '{}' field '{}' does not have a type or value.",
+                   patch_name,
+                   field_name));
+    }
+
+    auto bc_type_str = field_table["type"].value<std::string_view>().value();
+    auto bc_type = boundary_type_str_to_enum(bc_type_str);
+
+
+    if (!field_table.contains("value")) {
+        return BoundaryCondition {
+            BoundaryConditionValueType::Nil, BoundaryConditionData {}, bc_type};
+    }
+
+    auto bc_value = field_table["value"];
+
+    if (bc_value.is_number() || bc_value.is_floating_point()) {
+        double value = bc_value.value<double>().value();
+        return BoundaryCondition {BoundaryConditionValueType::Scalar, value, bc_type};
+    }
+
+    if (bc_value.is_array()) {
+        const auto& array = bc_value.as_array();
+
+        if (array->size() != 3) {
+            throw std::runtime_error(
+                format("boundary.cpp parse_field_boundary_condition(): "
+                       "Array value for field '{}' for patch '{}' is not a 3D vector",
+                       field_name,
+                       patch_name));
+        }
+
+        return {BoundaryConditionValueType::Vector,
+                Vector3d {
+                    array->at(0).value<double>().value(),
+                    array->at(1).value<double>().value(),
+                    array->at(2).value<double>().value(),
+                },
+                bc_type};
+    }
+
+    throw std::runtime_error(
+        format("boundary.cpp parse_field_boundary_condition(): "
+               "Boundary patch '{}' field '{}' has an invalid type or value.",
+               patch_name,
+               field_name));
+}
+
+
+auto read_boundary_data_file(const std::filesystem::path& path,
+                             const std::vector<std::string_view>& boundary_names)
     -> std::vector<BoundaryPatch> {
-    std::vector<BoundaryPatch> bcs;
-    bcs.reserve(boundary_names.size());
+    std::vector<BoundaryPatch> boundary_patches;
+    boundary_patches.reserve(boundary_names.size());
 
     auto fstream {std::ifstream {path}};
 
@@ -169,22 +180,76 @@ auto read_boundary_conditions(const std::filesystem::path& path,
                        path.string()));
         }
 
-        auto type {doc[bname]["type"].value<std::string_view>()};
-
-        if (!type) {
-            throw std::runtime_error(format(
-                "Boundary conditions for patch '{}' does not have a type in boundary condition "
-                "file '{}'",
-                bname,
-                path.string()));
-        }
-
-        auto boundary_patch_type = boundary_type_str_to_enum(type.value());
-        auto bp_attributes = parse_boundary_conditions(doc, bname);
-
-        bcs.emplace_back(std::string(bname), std::move(bp_attributes), boundary_patch_type);
+        boundary_patches.emplace_back(parse_boundary_patch(doc, std::string(bname)));
     }
 
-    return bcs;
+    return boundary_patches;
 }
+
+auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double {
+    // Search for the field name in the boundary patch
+    auto it = _field_name_to_bc_map.find(field_name);
+
+    if (it == _field_name_to_bc_map.end()) {
+        // field not found
+        throw std::runtime_error(
+            format("BoundaryPatch::get_scalar_bc(): "
+                   "Boundary patch '{}' does not have a field named '{}'",
+                   _name,
+                   field_name));
+    }
+
+    if (it->second.type() != BoundaryConditionValueType::Scalar) {
+        // field is not a scalar
+        throw std::runtime_error(
+            format("BoundaryPatch::get_scalar_bc(): "
+                   "Boundary patch '{}' field '{}' is not a scalar",
+                   _name,
+                   field_name));
+    }
+
+    return std::get<double>(it->second.data());
+}
+
+auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector3d {
+    // Search for the field name in the boundary patch
+    auto it = _field_name_to_bc_map.find(field_name);
+
+    if (it == _field_name_to_bc_map.end()) {
+        // field not found
+        throw std::runtime_error(
+            format("BoundaryPatch::get_vector_bc(): "
+                   "Boundary patch '{}' does not have a field named '{}'",
+                   _name,
+                   field_name));
+    }
+
+    if (it->second.type() != BoundaryConditionValueType::Vector) {
+        // field is not a vector
+        throw std::runtime_error(
+            format("BoundaryPatch::get_vector_bc(): "
+                   "Boundary patch '{}' field '{}' is not a vector",
+                   _name,
+                   field_name));
+    }
+
+    return std::get<Vector3d>(it->second.data());
+}
+
+auto BoundaryPatch::get_bc(const std::string& field_name) const -> const BoundaryCondition& {
+    // Search for the field name in the boundary patch
+    auto it = _field_name_to_bc_map.find(field_name);
+
+    if (it == _field_name_to_bc_map.end()) {
+        // field not found
+        throw std::runtime_error(
+            format("BoundaryPatch::get_bc(): "
+                   "Boundary patch '{}' does not have a field named '{}'",
+                   _name,
+                   field_name));
+    }
+
+    return it->second;
+}
+
 } // namespace prism::mesh
