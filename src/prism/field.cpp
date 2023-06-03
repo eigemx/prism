@@ -8,7 +8,7 @@ namespace prism {
 ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh)
     : _mesh(mesh),
       _name(std::move(name)),
-      _data(std::make_shared<VectorXd>(mesh.cells().size())) {}
+      _data(std::make_shared<VectorXd>(VectorXd::Zero(mesh.cells().size()))) {}
 
 
 ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh, VectorXd data)
