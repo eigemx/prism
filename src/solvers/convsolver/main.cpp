@@ -28,7 +28,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
     auto diff = diffusion::Linear(0.958, T, gradient::GreenGauss(T));
-    auto conv = convection::CentralDifference(1, U, T);
+    auto conv = convection::Convection(100, U, T);
 
     // assemble the equation
     auto eqn = Equation(T, {&diff, &conv});
