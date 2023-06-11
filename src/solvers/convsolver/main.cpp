@@ -1,5 +1,8 @@
 #include <prism/core.h>
 
+#include <iostream>
+#include <memory>
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
@@ -23,22 +26,39 @@ auto main(int argc, char* argv[]) -> int {
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
-    auto U = VectorField("velocity", mesh, Vector3d(0.00001, 0.0, 0.0));
+    auto T_grad = std::make_shared<gradient::GreenGauss>(T);
+
+    // set up a unifform velocity field defined over the mesh
+    // set the velocity of the field to be the same as the inlet value
+    const auto& inlet_patch = std::find_if(
+        mesh.boundary_patches().begin(), mesh.boundary_patches().end(), [](const auto& patch) {
+            return patch.name() == "inlet";
+        });
+
+    if (inlet_patch == mesh.boundary_patches().end()) {
+        error("No inlet patch found!");
+        return 1;
+    }
+
+    Vector3d inlet_velocity = inlet_patch->get_vector_bc("velocity");
+    auto U = VectorField("velocity", mesh, inlet_velocity);
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
-    auto diff = diffusion::Linear(0.958, T, gradient::GreenGauss(T));
-    auto conv = convection::Convection(100, U, T);
+    auto conv = convection::Convection<convection::Upwind>(1, U, T, T_grad);
+    auto diff = diffusion::Diffusion(1, T, T_grad);
 
     // assemble the equation
-    auto eqn = Equation(T, {&diff, &conv});
+    auto eqn = Equation(T, {&conv, &diff});
 
+    prism::print("Running for Peclet number = {}\n", inlet_velocity.norm() * 0.1);
     // solve
     auto solver = solver::GaussSeidel();
     solver.solve(eqn, 1000, 1e-10);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 
+    eqn.update_coeffs();
     const auto& A = eqn.coeff_matrix();
     const auto& b = eqn.rhs_vector();
 

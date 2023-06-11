@@ -30,9 +30,14 @@ void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
             break;
         }
 
-        Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
-        cg.compute(A);
-        phi.data() -= cg.solve(res);
+        //Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
+        //cg.compute(A);
+        //phi.data() -= cg.solve(res);
+
+        // solve using BiCGSTAB
+        Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
+        bicg.compute(A);
+        phi.data() -= bicg.solve(res);
 
         // print the norm of the residuals
         print("Iteration: {}, Residual: {}\n", i, res_norm);
