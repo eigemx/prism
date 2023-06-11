@@ -6,7 +6,7 @@
 
 namespace prism::diffusion {
 
-void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
+void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     /**
      * @brief Apply the discretized diffusion equation to the cell, 
      * when the face is an interior face.
@@ -37,7 +37,7 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     auto e = d_CF / d_CF_norm;
 
     // orthogonal-like normal vector E_f using over-relaxed approach
-    auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + 1e-8))) * e;
+    auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + 1e-10))) * e;
 
     // The matrix coefficients of the discretized diffusion term need to be calculated once
     // in the first iteration. After that, we only need to perform non-orthogonal correction.
@@ -45,33 +45,34 @@ void Linear::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     // This should be a performance boost to avoid unnecessarily accessing and updating
     // coeff_matrix() elements.
     if (!_main_coeffs_calculated) {
-        // diffusion factor
-        auto g_diff = (E_f.norm() * _kappa) / (d_CF_norm + 1e-8);
+        // geometric diffusion coefficient
+        auto g_diff = E_f.norm() / (d_CF_norm + 1e-10);
 
-        // g_diff * (Φ_c - Φ_f)
-        coeff_matrix().coeffRef(cell_id, cell_id) += g_diff;
-        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff;
+        // kappa * g_diff * (Φ_c - Φ_f)
+        coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
+        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
     }
 
-    correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
+    //correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
 }
 
 
-void Linear::correct_non_orhto_interior(const mesh::Cell& cell,
-                                        const mesh::Cell& nei_cell,
-                                        const mesh::Face& face,
-                                        const Vector3d& T_f) {
+void Diffusion::correct_non_orhto_interior(const mesh::Cell& cell,
+                                           const mesh::Cell& nei_cell,
+                                           const mesh::Face& face,
+                                           const Vector3d& T_f) {
     // gradient of field phi at cell center
-    auto grad_c = _gradient_scheme->gradient(cell);
-
-    // gradient of field phi at neighbor cell center
-    auto grad_n = _gradient_scheme->gradient(nei_cell);
-
-    // weighting factor for the two cells sharing the face
-    auto gc = mesh::PMesh::cells_weighting_factor(cell, nei_cell, face);
+    //auto grad_c = _gradient_scheme->gradient_at_cell(cell);
+    //
+    //// gradient of field phi at neighbor cell center
+    //auto grad_n = _gradient_scheme->gradient_at_cell(nei_cell);
+    //
+    //// weighting factor for the two cells sharing the face
+    //auto gc = mesh::PMesh::cells_weighting_factor(cell, nei_cell, face);
 
     // weighted average of the two gradients at the face center
-    auto grad_f = (gc * grad_c) + ((1 - gc) * grad_n);
+    //auto grad_f = (gc * grad_c) + ((1 - gc) * grad_n);
+    auto grad_f = _gradient_scheme->gradient_at_face(face);
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
@@ -79,7 +80,7 @@ void Linear::correct_non_orhto_interior(const mesh::Cell& cell,
 }
 
 
-void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
+void Diffusion::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
     /**
      * @brief Applies boundary discretized diffusion equation to the cell,
      * when the current face is a boundary face. The function iteself does not
@@ -132,7 +133,7 @@ void Linear::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
 }
 
 
-void Linear::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
     // get the fixed phi variable associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
@@ -155,13 +156,13 @@ void Linear::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face
     }
 
     rhs_vector()[cell_id] += g_diff * phi_wall;
-    correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
+    //correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
 
 
-void Linear::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
-                                              const mesh::Face& face,
-                                              const Vector3d& T_f) {
+void Diffusion::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
+                                                 const mesh::Face& face,
+                                                 const Vector3d& T_f) {
     // we need to calculate the gradient of phi at the face
     // first let's calculate the vector joining the face center to the cell center
     auto d_CF = face.center() - cell.center();
@@ -180,7 +181,7 @@ void Linear::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
 
-void Linear::apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face) {
+void Diffusion::apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face) {
     // get the fixed gradient (flux) value associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto flux_wall = boundary_patch.get_scalar_bc(_phi.name() + "-flux");

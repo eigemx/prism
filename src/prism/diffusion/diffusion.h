@@ -12,23 +12,23 @@ namespace prism::diffusion {
 
 class DiffusionSchemeBase {};
 
-class Linear : public FVScheme, public DiffusionSchemeBase {
+class Diffusion : public FVScheme, public DiffusionSchemeBase {
   public:
-    // Default explicit gradient scheme is Green-Gauss
-    Linear(double kappa, ScalarField& phi)
+    // No gradient scheme is given, use Green-Gauss as a default explicit gradient scheme
+    Diffusion(double kappa, ScalarField& phi)
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::make_unique<gradient::GreenGauss>(phi)) {}
+          _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)) {}
 
     // Explicit gradient scheme is provided by the user
-    template <typename G,
-              typename = std::enable_if_t<std::is_base_of_v<gradient::GradientSchemeBase, G>>>
-    Linear(double kappa, ScalarField& phi, const G& gradient_scheme)
+    Diffusion(double kappa,
+              ScalarField& phi,
+              std::shared_ptr<gradient::GradientSchemeBase> gradient_scheme)
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::make_unique<G>(gradient_scheme)) {}
+          _gradient_scheme(std::move(gradient_scheme)) {}
 
     inline void finalize() override { _main_coeffs_calculated = true; }
 
@@ -51,7 +51,7 @@ class Linear : public FVScheme, public DiffusionSchemeBase {
     double _kappa;
     ScalarField& _phi;
     const mesh::PMesh& _mesh;
-    std::unique_ptr<gradient::GradientSchemeBase> _gradient_scheme;
+    std::shared_ptr<gradient::GradientSchemeBase> _gradient_scheme;
     bool _main_coeffs_calculated {false};
 };
 

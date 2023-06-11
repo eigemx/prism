@@ -8,15 +8,13 @@ type = 'empty'
 [inlet.temperature]
 type = 'fixed'
 value = 900.0
-
 [inlet.velocity]
 type = 'fixed'
-value = [0.00001, 0.0, 0.0]
+value = [5, 0.0, 0.0]
 
 [outlet]
 [outlet.temperature]
 type = 'fixed'
 value = 300.0
-
 [outlet.velocity]
 type = 'outlet'

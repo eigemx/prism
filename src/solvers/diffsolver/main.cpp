@@ -30,7 +30,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto diff = diffusion::Linear(4e-5, T, gradient::GreenGauss(T));
+    auto diff = diffusion::Diffusion(4e-5, T);
 
     // assemble the equation
     auto eqn = Equation(T, {&diff});

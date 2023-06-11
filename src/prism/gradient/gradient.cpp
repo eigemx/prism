@@ -1,7 +1,7 @@
 #include "gradient.h"
 
 #include <cassert>
-#include <iostream>
+#include <cmath>
 
 #include "../print.h"
 
@@ -58,16 +58,13 @@ auto inline interior_face_gradient(const mesh::Cell& cell,
                                    const mesh::PMesh& mesh,
                                    const ScalarField& field,
                                    const MatrixX3d& grad_field) -> Vector3d {
-    auto Sf = face.area_vector();
-    bool is_cell_owner = face.owner() == cell.id();
-    auto neighbor_cell_id = is_cell_owner ? face.neighbor().value() : face.owner();
+    bool is_owned = face.is_owned_by(cell.id());
+    auto neighbor_cell_id = is_owned ? face.neighbor().value() : face.owner();
 
     // update normal vector to always be pointing out of the cell
-    if (!is_cell_owner) {
-        Sf *= -1;
-    }
+    auto Sf = face.area_vector() * std::pow(-1., static_cast<int>(is_owned));
 
-    const auto& neighbor_cell = mesh.cells()[neighbor_cell_id];
+    const auto& neighbor_cell = mesh.cell(neighbor_cell_id);
 
     auto face_phi = 0.5 * (field[cell.id()] + field[neighbor_cell_id]);
 
@@ -81,12 +78,12 @@ GreenGauss::GreenGauss(const ScalarField& field) : _field(field) {
     _cell_gradients = MatrixX3d::Zero(_field.mesh().cells().size(), 3);
 }
 
-auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
+auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = _field.mesh();
 
     for (auto face_id : cell.faces_ids()) {
-        const auto& face = mesh.faces()[face_id];
+        const auto& face = mesh.face(face_id);
         auto Sf = face.area_vector();
 
         // This is a boundary face
@@ -107,12 +104,24 @@ auto GreenGauss::gradient(const mesh::Cell& cell) -> Vector3d {
     return grad;
 }
 
-auto GreenGauss::field() -> VectorField {
+auto GreenGauss::gradient_at_face(const mesh::Face& face) -> Vector3d {
+    Vector3d grad {0., 0., 0.};
+    const auto& mesh = _field.mesh();
+
+    if (face.is_boundary()) {
+        return boundary_face_gradient(face, _field);
+    }
+
+    const auto& owner_cell = mesh.cell(face.owner());
+    return interior_face_gradient(owner_cell, face, mesh, _field, _cell_gradients);
+}
+
+auto GreenGauss::gradient_field() -> VectorField {
     auto grad_field_name = _field.name() + "_grad";
     VectorField grad_field {grad_field_name, _field.mesh()};
 
     for (const auto& cell : _field.mesh().cells()) {
-        grad_field.data().row(cell.id()) = gradient(cell);
+        grad_field.data().row(cell.id()) = gradient_at_cell(cell);
     }
 
     return grad_field;
