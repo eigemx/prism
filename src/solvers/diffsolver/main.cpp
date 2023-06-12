@@ -36,8 +36,8 @@ auto main(int argc, char* argv[]) -> int {
     auto eqn = Equation(T, {&diff});
 
     // solve
-    auto solver = solver::GaussSeidel();
-    solver.solve(eqn, 1000, 1e-10);
+    auto solver = solver::BiCGSTAB();
+    solver.solve_bicg(eqn, 1000, 1e-10);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 

@@ -5,7 +5,7 @@
 #include "../print.h"
 
 namespace prism::solver {
-void GaussSeidel::solve(Equation& eqn, std::size_t n_iter, double eps) {
+void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
     auto n_cells = eqn.scalar_field().data().size();
     auto res = VectorXd(n_cells);
 

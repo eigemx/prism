@@ -53,7 +53,7 @@ void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
         coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
     }
 
-    //correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
+    correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
 }
 
 
@@ -156,7 +156,7 @@ void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& f
     }
 
     rhs_vector()[cell_id] += g_diff * phi_wall;
-    //correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
+    correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
 
 
