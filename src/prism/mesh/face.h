@@ -24,7 +24,7 @@ class Face {
     auto inline area_vector() const noexcept -> Vector3d { return _area * _normal; }
 
     auto inline id() const noexcept -> std::size_t { return _id; }
-    void inline set_id(std::size_t face_id) noexcept { _id = face_id; }
+    auto inline id() noexcept -> std::size_t& { return _id; }
     auto inline vertices_ids() const noexcept -> const std::vector<std::size_t>& {
         return _vertices_ids;
     }
@@ -33,7 +33,7 @@ class Face {
     void inline set_owner(std::size_t owner_id) noexcept { _owner = owner_id; }
 
     // This function is added mainly for debugging purposes,
-    // because ach face must have an owner, so this will return false if something is wrong
+    // because each face must have an owner, so this will return false if something is wrong
     auto inline has_owner() const -> bool { return _owner.has_value(); }
     auto inline is_owned_by(const std::size_t& cell_id) const -> bool {
         return _owner.value() == cell_id;
@@ -56,6 +56,7 @@ class Face {
 
     std::size_t _id {0};
     std::size_t _vertices_count {0};
+
     double _area {0.0};
     Vector3d _normal {0.0, 0.0, 0.0};
     Vector3d _center {0.0, 0.0, 0.0};

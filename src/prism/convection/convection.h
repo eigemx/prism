@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <iostream>
 #include <memory>
 
 #include "../field.h"
@@ -13,12 +12,14 @@ namespace prism::convection {
 
 class ConvectionSchemeBase {};
 
+// coefficients for the discretized convection equation for a face
 struct CoeffsTriplet {
     double a_C {}; // cell
-    double a_N {}; // neigbor
+    double a_N {}; // neighbor
     double b {};   // source
 };
 
+// Base class for convection face interpolation schemes (upwind, central difference, ...)
 class FaceInterpolationSchemeBase {
   public:
     virtual auto interpolate(double m_dot,
@@ -29,6 +30,7 @@ class FaceInterpolationSchemeBase {
         -> CoeffsTriplet = 0;
 };
 
+// Central difference scheme
 class CentralDifference : public FaceInterpolationSchemeBase {
   public:
     auto interpolate(double m_dot,
@@ -39,6 +41,7 @@ class CentralDifference : public FaceInterpolationSchemeBase {
         -> CoeffsTriplet override;
 };
 
+// Upwind scheme
 class Upwind : public FaceInterpolationSchemeBase {
   public:
     auto interpolate(double m_dot,
@@ -49,6 +52,7 @@ class Upwind : public FaceInterpolationSchemeBase {
         -> CoeffsTriplet override;
 };
 
+// Second order upwind scheme
 class SecondOrderUpwind : public FaceInterpolationSchemeBase {
   public:
     auto interpolate(double m_dot,
@@ -59,6 +63,7 @@ class SecondOrderUpwind : public FaceInterpolationSchemeBase {
         -> CoeffsTriplet override;
 };
 
+// QUICK scheme
 class QUICK : public FaceInterpolationSchemeBase {
   public:
     auto interpolate(double m_dot,
@@ -69,6 +74,7 @@ class QUICK : public FaceInterpolationSchemeBase {
         -> CoeffsTriplet override;
 };
 
+// Discretization of the convection term finite volume scheme
 template <typename FaceInterpolationScheme = Upwind>
 class Convection : public FVScheme, public ConvectionSchemeBase {
   public:
@@ -109,10 +115,10 @@ class Convection : public FVScheme, public ConvectionSchemeBase {
     bool _main_coeffs_calculated {false};
 };
 
+
 auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S) -> double {
     return rho * U.dot(S);
 }
-
 
 template <typename F>
 void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
@@ -200,6 +206,10 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
 template <typename F>
 void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
+
+    // The outlet boundary condition is basically a zero gradient condition,
+    // so the value of the field at the outlet face centroid is the same as
+    // the value of the field at the owner cell centroid.
     auto phi_outlet = _phi[face.owner()];
     auto cell_id = cell.id();
 

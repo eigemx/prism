@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "../field.h"
 #include "../mesh/pmesh.h"
 #include "../types.h"
