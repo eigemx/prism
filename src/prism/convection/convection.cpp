@@ -22,11 +22,12 @@ auto CentralDifference::interpolate(
     return {a_C, a_N, b};
 }
 
-auto Upwind::interpolate(double m_dot,
-                         const mesh::Cell& cell,
-                         const mesh::Cell& neighbor,
-                         const mesh::Face& face,
-                         const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
+auto Upwind::interpolate(
+    double m_dot,
+    const mesh::Cell& cell,                                           // NOLINT
+    const mesh::Cell& neighbor,                                       // NOLINT
+    const mesh::Face& face,                                           // NOLINT
+    const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme) // NOLINT
     -> CoeffsTriplet {
     // in case `cell` is the upstream cell
     auto a_C = std::max(m_dot, 0.0);
