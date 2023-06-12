@@ -20,7 +20,7 @@ class SolverBase {
     virtual void solve(Equation& eq, std::size_t n_iter, double eps) = 0;
 };
 
-class GaussSeidel : public SolverBase {
+class BiCGSTAB : public SolverBase {
   public:
     void solve(Equation& eq, std::size_t n_iter = 1000, double eps = 1e-6) override;
 };

@@ -51,26 +51,12 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     auto eqn = Equation(T, {&conv, &diff});
 
-    prism::print("Running for Peclet number = {}\n", inlet_velocity.norm() * 0.1);
+    prism::print("Running for cell Peclet number = {}\n", inlet_velocity.norm());
     // solve
-    auto solver = solver::GaussSeidel();
+    auto solver = solver::BiCGSTAB();
     solver.solve(eqn, 1000, 1e-10);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
-
-    eqn.update_coeffs();
-    const auto& A = eqn.coeff_matrix();
-    const auto& b = eqn.rhs_vector();
-
-    // export the coefficient matrix and the RHS vector to 'matrix.csv' and 'rhs.csv' respectively
-    std::ofstream matrix_file("matrix.csv");
-    matrix_file << A;
-    matrix_file.close();
-
-    std::ofstream rhs_file("rhs.csv");
-    rhs_file << b;
-    rhs_file.close();
-
 
     return 0;
 }

@@ -1,0 +1,39 @@
+[back]
+[back.temperature]
+type = 'empty'
+[back.velocity]
+type = 'empty'
+
+[front]
+[front.temperature]
+type = 'empty'
+[front.velocity]
+type = 'empty'
+
+[heatedWall]
+[heatedWall.temperature]
+type = 'fixed'
+value = 500
+[heatedWall.velocity]
+type = 'fixed'
+value = [0.0, 10, 0.0]
+
+[inlet]
+[inlet.temperature]
+type = 'fixed'
+value = 300
+[inlet.velocity]
+type = 'fixed'
+value = [0.0, 10, 0.0]
+
+[insulatedWall]
+[insulatedWall.temperature]
+type = 'symmetry'
+[insulatedWall.velocity]
+type = 'symmetry'
+
+[outlet]
+[outlet.temperature]
+type = 'outlet'
+[outlet.velocity]
+type = 'outlet'

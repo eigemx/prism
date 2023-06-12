@@ -13,10 +13,10 @@ namespace prism::convection {
 
 class ConvectionSchemeBase {};
 
-struct InterpolationCoeffs {
-    double a_C {};
-    double a_D {};
-    double b {};
+struct CoeffsTriplet {
+    double a_C {}; // cell
+    double a_N {}; // neigbor
+    double b {};   // source
 };
 
 class FaceInterpolationSchemeBase {
@@ -26,7 +26,7 @@ class FaceInterpolationSchemeBase {
                              const mesh::Cell& neighbor,
                              const mesh::Face& face,
                              const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
-        -> InterpolationCoeffs = 0;
+        -> CoeffsTriplet = 0;
 };
 
 class CentralDifference : public FaceInterpolationSchemeBase {
@@ -36,7 +36,7 @@ class CentralDifference : public FaceInterpolationSchemeBase {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face,
                      const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
-        -> InterpolationCoeffs override;
+        -> CoeffsTriplet override;
 };
 
 class Upwind : public FaceInterpolationSchemeBase {
@@ -46,7 +46,7 @@ class Upwind : public FaceInterpolationSchemeBase {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face,
                      const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
-        -> InterpolationCoeffs override;
+        -> CoeffsTriplet override;
 };
 
 class SecondOrderUpwind : public FaceInterpolationSchemeBase {
@@ -56,10 +56,20 @@ class SecondOrderUpwind : public FaceInterpolationSchemeBase {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face,
                      const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
-        -> InterpolationCoeffs override;
+        -> CoeffsTriplet override;
 };
 
-template <typename FaceInterpolationScheme = CentralDifference>
+class QUICK : public FaceInterpolationSchemeBase {
+  public:
+    auto interpolate(double m_dot,
+                     const mesh::Cell& cell,
+                     const mesh::Cell& neighbor,
+                     const mesh::Face& face,
+                     const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
+        -> CoeffsTriplet override;
+};
+
+template <typename FaceInterpolationScheme = Upwind>
 class Convection : public FVScheme, public ConvectionSchemeBase {
   public:
     // Gradient scheme is not given, using Green-Gauss as a default explicit gradient scheme
@@ -131,17 +141,17 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
 
 
     if (!_main_coeffs_calculated) {
-        coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f / 2;
-        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += m_dot_f / 2;
+        //coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f / 2;
+        //coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += m_dot_f / 2;
 
-        //coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
-        //coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
+        coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
+        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
 
         //coeff_matrix().coeffRef(cell_id, cell_id) += std::max(m_dot_f, 0.0);
         //coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -std::max(-m_dot_f, 0.0);
     }
 
-    //rhs_vector().coeffRef(cell_id) += b;
+    rhs_vector().coeffRef(cell_id) += b;
 }
 
 template <typename F>
@@ -160,7 +170,8 @@ void Convection<F>::apply_boundary(const mesh::Cell& cell, const mesh::Face& fac
             return;
         }
 
-        case mesh::BoundaryPatchType::Outlet: {
+        case mesh::BoundaryPatchType::Outlet:
+        case mesh::BoundaryPatchType::Symmetry: {
             apply_boundary_outlet(cell, face);
             return;
         }
@@ -189,7 +200,7 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
 template <typename F>
 void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
-    auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
+    auto phi_outlet = _phi[face.owner()];
     auto cell_id = cell.id();
 
     // face area vector
@@ -200,7 +211,7 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
 
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
-    rhs_vector().coeffRef(cell_id) += -m_dot_f * phi_wall;
+    rhs_vector().coeffRef(cell_id) += -m_dot_f * phi_outlet;
 }
 
 template <typename F>
@@ -214,7 +225,8 @@ auto Convection<F>::boundary_face_velocity(const mesh::Face& face) const -> Vect
             return boundary_patch.get_vector_bc(_U.name());
         }
 
-        case mesh::BoundaryPatchType::Outlet: {
+        case mesh::BoundaryPatchType::Outlet:
+        case mesh::BoundaryPatchType::Symmetry: {
             return _U[face.owner()];
         }
 
