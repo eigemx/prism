@@ -45,16 +45,15 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
-    auto conv = convection::Convection<convection::Upwind>(1, U, T, T_grad);
-    auto diff = diffusion::Diffusion(1, T, T_grad);
+    auto conv = convection::Convection<convection::Upwind>(1.18, U, T, T_grad);
+    auto diff = diffusion::Diffusion(1e-2, T, T_grad);
 
     // assemble the equation
-    auto eqn = Equation(T, {&conv, &diff});
+    auto eqn = Equation(T, {&diff, &conv});
 
-    prism::print("Running for cell Peclet number = {}\n", inlet_velocity.norm());
     // solve
     auto solver = solver::BiCGSTAB();
-    solver.solve(eqn, 1000, 1e-10);
+    solver.solve(eqn, 2000, 1e-10);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 

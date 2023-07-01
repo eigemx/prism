@@ -1,6 +1,7 @@
 #include "solver.h"
 
 #include <Eigen/IterativeLinearSolvers>
+#include <iostream>
 
 #include "../print.h"
 
