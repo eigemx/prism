@@ -10,7 +10,7 @@ type = 'fixed'
 value = 900.0
 [inlet.velocity]
 type = 'fixed'
-value = [1, 0.0, 0.0]
+value = [40.0, 0.0, 0.0]
 
 [outlet]
 [outlet.temperature]

@@ -74,7 +74,7 @@ class QUICK : public FaceInterpolationSchemeBase {
         -> CoeffsTriplet override;
 };
 
-// Discretization of the convection term finite volume scheme
+// Finite volume scheme for the discretization of the convection term
 template <typename FaceInterpolationScheme = Upwind>
 class Convection : public FVScheme, public ConvectionSchemeBase {
   public:
@@ -134,6 +134,8 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
     auto S_f = face.area_vector();
 
     if (!is_owned) {
+        // face is not owned by `cell`, flip the area vector
+        // so that it points outwards from `cell`
         S_f *= -1;
     }
 
@@ -147,14 +149,8 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
 
 
     if (!_main_coeffs_calculated) {
-        //coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f / 2;
-        //coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += m_dot_f / 2;
-
         coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
         coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
-
-        //coeff_matrix().coeffRef(cell_id, cell_id) += std::max(m_dot_f, 0.0);
-        //coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -std::max(-m_dot_f, 0.0);
     }
 
     rhs_vector().coeffRef(cell_id) += b;
@@ -200,7 +196,12 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
     const auto& U_f = boundary_face_velocity(face);
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
-    rhs_vector().coeffRef(cell.id()) += -m_dot_f * phi_wall;
+    if (!_main_coeffs_calculated) {
+        // in case owner cell is an upstream cell
+        coeff_matrix().coeffRef(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
+    }
+
+    rhs_vector().coeffRef(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
 }
 
 template <typename F>
@@ -221,7 +222,12 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
 
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
-    rhs_vector().coeffRef(cell_id) += -m_dot_f * phi_outlet;
+    //rhs_vector().coeffRef(cell_id) += -m_dot_f * phi_outlet;
+
+    if (!_main_coeffs_calculated) {
+        // This is an outlet, so owner cell is an upstream cell
+        coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
+    }
 }
 
 template <typename F>

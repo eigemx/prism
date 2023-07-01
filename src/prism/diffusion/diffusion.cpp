@@ -141,7 +141,6 @@ void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& f
     auto cell_id = cell.id();
 
     const auto& S_f = face.area_vector();
-    auto S_f_norm = face.area();
 
     // vector joining the centers of the cell and the face
     auto d_Cf = face.center() - cell.center();
@@ -149,13 +148,13 @@ void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& f
     auto e = d_Cf / d_Cf_norm;
     auto E_f = ((S_f.dot(S_f) / e.dot(S_f))) * e;
 
-    auto g_diff = (E_f.norm() * _kappa) / (d_Cf_norm);
+    auto g_diff = E_f.norm() / (d_Cf_norm + 1e-9);
 
     if (!_main_coeffs_calculated) {
-        coeff_matrix().coeffRef(cell_id, cell_id) += g_diff;
+        coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
     }
 
-    rhs_vector()[cell_id] += g_diff * phi_wall;
+    rhs_vector()[cell_id] += g_diff * _kappa * phi_wall;
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
 
