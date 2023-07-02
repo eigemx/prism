@@ -1,6 +1,5 @@
 #include <prism/core.h>
 
-#include <iostream>
 #include <memory>
 
 auto main(int argc, char* argv[]) -> int {
