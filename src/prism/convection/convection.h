@@ -222,10 +222,17 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
 
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
-    //rhs_vector().coeffRef(cell_id) += -m_dot_f * phi_outlet;
-
     if (!_main_coeffs_calculated) {
         // This is an outlet, so owner cell is an upstream cell
+        if (m_dot_f < 0.0) {
+            warn(
+                format("convection::Convection::apply_boundary_outlet(): "
+                       "Reverse flow detected at outlet boundary patch '{}'. "
+                       "This may cause the solution to diverge.",
+                       boundary_patch.name()));
+        }
+        // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+        // and should be generalized to work for all schemes.
         coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
     }
 }
