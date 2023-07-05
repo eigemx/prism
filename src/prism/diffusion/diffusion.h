@@ -34,11 +34,6 @@ class Diffusion : public FVScheme, public DiffusionSchemeBase {
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
-    void correct_non_orhto_interior(const mesh::Cell& cell,
-                                    const mesh::Cell& nei_cell,
-                                    const mesh::Face& face,
-                                    const Vector3d& T_f);
-
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
 
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
