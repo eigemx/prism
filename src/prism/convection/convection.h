@@ -140,7 +140,8 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
     }
 
     // interpolated velocity vector at face centroid
-    const auto& U_f = 0.5 * (_U[cell_id] + _U[adjacent_cell_id]);
+    auto g_c = mesh::PMesh::cells_weighting_factor(cell, adj_cell, face);
+    const auto& U_f = (g_c * _U[cell_id]) + ((1 - g_c) * _U[adjacent_cell_id]);
 
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
@@ -162,7 +163,8 @@ void Convection<F>::apply_boundary(const mesh::Cell& cell, const mesh::Face& fac
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
     switch (boundary_condition.patch_type()) {
-        case mesh::BoundaryPatchType::Empty: {
+        case mesh::BoundaryPatchType::Empty:
+        case mesh::BoundaryPatchType::Symmetry: {
             return;
         }
 
@@ -172,8 +174,7 @@ void Convection<F>::apply_boundary(const mesh::Cell& cell, const mesh::Face& fac
             return;
         }
 
-        case mesh::BoundaryPatchType::Outlet:
-        case mesh::BoundaryPatchType::Symmetry: {
+        case mesh::BoundaryPatchType::Outlet: {
             apply_boundary_outlet(cell, face);
             return;
         }
@@ -196,6 +197,8 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
     const auto& U_f = boundary_face_velocity(face);
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
+    // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+    // and should be generalized to work for all schemes.
     if (!_main_coeffs_calculated) {
         // in case owner cell is an upstream cell
         coeff_matrix().coeffRef(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
@@ -206,12 +209,6 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
 
 template <typename F>
 void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
-
-    // The outlet boundary condition is basically a zero gradient condition,
-    // so the value of the field at the outlet face centroid is the same as
-    // the value of the field at the owner cell centroid.
-    auto phi_outlet = _phi[face.owner()];
     auto cell_id = cell.id();
 
     // face area vector
@@ -223,16 +220,16 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
     if (!_main_coeffs_calculated) {
-        // This is an outlet, so owner cell is an upstream cell
         if (m_dot_f < 0.0) {
             warn(
                 format("convection::Convection::apply_boundary_outlet(): "
                        "Reverse flow detected at outlet boundary patch '{}'. "
                        "This may cause the solution to diverge.",
-                       boundary_patch.name()));
+                       _mesh.face_boundary_patch(face).name()));
         }
         // TODO: this assumes an upwind based scheme, this is wrong for central schemes
         // and should be generalized to work for all schemes.
+        // This is an outlet, so owner `cell` is an upstream cell
         coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
     }
 }

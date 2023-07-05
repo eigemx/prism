@@ -2,6 +2,9 @@
 
 
 namespace prism::convection {
+// Check Moukalled et. al. 2016, 11.7 High order schemes on unstructured grids
+// equations from 11.149 to 11.155
+
 auto CentralDifference::interpolate(
     double m_dot,
     const mesh::Cell& cell,
@@ -51,14 +54,16 @@ auto SecondOrderUpwind::interpolate(
     const auto& neighbor_grad_phi = grad_scheme->gradient_at_cell(neighbor);
 
     auto d_Cf = face.center() - cell.center();
-    auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
+    //auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
+    auto correction = cell_grad_phi.dot(d_Cf);
 
     auto a_C = std::max(m_dot, 0.0);
     auto b1 = -std::max(m_dot, 0.0) * correction;
 
     // in case 'neighbor' is the upstream cell
     auto d_Nf = face.center() - neighbor.center();
-    correction = d_Nf.dot((2 * neighbor_grad_phi) - face_grad_phi);
+    //correction = d_Nf.dot((2 * neighbor_grad_phi) - face_grad_phi);
+    correction = neighbor_grad_phi.dot(d_Nf);
 
     auto a_N = -std::max(-m_dot, 0.0);
     auto b2 = std::max(-m_dot, 0.0) * correction;
