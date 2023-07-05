@@ -17,7 +17,8 @@ auto inline skewness_correction(const mesh::Cell& C,
     return 0.5 * grad_sum.dot(vec);
 }
 
-auto inline boundary_face_gradient(const mesh::Face& face, const ScalarField& field) -> Vector3d {
+auto inline gradient_at_boundary_face(const mesh::Face& face, const ScalarField& field)
+    -> Vector3d {
     const auto& mesh = field.mesh();
 
     auto face_boundary_patch_id = face.boundary_patch_id().value();
@@ -47,17 +48,17 @@ auto inline boundary_face_gradient(const mesh::Face& face, const ScalarField& fi
 
         default:
             throw std::runtime_error(
-                format("gradient/gradient.cpp boundary_face_gradient(): "
+                format("gradient/gradient.cpp gradient_at_boundary_face(): "
                        "Non-implemented boundary type for boundary patch: '{}'",
                        boundary_patch.name()));
     }
 }
 
-auto inline interior_face_gradient(const mesh::Cell& cell,
-                                   const mesh::Face& face,
-                                   const mesh::PMesh& mesh,
-                                   const ScalarField& field,
-                                   const MatrixX3d& grad_field) -> Vector3d {
+auto inline gradient_at_interior_face(const mesh::Cell& cell,
+                                      const mesh::Face& face,
+                                      const mesh::PMesh& mesh,
+                                      const ScalarField& field,
+                                      const MatrixX3d& grad_field) -> Vector3d {
     bool is_owned = face.is_owned_by(cell.id());
     auto neighbor_cell_id = is_owned ? face.neighbor().value() : face.owner();
 
@@ -88,12 +89,12 @@ auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
 
         // This is a boundary face
         if (face.is_boundary()) {
-            grad += boundary_face_gradient(face, _field);
+            grad += gradient_at_boundary_face(face, _field);
             continue;
         }
 
         // This is an internal face
-        grad += interior_face_gradient(cell, face, mesh, _field, _cell_gradients);
+        grad += gradient_at_interior_face(cell, face, mesh, _field, _cell_gradients);
     }
 
     grad /= cell.volume();
@@ -109,11 +110,11 @@ auto GreenGauss::gradient_at_face(const mesh::Face& face) -> Vector3d {
     const auto& mesh = _field.mesh();
 
     if (face.is_boundary()) {
-        return boundary_face_gradient(face, _field);
+        return gradient_at_boundary_face(face, _field);
     }
 
     const auto& owner_cell = mesh.cell(face.owner());
-    return interior_face_gradient(owner_cell, face, mesh, _field, _cell_gradients);
+    return gradient_at_interior_face(owner_cell, face, mesh, _field, _cell_gradients);
 }
 
 auto GreenGauss::gradient_field() -> VectorField {

@@ -54,29 +54,12 @@ void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
         coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
     }
 
-    correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
-}
-
-
-void Diffusion::correct_non_orhto_interior(const mesh::Cell& cell,
-                                           const mesh::Cell& nei_cell,
-                                           const mesh::Face& face,
-                                           const Vector3d& T_f) {
-    // gradient of field phi at cell center
-    //auto grad_c = _gradient_scheme->gradient_at_cell(cell);
-    //
-    //// gradient of field phi at neighbor cell center
-    //auto grad_n = _gradient_scheme->gradient_at_cell(nei_cell);
-    //
-    //// weighting factor for the two cells sharing the face
-    //auto gc = mesh::PMesh::cells_weighting_factor(cell, nei_cell, face);
-
-    // weighted average of the two gradients at the face center
-    //auto grad_f = (gc * grad_c) + ((1 - gc) * grad_n);
-    auto grad_f = _gradient_scheme->gradient_at_face(face);
+    //correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
+    auto grad_f = _gradient_scheme->gradient_at_face(face);
+    auto T_f = S_f - E_f;
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
 
