@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "../print.h"
+#include "../types.h"
 
 namespace prism::diffusion {
 
@@ -37,7 +38,7 @@ void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     auto e = d_CF / d_CF_norm;
 
     // orthogonal-like normal vector E_f using over-relaxed approach
-    auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + 1e-10))) * e;
+    auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + PRISM_EPSILON))) * e;
 
     // The matrix coefficients of the discretized diffusion term need to be calculated once
     // in the first iteration. After that, we only need to perform non-orthogonal correction.
@@ -46,7 +47,7 @@ void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     // coeff_matrix() elements.
     if (!_main_coeffs_calculated) {
         // geometric diffusion coefficient
-        auto g_diff = E_f.norm() / (d_CF_norm + 1e-10);
+        auto g_diff = E_f.norm() / (d_CF_norm + PRISM_EPSILON);
 
         // kappa * g_diff * (Φ_c - Φ_f)
         coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
@@ -148,7 +149,7 @@ void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& f
     auto e = d_Cf / d_Cf_norm;
     auto E_f = ((S_f.dot(S_f) / e.dot(S_f))) * e;
 
-    auto g_diff = E_f.norm() / (d_Cf_norm + 1e-9);
+    auto g_diff = E_f.norm() / (d_Cf_norm + PRISM_EPSILON);
 
     if (!_main_coeffs_calculated) {
         coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
@@ -175,7 +176,7 @@ void Diffusion::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
     auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
     auto phi_c = _phi[cell.id()];
 
-    auto grad_f = ((phi_wall - phi_c) / d_CF_norm) * e;
+    auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + PRISM_EPSILON)) * e;
 
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
