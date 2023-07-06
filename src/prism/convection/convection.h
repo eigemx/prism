@@ -135,7 +135,7 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
 
     if (!is_owned) {
         // face is not owned by `cell`, flip the area vector
-        // so that it points outwards from `cell`
+        // so that it points outwards of `cell`
         S_f *= -1;
     }
 
@@ -150,6 +150,11 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
 
 
     if (!_main_coeffs_calculated) {
+        // TODO: This assumes that velocity field is constant, this wrong because
+        // the velocity field when solving the momentum equation will be different in
+        // each iteration. This should be generalized to work for all schemes.
+        // a possible workaround is to use zero out the coefficients matrix every
+        // iteration in finalaize(), same goes for below member functions.
         coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
         coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
     }
