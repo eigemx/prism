@@ -10,9 +10,7 @@
 
 namespace prism::diffusion {
 
-class DiffusionSchemeBase {};
-
-class Diffusion : public FVScheme, public DiffusionSchemeBase {
+class Diffusion : public FVScheme {
   public:
     // No gradient scheme is given, use Green-Gauss as a default explicit gradient scheme
     Diffusion(double kappa, ScalarField& phi)
