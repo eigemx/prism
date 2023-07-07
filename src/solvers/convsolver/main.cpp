@@ -6,22 +6,22 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
     print_header();
-    print("convsolver - A steady state temperature advection solver\n");
+    fmt::print("convsolver - A steady state temperature advection solver\n");
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
-        error("Usage: convsolver [unv-file]");
+        error("Usage: convsolver [mesh-file]");
         return 1;
     }
 
     auto unv_file_name = args[1];
 
     // read mesh
-    print("Loading mesh file {}...", unv_file_name);
+    fmt::print("Loading mesh file {}...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name).to_pmesh();
-    print("Okay.\n");
+    fmt::print("Okay.\n");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);

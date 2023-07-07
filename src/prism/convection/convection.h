@@ -185,11 +185,11 @@ void Convection<F>::apply_boundary(const mesh::Cell& cell, const mesh::Face& fac
         }
 
         default:
-            throw std::runtime_error(
-                format("convection::Convection::apply_boundary(): "
-                       "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
-                       boundary_patch.name(),
-                       _U.name()));
+            throw std::runtime_error(fmt::format(
+                "convection::Convection::apply_boundary(): "
+                "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
+                boundary_patch.name(),
+                _U.name()));
     }
 }
 
@@ -231,10 +231,10 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
 
     if (m_dot_f <= 0.0) {
         warn(
-            format("convection::Convection::apply_boundary_outlet(): "
-                   "Reverse flow detected at outlet boundary patch '{}'. "
-                   "This may cause the solution to diverge.",
-                   _mesh.face_boundary_patch(face).name()));
+            fmt::format("convection::Convection::apply_boundary_outlet(): "
+                        "Reverse flow detected at outlet boundary patch '{}'. "
+                        "This may cause the solution to diverge.",
+                        _mesh.face_boundary_patch(face).name()));
     }
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
@@ -260,11 +260,11 @@ auto Convection<F>::boundary_face_velocity(const mesh::Face& face) const -> Vect
         }
 
         default:
-            throw std::runtime_error(
-                format("convection::Convection::boundary_face_velocity(): "
-                       "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
-                       boundary_patch.name(),
-                       _U.name()));
+            throw std::runtime_error(fmt::format(
+                "convection::Convection::boundary_face_velocity(): "
+                "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
+                boundary_patch.name(),
+                _U.name()));
     }
 }
 

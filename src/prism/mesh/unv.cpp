@@ -79,6 +79,8 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
 
     // get parent directory from _filename
     auto parent_dir = _filename.parent_path();
+
+    // TODO: accept custom boundary file path as an argument
     auto boundary_patches = read_boundary_data_file(parent_dir / "boundary.txt", boundary_names);
 
     // for each boundary patch, set the faces that belong to it
@@ -332,7 +334,7 @@ void UnvToPMeshConverter::check_boundary_faces() {
     }
 
     if (undefined_boundary_faces_count > 0) {
-        throw std::runtime_error(format(
+        throw std::runtime_error(fmt::format(
             "Input UNV mesh has {} boundary faces that are not part of any boundary patch. "
             "Please check your mesh.",
             undefined_boundary_faces_count));

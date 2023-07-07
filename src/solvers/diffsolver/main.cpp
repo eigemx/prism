@@ -14,7 +14,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
-        error("Usage: diffsolver [unv-file]");
+        error("Usage: diffsolver [mesh-file]");
         return 1;
     }
 

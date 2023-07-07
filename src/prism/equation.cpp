@@ -10,8 +10,8 @@ Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
     : _schemes(std::move(schemes)), _phi(phi) {
     if (_schemes.empty()) {
         throw std::runtime_error(
-            format("Equation constructor was called with an empty FV schemes vector. "
-                   "At least one scheme is required."));
+            fmt::format("Equation constructor was called with an empty FV schemes vector. "
+                        "At least one scheme is required."));
     }
 
     const auto& mesh = _phi.mesh();

@@ -14,7 +14,7 @@
 void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
     // if mesh file extension is not .unv, warn user
     if (mesh_file.extension() != ".unv") {
-        prism::warn(prism::format("Input mesh file extension is not `.unv`."));
+        prism::warn(fmt::format("Input mesh file extension is not `.unv`."));
     }
 
     std::string bc_filename = "boundary.txt";
@@ -23,9 +23,9 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
     auto bc_filepath = mesh_file.parent_path() / bc_filename;
 
     if (std::filesystem::exists(bc_filepath)) {
-        prism::error(prism::format(
-            "Boundary conditions file `{}` already exists, please remove to proceed.",
-            bc_filename));
+        prism::error(
+            fmt::format("Boundary conditions file `{}` already exists, please remove to proceed.",
+                        bc_filename));
         return;
     }
 
@@ -36,7 +36,7 @@ void create_boundary_conditions_file(const std::filesystem::path& mesh_file) {
         return;
     }
 
-    prism::print("Creating boundary conditions file...\n");
+    fmt::print("Creating boundary conditions file...\n");
 
     toml::table table;
 
@@ -89,8 +89,8 @@ auto min_max_face_non_ortho(const prism::mesh::PMesh& prism_mesh) {
 
 void check_pmesh(const std::filesystem::path& mesh_file) {
     try {
-        prism::print("Loading mesh file: ");
-        prism::print(fg(fmt::color::dark_cyan), "`{}`...\n\n", mesh_file.string());
+        fmt::print("Loading mesh file: ");
+        fmt::print(fg(fmt::color::dark_cyan), "`{}`...\n\n", mesh_file.string());
 
         auto unv_mesh = prism::mesh::UnvToPMeshConverter(mesh_file);
 
@@ -102,12 +102,12 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
                 return !face.has_neighbor();
             });
 
-        prism::print("Mesh Elements:\n");
-        prism::print(" - Vertices count = {} vertices\n", prism_mesh.vertices().size());
-        prism::print(" - Faces count =  {} faces (including {} boundary faces)\n",
-                     prism_mesh.faces().size(),
-                     n_boundary_faces);
-        prism::print(" - Cells count = {} cells\n\n", prism_mesh.cells().size());
+        fmt::print("Mesh Elements:\n");
+        fmt::print(" - Vertices count = {} vertices\n", prism_mesh.vertices().size());
+        fmt::print(" - Faces count =  {} faces (including {} boundary faces)\n",
+                   prism_mesh.faces().size(),
+                   n_boundary_faces);
+        fmt::print(" - Cells count = {} cells\n\n", prism_mesh.cells().size());
 
         auto total_vol =
             std::accumulate(prism_mesh.cells().begin(),
@@ -125,17 +125,17 @@ void check_pmesh(const std::filesystem::path& mesh_file) {
                                                 return acc + face.area();
                                             });
 
-        prism::print("Total volume  = {:.4f} L^3\n", total_vol);
-        prism::print("Surface area  = {:.4f} L^2\n\n", surface_area);
+        fmt::print("Total volume  = {:.4f} L^3\n", total_vol);
+        fmt::print("Surface area  = {:.4f} L^2\n\n", surface_area);
 
         auto [min_face_area, max_face_area] = min_max_face_area(prism_mesh);
         auto [min_face_non_ortho, max_face_non_ortho] = min_max_face_non_ortho(prism_mesh);
 
-        prism::print("Max face area = {:.4f} L^2 and min face area = {:.4f} L^2\n",
-                     max_face_area,
-                     min_face_area);
+        fmt::print("Max face area = {:.4f} L^2 and min face area = {:.4f} L^2\n",
+                   max_face_area,
+                   min_face_area);
 
-        prism::print(
+        fmt::print(
             "Max face non orthogonality = {:.4f} and min face non orthogonality = {:.4f}\n",
             max_face_non_ortho,
             min_face_non_ortho);
@@ -169,12 +169,12 @@ auto main(int argc, char* argv[]) -> int {
         auto result = options.parse(argc, argv);
 
         if (argc == 1) {
-            prism::print("Too few arguments, run with --help to see available options\n");
+            fmt::print("Too few arguments, run with --help to see available options\n");
             return 0;
         }
 
         if (result.count("help") > 0) {
-            prism::print("{}\n", options.help());
+            fmt::print("{}\n", options.help());
             return 0;
         }
 
@@ -186,15 +186,15 @@ auto main(int argc, char* argv[]) -> int {
         if (result.count("new-boundary") > 0) {
             auto filename = result["new-boundary"].as<std::string>();
             create_boundary_conditions_file(filename);
-            prism::print("File `boundary.txt` was created successfully for mesh file: {}\n",
-                         filename);
+            fmt::print("File `boundary.txt` was created successfully for mesh file: {}\n",
+                       filename);
         }
 
     }
 
     catch (const cxxopts::exceptions::exception& e) {
-        prism::error(prism::format("Error parsing options: {}\n", e.what()));
-        prism::print("Run with --help to see available options\n");
+        prism::error(fmt::format("Error parsing options: {}\n", e.what()));
+        fmt::print("Run with --help to see available options\n");
 
         return 1;
     }

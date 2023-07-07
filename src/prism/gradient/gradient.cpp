@@ -48,9 +48,9 @@ auto inline gradient_at_boundary_face(const mesh::Face& face, const ScalarField&
 
         default:
             throw std::runtime_error(
-                format("gradient/gradient.cpp gradient_at_boundary_face(): "
-                       "Non-implemented boundary type for boundary patch: '{}'",
-                       boundary_patch.name()));
+                fmt::format("gradient/gradient.cpp gradient_at_boundary_face(): "
+                            "Non-implemented boundary type for boundary patch: '{}'",
+                            boundary_patch.name()));
     }
 }
 
