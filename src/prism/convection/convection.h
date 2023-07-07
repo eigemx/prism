@@ -10,8 +10,6 @@
 
 namespace prism::convection {
 
-class ConvectionSchemeBase {};
-
 // coefficients for the discretized convection equation for a face
 // TODO: move this to types.h, and use in diffusion
 struct CoeffsTriplet {
@@ -77,7 +75,7 @@ class QUICK : public FaceInterpolationSchemeBase {
 
 // Finite volume scheme for the discretization of the convection term
 template <typename FaceInterpolationScheme = Upwind>
-class Convection : public FVScheme, public ConvectionSchemeBase {
+class Convection : public FVScheme {
   public:
     // Gradient scheme is not given, using Green-Gauss as a default explicit gradient scheme
     Convection(ScalarField& rho, VectorField& U, ScalarField& phi)
