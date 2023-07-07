@@ -101,9 +101,9 @@ void Diffusion::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
 
         default:
             throw std::runtime_error(
-                format("diffusion::Linear::apply_boundary(): "
-                       "Non-implemented boundary type for boundary patch: '{}'",
-                       boundary_patch.name()));
+                fmt::format("diffusion::Linear::apply_boundary(): "
+                            "Non-implemented boundary type for boundary patch: '{}'",
+                            boundary_patch.name()));
     }
 }
 

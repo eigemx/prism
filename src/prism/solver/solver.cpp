@@ -23,8 +23,8 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
 
         // check for convergence
         if (res_norm < eps) {
-            print("Converged after {} iterations\n", i);
-            print("Residual: {}\n", res_norm);
+            fmt::print("Converged after {} iterations\n", i);
+            fmt::print("Residual: {}\n", res_norm);
             break;
         }
 
@@ -38,7 +38,7 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
         phi.data() -= bicg.solve(res);
 
         // print the norm of the residuals
-        print("Iteration: {}, Residual: {}\n", i, res_norm);
+        fmt::print("Iteration: {}, Residual: {}\n", i, res_norm);
 
         // zero out the left & right hand side vector, for the next iteration
         eqn.zero_out_coeffs();
