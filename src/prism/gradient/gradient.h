@@ -36,11 +36,17 @@ class GreenGauss : public GradientSchemeBase {
     MatrixX3d _cell_gradients;
 };
 
-// create() function for creating gradient schemes given a template parameter G that inherits from GradientSchemeBase
-// make sure that G is a GradientSchemeBase
+
 template <typename G>
 auto create(const ScalarField& field)
     -> std::enable_if_t<std::is_base_of_v<GradientSchemeBase, G>, std::shared_ptr<G>> {
+    /**
+     * @brief Creates a gradient scheme for a scalar field, and returns a shared pointer to it.
+     *
+     * @tparam G Gradient scheme type (must inherit from GradientSchemeBase)
+     * @param field Scalar field
+     * @return std::shared_ptr<G> Gradient scheme
+     */
     return std::make_shared<G>(field);
 }
 
