@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "../field.h"
 #include "../mesh/pmesh.h"
 #include "../types.h"
@@ -34,5 +36,12 @@ class GreenGauss : public GradientSchemeBase {
     MatrixX3d _cell_gradients;
 };
 
+// create() function for creating gradient schemes given a template parameter G that inherits from GradientSchemeBase
+// make sure that G is a GradientSchemeBase
+template <typename G>
+auto create(const ScalarField& field)
+    -> std::enable_if_t<std::is_base_of_v<GradientSchemeBase, G>, std::shared_ptr<G>> {
+    return std::make_shared<G>(field);
+}
 
 } // namespace prism::gradient
