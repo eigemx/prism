@@ -1,5 +1,7 @@
 #include "equation.h"
 
+#include <cassert>
+
 #include "print.h"
 
 namespace prism {
@@ -9,18 +11,16 @@ Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
     if (_schemes.empty()) {
         throw std::runtime_error(
             format("Equation constructor was called with an empty FV schemes vector. "
-                   "No matrix initialization was performed."));
+                   "At least one scheme is required."));
     }
 
     const auto& mesh = _phi.mesh();
     auto n_cells = mesh.cells().size();
 
+    assert(n_cells > 0 && "Equation constructor was called with an empty mesh.");
+
     _coeff_matrix = SparseMatrix(n_cells, n_cells);
     _rhs_vector = VectorXd::Zero(n_cells);
-
-    for (auto* scheme : _schemes) {
-        scheme->connect_linear_system(_coeff_matrix, _rhs_vector);
-    }
 }
 
 void Equation::update_coeffs() {
@@ -43,9 +43,22 @@ void Equation::update_coeffs() {
         // prepare the scheme for the next iteration
         scheme->finalize();
     }
+
+    // update the universal coefficient matrix and RHS vector
+    for (auto* scheme : _schemes) {
+        _coeff_matrix += scheme->coeff_matrix();
+        _rhs_vector += scheme->rhs_vector();
+    }
 }
 
-void Equation::reset_coeffs() {
+void Equation::zero_out_coeffs() {
+    for (auto* scheme : _schemes) {
+        if (scheme->requires_correction()) {
+            scheme->coeff_matrix().setZero();
+            scheme->rhs_vector().setZero();
+        }
+    }
+
     _coeff_matrix.setZero();
     _rhs_vector.setZero();
 }

@@ -13,6 +13,7 @@ namespace prism::convection {
 class ConvectionSchemeBase {};
 
 // coefficients for the discretized convection equation for a face
+// TODO: move this to types.h, and use in diffusion
 struct CoeffsTriplet {
     double a_C {}; // cell
     double a_N {}; // neighbor
@@ -84,7 +85,8 @@ class Convection : public FVScheme, public ConvectionSchemeBase {
           _U(U),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)) {}
+          _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)),
+          FVScheme(phi.mesh().cells().size()) {}
 
     // Gradient scheme is given
     Convection(double rho,
@@ -95,9 +97,8 @@ class Convection : public FVScheme, public ConvectionSchemeBase {
           _U(U),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::move(grad_scheme)) {}
-
-    void inline finalize() override { _main_coeffs_calculated = true; }
+          _gradient_scheme(std::move(grad_scheme)),
+          FVScheme(phi.mesh().cells().size()) {}
 
   private:
     void apply_interior(const mesh::Cell& cellell, const mesh::Face& face) override;
@@ -112,7 +113,6 @@ class Convection : public FVScheme, public ConvectionSchemeBase {
     const mesh::PMesh& _mesh;
     FaceInterpolationScheme _face_interpolation_scheme;
     std::shared_ptr<gradient::GradientSchemeBase> _gradient_scheme;
-    bool _main_coeffs_calculated {false};
 };
 
 
@@ -149,16 +149,13 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
         _face_interpolation_scheme.interpolate(m_dot_f, cell, adj_cell, face, _gradient_scheme);
 
 
-    if (!_main_coeffs_calculated) {
-        // TODO: This assumes that velocity field is constant, this wrong because
-        // the velocity field when solving the momentum equation will be different in
-        // each iteration. This should be generalized to work for all schemes.
-        // a possible workaround is to use zero out the coefficients matrix every
-        // iteration in finalaize(), same goes for below member functions.
-        coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
-        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
-    }
-
+    // TODO: This assumes that velocity field is constant, this wrong because
+    // the velocity field when solving the momentum equation will be different in
+    // each iteration. This should be generalized to work for all schemes.
+    // a possible workaround is to use zero out the coefficients matrix every
+    // iteration in finalaize(), same goes for below member functions.
+    coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
+    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
     rhs_vector().coeffRef(cell_id) += b;
 }
 
@@ -204,10 +201,9 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
 
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
-    if (!_main_coeffs_calculated) {
-        // in case owner cell is an upstream cell
-        coeff_matrix().coeffRef(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
-    }
+
+    // in case owner cell is an upstream cell
+    coeff_matrix().coeffRef(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
 
     rhs_vector().coeffRef(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
 }
@@ -224,19 +220,18 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
 
     auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
 
-    if (!_main_coeffs_calculated) {
-        if (m_dot_f < 0.0) {
-            warn(
-                format("convection::Convection::apply_boundary_outlet(): "
-                       "Reverse flow detected at outlet boundary patch '{}'. "
-                       "This may cause the solution to diverge.",
-                       _mesh.face_boundary_patch(face).name()));
-        }
-        // TODO: this assumes an upwind based scheme, this is wrong for central schemes
-        // and should be generalized to work for all schemes.
-        // This is an outlet, so owner `cell` is an upstream cell
-        coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
+    if (m_dot_f <= 0.0) {
+        warn(
+            format("convection::Convection::apply_boundary_outlet(): "
+                   "Reverse flow detected at outlet boundary patch '{}'. "
+                   "This may cause the solution to diverge.",
+                   _mesh.face_boundary_patch(face).name()));
     }
+    // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+    // and should be generalized to work for all schemes.
+
+    // Because this is an outlet, owner `cell` is an upstream cell
+    coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
 }
 
 template <typename F>
