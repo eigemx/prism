@@ -27,6 +27,9 @@ auto main(int argc, char* argv[]) -> int {
     auto T = ScalarField("temperature", mesh, 300.0);
     auto T_grad = gradient::create<gradient::GreenGauss>(T);
 
+    // density field
+    auto rho = ScalarField("density", mesh, 1.18);
+
     // set up a unifform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
     const auto& inlet_patch = std::find_if(
@@ -44,7 +47,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
-    auto conv = convection::Convection<convection::Upwind>(1.18, U, T, T_grad);
+    auto conv = convection::Convection<convection::Upwind>(rho, U, T, T_grad);
     auto diff = diffusion::Diffusion(1e-2, T, T_grad);
 
     // assemble the equation

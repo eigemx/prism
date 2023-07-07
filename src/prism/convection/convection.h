@@ -80,7 +80,7 @@ template <typename FaceInterpolationScheme = Upwind>
 class Convection : public FVScheme, public ConvectionSchemeBase {
   public:
     // Gradient scheme is not given, using Green-Gauss as a default explicit gradient scheme
-    Convection(double rho, VectorField& U, ScalarField& phi)
+    Convection(ScalarField& rho, VectorField& U, ScalarField& phi)
         : _rho(rho),
           _U(U),
           _phi(phi),
@@ -89,7 +89,7 @@ class Convection : public FVScheme, public ConvectionSchemeBase {
           FVScheme(phi.mesh().cells().size()) {}
 
     // Gradient scheme is given
-    Convection(double rho,
+    Convection(ScalarField& rho,
                VectorField& U,
                ScalarField& phi,
                std::shared_ptr<gradient::GradientSchemeBase> grad_scheme)
@@ -107,7 +107,7 @@ class Convection : public FVScheme, public ConvectionSchemeBase {
     void apply_boundary_outlet(const mesh::Cell& cellell, const mesh::Face& face);
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
-    double _rho;
+    ScalarField& _rho;
     VectorField& _U;
     ScalarField& _phi;
     const mesh::PMesh& _mesh;
@@ -133,6 +133,9 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
     // face area vector, always pointing outwards
     auto S_f = face.area_vector();
 
+    // density at cell centroid
+    auto rho_c = _rho[cell_id];
+
     if (!is_owned) {
         // face is not owned by `cell`, flip the area vector
         // so that it points outwards of `cell`
@@ -143,7 +146,7 @@ void Convection<F>::apply_interior(const mesh::Cell& cell, const mesh::Face& fac
     auto g_c = mesh::PMesh::cells_weighting_factor(cell, adj_cell, face);
     const auto& U_f = (g_c * _U[cell_id]) + ((1 - g_c) * _U[adjacent_cell_id]);
 
-    auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
+    auto m_dot_f = face_mass_flow_rate(rho_c, U_f, S_f);
 
     auto [a_C, a_N, b] =
         _face_interpolation_scheme.interpolate(m_dot_f, cell, adj_cell, face, _gradient_scheme);
@@ -197,7 +200,11 @@ void Convection<F>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fac
 
     const auto& S_f = face.area_vector();
     const auto& U_f = boundary_face_velocity(face);
-    auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
+
+    // TODO: check if this is correct
+    auto rho_f = _rho[face.owner()];
+
+    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
@@ -218,7 +225,9 @@ void Convection<F>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Fa
     // use owner cell velocity as the velocity at the outlet face centroid
     const auto& U_f = boundary_face_velocity(face);
 
-    auto m_dot_f = face_mass_flow_rate(_rho, U_f, S_f);
+    auto rho_f = _rho[face.owner()];
+
+    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     if (m_dot_f <= 0.0) {
         warn(
