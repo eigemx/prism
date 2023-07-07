@@ -63,7 +63,6 @@ class PMesh {
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
     std::vector<BoundaryPatch> _boundary_patches;
-    double pi {std::atan(1) * 4};
 };
 
 class ToPMeshConverter {

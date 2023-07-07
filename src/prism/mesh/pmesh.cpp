@@ -40,7 +40,7 @@ auto PMesh::face_non_ortho(const Face& face) const -> double {
     auto v = neigh_center - owner_center;
     auto v_norm = v.norm();
 
-    return std::acos(v.dot(face.normal()) / v_norm) * (180. / pi);
+    return std::acos(v.dot(face.normal()) / v_norm) * (180. / PRISM_PI);
 }
 
 auto PMesh::face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch& {
