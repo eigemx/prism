@@ -14,10 +14,7 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
     auto& phi = eqn.scalar_field();
     auto& b = eqn.rhs_vector();
 
-    //eqn.update_coeffs();
-
     for (std::size_t i = 0; i < n_iter; i++) {
-        // Warning: This corrects non-orthogonality in each iteration.
         eqn.update_coeffs();
 
         // calculate the norm of the residuals
@@ -43,8 +40,8 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
         // print the norm of the residuals
         print("Iteration: {}, Residual: {}\n", i, res_norm);
 
-        // zero out the right hand side vector, so that the next iteration can be performed
-        b.setZero();
+        // zero out the left & right hand side vector, for the next iteration
+        eqn.zero_out_coeffs();
     }
 }
 } // namespace prism::solver

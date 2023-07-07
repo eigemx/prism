@@ -40,21 +40,12 @@ void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     // orthogonal-like normal vector E_f using over-relaxed approach
     auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + PRISM_EPSILON))) * e;
 
-    // The matrix coefficients of the discretized diffusion term need to be calculated once
-    // in the first iteration. After that, we only need to perform non-orthogonal correction.
-    // Non-orthogonal correction only updates the right hand side vector b in AΦ = b.
-    // This should be a performance boost to avoid unnecessarily accessing and updating
-    // coeff_matrix() elements.
-    if (!_main_coeffs_calculated) {
-        // geometric diffusion coefficient
-        auto g_diff = E_f.norm() / (d_CF_norm + PRISM_EPSILON);
+    // geometric diffusion coefficient
+    auto g_diff = E_f.norm() / (d_CF_norm + PRISM_EPSILON);
 
-        // kappa * g_diff * (Φ_c - Φ_f)
-        coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
-        coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
-    }
-
-    //correct_non_orhto_interior(cell, adj_cell, face, S_f - E_f);
+    // kappa * g_diff * (Φ_C - Φ_N)
+    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
+    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
@@ -134,11 +125,9 @@ void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& f
 
     auto g_diff = E_f.norm() / (d_Cf_norm + PRISM_EPSILON);
 
-    if (!_main_coeffs_calculated) {
-        coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
-    }
-
+    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
     rhs_vector()[cell_id] += g_diff * _kappa * phi_wall;
+
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
 

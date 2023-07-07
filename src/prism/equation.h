@@ -14,7 +14,7 @@ class Equation {
     Equation(ScalarField& phi, std::vector<FVScheme*> schemes);
 
     void update_coeffs();
-    void reset_coeffs();
+    void zero_out_coeffs();
 
     auto inline coeff_matrix() const -> const SparseMatrix& { return _coeff_matrix; }
     auto inline coeff_matrix() -> SparseMatrix& { return _coeff_matrix; }
@@ -29,6 +29,7 @@ class Equation {
   private:
     SparseMatrix _coeff_matrix;
     VectorXd _rhs_vector;
+
     std::vector<FVScheme*> _schemes;
     ScalarField& _phi;
 };

@@ -19,7 +19,9 @@ class Diffusion : public FVScheme, public DiffusionSchemeBase {
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)) {}
+          _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)),
+          FVScheme(phi.mesh().cells().size()) {}
+
 
     // Explicit gradient scheme is provided by the user
     Diffusion(double kappa,
@@ -28,9 +30,8 @@ class Diffusion : public FVScheme, public DiffusionSchemeBase {
         : _kappa(kappa),
           _phi(phi),
           _mesh(phi.mesh()),
-          _gradient_scheme(std::move(gradient_scheme)) {}
-
-    inline void finalize() override { _main_coeffs_calculated = true; }
+          _gradient_scheme(std::move(gradient_scheme)),
+          FVScheme(phi.mesh().cells().size()) {}
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
@@ -47,7 +48,6 @@ class Diffusion : public FVScheme, public DiffusionSchemeBase {
     ScalarField& _phi;
     const mesh::PMesh& _mesh;
     std::shared_ptr<gradient::GradientSchemeBase> _gradient_scheme;
-    bool _main_coeffs_calculated {false};
 };
 
 } // namespace prism::diffusion
