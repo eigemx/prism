@@ -10,6 +10,7 @@
 
 namespace prism::diffusion {
 
+// TODO: Implement a non-corrected version
 class Diffusion : public FVScheme {
   public:
     // No gradient scheme is given, use Green-Gauss as a default explicit gradient scheme
@@ -18,7 +19,7 @@ class Diffusion : public FVScheme {
           _phi(phi),
           _mesh(phi.mesh()),
           _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)),
-          FVScheme(phi.mesh().cells().size()) {}
+          FVScheme(phi.mesh().n_cells()) {}
 
 
     // Explicit gradient scheme is provided by the user
@@ -29,7 +30,7 @@ class Diffusion : public FVScheme {
           _phi(phi),
           _mesh(phi.mesh()),
           _gradient_scheme(std::move(gradient_scheme)),
-          FVScheme(phi.mesh().cells().size()) {}
+          FVScheme(phi.mesh().n_cells()) {}
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;

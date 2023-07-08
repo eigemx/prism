@@ -1,22 +1,28 @@
 [back]
+[back.temperature]
 type = 'empty'
 
 [bottom]
-type = 'wall'
-temperature = 500.0
+[bottom.temperature]
+type = 'fixed'
+value = 500.0
 
 [front]
+[front.temperature]
 type = 'empty'
 
 [left]
-type = 'wall'
-temperature = 500.0
+[left.temperature]
+type = 'fixed'
+value = 500.0
 
 [right]
+[right.temperature]
 type = 'gradient'
 # minus sign means flux is into the domain (opposite to normal vector, which is always pointing outside the domain)
-temperature-flux = -0.01    
+value = -0.01    
 
 [top]
-type = 'wall'
-temperature = 900.0
+[top.temperature]
+type = 'fixed'
+value = 900.0

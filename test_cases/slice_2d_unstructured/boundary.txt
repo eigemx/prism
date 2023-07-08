@@ -1,23 +1,28 @@
 [top]
-type = "wall"
-velocity = [0.0, 0.0, 0.0]
-temperature = 900
+[top.temperature]
+type = "fixed"
+value = 300
 
 [bottom]
-type = "wall"
-temperature = 300.0
+[bottom.temperature]
+type = "fixed"
+value = 300.0
 
 [front]
+[front.temperature]
 type = "empty"
 
 [back]
+[back.temperature]
 type = "empty"
 
 [left]
-type = "wall"
-temperature = 300.0
+[left.temperature]
+type = "fixed"
+value = 300.0
 
 [right]
-type = "wall"
-temperature = 300.0
+[right.temperature]
+type = "fixed"
+value = 300.0
 

@@ -84,7 +84,7 @@ class Convection : public FVScheme {
           _phi(phi),
           _mesh(phi.mesh()),
           _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)),
-          FVScheme(phi.mesh().cells().size()) {}
+          FVScheme(phi.mesh().n_cells()) {}
 
     // Gradient scheme is given
     Convection(ScalarField& rho,
@@ -96,7 +96,7 @@ class Convection : public FVScheme {
           _phi(phi),
           _mesh(phi.mesh()),
           _gradient_scheme(std::move(grad_scheme)),
-          FVScheme(phi.mesh().cells().size()) {}
+          FVScheme(phi.mesh().n_cells()) {}
 
   private:
     void apply_interior(const mesh::Cell& cellell, const mesh::Face& face) override;

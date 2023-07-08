@@ -23,6 +23,7 @@ Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
     _rhs_vector = VectorXd::Zero(n_cells);
 }
 
+// TODO: add "add_scheme()" method, and allow empty schemes constructor
 void Equation::update_coeffs() {
     const auto& mesh = _phi.mesh();
 

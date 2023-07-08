@@ -42,6 +42,10 @@ add_library(prism-core
     # convection module
     convection/convection.h
     convection/convection.cpp
+
+    # source module
+    source/source.h
+    source/source.cpp
     
     # solver module
     solver/solver.h

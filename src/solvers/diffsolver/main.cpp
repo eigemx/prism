@@ -8,7 +8,7 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
     print_header();
-    print("diffsolver - A steady state temperature diffusion solver\n");
+    fmt::print("diffsolver - A steady state temperature diffusion solver\n");
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
@@ -21,9 +21,9 @@ auto main(int argc, char* argv[]) -> int {
     auto unv_file_name = args[1];
 
     // read mesh
-    print("Loading mesh file {}...", unv_file_name);
+    fmt::print("Loading mesh file {}...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name).to_pmesh();
-    print("Okay.\n");
+    fmt::print("Okay.\n");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
@@ -31,13 +31,20 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
     auto diff = diffusion::Diffusion(1, T);
+    auto source = source::ConstantScalar(ScalarField("S", mesh).map([](const mesh::Cell& cell) {
+        const auto& center = cell.center();
+        if (center.norm() <= 0.15) {
+            return 1000.0;
+        }
+        return 0.0;
+    }));
 
     // assemble the equation
-    auto eqn = Equation(T, {&diff});
+    auto eqn = Equation(T, {&diff, &source});
 
     // solve
     auto solver = solver::BiCGSTAB();
-    solver.solve(eqn, 1000, 1e-10);
+    solver.solve(eqn, 10, 1e-3);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 
