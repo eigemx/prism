@@ -6,7 +6,10 @@ namespace prism::mesh {
 PMesh::PMesh(std::vector<Vector3d> vertices,
              std::vector<Cell> cells,
              std::vector<Face> faces) noexcept
-    : _vertices(std::move(vertices)), _cells(std::move(cells)), _faces(std::move(faces)) {}
+    : _vertices(std::move(vertices)),
+      _cells(std::move(cells)),
+      _faces(std::move(faces)),
+      _n_cells(_cells.size()) {}
 
 PMesh::PMesh(std::vector<Vector3d> vertices,
              std::vector<Cell> cells,
@@ -15,7 +18,8 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
     : _vertices(std::move(vertices)),
       _cells(std::move(cells)),
       _faces(std::move(faces)),
-      _boundary_patches(std::move(boundary_patches)) {}
+      _boundary_patches(std::move(boundary_patches)),
+      _n_cells(_cells.size()) {}
 
 void PMesh::set_boundary_conditions(std::vector<BoundaryPatch> boundary_patches) {
     _boundary_patches = std::move(boundary_patches);

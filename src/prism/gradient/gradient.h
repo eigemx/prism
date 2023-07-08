@@ -36,7 +36,7 @@ class GreenGauss : public GradientSchemeBase {
     MatrixX3d _cell_gradients;
 };
 
-
+// TODO: remove this and use the gradient class instead, and not the shared_ptr
 template <typename G>
 auto create(const ScalarField& field)
     -> std::enable_if_t<std::is_base_of_v<GradientSchemeBase, G>, std::shared_ptr<G>> {

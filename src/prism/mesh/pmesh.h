@@ -56,6 +56,9 @@ class PMesh {
 
     auto face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch&;
     auto face_boundary_patch(const Face& face) const -> const BoundaryPatch&;
+
+    auto n_cells() const noexcept -> std::size_t { return _n_cells; }
+
     static auto cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double;
 
   private:
@@ -63,6 +66,7 @@ class PMesh {
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
     std::vector<BoundaryPatch> _boundary_patches;
+    std::size_t _n_cells {};
 };
 
 class ToPMeshConverter {

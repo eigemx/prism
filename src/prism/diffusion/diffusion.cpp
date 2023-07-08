@@ -156,7 +156,7 @@ void Diffusion::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
 void Diffusion::apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face) {
     // get the fixed gradient (flux) value associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
-    auto flux_wall = boundary_patch.get_scalar_bc(_phi.name() + "-flux");
+    auto flux_wall = boundary_patch.get_scalar_bc(_phi.name());
 
     auto cell_id = cell.id();
 
