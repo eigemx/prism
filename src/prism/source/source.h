@@ -10,8 +10,15 @@ namespace prism::source {
 
 class ConstantScalar : public FVScheme {
   public:
+    ConstantScalar() = delete;
     ConstantScalar(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
-    ConstantScalar(ScalarField&& phi) : _phi(phi), FVScheme(_phi.mesh().n_cells()) {}
+    ConstantScalar(ScalarField&& phi) = delete;
+
+    ConstantScalar(const ConstantScalar& other) = delete;
+    ConstantScalar(ConstantScalar&& other) = delete;
+    auto operator=(const ConstantScalar& other) -> ConstantScalar& = delete;
+    auto operator=(ConstantScalar&& other) -> ConstantScalar& = delete;
+    ~ConstantScalar() = default;
 
     auto requires_correction() const -> bool override { return false; }
 
@@ -21,4 +28,18 @@ class ConstantScalar : public FVScheme {
 
     ScalarField& _phi;
 };
+
+class Phi : public FVScheme {
+  public:
+    Phi(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()), _phi_old(phi) {}
+    Phi(ScalarField&& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()), _phi_old(phi) {}
+
+  private:
+    void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
+    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+
+    ScalarField& _phi;
+    ScalarField _phi_old;
+};
+
 } // namespace prism::source
