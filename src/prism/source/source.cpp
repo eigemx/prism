@@ -1,10 +1,21 @@
 #include "source.h"
 
 namespace prism::source {
+// TODO: replace calls to apply interior by simply making coeff_matrix() an I matrix,
+// or -I matrix in case of SourceSign::Positive, during construction of ImplicitPhi
 
-// NOLINTNEXTLINE (face is unused, but required by interface)
-void ConstantScalar::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
-    auto q = _phi[cell.id()];
-    rhs_vector()(cell.id()) = q * cell.volume();
+template <>
+void ImplicitPhi<SourceSign::Positive>::apply_interior(const mesh::Cell& cell,
+                                                       const mesh::Face& face) {
+    auto cell_id = cell.id();
+    coeff_matrix().coeffRef(cell_id, cell_id) = -1;
 }
+
+template <>
+void ImplicitPhi<SourceSign::Negative>::apply_interior(const mesh::Cell& cell,
+                                                       const mesh::Face& face) {
+    auto cell_id = cell.id();
+    coeff_matrix().coeffRef(cell_id, cell_id) = 1;
+}
+
 } // namespace prism::source
