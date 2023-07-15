@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -12,6 +13,21 @@ namespace prism {
 
 class ScalarField {
   public:
+    ScalarField(const ScalarField& other)
+        : _mesh(other._mesh),
+          _name(other._name),
+          _data(std::make_shared<VectorXd>(other.data())) {}
+
+    ScalarField(ScalarField&& other) noexcept = default;
+    auto operator=(const ScalarField& other) -> ScalarField& {
+        _mesh = other._mesh;
+        _name = other._name;
+        _data = std::make_shared<VectorXd>(other.data());
+        return *this;
+    }
+    auto operator=(ScalarField&& other) noexcept -> ScalarField& = default;
+    ~ScalarField() noexcept = default;
+
     ScalarField(std::string name, const mesh::PMesh& mesh);
     ScalarField(std::string name, const mesh::PMesh& mesh, VectorXd data);
     ScalarField(std::string name, const mesh::PMesh& mesh, double value);
@@ -21,21 +37,22 @@ class ScalarField {
     auto inline name() -> std::string& { return _name; }
     auto inline data() const -> const VectorXd& { return *_data; }
     auto inline data() -> VectorXd& { return *_data; }
-    auto inline mesh() const -> const mesh::PMesh& { return _mesh; }
+    auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
 
     using CoordinatesMapper = double(double, double, double);
     using CellMapper = double(const mesh::Cell&);
 
     auto inline map(CellMapper* mapper) -> ScalarField& {
-        for (std::size_t i = 0; i < _mesh.n_cells(); ++i) {
-            data()[i] = mapper(_mesh.cell(i));
+        for (std::size_t i = 0; i < _mesh->n_cells(); ++i) {
+            data()[i] = mapper(_mesh->cell(i));
         }
         return *this;
     }
 
     auto inline map(CoordinatesMapper* mapper) -> ScalarField& {
-        for (std::size_t i = 0; i < _mesh.n_cells(); ++i) {
-            const auto& cell = _mesh.cell(i);
+        const auto n_cells = _mesh->n_cells();
+        for (std::size_t i = 0; i < n_cells; ++i) {
+            const auto& cell = _mesh->cell(i);
             const auto& center = cell.center();
             data()[i] = mapper(center.x(), center.y(), center.z());
         }
@@ -47,7 +64,7 @@ class ScalarField {
     auto inline operator()() -> VectorXd& { return *_data; }
 
   private:
-    const mesh::PMesh& _mesh;
+    const mesh::PMesh* _mesh = nullptr;
     std::string _name;
     std::shared_ptr<VectorXd> _data = nullptr;
 };
@@ -60,7 +77,7 @@ class VectorField {
     VectorField(std::string name, const mesh::PMesh& mesh, double value);
 
     auto inline name() const -> const std::string& { return _name; }
-    auto inline mesh() const -> const mesh::PMesh& { return _mesh; }
+    auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
     auto data() const -> MatrixX3d;
 
 
@@ -73,28 +90,11 @@ class VectorField {
     }
 
   private:
-    const mesh::PMesh& _mesh;
+    const mesh::PMesh* _mesh;
     std::string _name;
     std::shared_ptr<VectorXd> _x = nullptr;
     std::shared_ptr<VectorXd> _y = nullptr;
     std::shared_ptr<VectorXd> _z = nullptr;
-};
-
-
-class CorrdinateMappedScalarField : public ScalarField {
-  public:
-    // constructor takes name and mesh and creates a scalar field with the same size as the mesh
-    // also takes a custome function that maps the coordinates (x, y, z) to the scalar field
-    CorrdinateMappedScalarField(std::string name,
-                                const mesh::PMesh& mesh,
-                                const std::function<double(double, double, double)>& func)
-        : ScalarField(std::move(name), mesh) {
-        for (std::size_t i = 0; i < mesh.n_cells(); ++i) {
-            const auto& cell = mesh.cell(i);
-            const auto& center = cell.center();
-            data()[i] = func(center.x(), center.y(), center.z());
-        }
-    }
 };
 
 } // namespace prism

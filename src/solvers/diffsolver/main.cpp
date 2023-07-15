@@ -28,22 +28,26 @@ auto main(int argc, char* argv[]) -> int {
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
 
+
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
     auto diff = diffusion::Diffusion(1, T);
-    auto source = source::ConstantScalar(ScalarField("S", mesh).map([](const mesh::Cell& cell) {
+    auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {
             return 1000.0;
         }
         return 0.0;
-    }));
+    });
+    auto source = source::ConstantScalar(S);
+
 
     // assemble the equation
     auto eqn = Equation(T, {&diff, &source});
 
     // solve
     auto solver = solver::BiCGSTAB();
+
     solver.solve(eqn, 10, 1e-3);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
