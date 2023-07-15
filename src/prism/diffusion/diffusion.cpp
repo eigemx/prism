@@ -7,7 +7,9 @@
 
 namespace prism::diffusion {
 
-void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
+template <>
+void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Cell& cell,
+                                                                const mesh::Face& face) {
     /**
      * @brief Apply the discretized diffusion equation to the cell, 
      * when the face is an interior face.
@@ -54,61 +56,32 @@ void Diffusion::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
     rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
 
+template <>
+void Diffusion<NonOrthoCorrection::OverRelaxed>::correct_non_orhto_boundary_fixed(
+    const mesh::Cell& cell,
+    const mesh::Face& face,
+    const Vector3d& T_f) {
+    // we need to calculate the gradient of phi at the face
+    // first let's calculate the vector joining the face center to the cell center
+    auto d_CF = face.center() - cell.center();
+    auto d_CF_norm = d_CF.norm();
+    auto e = d_CF / d_CF_norm;
 
-void Diffusion::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
-    /**
-     * @brief Applies boundary discretized diffusion equation to the cell,
-     * when the current face is a boundary face. The function iteself does not
-     * apply the discretized equation, rather it calls the appropriate function
-     * based on the boundary type.
-     *
-     * @param cell The cell to which the boundary conditions are applied.
-     * @param face The boundary face.
-     */
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
-    const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
+    // now we need to calculate the gradient of phi at the face center
+    auto boundary_patch_id = face.boundary_patch_id().value();
+    const auto& face_boundary_patch = _mesh.boundary_patches()[boundary_patch_id];
 
-    switch (boundary_condition.patch_type()) {
-        // empty boundary patch, do nothing
-        case mesh::BoundaryPatchType::Empty: {
-            return;
-        }
+    auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
+    auto phi_c = _phi[cell.id()];
 
-        // fixed boundary patch, or Dirichlet boundary condition
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet: {
-            apply_boundary_fixed(cell, face);
-            return;
-        }
+    auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + PRISM_EPSILON)) * e;
 
-        // Symmetry boundary patch, or zero gradient boundary condition.
-        // This is a special case of the general Neumann boundary condition,
-        // where the gradient of the field is zero at the boundary (flux is zero),
-        // and will not result in any contribution to the right hand side of the equation,
-        // or the matrix coefficients. and no need for non-orthogonal correction.
-        // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph,
-        // and paragraph 8.6.8.2 - Chapter 8 in same reference.
-        case mesh::BoundaryPatchType::Symmetry:
-        case mesh::BoundaryPatchType::Outlet: {
-            return;
-        }
-
-        // general Von Neumann boundary condition, or fixed gradient boundary condition.
-        case mesh::BoundaryPatchType::FixedGradient: {
-            apply_boundary_gradient(cell, face);
-            return;
-        }
-
-        default:
-            throw std::runtime_error(
-                fmt::format("diffusion::Linear::apply_boundary(): "
-                            "Non-implemented boundary type for boundary patch: '{}'",
-                            boundary_patch.name()));
-    }
+    rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
 
-
-void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+template <>
+void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_boundary_fixed(const mesh::Cell& cell,
+                                                                      const mesh::Face& face) {
     // get the fixed phi variable associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
@@ -131,39 +104,57 @@ void Diffusion::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& f
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
 
-
-void Diffusion::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
-                                                 const mesh::Face& face,
-                                                 const Vector3d& T_f) {
-    // we need to calculate the gradient of phi at the face
-    // first let's calculate the vector joining the face center to the cell center
-    auto d_CF = face.center() - cell.center();
-    auto d_CF_norm = d_CF.norm();
-    auto e = d_CF / d_CF_norm;
-
-    // now we need to calculate the gradient of phi at the face center
-    auto boundary_patch_id = face.boundary_patch_id().value();
-    const auto& face_boundary_patch = _mesh.boundary_patches()[boundary_patch_id];
-
-    auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
-    auto phi_c = _phi[cell.id()];
-
-    auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + PRISM_EPSILON)) * e;
-
-    rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
+template <>
+auto Diffusion<NonOrthoCorrection::OverRelaxed>::requires_correction() const -> bool {
+    return true;
 }
 
-void Diffusion::apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face) {
-    // get the fixed gradient (flux) value associated with the face
+template <>
+void Diffusion<NonOrthoCorrection::None>::apply_interior(const mesh::Cell& cell,
+                                                         const mesh::Face& face) {
+    auto cell_id = cell.id();
+
+    // get adjacent cell sharing `face` with `cell`
+    auto adjacent_cell_id = face.is_owned_by(cell_id) ? face.neighbor().value() : face.owner();
+
+    const auto& adj_cell = _mesh.cell(adjacent_cell_id);
+
+    // vector joining the centers of the two cells
+    auto d_CF = adj_cell.center() - cell.center();
+    auto d_CF_norm = d_CF.norm();
+
+    // geometric diffusion coefficient
+    auto g_diff = face.area() / (d_CF_norm + PRISM_EPSILON);
+
+    // kappa * g_diff * (Φ_C - Φ_N)
+    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
+    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
+}
+
+template <>
+void Diffusion<NonOrthoCorrection::None>::apply_boundary_fixed(const mesh::Cell& cell,
+                                                               const mesh::Face& face) {
+    // get the fixed phi variable associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
-    auto flux_wall = boundary_patch.get_scalar_bc(_phi.name());
+    auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
     auto cell_id = cell.id();
 
-    // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
-    // and paragraph 8.6.8.2
-    rhs_vector()[cell_id] += -flux_wall * face.area();
+    const auto& S_f = face.area_vector();
+
+    // vector joining the centers of the cell and the face
+    auto d_Cf = face.center() - cell.center();
+    auto d_Cf_norm = d_Cf.norm();
+
+    auto g_diff = face.area() / (d_Cf_norm + PRISM_EPSILON);
+
+    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
+    rhs_vector()[cell_id] += g_diff * _kappa * phi_wall;
 }
 
+template <>
+auto Diffusion<NonOrthoCorrection::None>::requires_correction() const -> bool {
+    return false;
+}
 
 } // namespace prism::diffusion

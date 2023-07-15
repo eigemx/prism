@@ -6,14 +6,16 @@ namespace prism::source {
 
 template <>
 void ImplicitPhi<SourceSign::Positive>::apply_interior(const mesh::Cell& cell,
-                                                       const mesh::Face& face) {
+                                                       const mesh::Face& face) //NOLINT
+{
     auto cell_id = cell.id();
     coeff_matrix().coeffRef(cell_id, cell_id) = -1;
 }
 
 template <>
 void ImplicitPhi<SourceSign::Negative>::apply_interior(const mesh::Cell& cell,
-                                                       const mesh::Face& face) {
+                                                       const mesh::Face& face) // NOLINT
+{
     auto cell_id = cell.id();
     coeff_matrix().coeffRef(cell_id, cell_id) = 1;
 }

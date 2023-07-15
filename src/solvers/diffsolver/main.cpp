@@ -31,7 +31,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto diff = diffusion::Diffusion(1, T);
+    auto diff = diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T);
     auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {
