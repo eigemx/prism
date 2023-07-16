@@ -32,7 +32,8 @@ class ConstantScalar : public FVScheme {
 template <SourceSign Sign = SourceSign::Positive>
 class ImplicitPhi : public FVScheme {
   public:
-    ImplicitPhi(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
+    ImplicitPhi(ScalarField& phi, double coeff = 1.0)
+        : _phi(phi), _coeff(coeff), FVScheme(phi.mesh().n_cells()) {}
     ImplicitPhi(ScalarField&& phi) = delete;
 
   private:
@@ -42,6 +43,7 @@ class ImplicitPhi : public FVScheme {
     auto inline requires_correction() const -> bool override { return false; }
 
     ScalarField& _phi;
+    double _coeff {1.0};
 };
 
 } // namespace prism::source

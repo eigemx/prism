@@ -31,7 +31,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto diff = diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T);
+    auto diff = diffusion::Diffusion<diffusion::NonOrthoCorrection::None>(1, T);
     auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {
@@ -40,15 +40,16 @@ auto main(int argc, char* argv[]) -> int {
         return 0.0;
     });
     auto source = source::ConstantScalar(S);
+    auto sink = source::ImplicitPhi<source::SourceSign::Negative>(T);
 
 
     // assemble the equation
-    auto eqn = Equation(T, {&diff, &source});
+    auto eqn = Equation(T, {&diff, &source, &sink});
 
     // solve
     auto solver = solver::BiCGSTAB();
 
-    solver.solve(eqn, 10, 1e-3);
+    solver.solve(eqn, 1000, 1e-3);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 
