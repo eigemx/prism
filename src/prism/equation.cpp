@@ -7,7 +7,7 @@
 namespace prism {
 
 Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
-    : _schemes(std::move(schemes)), _phi(phi) {
+    : _schemes(std::move(schemes)), _phi(phi), _phi_old(phi) {
     if (_schemes.empty()) {
         throw std::runtime_error(
             fmt::format("Equation constructor was called with an empty FV schemes vector. "

@@ -25,6 +25,11 @@ class Equation {
     auto inline scalar_field() const -> const ScalarField& { return _phi; }
     auto inline scalar_field() -> ScalarField& { return _phi; }
 
+    auto inline scalar_field_old() const -> const ScalarField& { return _phi_old; }
+    auto inline scalar_field_old() -> ScalarField& { return _phi_old; }
+
+    void relax(double omega);
+
 
   private:
     SparseMatrix _coeff_matrix;
@@ -32,5 +37,6 @@ class Equation {
 
     std::vector<FVScheme*> _schemes;
     ScalarField& _phi;
+    ScalarField _phi_old;
 };
 } // namespace prism
