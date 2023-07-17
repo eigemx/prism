@@ -8,6 +8,9 @@
 
 namespace prism::solver {
 
+// TODO: make this a template class, with the template parameter being the solver type
+// TODO: solve() should return each time an iteraion is finished (with the current residual),
+// until convergence. And any consecutive call to solve() after convergence shall have no effect
 class SolverBase {
   public:
     SolverBase() = default;
@@ -17,12 +20,16 @@ class SolverBase {
     auto operator=(const SolverBase& s) -> SolverBase& = delete;
     virtual ~SolverBase() = default;
 
-    virtual void solve(Equation& eq, std::size_t n_iter, double eps) = 0;
+    virtual void solve(Equation& eq, std::size_t n_iter, double eps, double lambda) = 0;
 };
 
 class BiCGSTAB : public SolverBase {
   public:
-    void solve(Equation& eq, std::size_t n_iter = 1000, double eps = 1e-6) override;
+    void solve(Equation& eq,
+               std::size_t n_iter = 1000, // number of iterations
+               double eps = 1e-6,         // convergence criteria
+               double lambda = 1.0        // under-relaxation factor
+               ) override;
 };
 
 } // namespace prism::solver

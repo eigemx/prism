@@ -10,6 +10,8 @@ namespace prism::source {
 
 enum class SourceSign { Positive, Negative };
 
+// Discretized constant source/sink term (like gravity), takes a scalar field
+// and adds it to the right hand side of the system of equation
 class ConstantScalar : public FVScheme {
   public:
     ConstantScalar(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
@@ -29,6 +31,7 @@ class ConstantScalar : public FVScheme {
     ScalarField& _phi;
 };
 
+// TODO: Test this!
 template <SourceSign Sign = SourceSign::Positive>
 class ImplicitPhi : public FVScheme {
   public:

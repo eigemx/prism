@@ -1,21 +1,25 @@
 #include "solver.h"
 
 #include <Eigen/IterativeLinearSolvers>
-#include <iostream>
 
 #include "../print.h"
+#include "./relax.h"
 
 namespace prism::solver {
-void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
+void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps, double lambda) {
     auto n_cells = eqn.scalar_field().data().size();
     auto res = VectorXd(n_cells);
 
     const auto& A = eqn.coeff_matrix();
     auto& phi = eqn.scalar_field();
+    auto& phi_old = eqn.scalar_field_old();
     auto& b = eqn.rhs_vector();
+
+    auto rx = ImplicitUnderRelaxation(lambda);
 
     for (std::size_t i = 0; i < n_iter; i++) {
         eqn.update_coeffs();
+        rx.relax(eqn);
 
         // calculate the norm of the residuals
         res = (A * phi.data()) - b;
@@ -28,13 +32,10 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps) {
             break;
         }
 
-        //Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
-        //cg.compute(A);
-        //phi.data() -= cg.solve(res);
-
-        // solve using BiCGSTAB
         Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
         bicg.compute(A);
+
+        phi_old.data() = phi.data();
         phi.data() -= bicg.solve(res);
 
         // print the norm of the residuals

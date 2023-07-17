@@ -15,4 +15,5 @@ add_library(prism-core
     convection/convection.cpp
     source/source.cpp
     solver/solver.cpp
+    solver/relax.cpp
 )
