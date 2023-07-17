@@ -1,5 +1,6 @@
 #include "pmesh.h"
 
+#include "../constants.h"
 
 namespace prism::mesh {
 // define all functions in PMesh class in pmesh.h
@@ -44,7 +45,7 @@ auto PMesh::face_non_ortho(const Face& face) const -> double {
     auto v = neigh_center - owner_center;
     auto v_norm = v.norm();
 
-    return std::acos(v.dot(face.normal()) / v_norm) * (180. / PRISM_PI);
+    return std::acos(v.dot(face.normal()) / (v_norm + PRISM_EPSILON)) * (180. / PRISM_PI);
 }
 
 auto PMesh::face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch& {
