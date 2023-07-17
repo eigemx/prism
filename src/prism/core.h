@@ -1,5 +1,6 @@
 #pragma once
 
+#include "constants.h"
 #include "convection/convection.h"
 #include "diffusion/diffusion.h"
 #include "equation.h"
