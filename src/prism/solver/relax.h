@@ -4,6 +4,8 @@
 
 namespace prism::solver {
 
+// TODO: Test this, under-relaxation when applied to basic cases of diffusion or advection
+// yields wrong results. (check duct and torus cases)
 class ImplicitUnderRelaxation {
   public:
     ImplicitUnderRelaxation(double lambda = 0.9) : _lambda(lambda) {}
