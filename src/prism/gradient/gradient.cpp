@@ -75,10 +75,6 @@ auto inline gradient_at_interior_face(const mesh::Cell& cell,
     return Sf * face_phi;
 }
 
-GreenGauss::GreenGauss(const ScalarField& field) : _field(field) {
-    _cell_gradients = MatrixX3d::Zero(_field.mesh().cells().size(), 3);
-}
-
 auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = _field.mesh();
