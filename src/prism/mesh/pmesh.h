@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cmath>
 
 #include "../types.h"
@@ -47,6 +48,10 @@ class PMesh {
         return _boundary_patches;
     }
 
+    auto inline boundary_patch(const Face& face) const noexcept -> const BoundaryPatch& {
+        return _boundary_patches[face.boundary_patch_id().value()];
+    }
+
     void set_boundary_conditions(std::vector<BoundaryPatch> boundary_patches);
     void set_boundary_conditions(const std::vector<BoundaryPatch>& boundary_patches);
 
@@ -59,6 +64,12 @@ class PMesh {
     auto n_cells() const noexcept -> std::size_t { return _n_cells; }
 
     static auto cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double;
+
+    auto inline neighbor_to(const Cell& c, const Face& f) const -> const Cell& {
+        assert(f.has_neighbor() && "PMesh::neighbor_to() called on a boundary face!");
+        auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
+        return _cells[n_id];
+    }
 
   private:
     std::vector<Vector3d> _vertices;

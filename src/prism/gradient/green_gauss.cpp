@@ -1,9 +1,8 @@
-#include "gradient.h"
-
 #include <cassert>
 #include <cmath>
 
 #include "../print.h"
+#include "gradient.h"
 
 namespace prism::gradient {
 
@@ -15,43 +14,6 @@ auto inline skewness_correction(const mesh::Cell& C,
     auto vec = f.center() - (0.5 * (C.center() + F.center()));
 
     return 0.5 * grad_sum.dot(vec);
-}
-
-auto inline gradient_at_boundary_face(const mesh::Face& face, const ScalarField& field)
-    -> Vector3d {
-    const auto& mesh = field.mesh();
-
-    auto face_boundary_patch_id = face.boundary_patch_id().value();
-    const auto& boundary_patch = mesh.boundary_patches()[face_boundary_patch_id];
-    const auto& boundary_condition = boundary_patch.get_bc(field.name());
-    auto patch_type = boundary_condition.patch_type();
-
-    switch (patch_type) {
-        case mesh::BoundaryPatchType::Empty:
-        case mesh::BoundaryPatchType::Outlet:
-        case mesh::BoundaryPatchType::Symmetry: {
-            return Vector3d {0., 0., 0.};
-        }
-
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet: {
-            const auto& phi_name = field.name();
-            auto phi = boundary_patch.get_scalar_bc(phi_name);
-            return phi * face.area_vector();
-        }
-
-        case mesh::BoundaryPatchType::FixedGradient: {
-            const auto& phi_name = field.name();
-            auto flux = boundary_patch.get_scalar_bc(phi_name + "-flux");
-            return flux * face.area_vector();
-        }
-
-        default:
-            throw std::runtime_error(
-                fmt::format("gradient/gradient.cpp gradient_at_boundary_face(): "
-                            "Non-implemented boundary type for boundary patch: '{}'",
-                            boundary_patch.name()));
-    }
 }
 
 auto inline gradient_at_interior_face(const mesh::Cell& cell,

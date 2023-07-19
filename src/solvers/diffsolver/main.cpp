@@ -18,20 +18,18 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
-    auto unv_file_name = args[1];
-
     // read mesh
-    fmt::print("Loading mesh file {}...", unv_file_name);
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name).to_pmesh();
+    fmt::print("Loading mesh file {}...", args[1]);
+    auto mesh = mesh::UnvToPMeshConverter(args[1]).to_pmesh();
     fmt::print("Okay.\n");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
-
+    auto T_grad = gradient::create<gradient::LeastSquares>(T);
 
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto diff = diffusion::Diffusion<diffusion::NonOrthoCorrection::None>(1, T);
+    auto diff = diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T, T_grad);
 
     // define a source term
     auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
@@ -43,13 +41,11 @@ auto main(int argc, char* argv[]) -> int {
     });
     auto source = source::ConstantScalar(S);
 
-
     // assemble the equation
     auto eqn = Equation(T, {&diff});
 
     // solve
     auto solver = solver::BiCGSTAB();
-
     solver.solve(eqn, 100, 1e-3);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
