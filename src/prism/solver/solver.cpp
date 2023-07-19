@@ -15,6 +15,7 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps, double lambd
     auto& phi_old = eqn.scalar_field_old();
     auto& b = eqn.rhs_vector();
 
+    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     auto rx = ImplicitUnderRelaxation(lambda);
 
     for (std::size_t i = 0; i < n_iter; i++) {
@@ -32,7 +33,6 @@ void BiCGSTAB::solve(Equation& eqn, std::size_t n_iter, double eps, double lambd
             break;
         }
 
-        Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
         bicg.compute(A);
 
         phi_old.data() = phi.data();

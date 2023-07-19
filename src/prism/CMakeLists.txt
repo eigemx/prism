@@ -11,7 +11,8 @@ add_library(prism-core
     mesh/trie.cpp
     mesh/reorder.cpp
     diffusion/diffusion.cpp
-    gradient/gradient.cpp
+    gradient/green_gauss.cpp
+    gradient/least_squares.cpp
     convection/convection.cpp
     source/source.cpp
     solver/solver.cpp
