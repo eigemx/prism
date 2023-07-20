@@ -115,7 +115,7 @@ void CuthillMckee::reorder(bool reverse) {
 
     for (auto& cell : cells) {
         auto new_id = old_to_new[cell.id()];
-        cell.set_id(new_id);
+        cell.id() = new_id;
         new_cells[new_id] = cell;
     }
 

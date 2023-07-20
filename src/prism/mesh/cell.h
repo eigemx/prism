@@ -23,7 +23,7 @@ class Cell {
     auto inline volume() const noexcept -> double { return _volume; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }
     auto inline id() const noexcept -> std::size_t { return _id; }
-    void inline set_id(std::size_t id) noexcept { _id = id; }
+    auto inline id() noexcept -> std::size_t& { return _id; }
 
     auto inline faces_ids() const noexcept -> const std::vector<std::size_t>& {
         return _faces_ids;

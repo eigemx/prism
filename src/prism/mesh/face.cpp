@@ -17,18 +17,6 @@ void Face::set_face_attributes(const std::vector<Vector3d>& vertices) {
 
     // Calculate face geometric center.
     geo_center /= _vertices_count;
-    if (_vertices_count == 3) {
-        const auto& v0 = vertices[0];
-        const auto& v1 = vertices[1];
-        const auto& v2 = vertices[2];
-
-        // calculate area and normal vector of triangle
-        _normal = (v1 - v0).cross(v2 - v0);
-        _area = _normal.norm() / 2.0;
-        _center = (v0 + v1 + v2) / 3.0;
-        _normal /= _normal.norm();
-        return;
-    }
 
     // form triangular subfaces
     // each subface is constructed using an edge (from main face) as the base.
