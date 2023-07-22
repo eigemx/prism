@@ -50,6 +50,7 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     auto eqn =
         Equation(diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T, T_grad));
+    eqn.add_scheme(source::ConstantScalar(S));
 
     // solve
     auto solver = solver::BiCGSTAB();

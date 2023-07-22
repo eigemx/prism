@@ -28,11 +28,21 @@ class Equation {
     auto inline scalar_field() const -> const ScalarField& { return _phi; }
     auto inline scalar_field() -> ScalarField& { return _phi; }
 
+    // previous iteration value of the scalar field
     auto inline scalar_field_old() const -> const ScalarField& { return _phi_old; }
     auto inline scalar_field_old() -> ScalarField& { return _phi_old; }
 
-    void relax(double omega);
+    template <typename S>
+    void add_scheme(S&& scheme) {
+        const auto& field = scheme.field();
 
+        if (&field.mesh() != &_phi.mesh()) {
+            throw std::runtime_error(
+                "Equation::add_scheme() was called with a scheme defined over a different mesh.");
+        }
+
+        _schemes.emplace_back(std::make_shared<S>(std::forward<S>(scheme)));
+    }
 
   private:
     SparseMatrix _coeff_matrix;
