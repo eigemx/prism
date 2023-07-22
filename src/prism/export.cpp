@@ -71,11 +71,10 @@ void export_field(const ScalarField& field, const std::string& file_name) {
 
     // Create tuples with (name, association, number of components) for each data set
     std::vector<vtu11::DataSetInfo> dataSetInfo {
-        {"Points", vtu11::DataSetType::PointData, 1},
         {"Temperature", vtu11::DataSetType::CellData, 1},
     };
 
-    vtu11::writeVtu(file_name, mesh, dataSetInfo, {pointData, cellData}, "Ascii");
+    vtu11::writeVtu(file_name, mesh, dataSetInfo, {cellData}, "Ascii");
 }
 
 } // namespace prism
