@@ -47,8 +47,8 @@ template <typename Scheme, typename... Schemes>
 Equation::Equation(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()), _phi_old(scheme.field()) {
     _schemes.reserve(sizeof...(Schemes) + 1);
-    _schemes.emplace_back(std::make_shared<Scheme>(std::move(scheme)));
-    (_schemes.emplace_back(std::make_shared<Schemes>(std::move(schemes))), ...);
+    _schemes.emplace_back(std::make_shared<Scheme>(std::forward<Scheme>(scheme)));
+    (_schemes.emplace_back(std::make_shared<Schemes>(std::forward<Schemes>(schemes))), ...);
 
     auto n_cells = _phi.mesh().n_cells();
 
