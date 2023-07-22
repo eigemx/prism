@@ -14,10 +14,10 @@ Equation::Equation(ScalarField& phi, std::vector<FVScheme*> schemes)
                         "At least one scheme is required."));
     }
 
-    const auto& mesh = _phi.mesh();
-    auto n_cells = mesh.cells().size();
+    auto n_cells = _phi.mesh().n_cells();
 
-    assert(n_cells > 0 && "Equation constructor was called with an empty mesh.");
+    assert(n_cells > 0 &&
+           "Equation constructor was called for a scalar field defined over an empty mesh.");
 
     _coeff_matrix = SparseMatrix(n_cells, n_cells);
     _rhs_vector = VectorXd::Zero(n_cells);
@@ -32,7 +32,7 @@ void Equation::update_coeffs() {
         for (auto face_id : cell.faces_ids()) {
             const auto& face = mesh.face(face_id);
 
-            // iterate over all equation finite volume schemes
+            // iterate over all equation's finite volume schemes
             for (auto* scheme : _schemes) {
                 // apply the scheme to the cell and face
                 scheme->apply(cell, face);
