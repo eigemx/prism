@@ -2,8 +2,147 @@
 
 
 namespace prism::convection {
-// Check Moukalled et. al. 2016, 11.7 High order schemes on unstructured grids
-// equations from 11.149 to 11.155
+void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
+    auto cell_id = cell.id();
+
+    // get adjacent cell sharing `face` with `cell`
+    auto is_owned = face.is_owned_by(cell_id);
+    auto adjacent_cell_id = is_owned ? face.neighbor().value() : face.owner();
+
+    const auto& adj_cell = _mesh.cell(adjacent_cell_id);
+
+    // face area vector, always pointing outwards
+    auto S_f = face.area_vector();
+
+    // density at cell centroid
+    auto rho_c = _rho[cell_id];
+
+    if (!is_owned) {
+        // face is not owned by `cell`, flip the area vector
+        // so that it points outwards of `cell`
+        S_f *= -1;
+    }
+
+    // interpolated velocity vector at face centroid
+    auto g_c = mesh::PMesh::cells_weighting_factor(cell, adj_cell, face);
+    const auto& U_f = (g_c * _U[cell_id]) + ((1 - g_c) * _U[adjacent_cell_id]);
+
+    auto m_dot_f = face_mass_flow_rate(rho_c, U_f, S_f);
+
+    auto [a_C, a_N, b] = interpolate(m_dot_f, cell, adj_cell, face, _gradient_scheme);
+
+
+    // TODO: This assumes that velocity field is constant, this wrong because
+    // the velocity field when solving the momentum equation will be different in
+    // each iteration. This should be generalized to work for all schemes.
+    // a possible workaround is to use zero out the coefficients matrix every
+    // iteration in finalaize(), same goes for below member functions.
+    coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
+    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
+    rhs_vector().coeffRef(cell_id) += b;
+}
+
+void ConvectionBase::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
+    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
+
+    switch (boundary_condition.patch_type()) {
+        case mesh::BoundaryPatchType::Empty:
+        case mesh::BoundaryPatchType::Symmetry: {
+            return;
+        }
+
+        case mesh::BoundaryPatchType::Fixed:
+        case mesh::BoundaryPatchType::Inlet: {
+            apply_boundary_fixed(cell, face);
+            return;
+        }
+
+        case mesh::BoundaryPatchType::Outlet: {
+            apply_boundary_outlet(cell, face);
+            return;
+        }
+
+        default:
+            throw std::runtime_error(fmt::format(
+                "convection::ConvectionBase::apply_boundary(): "
+                "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
+                boundary_patch.name(),
+                _U.name()));
+    }
+}
+
+void ConvectionBase::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
+
+    const auto& S_f = face.area_vector();
+    const auto& U_f = boundary_face_velocity(face);
+
+    // TODO: check if this is correct
+    auto rho_f = _rho[face.owner()];
+
+    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+
+    // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+    // and should be generalized to work for all schemes.
+
+    // in case owner cell is an upstream cell
+    coeff_matrix().coeffRef(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
+
+    rhs_vector().coeffRef(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
+}
+
+void ConvectionBase::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
+    auto cell_id = cell.id();
+
+    // face area vector
+    const auto& S_f = face.area_vector();
+
+    // use owner cell velocity as the velocity at the outlet face centroid
+    const auto& U_f = boundary_face_velocity(face);
+
+    auto rho_f = _rho[face.owner()];
+
+    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+
+    if (m_dot_f <= 0.0) {
+        warn(
+            fmt::format("convection::ConvectionBase::apply_boundary_outlet(): "
+                        "Reverse flow detected at outlet boundary patch '{}'. "
+                        "This may cause the solution to diverge.",
+                        _mesh.face_boundary_patch(face).name()));
+    }
+    // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+    // and should be generalized to work for all schemes.
+
+    // Because this is an outlet, owner `cell` is an upstream cell
+    coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
+}
+
+auto ConvectionBase::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
+    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_condition = boundary_patch.get_bc(_U.name());
+
+    switch (boundary_condition.patch_type()) {
+        case mesh::BoundaryPatchType::Fixed:
+        case mesh::BoundaryPatchType::Inlet: {
+            return boundary_patch.get_vector_bc(_U.name());
+        }
+
+        case mesh::BoundaryPatchType::Outlet:
+        case mesh::BoundaryPatchType::Symmetry: {
+            return _U[face.owner()];
+        }
+
+        default:
+            throw std::runtime_error(fmt::format(
+                "convection::ConvectionBase::boundary_face_velocity(): "
+                "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
+                boundary_patch.name(),
+                _U.name()));
+    }
+}
 
 auto CentralDifference::interpolate(
     double m_dot,
