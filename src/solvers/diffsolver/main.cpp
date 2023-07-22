@@ -45,7 +45,6 @@ auto main(int argc, char* argv[]) -> int {
         }
         return 0.0;
     });
-    auto source = source::ConstantScalar(S);
 
     // assemble the equation
     auto eqn =
