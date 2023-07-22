@@ -98,6 +98,8 @@ class Convection : public FVScheme {
           _gradient_scheme(std::move(grad_scheme)),
           FVScheme(phi.mesh().n_cells()) {}
 
+    auto inline field() -> ScalarField& override { return _phi; }
+
   private:
     void apply_interior(const mesh::Cell& cellell, const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cellell, const mesh::Face& face) override;

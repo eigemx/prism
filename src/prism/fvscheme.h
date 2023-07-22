@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 
+#include "field.h"
 #include "mesh/pmesh.h"
 #include "print.h"
 #include "types.h"
@@ -39,6 +40,8 @@ class FVScheme {
     // If the scheme does not require correction, the solver will not zero out
     // the coefficient matrix and the RHS vector before the next iteration.
     virtual auto requires_correction() const -> bool { return true; }
+
+    virtual auto field() -> ScalarField& = 0;
 
   private:
     virtual void apply_interior(const mesh::Cell& cell, const mesh::Face& face) = 0;

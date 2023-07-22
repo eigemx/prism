@@ -19,14 +19,7 @@ enum class NonOrthoCorrection {
 template <NonOrthoCorrection Corrector = NonOrthoCorrection::None>
 class Diffusion : public FVScheme {
   public:
-    // No gradient scheme is given, use Green-Gauss as a default explicit gradient scheme
-    Diffusion(double kappa, ScalarField& phi)
-        : _kappa(kappa),
-          _phi(phi),
-          _mesh(phi.mesh()),
-          _gradient_scheme(std::make_shared<gradient::GreenGauss>(phi)),
-          FVScheme(phi.mesh().n_cells()) {}
-
+    Diffusion() = delete;
 
     // Explicit gradient scheme is provided by the user
     Diffusion(double kappa,
@@ -38,7 +31,32 @@ class Diffusion : public FVScheme {
           _gradient_scheme(std::move(gradient_scheme)),
           FVScheme(phi.mesh().n_cells()) {}
 
+    Diffusion(const Diffusion& other)
+        : _kappa(other._kappa),
+          _phi(other._phi),
+          _mesh(other._mesh),
+          _gradient_scheme(other._gradient_scheme->clone()),
+          FVScheme(other._mesh.n_cells()) {}
+
+    Diffusion(Diffusion&& other) noexcept = default;
+
+    auto operator=(const Diffusion& other) -> Diffusion& {
+        if (this != &other) {
+            _kappa = other._kappa;
+            _phi = other._phi;
+            _mesh = other._mesh;
+            _gradient_scheme = std::make_shared<gradient::GreenGauss>(other._phi);
+        }
+        return *this;
+    }
+
+    auto operator=(Diffusion&& other) noexcept -> Diffusion& = default;
+
+    ~Diffusion() = default;
+
     auto requires_correction() const -> bool override;
+
+    auto field() -> ScalarField& override { return _phi; }
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;

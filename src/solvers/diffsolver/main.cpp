@@ -48,7 +48,9 @@ auto main(int argc, char* argv[]) -> int {
     auto source = source::ConstantScalar(S);
 
     // assemble the equation
-    auto eqn = Equation(T, {&diff});
+    auto eqn =
+        Equation(diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T, T_grad),
+                 source::ConstantScalar(S));
 
     // solve
     auto solver = solver::BiCGSTAB();
