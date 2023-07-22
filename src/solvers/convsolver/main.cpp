@@ -49,7 +49,7 @@ auto main(int argc, char* argv[]) -> int {
     // where ρ is the density and u is the velocity
     auto eqn = Equation(
         diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1e-2, T, T_grad),
-        convection::Convection<convection::Upwind>(rho, U, T, T_grad));
+        convection::Upwind(rho, U, T, T_grad));
 
     // solve
     auto solver = solver::BiCGSTAB();
