@@ -47,15 +47,13 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
-    auto conv = convection::Convection<convection::Upwind>(rho, U, T, T_grad);
-    auto diff = diffusion::Diffusion(1e-2, T, T_grad);
-
-    // assemble the equation
-    auto eqn = Equation(T, {&diff, &conv});
+    auto eqn = Equation(
+        diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1e-2, T, T_grad),
+        convection::Convection<convection::Upwind>(rho, U, T, T_grad));
 
     // solve
     auto solver = solver::BiCGSTAB();
-    solver.solve(eqn, 2000, 1e-10);
+    solver.solve(eqn, 2000, 1e-3);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 

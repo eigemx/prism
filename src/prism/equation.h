@@ -11,7 +11,10 @@ namespace prism {
 
 class Equation {
   public:
-    Equation(ScalarField& phi, std::vector<FVScheme*> schemes);
+    // Equation constructor acceptes only an rvalue reference to a scheme. Because each
+    // equation should own its schemes.
+    template <typename Scheme, typename... Schemes>
+    Equation(Scheme&& scheme, Schemes&&... schemes);
 
     void update_coeffs();
     void zero_out_coeffs();
@@ -35,8 +38,25 @@ class Equation {
     SparseMatrix _coeff_matrix;
     VectorXd _rhs_vector;
 
-    std::vector<FVScheme*> _schemes;
+    std::vector<std::shared_ptr<FVScheme>> _schemes;
     ScalarField& _phi;
     ScalarField _phi_old;
 };
+
+template <typename Scheme, typename... Schemes>
+Equation::Equation(Scheme&& scheme, Schemes&&... schemes)
+    : _phi(scheme.field()), _phi_old(scheme.field()) {
+    _schemes.reserve(sizeof...(Schemes) + 1);
+    _schemes.emplace_back(std::make_shared<Scheme>(std::move(scheme)));
+    (_schemes.emplace_back(std::make_shared<Schemes>(std::move(schemes))), ...);
+
+    auto n_cells = _phi.mesh().n_cells();
+
+    assert(n_cells > 0 &&
+           "Equation constructor was called for a scalar field defined over an empty mesh.");
+
+    _coeff_matrix = SparseMatrix(n_cells, n_cells);
+    _rhs_vector = VectorXd::Zero(n_cells);
+}
+
 } // namespace prism

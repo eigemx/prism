@@ -19,6 +19,8 @@ class ConstantScalar : public FVScheme {
 
     auto requires_correction() const -> bool override { return false; }
 
+    auto inline field() -> ScalarField& override { return _phi; }
+
   private:
     // TODO: initializing rhs_vector() in constructor would suffice
     // NOLINTNEXTLINE (`face` is unused, but required by interface)
@@ -27,6 +29,7 @@ class ConstantScalar : public FVScheme {
         rhs_vector()(cell.id()) = q * cell.volume();
     }
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+
 
     ScalarField& _phi;
 };
@@ -38,6 +41,8 @@ class ImplicitPhi : public FVScheme {
     ImplicitPhi(ScalarField& phi, double coeff = 1.0)
         : _phi(phi), _coeff(coeff), FVScheme(phi.mesh().n_cells()) {}
     ImplicitPhi(ScalarField&& phi) = delete;
+
+    auto inline field() -> ScalarField& override { return _phi; }
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
