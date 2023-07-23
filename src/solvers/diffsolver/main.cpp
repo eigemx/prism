@@ -33,9 +33,6 @@ auto main(int argc, char* argv[]) -> int {
     auto T = ScalarField("temperature", mesh, 300.0);
     auto T_grad = gradient::create<gradient::LeastSquares>(T);
 
-    // solve for temperature diffision: -∇.(κ ∇T) = 0
-    // where κ is the diffusion coefficient
-    auto diff = diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T, T_grad);
 
     // define a source term
     auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
@@ -47,13 +44,15 @@ auto main(int argc, char* argv[]) -> int {
     });
 
     // assemble the equation
+    // solve for temperature diffision: -∇.(κ ∇T) = 0
+    // where κ is the diffusion coefficient
     auto eqn =
         Equation(diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T, T_grad));
-    eqn.add_scheme(source::ConstantScalar(S));
+    //eqn.add_scheme(source::ConstantScalar(S));
 
     // solve
-    auto solver = solver::BiCGSTAB();
-    solver.solve(eqn, 100, 1e-3);
+    auto solver = solver::BiCGSTAB<solver::ExplicitUnderRelaxation>();
+    solver.solve(eqn, 100, 1e-3, 0.95);
 
     prism::export_field(eqn.scalar_field(), "solution.vtu");
 

@@ -15,6 +15,5 @@ add_library(prism-core
     gradient/least_squares.cpp
     convection/convection.cpp
     source/source.cpp
-    solver/solver.cpp
     solver/relax.cpp
 )
