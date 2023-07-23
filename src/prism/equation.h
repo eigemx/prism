@@ -11,6 +11,7 @@ namespace prism {
 
 class Equation {
   public:
+    // TODO: is it corect to call Scheme&& an rvalue reference?
     // Equation constructor acceptes only an rvalue reference to a scheme. Because each
     // equation should own its schemes.
     template <typename Scheme, typename... Schemes>

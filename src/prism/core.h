@@ -14,4 +14,5 @@
 #include "print.h"
 #include "solver/solver.h"
 #include "source/source.h"
+#include "transient/transient.h"
 #include "types.h"
