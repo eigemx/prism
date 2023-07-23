@@ -1,6 +1,5 @@
 #include <prism/core.h>
 
-#include <iostream>
 #include <string>
 #include <vector>
 
