@@ -28,6 +28,9 @@ class FVScheme {
     // the default implementation does nothing
     virtual void finalize() {};
 
+    // TODO: implement coeff_matrix(i) and rhs_vector(i) to return the i-th row of the matrix and
+    // and coeff_matrix(i, j) to return the (i, j)-th element of the matrix
+    // instead of coeff_matrix().coeffRef(i, j) and rhs_vector()(i)
     inline auto coeff_matrix() const -> const SparseMatrix& { return A; }
     inline auto coeff_matrix() -> SparseMatrix& { return A; }
 
