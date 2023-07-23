@@ -122,7 +122,7 @@ void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Fa
 
         default:
             throw std::runtime_error(
-                fmt::format("diffusion::Linear::apply_boundary(): "
+                fmt::format("diffusion::Diffusion::apply_boundary(): "
                             "Non-implemented boundary type for boundary patch: '{}'",
                             boundary_patch.name()));
     }
