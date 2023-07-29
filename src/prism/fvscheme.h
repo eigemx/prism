@@ -4,15 +4,16 @@
 #include <utility>
 
 #include "field.h"
+#include "linear.h"
 #include "mesh/pmesh.h"
 #include "print.h"
 #include "types.h"
 
 namespace prism {
 
-class FVScheme {
+class FVScheme : public LinearSystem {
   public:
-    FVScheme(std::size_t n_cells) : A(n_cells, n_cells), b(n_cells) { b.setZero(); }
+    FVScheme(std::size_t n_cells) : LinearSystem(n_cells) {}
 
     // apply the discretization scheme to `face` shared by `cell`
     virtual inline void apply(const mesh::Cell& cell, const mesh::Face& face) {
@@ -28,15 +29,6 @@ class FVScheme {
     // the default implementation does nothing
     virtual void finalize() {};
 
-    // TODO: implement coeff_matrix(i) and rhs_vector(i) to return the i-th row of the matrix and
-    // and coeff_matrix(i, j) to return the (i, j)-th element of the matrix
-    // instead of coeff_matrix().coeffRef(i, j) and rhs_vector()(i)
-    inline auto coeff_matrix() const -> const SparseMatrix& { return A; }
-    inline auto coeff_matrix() -> SparseMatrix& { return A; }
-
-    inline auto rhs_vector() const -> const VectorXd& { return b; }
-    inline auto rhs_vector() -> VectorXd& { return b; }
-
     // returns true if the scheme requires correction.
     // The default implementation returns ture.
     // Override this method if the scheme does not require correction.
@@ -49,9 +41,6 @@ class FVScheme {
   private:
     virtual void apply_interior(const mesh::Cell& cell, const mesh::Face& face) = 0;
     virtual void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) = 0;
-
-    SparseMatrix A;
-    VectorXd b;
 };
 
 } // namespace prism

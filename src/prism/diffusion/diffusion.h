@@ -139,7 +139,7 @@ void Diffusion<Corrector>::apply_boundary_gradient(const mesh::Cell& cell,
 
     // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
     // and paragraph 8.6.8.2
-    rhs_vector()[cell_id] += -flux_wall * face.area();
+    rhs(cell_id) += -flux_wall * face.area();
 }
 
 

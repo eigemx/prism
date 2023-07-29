@@ -37,9 +37,9 @@ void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& fa
     // each iteration. This should be generalized to work for all schemes.
     // a possible workaround is to use zero out the coefficients matrix every
     // iteration in finalaize(), same goes for below member functions.
-    coeff_matrix().coeffRef(cell_id, cell_id) += a_C;
-    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += a_N;
-    rhs_vector().coeffRef(cell_id) += b;
+    matrix(cell_id, cell_id) += a_C;
+    matrix(cell_id, adjacent_cell_id) += a_N;
+    rhs(cell_id) += b;
 }
 
 void ConvectionBase::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
@@ -88,9 +88,9 @@ void ConvectionBase::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fa
     // and should be generalized to work for all schemes.
 
     // in case owner cell is an upstream cell
-    coeff_matrix().coeffRef(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
+    matrix(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
 
-    rhs_vector().coeffRef(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
+    rhs(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
 }
 
 void ConvectionBase::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
@@ -117,7 +117,7 @@ void ConvectionBase::apply_boundary_outlet(const mesh::Cell& cell, const mesh::F
     // and should be generalized to work for all schemes.
 
     // Because this is an outlet, owner `cell` is an upstream cell
-    coeff_matrix().coeffRef(cell_id, cell_id) += m_dot_f;
+    matrix(cell_id, cell_id) += m_dot_f;
 }
 
 auto ConvectionBase::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {

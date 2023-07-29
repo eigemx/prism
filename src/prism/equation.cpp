@@ -1,7 +1,5 @@
 #include "equation.h"
 
-#include <cassert>
-
 #include "print.h"
 
 namespace prism {
@@ -29,21 +27,22 @@ void Equation::update_coeffs() {
 
     // update the universal coefficient matrix and RHS vector
     for (auto& scheme : _schemes) {
-        _coeff_matrix += scheme->coeff_matrix();
-        _rhs_vector += scheme->rhs_vector();
+        matrix() += scheme->matrix();
+        rhs() += scheme->rhs();
     }
 }
 
 void Equation::zero_out_coeffs() {
     for (auto& scheme : _schemes) {
         if (scheme->requires_correction()) {
-            scheme->coeff_matrix().setZero();
-            scheme->rhs_vector().setZero();
+            scheme->matrix().setZero();
+            scheme->rhs().setZero();
         }
     }
 
-    _coeff_matrix.setZero();
-    _rhs_vector.setZero();
+    // zero out the universal coefficient matrix and RHS vector
+    matrix().setZero();
+    rhs().setZero();
 }
 
 } // namespace prism

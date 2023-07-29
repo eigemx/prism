@@ -22,11 +22,11 @@ class ConstantScalar : public FVScheme {
     auto inline field() -> ScalarField& override { return _phi; }
 
   private:
-    // TODO: initializing rhs_vector() in constructor would suffice
+    // TODO: initializing rhs() in constructor would suffice
     // NOLINTNEXTLINE (`face` is unused, but required by interface)
     void inline apply_interior(const mesh::Cell& cell, const mesh::Face& face) override {
         auto q = _phi[cell.id()];
-        rhs_vector()(cell.id()) = q * cell.volume();
+        rhs(cell.id()) = q * cell.volume();
     }
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
 

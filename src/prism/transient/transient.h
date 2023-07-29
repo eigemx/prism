@@ -33,8 +33,8 @@ class ImplicitFirstOrder : public TransientBase, public FVScheme {
         auto volume = cell.volume();
         auto dt = time_step();
 
-        coeff_matrix().coeffRef(cell_id, cell_id) = rho * volume / dt;
-        rhs_vector()(cell_id) = rho * volume * phi / dt;
+        matrix(cell_id, cell_id) = rho * volume / dt;
+        rhs(cell_id) = rho * volume * phi / dt;
     }
 
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}

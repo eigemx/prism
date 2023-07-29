@@ -36,13 +36,11 @@ class BiCGSTAB : public SolverBase {
 
 template <typename Relaxer>
 void BiCGSTAB<Relaxer>::solve(Equation& eqn, std::size_t n_iter, double eps, double lambda) {
-    auto n_cells = eqn.scalar_field().data().size();
-    auto res = VectorXd(n_cells);
+    const auto& A = eqn.matrix();
+    const auto& b = eqn.rhs();
 
-    const auto& A = eqn.coeff_matrix();
-    auto& phi = eqn.scalar_field();
-    auto& phi_old = eqn.scalar_field_old();
-    auto& b = eqn.rhs_vector();
+    auto& phi = eqn.field();
+    auto& phi_prev = eqn.field_prev_iter();
 
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     auto rx = Relaxer(lambda);
@@ -51,26 +49,25 @@ void BiCGSTAB<Relaxer>::solve(Equation& eqn, std::size_t n_iter, double eps, dou
         eqn.update_coeffs();
         rx.pre_relax(eqn);
 
-        // calculate the norm of the residuals
-        res = (A * phi.data()) - b;
+        // calculate the residuals and its norm
+        auto res = (A * phi.data()) - b;
         auto res_norm = res.norm();
 
         // check for convergence
         if (res_norm < eps) {
-            fmt::print("Converged after {} iterations\n", i);
-            fmt::print("Residual: {}\n", res_norm);
+            fmt::println("Converged after {} iterations", i);
+            fmt::println("Residual: {}", res_norm);
             break;
         }
 
         bicg.compute(A);
 
-        phi_old.data() = phi.data();
+        phi_prev.data() = phi.data();
         phi.data() -= bicg.solve(res);
 
         rx.post_relax(eqn);
 
-        // print the norm of the residuals
-        fmt::print("Iteration: {}, Residual: {}\n", i, res_norm);
+        fmt::println("Iteration: {}, Residual: {}", i, res_norm);
 
         // zero out the left & right hand side vector, for the next iteration
         eqn.zero_out_coeffs();
