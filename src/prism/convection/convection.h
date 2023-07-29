@@ -74,7 +74,7 @@ class CentralDifference : public ConvectionBase {
                       VectorField& U,
                       ScalarField& phi,
                       std::shared_ptr<gradient::GradientSchemeBase> grad_scheme)
-        : ConvectionBase(rho, U, phi, grad_scheme) {}
+        : ConvectionBase(rho, U, phi, std::move(grad_scheme)) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -93,7 +93,7 @@ class Upwind : public ConvectionBase {
            VectorField& U,
            ScalarField& phi,
            std::shared_ptr<gradient::GradientSchemeBase> grad_scheme)
-        : ConvectionBase(rho, U, phi, grad_scheme) {}
+        : ConvectionBase(rho, U, phi, std::move(grad_scheme)) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -113,7 +113,7 @@ class SecondOrderUpwind : public ConvectionBase {
                       VectorField& U,
                       ScalarField& phi,
                       std::shared_ptr<gradient::GradientSchemeBase> grad_scheme)
-        : ConvectionBase(rho, U, phi, grad_scheme) {}
+        : ConvectionBase(rho, U, phi, std::move(grad_scheme)) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -132,7 +132,7 @@ class QUICK : public ConvectionBase {
           VectorField& U,
           ScalarField& phi,
           std::shared_ptr<gradient::GradientSchemeBase> grad_scheme)
-        : ConvectionBase(rho, U, phi, grad_scheme) {}
+        : ConvectionBase(rho, U, phi, std::move(grad_scheme)) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,

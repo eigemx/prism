@@ -55,7 +55,7 @@ auto main(int argc, char* argv[]) -> int {
     auto solver = solver::BiCGSTAB();
     solver.solve(eqn, 2000, 1e-3);
 
-    prism::export_field(eqn.scalar_field(), "solution.vtu");
+    prism::export_field(eqn.field(), "solution.vtu");
 
     return 0;
 }

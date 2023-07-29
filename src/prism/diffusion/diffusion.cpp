@@ -46,14 +46,14 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Cell
     auto g_diff = E_f.norm() / (d_CF_norm + PRISM_EPSILON);
 
     // kappa * g_diff * (Φ_C - Φ_N)
-    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
-    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
+    matrix(cell_id, cell_id) += g_diff * _kappa;
+    matrix(cell_id, adjacent_cell_id) += -g_diff * _kappa;
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     auto grad_f = _gradient_scheme->gradient_at_face(face);
     auto T_f = S_f - E_f;
-    rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
+    rhs(cell.id()) += T_f.dot(grad_f) * _kappa;
 }
 
 template <>
@@ -76,7 +76,7 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::correct_non_orhto_boundary_fixe
 
     auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + PRISM_EPSILON)) * e;
 
-    rhs_vector()[cell.id()] += T_f.dot(grad_f) * _kappa;
+    rhs()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
 
 template <>
@@ -98,8 +98,8 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_boundary_fixed(const mesh
 
     auto g_diff = E_f.norm() / (d_Cf_norm + PRISM_EPSILON);
 
-    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
-    rhs_vector()[cell_id] += g_diff * _kappa * phi_wall;
+    matrix(cell_id, cell_id) += g_diff * _kappa;
+    rhs()[cell_id] += g_diff * _kappa * phi_wall;
 
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }
@@ -127,8 +127,8 @@ void Diffusion<NonOrthoCorrection::None>::apply_interior(const mesh::Cell& cell,
     auto g_diff = face.area() / (d_CF_norm + PRISM_EPSILON);
 
     // kappa * g_diff * (Φ_C - Φ_N)
-    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
-    coeff_matrix().coeffRef(cell_id, adjacent_cell_id) += -g_diff * _kappa;
+    matrix(cell_id, cell_id) += g_diff * _kappa;
+    matrix(cell_id, adjacent_cell_id) += -g_diff * _kappa;
 }
 
 template <>
@@ -148,8 +148,8 @@ void Diffusion<NonOrthoCorrection::None>::apply_boundary_fixed(const mesh::Cell&
 
     auto g_diff = face.area() / (d_Cf_norm + PRISM_EPSILON);
 
-    coeff_matrix().coeffRef(cell_id, cell_id) += g_diff * _kappa;
-    rhs_vector()[cell_id] += g_diff * _kappa * phi_wall;
+    matrix(cell_id, cell_id) += g_diff * _kappa;
+    rhs(cell_id) += g_diff * _kappa * phi_wall;
 }
 
 template <>
