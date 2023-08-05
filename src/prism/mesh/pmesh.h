@@ -56,10 +56,15 @@ class PMesh {
 
     auto n_cells() const noexcept -> std::size_t { return _n_cells; }
 
-    static auto cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double;
-
-    auto inline neighbor_to(const Cell& c, const Face& f) const -> const Cell& {
-        assert(f.has_neighbor() && "PMesh::neighbor_to() called on a boundary face!");
+    /**
+     * @brief Returns the cell that shares the face with the given cell.
+     * 
+     * @param c Cell to find the other sharing cell of.
+     * @param f Face that is shared by the two cells.
+     * @return const Cell& The other cell that shares the face with the given cell.
+     */
+    auto inline other_sharing_cell(const Cell& c, const Face& f) const -> const Cell& {
+        assert(f.has_neighbor() && "PMesh::other_sharing_cell() called on a boundary face!");
         auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
         return _cells[n_id];
     }

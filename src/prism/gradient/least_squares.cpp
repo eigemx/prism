@@ -1,3 +1,4 @@
+#include "../mesh/utilities.h"
 #include "gradient.h"
 
 // TODO: Validate the results of using LeastSquares as an explicit gradient calculator,
@@ -28,7 +29,7 @@ void LeastSquares::set_lsq_matrices() {
 
             if (face.has_neighbor()) {
                 // interior face
-                const auto neighbor = mesh.neighbor_to(cell, face);
+                const auto neighbor = mesh.other_sharing_cell(cell, face);
                 d_CF = neighbor.center() - cell.center();
             } else {
                 // boundary face
@@ -63,7 +64,7 @@ auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
 
         if (face.has_neighbor()) {
             // interior face
-            const auto neighbor = mesh.neighbor_to(cell, face);
+            const auto neighbor = mesh.other_sharing_cell(cell, face);
             auto nei_phi = _field[neighbor.id()];
             phi_diff[i] = nei_phi - phi;
 
@@ -88,7 +89,7 @@ auto LeastSquares::gradient_at_face(const mesh::Face& face) -> Vector3d {
         const auto& neighbor_cell = msh.cell(face.neighbor().value());
         auto neighbor_grad = gradient_at_cell(neighbor_cell);
 
-        auto gc = mesh::PMesh::cells_weighting_factor(owner_cell, neighbor_cell, face);
+        auto gc = mesh::cells_weighting_factor(owner_cell, neighbor_cell, face);
 
         return gc * owner_grad + (1. - gc) * neighbor_grad;
     }

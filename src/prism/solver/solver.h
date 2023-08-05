@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Eigen/IterativeLinearSolvers>
-#include <fstream>
 
 #include "../equation.h"
 #include "../field.h"
@@ -9,19 +8,19 @@
 #include "../types.h"
 #include "relax.h"
 
-template <typename EigenObject>
-void write_to_file(const EigenObject& obj, const std::string& filename) {
-    std::ofstream file(filename);
-    file << obj;
-    file.close();
-}
-
 namespace prism::solver {
+
+struct IterationStepData {
+    std::size_t iteration {};
+    double residual {};
+};
+
 // TODO: solve() should return each time an iteraion is finished (with the current residual),
 // until convergence. And any consecutive call to solve() after convergence shall have no effect
 class SolverBase {
   public:
     virtual void solve(Equation& eq, std::size_t n_iter, double eps, double lambda) = 0;
+    //virtual auto step(Equation& eq, double eps, double lambda) -> IterationStepData = 0;
 };
 
 template <typename Relaxer = ImplicitUnderRelaxation>

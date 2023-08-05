@@ -1,5 +1,6 @@
 #include "convection.h"
 
+#include "../mesh/utilities.h"
 
 namespace prism::convection {
 void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
@@ -24,7 +25,7 @@ void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& fa
     }
 
     // interpolated velocity vector at face centroid
-    auto g_c = mesh::PMesh::cells_weighting_factor(cell, adj_cell, face);
+    auto g_c = mesh::cells_weighting_factor(cell, adj_cell, face);
     const auto& U_f = (g_c * _U[cell_id]) + ((1 - g_c) * _U[adjacent_cell_id]);
 
     auto m_dot_f = face_mass_flow_rate(rho_c, U_f, S_f);
