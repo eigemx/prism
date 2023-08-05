@@ -45,7 +45,7 @@ auto PMesh::face_non_ortho(const Face& face) const -> double {
     auto v = neigh_center - owner_center;
     auto v_norm = v.norm();
 
-    return std::acos(v.dot(face.normal()) / (v_norm + PRISM_EPSILON)) * (180. / PRISM_PI);
+    return std::acos(v.dot(face.normal()) / (v_norm + EPSILON)) * (180. / PI);
 }
 
 auto PMesh::face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch& {
@@ -60,6 +60,7 @@ auto PMesh::face_boundary_patch(const Face& face) const -> const BoundaryPatch& 
     return _boundary_patches.at(face.boundary_patch_id().value());
 }
 
+// TODO: move this out of PMesh, to a separate utilities module
 auto PMesh::cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double {
     // this method calculates the geometric weighting factor between two cells `c` and `n`
     // sharing a face `f`.

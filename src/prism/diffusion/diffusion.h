@@ -15,7 +15,6 @@ enum class NonOrthoCorrection {
     OverRelaxed,
 };
 
-// TODO: Implement a non-corrected version
 template <NonOrthoCorrection Corrector = NonOrthoCorrection::None>
 class Diffusion : public FVScheme {
   public:
@@ -57,6 +56,7 @@ class Diffusion : public FVScheme {
     auto requires_correction() const -> bool override;
 
     auto field() -> ScalarField& override { return _phi; }
+
 
   private:
     void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
@@ -131,6 +131,13 @@ void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Fa
 template <NonOrthoCorrection Corrector>
 void Diffusion<Corrector>::apply_boundary_gradient(const mesh::Cell& cell,
                                                    const mesh::Face& face) {
+    /** @brief Applies boundary discretized diffusion equation to the cell,
+     * when the current face is a boundary face, and the boundary condition
+     * is a general Von Neumann boundary condition, or fixed gradient boundary condition.
+     *
+     * @param cell The cell which owns the boundary face.
+     * @param face The boundary face.
+     */
     // get the fixed gradient (flux) value associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto flux_wall = boundary_patch.get_scalar_bc(_phi.name());

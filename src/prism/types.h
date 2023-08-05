@@ -9,7 +9,6 @@ namespace prism {
 using Eigen::MatrixX3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-
 using SparseMatrix = Eigen::SparseMatrix<double>;
 
 } // namespace prism

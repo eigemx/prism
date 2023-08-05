@@ -35,7 +35,7 @@ void inline info(std::string_view msg) {
 void inline print_header() {
     fmt::print(fg(fmt::color::cyan), "Prism ");
     fmt::print(
-        fmt::format("v{} - A finite volume CFD framework | MIT License\n", PRISM_VERSION_STR));
+        fmt::format("v{} - A finite volume CFD framework | MIT License\n", VERSION));
 }
 
 } // namespace prism

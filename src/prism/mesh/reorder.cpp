@@ -110,9 +110,9 @@ void CuthillMckee::reorder(bool reverse) {
     // update order of cells vector using the permutation map
     auto& cells = _mesh.cells();
 
-    std::vector<Cell> new_cells;
-    new_cells.resize(cells.size());
+    std::vector<Cell> new_cells = cells;
 
+    // TODO: replace this with std::transform
     for (auto& cell : cells) {
         auto new_id = old_to_new[cell.id()];
         cell.id() = new_id;

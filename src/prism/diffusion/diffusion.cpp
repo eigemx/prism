@@ -40,10 +40,10 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Cell
     auto e = d_CF / d_CF_norm;
 
     // orthogonal-like normal vector E_f using over-relaxed approach
-    auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + PRISM_EPSILON))) * e;
+    auto E_f = ((S_f.dot(S_f) / (e.dot(S_f) + EPSILON))) * e;
 
     // geometric diffusion coefficient
-    auto g_diff = E_f.norm() / (d_CF_norm + PRISM_EPSILON);
+    auto g_diff = E_f.norm() / (d_CF_norm + EPSILON);
 
     // kappa * g_diff * (Φ_C - Φ_N)
     matrix(cell_id, cell_id) += g_diff * _kappa;
@@ -74,7 +74,7 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::correct_non_orhto_boundary_fixe
     auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
     auto phi_c = _phi[cell.id()];
 
-    auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + PRISM_EPSILON)) * e;
+    auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + EPSILON)) * e;
 
     rhs()[cell.id()] += T_f.dot(grad_f) * _kappa;
 }
@@ -96,7 +96,7 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_boundary_fixed(const mesh
     auto e = d_Cf / d_Cf_norm;
     auto E_f = ((S_f.dot(S_f) / e.dot(S_f))) * e;
 
-    auto g_diff = E_f.norm() / (d_Cf_norm + PRISM_EPSILON);
+    auto g_diff = E_f.norm() / (d_Cf_norm + EPSILON);
 
     matrix(cell_id, cell_id) += g_diff * _kappa;
     rhs()[cell_id] += g_diff * _kappa * phi_wall;
@@ -124,7 +124,7 @@ void Diffusion<NonOrthoCorrection::None>::apply_interior(const mesh::Cell& cell,
     auto d_CF_norm = d_CF.norm();
 
     // geometric diffusion coefficient
-    auto g_diff = face.area() / (d_CF_norm + PRISM_EPSILON);
+    auto g_diff = face.area() / (d_CF_norm + EPSILON);
 
     // kappa * g_diff * (Φ_C - Φ_N)
     matrix(cell_id, cell_id) += g_diff * _kappa;
@@ -146,7 +146,7 @@ void Diffusion<NonOrthoCorrection::None>::apply_boundary_fixed(const mesh::Cell&
     auto d_Cf = face.center() - cell.center();
     auto d_Cf_norm = d_Cf.norm();
 
-    auto g_diff = face.area() / (d_Cf_norm + PRISM_EPSILON);
+    auto g_diff = face.area() / (d_Cf_norm + EPSILON);
 
     matrix(cell_id, cell_id) += g_diff * _kappa;
     rhs(cell_id) += g_diff * _kappa * phi_wall;
