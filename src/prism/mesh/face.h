@@ -9,19 +9,14 @@ namespace prism::mesh {
 
 class Face {
   public:
-    Face() = delete;
     Face(const std::vector<Vector3d>& face_vertices,
          std::vector<std::size_t> face_vertices_ids) noexcept;
-    Face(const Face& other) = default;
-    Face(Face&& other) noexcept = default;
-    auto operator=(const Face& other) -> Face& = default;
-    auto operator=(Face&& other) noexcept -> Face& = default;
-    ~Face() noexcept = default;
 
     auto inline area() const noexcept -> double { return _area; }
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }
     auto inline area_vector() const noexcept -> Vector3d { return _area * _normal; }
+    auto inline outward_area_vector() const noexcept -> Vector3d;
 
     auto inline id() const noexcept -> std::size_t { return _id; }
     auto inline id() noexcept -> std::size_t& { return _id; }
@@ -52,8 +47,6 @@ class Face {
     }
 
   private:
-    void set_face_attributes(const std::vector<Vector3d>& vertices);
-
     std::size_t _id {0};
     std::size_t _vertices_count {0};
 

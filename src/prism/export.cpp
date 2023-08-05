@@ -6,7 +6,7 @@
 #include "print.h"
 
 namespace prism {
-void export_field(const ScalarField& field, const std::string& file_name) {
+void export_field_vtu(const ScalarField& field, const std::string& file_name) {
     const auto& pmesh = field.mesh();
 
     std::vector<double> points;

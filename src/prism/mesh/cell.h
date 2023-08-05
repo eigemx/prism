@@ -8,17 +8,10 @@
 namespace prism::mesh {
 class Cell {
   public:
-    Cell() = default;
     Cell(const std::vector<Face>& faces,
          std::vector<std::size_t> faces_ids,
          std::vector<std::size_t> vertices_ids,
          std::size_t cell_id);
-
-    Cell(const Cell& other) = default;
-    Cell(Cell&& other) = default;
-    auto operator=(const Cell& other) -> Cell& = default;
-    auto operator=(Cell&& other) -> Cell& = default;
-    ~Cell() = default;
 
     auto inline volume() const noexcept -> double { return _volume; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }

@@ -22,11 +22,11 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(args[1]).to_pmesh();
     fmt::println("Okay.");
 
-    fmt::print("Reordering mesh cells...");
-    auto cm = mesh::CuthillMckee(mesh);
-    cm.reorder();
-    fmt::println("Okay.");
-    fmt::println("");
+    //fmt::print("Reordering mesh cells...");
+    //auto cm = mesh::CuthillMckee(mesh);
+    //cm.reorder();
+    //fmt::println("Okay.");
+    //fmt::println("");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
@@ -45,15 +45,14 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto eqn =
-        Equation(diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1, T, T_grad));
-    //eqn.add_scheme(source::ConstantScalar(S));
+    auto eqn = Equation(
+        diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1e-5, T, T_grad));
 
     // solve
-    auto solver = solver::BiCGSTAB<solver::ExplicitUnderRelaxation>();
-    solver.solve(eqn, 100, 1e-3, 0.95);
+    auto solver = solver::BiCGSTAB<solver::ImplicitUnderRelaxation>();
+    solver.solve(eqn, 100, 1e-6, 1);
 
-    prism::export_field(eqn.field(), "solution.vtu");
+    prism::export_field_vtu(eqn.field(), "solution.vtu");
 
     return 0;
 }
