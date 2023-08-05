@@ -60,11 +60,5 @@ auto PMesh::face_boundary_patch(const Face& face) const -> const BoundaryPatch& 
     return _boundary_patches.at(face.boundary_patch_id().value());
 }
 
-// TODO: move this out of PMesh, to a separate utilities module
-auto PMesh::cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double {
-    // this method calculates the geometric weighting factor between two cells `c` and `n`
-    // sharing a face `f`.
-    return (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
-}
 
 } // namespace prism::mesh

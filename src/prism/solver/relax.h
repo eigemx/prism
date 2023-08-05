@@ -13,9 +13,6 @@ class RelaxerBase {
     virtual void post_relax(Equation& eqn, double lambda) const = 0;
 };
 
-
-// TODO: Test this, under-relaxation when applied to basic cases of diffusion or advection
-// yields wrong results. (check duct and torus cases)
 class ImplicitUnderRelaxation : public RelaxerBase {
   public:
     void pre_relax(Equation& eqn, double lambda) const override;

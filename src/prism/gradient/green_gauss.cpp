@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 
+#include "../mesh/utilities.h"
 #include "../print.h"
 #include "gradient.h"
 
@@ -24,8 +25,8 @@ auto inline gradient_at_interior_face(const mesh::Cell& cell,
     bool is_owned = face.is_owned_by(cell.id());
     auto neighbor_cell_id = is_owned ? face.neighbor().value() : face.owner();
 
-    // update normal vector to always be pointing out of the cell
-    auto Sf = face.area_vector() * std::pow(-1., static_cast<int>(is_owned));
+    // Area normal vector, poitning out of the cell
+    auto Sf = mesh::outward_area_vector(face, cell);
 
     const auto& neighbor_cell = mesh.cell(neighbor_cell_id);
 

@@ -16,7 +16,6 @@ class Face {
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }
     auto inline area_vector() const noexcept -> Vector3d { return _area * _normal; }
-    auto inline outward_area_vector() const noexcept -> Vector3d;
 
     auto inline id() const noexcept -> std::size_t { return _id; }
     auto inline id() noexcept -> std::size_t& { return _id; }
