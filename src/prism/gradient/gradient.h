@@ -49,8 +49,6 @@ class LeastSquares : public GradientSchemeBase {
     const ScalarField& _field;
     MatrixX3d _cell_gradients;
 
-    // least-squares optimization matrices
-    std::vector<MatrixX3d> _distance_matrices;
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
