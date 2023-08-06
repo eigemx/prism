@@ -5,8 +5,7 @@
 // also check if skewness correction is required here or not, as face_grad is being calculated
 // by weighting the gradients of the two adjacent cells.
 namespace prism::gradient {
-LeastSquares::LeastSquares(const ScalarField& field)
-    : _field(field), _cell_gradients(MatrixX3d::Zero(field.mesh().n_cells(), 3)) {
+LeastSquares::LeastSquares(const ScalarField& field) : _field(field) {
     set_lsq_matrices();
 }
 
@@ -80,17 +79,19 @@ auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
 auto LeastSquares::gradient_at_face(const mesh::Face& face) -> Vector3d {
     if (face.has_neighbor()) {
         // interior face
-        const auto& msh = _field.mesh();
-        const auto& owner_cell = msh.cell(face.owner());
+        const auto& mesh = _field.mesh();
+        const auto& owner_cell = mesh.cell(face.owner());
         auto owner_grad = gradient_at_cell(owner_cell);
 
-        const auto& neighbor_cell = msh.cell(face.neighbor().value());
+        const auto& neighbor_cell = mesh.cell(face.neighbor().value());
         auto neighbor_grad = gradient_at_cell(neighbor_cell);
 
         auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
 
         // TODO: This does not account for skewness correction, and maybe this is why
         // the results are different from GreenGauss?
+        // or maybe due to the uniform weight applied to the optimization problem?
+        // check the book again.
         return gc * owner_grad + (1. - gc) * neighbor_grad;
     }
 
@@ -114,14 +115,14 @@ auto LeastSquares::boundary_face_phi(const mesh::Face& f) -> double {
     const auto& patch = mesh.boundary_patch(f);
     const auto& bc = patch.get_bc(_field.name());
 
-    switch (bc.patch_type()) {
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet:
+    switch (bc.bc_type()) {
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet:
             return patch.get_scalar_bc(_field.name());
 
-        case mesh::BoundaryPatchType::Symmetry:
-        case mesh::BoundaryPatchType::Empty:
-        case mesh::BoundaryPatchType::Outlet:
+        case mesh::BoundaryConditionType::Symmetry:
+        case mesh::BoundaryConditionType::Empty:
+        case mesh::BoundaryConditionType::Outlet:
             return _field[f.owner()];
 
         default:

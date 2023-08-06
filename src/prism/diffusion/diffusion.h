@@ -89,15 +89,15 @@ void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Fa
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
-    switch (boundary_condition.patch_type()) {
+    switch (boundary_condition.bc_type()) {
         // empty boundary patch, do nothing
-        case mesh::BoundaryPatchType::Empty: {
+        case mesh::BoundaryConditionType::Empty: {
             return;
         }
 
         // fixed boundary patch, or Dirichlet boundary condition
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet: {
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet: {
             apply_boundary_fixed(cell, face);
             return;
         }
@@ -109,13 +109,13 @@ void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Fa
         // or the matrix coefficients. and no need for non-orthogonal correction.
         // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph,
         // and paragraph 8.6.8.2 - Chapter 8 in same reference.
-        case mesh::BoundaryPatchType::Symmetry:
-        case mesh::BoundaryPatchType::Outlet: {
+        case mesh::BoundaryConditionType::Symmetry:
+        case mesh::BoundaryConditionType::Outlet: {
             return;
         }
 
         // general Von Neumann boundary condition, or fixed gradient boundary condition.
-        case mesh::BoundaryPatchType::FixedGradient: {
+        case mesh::BoundaryConditionType::FixedGradient: {
             apply_boundary_gradient(cell, face);
             return;
         }

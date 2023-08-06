@@ -12,7 +12,7 @@
 #include "../print.h"
 
 namespace prism::mesh {
-auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType;
+auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType;
 auto parse_boundary_patch(const toml::table& table, const std::string& patch_name)
     -> BoundaryPatch;
 auto parse_nested_boundary_conditions(const toml::table& table, const std::string& patch_name)
@@ -22,20 +22,20 @@ auto parse_field_boundary_condition(const toml::table& table,
                                     const std::string& field_name) -> BoundaryCondition;
 
 
-auto boundary_type_str_to_enum(std::string_view type) -> BoundaryPatchType {
-    const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryPatchType> {
-        {"fixed", BoundaryPatchType::Fixed},
-        {"inlet", BoundaryPatchType::Inlet},
-        {"outlet", BoundaryPatchType::Outlet},
-        {"gradient", BoundaryPatchType::FixedGradient},
-        {"symmetry", BoundaryPatchType::Symmetry},
-        {"empty", BoundaryPatchType::Empty},
+auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
+    const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryConditionType> {
+        {"fixed", BoundaryConditionType::Fixed},
+        {"inlet", BoundaryConditionType::Inlet},
+        {"outlet", BoundaryConditionType::Outlet},
+        {"gradient", BoundaryConditionType::FixedGradient},
+        {"symmetry", BoundaryConditionType::Symmetry},
+        {"empty", BoundaryConditionType::Empty},
     };
 
     auto it = bc_type_map.find(type);
 
     if (it == bc_type_map.end()) {
-        return BoundaryPatchType::Unknown;
+        return BoundaryConditionType::Unknown;
     }
 
     return it->second;
@@ -58,26 +58,26 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
 
         field_name_to_bc_map.insert({field_name, field_bc});
 
-        if (field_bc.type() == BoundaryConditionValueType::Vector) {
+        if (field_bc.value_type() == BoundaryConditionValueType::Vector) {
             // to make it easier to access the x, y, z boundary conditions for a vector field
-            auto vec_value = std::get<Vector3d>(field_bc.data());
+            auto vec_value = std::get<Vector3d>(field_bc.value());
             field_name_to_bc_map.insert({field_name + "_x",
                                          BoundaryCondition {
                                              BoundaryConditionValueType::Scalar,
                                              vec_value.x(),
-                                             field_bc.patch_type(),
+                                             field_bc.bc_type(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_y",
                                          BoundaryCondition {
                                              BoundaryConditionValueType::Scalar,
                                              vec_value.y(),
-                                             field_bc.patch_type(),
+                                             field_bc.bc_type(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_z",
                                          BoundaryCondition {
                                              BoundaryConditionValueType::Scalar,
                                              vec_value.z(),
-                                             field_bc.patch_type(),
+                                             field_bc.bc_type(),
                                          }});
         }
     }
@@ -103,7 +103,7 @@ auto parse_field_boundary_condition(const toml::table& table,
 
     if (!field_table.contains("value")) {
         return BoundaryCondition {
-            BoundaryConditionValueType::Nil, BoundaryConditionData {}, bc_type};
+            BoundaryConditionValueType::Nil, BoundaryConditionValue {}, bc_type};
     }
 
     auto bc_value = field_table["value"];
@@ -141,8 +141,8 @@ auto parse_field_boundary_condition(const toml::table& table,
 }
 
 
-auto read_boundary_data_file(const std::filesystem::path& path,
-                             const std::vector<std::string_view>& boundary_names)
+auto read_boundary_file(const std::filesystem::path& path,
+                        const std::vector<std::string_view>& boundary_names)
     -> std::vector<BoundaryPatch> {
     std::vector<BoundaryPatch> boundary_patches;
     boundary_patches.reserve(boundary_names.size());
@@ -199,7 +199,7 @@ auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double
                         field_name));
     }
 
-    if (it->second.type() != BoundaryConditionValueType::Scalar) {
+    if (it->second.value_type() != BoundaryConditionValueType::Scalar) {
         // field is not a scalar
         throw std::runtime_error(
             fmt::format("BoundaryPatch::get_scalar_bc(): "
@@ -208,7 +208,7 @@ auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double
                         field_name));
     }
 
-    return std::get<double>(it->second.data());
+    return std::get<double>(it->second.value());
 }
 
 auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector3d {
@@ -224,7 +224,7 @@ auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector
                         field_name));
     }
 
-    if (it->second.type() != BoundaryConditionValueType::Vector) {
+    if (it->second.value_type() != BoundaryConditionValueType::Vector) {
         // field is not a vector
         throw std::runtime_error(
             fmt::format("BoundaryPatch::get_vector_bc(): "
@@ -233,7 +233,7 @@ auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector
                         field_name));
     }
 
-    return std::get<Vector3d>(it->second.data());
+    return std::get<Vector3d>(it->second.value());
 }
 
 auto BoundaryPatch::get_bc(const std::string& field_name) const -> const BoundaryCondition& {
