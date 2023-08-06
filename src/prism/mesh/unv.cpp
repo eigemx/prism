@@ -81,7 +81,7 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
     auto parent_dir = _filename.parent_path();
 
     // TODO: accept custom boundary file path as an argument
-    auto boundary_patches = read_boundary_data_file(parent_dir / "boundary.txt", boundary_names);
+    auto boundary_patches = read_boundary_file(parent_dir / "boundary.txt", boundary_names);
 
     // for each boundary patch, set the faces that belong to it
     std::size_t boundary_index {0};

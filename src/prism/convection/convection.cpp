@@ -15,13 +15,6 @@ void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& fa
     // density at cell centroid
     auto rho_c = _rho[cell_id];
 
-    //// face area vector, always pointing outwards
-    //auto S_f = face.area_vector();
-    //if (!is_owned) {
-    //    // face is not owned by `cell`, flip the area vector
-    //    // so that it points outwards of `cell`
-    //    S_f *= -1;
-    //}
     auto S_f = mesh::outward_area_vector(face, cell);
 
     // interpolated velocity vector at face centroid
@@ -47,19 +40,19 @@ void ConvectionBase::apply_boundary(const mesh::Cell& cell, const mesh::Face& fa
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
-    switch (boundary_condition.patch_type()) {
-        case mesh::BoundaryPatchType::Empty:
-        case mesh::BoundaryPatchType::Symmetry: {
+    switch (boundary_condition.bc_type()) {
+        case mesh::BoundaryConditionType::Empty:
+        case mesh::BoundaryConditionType::Symmetry: {
             return;
         }
 
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet: {
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet: {
             apply_boundary_fixed(cell, face);
             return;
         }
 
-        case mesh::BoundaryPatchType::Outlet: {
+        case mesh::BoundaryConditionType::Outlet: {
             apply_boundary_outlet(cell, face);
             return;
         }
@@ -125,14 +118,14 @@ auto ConvectionBase::boundary_face_velocity(const mesh::Face& face) const -> Vec
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_U.name());
 
-    switch (boundary_condition.patch_type()) {
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet: {
+    switch (boundary_condition.bc_type()) {
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet: {
             return boundary_patch.get_vector_bc(_U.name());
         }
 
-        case mesh::BoundaryPatchType::Outlet:
-        case mesh::BoundaryPatchType::Symmetry: {
+        case mesh::BoundaryConditionType::Outlet:
+        case mesh::BoundaryConditionType::Symmetry: {
             return _U[face.owner()];
         }
 

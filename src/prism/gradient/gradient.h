@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <type_traits>
-
 #include "../field.h"
 #include "../mesh/pmesh.h"
 #include "../types.h"
@@ -47,8 +44,6 @@ class LeastSquares : public GradientSchemeBase {
     auto boundary_face_phi(const mesh::Face& face) -> double;
 
     const ScalarField& _field;
-    MatrixX3d _cell_gradients;
-
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
@@ -60,28 +55,25 @@ auto create(const ScalarField& field)
 
 auto inline GradientSchemeBase::gradient_at_boundary_face(const mesh::Face& face,
                                                           const ScalarField& field) -> Vector3d {
-    const auto& mesh = field.mesh();
-
-    auto face_boundary_patch_id = face.boundary_patch_id().value();
-    const auto& boundary_patch = mesh.boundary_patches()[face_boundary_patch_id];
+    const auto& boundary_patch = field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(field.name());
-    auto patch_type = boundary_condition.patch_type();
+    auto bc_type = boundary_condition.bc_type();
 
-    switch (patch_type) {
-        case mesh::BoundaryPatchType::Empty:
-        case mesh::BoundaryPatchType::Outlet:
-        case mesh::BoundaryPatchType::Symmetry: {
+    switch (bc_type) {
+        case mesh::BoundaryConditionType::Empty:
+        case mesh::BoundaryConditionType::Outlet:
+        case mesh::BoundaryConditionType::Symmetry: {
             return Vector3d {0., 0., 0.};
         }
 
-        case mesh::BoundaryPatchType::Fixed:
-        case mesh::BoundaryPatchType::Inlet: {
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet: {
             const auto& phi_name = field.name();
             auto phi = boundary_patch.get_scalar_bc(phi_name);
             return phi * face.area_vector();
         }
 
-        case mesh::BoundaryPatchType::FixedGradient: {
+        case mesh::BoundaryConditionType::FixedGradient: {
             const auto& phi_name = field.name();
             auto flux = boundary_patch.get_scalar_bc(phi_name + "-flux");
             return flux * face.area_vector();
@@ -89,7 +81,7 @@ auto inline GradientSchemeBase::gradient_at_boundary_face(const mesh::Face& face
 
         default:
             throw std::runtime_error(
-                fmt::format("gradient/gradient.cpp gradient_at_boundary_face(): "
+                fmt::format("GradientSchemeBase::gradient_at_boundary_face(): "
                             "Non-implemented boundary type for boundary patch: '{}'",
                             boundary_patch.name()));
     }
