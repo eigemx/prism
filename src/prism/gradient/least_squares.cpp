@@ -12,7 +12,6 @@ LeastSquares::LeastSquares(const ScalarField& field)
 
 void LeastSquares::set_lsq_matrices() {
     const auto& mesh = _field.mesh();
-    _distance_matrices.resize(mesh.n_cells());
     _pinv_matrices.resize(mesh.n_cells());
 
     for (const auto& cell : mesh.cells()) {
@@ -39,7 +38,6 @@ void LeastSquares::set_lsq_matrices() {
             d_matrix.row(i) = d_CF;
         }
 
-        _distance_matrices[c_id] = d_matrix;
         const auto& d_matrix_t = d_matrix.transpose();
         _pinv_matrices[c_id] = (d_matrix_t * d_matrix).inverse() * d_matrix_t;
     }
@@ -91,6 +89,8 @@ auto LeastSquares::gradient_at_face(const mesh::Face& face) -> Vector3d {
 
         auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
 
+        // TODO: This does not account for skewness correction, and maybe this is why
+        // the results are different from GreenGauss?
         return gc * owner_grad + (1. - gc) * neighbor_grad;
     }
 
