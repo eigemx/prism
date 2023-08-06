@@ -89,7 +89,7 @@ auto LeastSquares::gradient_at_face(const mesh::Face& face) -> Vector3d {
         const auto& neighbor_cell = msh.cell(face.neighbor().value());
         auto neighbor_grad = gradient_at_cell(neighbor_cell);
 
-        auto gc = mesh::cells_weighting_factor(owner_cell, neighbor_cell, face);
+        auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
 
         return gc * owner_grad + (1. - gc) * neighbor_grad;
     }

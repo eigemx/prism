@@ -25,7 +25,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
-    auto T_grad = gradient::create<gradient::GreenGauss>(T);
+    auto T_grad = gradient::create<gradient::LeastSquares>(T);
 
     // density field
     auto rho = ScalarField("density", mesh, 1.18);
@@ -49,7 +49,7 @@ auto main(int argc, char* argv[]) -> int {
     // where ρ is the density and u is the velocity
     auto eqn = Equation(
         diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1e-2, T, T_grad),
-        convection::Upwind(rho, U, T, T_grad));
+        convection::SecondOrderUpwind(rho, U, T, T_grad));
 
     // solve
     auto solver = solver::BiCGSTAB();
