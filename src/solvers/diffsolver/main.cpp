@@ -30,7 +30,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
-    auto T_grad = gradient::create<gradient::LeastSquares>(T);
+    auto T_grad = gradient::create<gradient::GreenGauss>(T);
 
 
     // define a source term

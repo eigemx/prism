@@ -2,7 +2,6 @@
 
 #include "cell.h"
 #include "face.h"
-#include "pmesh.h"
 
 namespace prism::mesh {
 /**
@@ -15,21 +14,19 @@ namespace prism::mesh {
 * @return Vector3d Area vector of the face.
 */
 auto inline outward_area_vector(const Face& face, const Cell& cell) -> Vector3d {
-    bool is_owned = face.is_owned_by(cell.id());
-    auto neighbor_cell_id = is_owned ? face.neighbor().value() : face.owner();
-
-    return face.area_vector() * std::pow(-1., static_cast<int>(is_owned));
+    bool is_neighbor = !face.is_owned_by(cell.id());
+    return face.area_vector() * std::pow(-1., static_cast<int>(is_neighbor));
 }
 
 /**
  * @brief Calculates the geometric weighting factor between two cells `c` and `n`
  * 
- * @param c Cell to calculate the weighting factor from.
- * @param n Cell to calculate the weighting factor to.
+ * @param c First cell sharing face `f`.
+ * @param n Second cell sharing face `f`.
  * @param f Face that is shared by the two cells.
  * @return double Geometric weighting factor between the two cells.
  */
-auto inline cells_weighting_factor(const Cell& c, const Cell& n, const Face& f) -> double {
+auto inline geo_weight(const Cell& c, const Cell& n, const Face& f) -> double {
     return (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
 }
 

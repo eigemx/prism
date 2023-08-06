@@ -12,20 +12,20 @@ void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& fa
 
     const auto& adj_cell = _mesh.cell(adjacent_cell_id);
 
-    // face area vector, always pointing outwards
-    auto S_f = face.area_vector();
-
     // density at cell centroid
     auto rho_c = _rho[cell_id];
 
-    if (!is_owned) {
-        // face is not owned by `cell`, flip the area vector
-        // so that it points outwards of `cell`
-        S_f *= -1;
-    }
+    //// face area vector, always pointing outwards
+    //auto S_f = face.area_vector();
+    //if (!is_owned) {
+    //    // face is not owned by `cell`, flip the area vector
+    //    // so that it points outwards of `cell`
+    //    S_f *= -1;
+    //}
+    auto S_f = mesh::outward_area_vector(face, cell);
 
     // interpolated velocity vector at face centroid
-    auto g_c = mesh::cells_weighting_factor(cell, adj_cell, face);
+    auto g_c = mesh::geo_weight(cell, adj_cell, face);
     const auto& U_f = (g_c * _U[cell_id]) + ((1 - g_c) * _U[adjacent_cell_id]);
 
     auto m_dot_f = face_mass_flow_rate(rho_c, U_f, S_f);
