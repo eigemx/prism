@@ -51,6 +51,12 @@ enum class BoundaryConditionValueType {
     Vector
 };
 
+/** @brief Boundary condition value variant
+ *
+ * This variant is used to store the value of a boundary condition. It can be either a scalar
+ * or a vector.
+ *
+ */
 using BoundaryConditionValue = std::variant<double, Vector3d>;
 
 
