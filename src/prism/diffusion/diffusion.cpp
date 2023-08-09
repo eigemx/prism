@@ -8,32 +8,13 @@
 namespace prism::diffusion {
 
 template <>
-void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Cell& cell,
-                                                                const mesh::Face& face) {
-    /**
-     * @brief Apply the discretized diffusion equation to the cell, 
-     * when the face is an interior face.
-     * 
-     * @param cell The cell which the equation is applied to.
-     * @param face The (interior) face shared by the cell and its neighbor.
-     */
-
-    // Note that variable names in this function will be used in other functions
-    // found in this file. To avoid repeating the same comments, we will only
-    // comment on the first occurrence of each variable name.
-
-    auto cell_id = cell.id();
-
-    // get adjacent cell sharing `face` with `cell`
-    auto adjacent_cell_id = face.is_owned_by(cell_id) ? face.neighbor().value() : face.owner();
-
-    const auto& adj_cell = _mesh.cell(adjacent_cell_id);
-
-    // face area vector
+void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Face& face) {
+    const auto& owner = _mesh.cell(face.owner());
+    const auto& neighbor = _mesh.cell(face.neighbor().value());
     const auto& S_f = face.area_vector();
 
     // vector joining the centers of the two cells
-    auto d_CF = adj_cell.center() - cell.center();
+    auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
 
     // unit vector in d_CF direction
@@ -45,15 +26,24 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Cell
     // geometric diffusion coefficient
     auto g_diff = E_f.norm() / (d_CF_norm + EPSILON);
 
+    auto owner_id = owner.id();
+    auto neighbor_id = neighbor.id();
+
     // kappa * g_diff * (Φ_C - Φ_N)
-    matrix(cell_id, cell_id) += g_diff * _kappa;
-    matrix(cell_id, adjacent_cell_id) += -g_diff * _kappa;
+    // diagonal coefficients
+    matrix(owner_id, owner_id) += g_diff * _kappa;
+    matrix(neighbor_id, neighbor_id) += g_diff * _kappa;
+
+    // off-diagonal coefficients
+    matrix(owner_id, neighbor_id) += -g_diff * _kappa;
+    matrix(neighbor_id, owner_id) += -g_diff * _kappa;
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     auto grad_f = _gradient_scheme->gradient_at_face(face);
     auto T_f = S_f - E_f;
-    rhs(cell.id()) += T_f.dot(grad_f) * _kappa;
+    rhs(owner_id) += T_f.dot(grad_f) * _kappa;
+    rhs(neighbor_id) += -T_f.dot(grad_f) * _kappa;
 }
 
 template <>
@@ -110,25 +100,25 @@ auto Diffusion<NonOrthoCorrection::OverRelaxed>::requires_correction() const -> 
 }
 
 template <>
-void Diffusion<NonOrthoCorrection::None>::apply_interior(const mesh::Cell& cell,
-                                                         const mesh::Face& face) {
-    auto cell_id = cell.id();
+void Diffusion<NonOrthoCorrection::None>::apply_interior(const mesh::Face& face) {
+    const auto& owner = _mesh.cell(face.owner());
+    const auto& neighbor = _mesh.cell(face.neighbor().value());
 
-    // get adjacent cell sharing `face` with `cell`
-    auto adjacent_cell_id = face.is_owned_by(cell_id) ? face.neighbor().value() : face.owner();
+    auto owner_id = owner.id();
+    auto neighbor_id = neighbor.id();
 
-    const auto& adj_cell = _mesh.cell(adjacent_cell_id);
-
-    // vector joining the centers of the two cells
-    auto d_CF = adj_cell.center() - cell.center();
+    auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
 
     // geometric diffusion coefficient
     auto g_diff = face.area() / (d_CF_norm + EPSILON);
 
     // kappa * g_diff * (Φ_C - Φ_N)
-    matrix(cell_id, cell_id) += g_diff * _kappa;
-    matrix(cell_id, adjacent_cell_id) += -g_diff * _kappa;
+    matrix(owner_id, owner_id) += g_diff * _kappa;
+    matrix(neighbor_id, neighbor_id) += g_diff * _kappa;
+
+    matrix(owner_id, neighbor_id) += -g_diff * _kappa;
+    matrix(neighbor_id, owner_id) += -g_diff * _kappa;
 }
 
 template <>

@@ -2,7 +2,6 @@
 
 #include <unvpp/unvpp.h>
 
-#include <array>
 #include <filesystem>
 #include <map>
 #include <optional>
@@ -47,7 +46,8 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     void process_group(const unvpp::Group& group);
     void check_boundary_faces();
 
-    auto face_index(const std::vector<std::size_t>& face_vertices) -> std::optional<std::size_t>;
+    auto face_index(const std::vector<std::size_t>& face_vertices) const
+        -> std::optional<std::size_t>;
 
     // fields
     std::filesystem::path _filename;
@@ -60,6 +60,8 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     std::vector<Vector3d> _vertices;
     std::vector<Face> _faces;
     std::vector<Cell> _cells;
+    std::vector<std::size_t> _boundary_faces;
+    std::vector<std::size_t> _interior_faces;
 
     std::size_t _cell_id_counter {0};
     std::size_t _face_id_counter {0};

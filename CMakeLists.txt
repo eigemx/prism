@@ -53,9 +53,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# define PRISM_DEBUG for debug builds
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DPRISM_DEBUG)
+# set SHOW_DEBUG_INFO to OFF by default
+if(NOT DEFINED SHOW_DEBUG_INFO)
+    set(SHOW_DEBUG_INFO OFF)
+    message(STATUS "SHOW_DEBUG_INFO is not set, all debug info will be hidden.")
 endif()
 
 # if option SHOW_DEBUG_INFO is set, define PRISM_DEBUG

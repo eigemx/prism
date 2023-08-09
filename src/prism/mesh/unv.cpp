@@ -22,7 +22,6 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
     return hfaces;
 }
 
-
 // Vector of 4 triangular faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
@@ -55,7 +54,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& filename)
     : _filename(filename) {
     unv_mesh = unvpp::read(filename);
 
-    // get a copy of unv_mesh.vertices
+    // convert vertices to prism::Vector3d
     for (const auto& v : unv_mesh.vertices) {
         _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
     }
@@ -91,12 +90,16 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
         for (auto face_id : faces_ids) {
             _faces[face_id].set_boundary_patch_id(boundary_index);
         }
-
         ++boundary_index;
     }
 
-    return {
-        std::move(_vertices), std::move(_cells), std::move(_faces), std::move(boundary_patches)};
+    // move all resources to PMesh constructor, UnvToPMeshConverter is no longer needed
+    return {std::move(_vertices),
+            std::move(_cells),
+            std::move(_faces),
+            std::move(boundary_patches),
+            std::move(_boundary_faces),
+            std::move(_interior_faces)};
 }
 
 void UnvToPMeshConverter::process_cells() {
@@ -104,6 +107,7 @@ void UnvToPMeshConverter::process_cells() {
 
     for (auto& element : unv_mesh.elements.value()) {
         switch (element.type()) {
+            // we don't care about lines
             case unvpp::ElementType::Line:
                 break;
 
@@ -126,7 +130,8 @@ void UnvToPMeshConverter::process_cells() {
                 process_cell(element);
                 break;
 
-            // We shouldn't reach this, as unvpp lib won't allow it.
+            // We shouldn't reach this, because we should've exhausted all possible element types
+            // but, you never know!
             default:
                 throw std::runtime_error("Input UNV mesh contains an unsupported element type!");
                 break;
@@ -187,14 +192,15 @@ void UnvToPMeshConverter::process_cell(const unvpp::Element& element) {
 
 auto UnvToPMeshConverter::process_face(std::vector<std::size_t>& face_vertices_ids)
     -> std::size_t {
-    // sort the face indices to be used as a std::map key for searching
-    auto sorted_face_vertices_ids = face_vertices_ids; // copy the face vertices to sort in place
+    // sort the face indices to be used in face lookup trie
+    auto sorted_face_vertices_ids = face_vertices_ids;
     std::sort(sorted_face_vertices_ids.begin(), sorted_face_vertices_ids.end());
 
     // lookup the current face, to check if it has been processed before
     auto face_id_opt {face_index(sorted_face_vertices_ids)};
 
     if (face_id_opt.has_value()) {
+        // face exists
         auto face_id {face_id_opt.value()};
         auto& face {_faces[face_id]};
 
@@ -202,13 +208,13 @@ auto UnvToPMeshConverter::process_face(std::vector<std::size_t>& face_vertices_i
             // face has been visited before and is owned
             // we update its neighbor and return
             face.set_neighbor(_cell_id_counter);
-
         } else {
             // face is not owned but has been processed, then it's a boundary face
+            // it has been seen already by process_boundary_face()
             // we set the current cell as its owner and return
             face.set_owner(_cell_id_counter);
+            _boundary_faces.push_back(face_id);
         }
-
         return face_id;
     }
 
@@ -231,6 +237,7 @@ auto UnvToPMeshConverter::process_face(std::vector<std::size_t>& face_vertices_i
     _faces.emplace_back(std::move(new_face));
 
     _faces_lookup_trie->insert(sorted_face_vertices_ids, face_id);
+    _interior_faces.push_back(face_id);
 
     return face_id;
 }
@@ -262,7 +269,7 @@ auto UnvToPMeshConverter::process_boundary_face(const unvpp::Element& boundary_f
     return face_id;
 }
 
-auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertices)
+auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertices) const
     -> std::optional<std::size_t> {
     auto res = _faces_lookup_trie->find(face_vertices);
     if (res.has_value()) {

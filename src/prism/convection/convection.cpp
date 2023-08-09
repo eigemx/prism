@@ -3,37 +3,49 @@
 #include "../mesh/utilities.h"
 
 namespace prism::convection {
-void ConvectionBase::apply_interior(const mesh::Cell& cell, const mesh::Face& face) {
-    auto cell_id = cell.id();
+void ConvectionBase::apply() {
+    for (const auto& bface : _mesh.boundary_faces()) {
+        apply_boundary(_mesh.cell(bface.owner()), bface);
+    }
 
-    // get adjacent cell sharing `face` with `cell`
-    auto is_owned = face.is_owned_by(cell_id);
-    auto adjacent_cell_id = is_owned ? face.neighbor().value() : face.owner();
+    for (const auto& iface : _mesh.interior_faces()) {
+        apply_interior(iface);
+    }
+}
 
-    const auto& adj_cell = _mesh.cell(adjacent_cell_id);
+void ConvectionBase::apply_interior(const mesh::Face& face) {
+    const auto& owner = _mesh.cell(face.owner());
+    const auto& neighbor = _mesh.cell(face.neighbor().value());
 
-    // density at cell centroid
-    auto rho_c = _rho[cell_id];
+    auto owner_id = owner.id();
+    auto neighbor_id = neighbor.id();
 
-    auto S_f = mesh::outward_area_vector(face, cell);
+    auto S_f = mesh::outward_area_vector(face, owner);
 
     // interpolated velocity vector at face centroid
-    auto g_c = mesh::geo_weight(cell, adj_cell, face);
-    const auto& U_f = (g_c * _U[cell_id]) + ((1 - g_c) * _U[adjacent_cell_id]);
+    auto g_c = mesh::geo_weight(owner, neighbor, face);
+    auto U_f = (g_c * _U[owner_id]) + ((1 - g_c) * _U[neighbor_id]);
+    auto rho_f = (g_c * _rho[owner_id]) + ((1 - g_c) * _rho[neighbor_id]);
 
-    auto m_dot_f = face_mass_flow_rate(rho_c, U_f, S_f);
+    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
-    auto [a_C, a_N, b] = interpolate(m_dot_f, cell, adj_cell, face, _gradient_scheme);
-
+    auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face, _gradient_scheme);
+    // NOLINTNEXTLINE
+    auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face, _gradient_scheme);
 
     // TODO: This assumes that velocity field is constant, this wrong because
     // the velocity field when solving the momentum equation will be different in
     // each iteration. This should be generalized to work for all schemes.
     // a possible workaround is to use zero out the coefficients matrix every
     // iteration in finalaize(), same goes for below member functions.
-    matrix(cell_id, cell_id) += a_C;
-    matrix(cell_id, adjacent_cell_id) += a_N;
-    rhs(cell_id) += b;
+    matrix(owner_id, owner_id) += a_C;
+    matrix(owner_id, neighbor_id) += a_N;
+
+    matrix(neighbor_id, neighbor_id) += x_C;
+    matrix(neighbor_id, owner_id) += x_N;
+
+    rhs(owner_id) += b;
+    rhs(neighbor_id) += s;
 }
 
 void ConvectionBase::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {

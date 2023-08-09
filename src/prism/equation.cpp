@@ -7,27 +7,14 @@ namespace prism {
 void Equation::update_coeffs() {
     const auto& mesh = _phi.mesh();
 
-    // iterate over all cells
-    for (const auto& cell : mesh.cells()) {
-        for (auto face_id : cell.faces_ids()) {
-            const auto& face = mesh.face(face_id);
-
-            // iterate over all equation's finite volume schemes
-            for (auto& scheme : _schemes) {
-                // apply the scheme
-                scheme->apply(cell, face);
-            }
-        }
-    }
-    // update the universal coefficient matrix and RHS vector
+    // iterate over all equation's finite volume schemes
     for (auto& scheme : _schemes) {
+        // apply the scheme
+        scheme->apply();
+
+        // update quation's universal coefficient matrix and RHS vector
         matrix() += scheme->matrix();
         rhs() += scheme->rhs();
-    }
-
-    for (auto& scheme : _schemes) {
-        // prepare the scheme for the next iteration
-        scheme->finalize();
     }
 }
 

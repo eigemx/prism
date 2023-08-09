@@ -41,6 +41,7 @@ class ConvectionBase : public FVScheme {
           _gradient_scheme(std::move(grad_scheme)),
           FVScheme(phi.mesh().n_cells()) {}
 
+    void apply() override;
     auto inline field() -> ScalarField& override { return _phi; }
 
   private:
@@ -51,10 +52,10 @@ class ConvectionBase : public FVScheme {
                              const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
         -> CoeffsTriplet = 0;
 
-    void apply_interior(const mesh::Cell& cellell, const mesh::Face& face) override;
-    void apply_boundary(const mesh::Cell& cellell, const mesh::Face& face) override;
-    void apply_boundary_fixed(const mesh::Cell& cellell, const mesh::Face& face);
-    void apply_boundary_outlet(const mesh::Cell& cellell, const mesh::Face& face);
+    void apply_interior(const mesh::Face& face) override;
+    void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
+    void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
+    void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
     ScalarField& _rho;
@@ -141,7 +142,6 @@ class QUICK : public ConvectionBase {
                      const std::shared_ptr<gradient::GradientSchemeBase>& grad_scheme)
         -> CoeffsTriplet override;
 };
-
 
 auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S) -> double {
     return rho * U.dot(S);
