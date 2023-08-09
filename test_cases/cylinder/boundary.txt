@@ -1,14 +1,14 @@
 [inlet]
-type = "wall"
-velocity = [0.0, 0.0, 0.1]
-temperature = 300
+[inlet.temperature]
+type = "fixed"
+value = 900
 
 [outlet]
-type = "wall"
-pressure = 100.0
-temperature=300.0
+[outlet.temperature]
+type = "fixed"
+value = 100.0
 
 [wall]
-type = "wall"
-velocity = [0.0, 0.0, 0.0]
-temperature=200
+[wall.temperature]
+type = "fixed"
+value = 300
