@@ -1,9 +1,17 @@
 #include "relax.h"
 
+#include "../constants.h"
 #include "../print.h"
 
 namespace prism::solver {
 void ImplicitUnderRelaxation::pre_relax(Equation& eqn, double lambda) const {
+    if (lambda < 0.0 || lambda == 1.0) {
+        debug(
+            "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
+            " either less than 0.0 or equals 1.0, skipping relaxation...");
+        return;
+    }
+
     auto& A = eqn.matrix();
     auto& b = eqn.rhs();
     const auto& phi = eqn.field().data();
@@ -15,6 +23,13 @@ void ImplicitUnderRelaxation::pre_relax(Equation& eqn, double lambda) const {
 }
 
 void ExplicitUnderRelaxation::post_relax(Equation& eqn, double lambda) const {
+    if (lambda < 0.0 || lambda == 1.0) {
+        debug(
+            "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
+            " either less than 0.0 or equals 1.0, skipping relaxation...");
+        return;
+    }
+
     auto& phi = eqn.field().data();
     const auto& phi_old = eqn.field_prev_iter().data();
 

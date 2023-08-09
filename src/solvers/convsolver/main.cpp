@@ -47,9 +47,9 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
-    auto eqn = Equation(
-        diffusion::Diffusion<diffusion::NonOrthoCorrection::OverRelaxed>(1e-2, T, T_grad),
-        convection::SecondOrderUpwind(rho, U, T, T_grad));
+    auto eqn =
+        Equation(diffusion::Diffusion<diffusion::NonOrthoCorrection::None>(1e-2, T, T_grad),
+                 convection::SecondOrderUpwind(rho, U, T, T_grad));
 
     // solve
     auto solver = solver::BiCGSTAB();

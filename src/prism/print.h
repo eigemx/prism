@@ -11,6 +11,7 @@
 namespace prism {
 
 void inline warn(std::string_view msg) {
+    // TODO: this is ugly, make it a one liner
     fmt::print(fg(fmt::color::yellow), "Warning: ");
     fmt::print("{}\n", msg);
 }
@@ -34,8 +35,7 @@ void inline info(std::string_view msg) {
 
 void inline print_header() {
     fmt::print(fg(fmt::color::cyan), "Prism ");
-    fmt::print(
-        fmt::format("v{} - A finite volume CFD framework | MIT License\n", VERSION));
+    fmt::print(fmt::format("v{} - A finite volume CFD framework | MIT License\n", VERSION));
 }
 
 } // namespace prism

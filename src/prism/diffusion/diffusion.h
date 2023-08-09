@@ -18,8 +18,6 @@ enum class NonOrthoCorrection {
 template <NonOrthoCorrection Corrector = NonOrthoCorrection::None>
 class Diffusion : public FVScheme {
   public:
-    Diffusion() = delete;
-
     // Explicit gradient scheme is provided by the user
     Diffusion(double kappa,
               ScalarField& phi,
@@ -37,31 +35,24 @@ class Diffusion : public FVScheme {
           _gradient_scheme(other._gradient_scheme->clone()),
           FVScheme(other._mesh.n_cells()) {}
 
+    // TODO: make each FVScheme own its own gradient scheme, and remove the
+    // following clutter.
+    // Each FVScheme should own its own gradient scheme, and should not share
+    // it with other FVSchemes. This is because each FVScheme may run on a
+    // different thread or process, and the gradient scheme is not thread-safe.
+    // and to also avoid the performance overhead of locking the gradient scheme.
     Diffusion(Diffusion&& other) noexcept = default;
-
-    auto operator=(const Diffusion& other) -> Diffusion& {
-        if (this != &other) {
-            _kappa = other._kappa;
-            _phi = other._phi;
-            _mesh = other._mesh;
-            _gradient_scheme = std::make_shared<gradient::GreenGauss>(other._phi);
-        }
-        return *this;
-    }
-
+    auto operator=(const Diffusion& other) -> Diffusion&;
     auto operator=(Diffusion&& other) noexcept -> Diffusion& = default;
-
     ~Diffusion() = default;
 
+    void apply() override;
     auto requires_correction() const -> bool override;
-
     auto field() -> ScalarField& override { return _phi; }
 
-
   private:
-    void apply_interior(const mesh::Cell& cell, const mesh::Face& face) override;
+    void apply_interior(const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
-
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
     void correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
                                           const mesh::Face& face,
@@ -76,6 +67,36 @@ class Diffusion : public FVScheme {
 };
 
 template <NonOrthoCorrection Corrector>
+auto Diffusion<Corrector>::operator=(const Diffusion& other) -> Diffusion& {
+    if (this != &other) {
+        _kappa = other._kappa;
+        _phi = other._phi;
+        _mesh = other._mesh;
+        _gradient_scheme = std::make_shared<gradient::GreenGauss>(other._phi);
+    }
+    return *this;
+}
+
+template <NonOrthoCorrection Corrector>
+void inline Diffusion<Corrector>::apply() {
+    /** @brief Applies discretized diffusion equation to the mesh.
+     * The discretized equation is applied per face basis, using apply_interior() and 
+     * apply_boundary() functions.
+     * 
+     * The function will check at first if the scheme has completed the first iteration,
+     * and if the scheme does not require explicit correction, it will not re-calculate
+     * the scheme coefficients and will not zero out the scheme matrix and RHS vector.
+     */
+    for (const auto& bface : _mesh.boundary_faces()) {
+        apply_boundary(_mesh.cell(bface.owner()), bface);
+    }
+
+    for (const auto& iface : _mesh.interior_faces()) {
+        apply_interior(iface);
+    }
+}
+
+template <NonOrthoCorrection Corrector>
 void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
     /**
      * @brief Applies boundary discretized diffusion equation to the cell,
@@ -83,7 +104,7 @@ void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Fa
      * apply the discretized equation, rather it calls the appropriate function
      * based on the boundary type.
      *
-     * @param cell The cell to which the boundary conditions are applied.
+     * @param cell The cell that owns the boundary face.
      * @param face The boundary face.
      */
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
@@ -123,7 +144,7 @@ void Diffusion<Corrector>::apply_boundary(const mesh::Cell& cell, const mesh::Fa
         default:
             throw std::runtime_error(
                 fmt::format("diffusion::Diffusion::apply_boundary(): "
-                            "Non-implemented boundary type for boundary patch: '{}'",
+                            "Non-implemented boundary condition type for boundary patch: '{}'",
                             boundary_patch.name()));
     }
 }

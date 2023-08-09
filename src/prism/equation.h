@@ -29,33 +29,19 @@ class Equation : public LinearSystem {
     auto inline field_prev_iter() -> ScalarField& { return _phi_old; }
 
     template <typename S>
-    void add_scheme(S&& scheme) {
-        const auto& field = scheme.field();
-
-        if (&field.mesh() != &_phi.mesh()) {
-            throw std::runtime_error(
-                "Equation::add_scheme() was called with a scheme defined over a different mesh.");
-        }
-
-        _schemes.emplace_back(std::make_shared<S>(std::forward<S>(scheme)));
-    }
+    void add_scheme(S&& scheme);
 
     template <typename S>
-    void add_scheme(S& scheme) {
-        const auto& field = scheme.field();
-
-        if (&field.mesh() != &_phi.mesh()) {
-            throw std::runtime_error(
-                "Equation::add_scheme() was called with a scheme defined over a different mesh.");
-        }
-
-        _schemes.emplace_back(std::make_shared<S>(scheme));
-    }
+    void add_scheme(S& scheme);
 
   private:
+    auto needs_update() const -> bool;
+
     std::vector<std::shared_ptr<FVScheme>> _schemes;
     ScalarField& _phi;
     ScalarField _phi_old;
+
+    std::size_t _n_corrected_schemes {0};
 };
 
 template <typename Scheme, typename... Schemes>
@@ -74,6 +60,38 @@ Equation::Equation(Scheme&& scheme, Schemes&&... schemes)
 
     matrix() = SparseMatrix(n_cells, n_cells);
     rhs() = VectorXd::Zero(n_cells);
+}
+
+template <typename S>
+void Equation::add_scheme(S&& scheme) {
+    const auto& field = scheme.field();
+
+    if (scheme.requires_correction()) {
+        _n_corrected_schemes++;
+    }
+
+    if (&field.mesh() != &_phi.mesh()) {
+        throw std::runtime_error(
+            "Equation::add_scheme() was called with a scheme defined over a different mesh.");
+    }
+
+    _schemes.emplace_back(std::make_shared<S>(std::forward<S>(scheme)));
+}
+
+template <typename S>
+void Equation::add_scheme(S& scheme) {
+    const auto& field = scheme.field();
+
+    if (scheme.requires_correction()) {
+        _n_corrected_schemes++;
+    }
+
+    if (&field.mesh() != &_phi.mesh()) {
+        throw std::runtime_error(
+            "Equation::add_scheme() was called with a scheme defined over a different mesh.");
+    }
+
+    _schemes.emplace_back(std::make_shared<S>(scheme));
 }
 
 } // namespace prism
