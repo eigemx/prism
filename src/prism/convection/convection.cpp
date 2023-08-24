@@ -22,7 +22,7 @@ void ConvectionBase::apply_interior(const mesh::Face& face) {
 
     auto S_f = mesh::outward_area_vector(face, owner);
 
-    // interpolated velocity vector at face centroid
+    // interpolated velocity vector and density at face centroid
     auto g_c = mesh::geo_weight(owner, neighbor, face);
     auto U_f = (g_c * _U[owner_id]) + ((1 - g_c) * _U[neighbor_id]);
     auto rho_f = (g_c * _rho[owner_id]) + ((1 - g_c) * _rho[neighbor_id]);
@@ -30,14 +30,8 @@ void ConvectionBase::apply_interior(const mesh::Face& face) {
     auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face, _gradient_scheme);
-    // NOLINTNEXTLINE
-    auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face, _gradient_scheme);
+    auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face, _gradient_scheme); // NOLINT
 
-    // TODO: This assumes that velocity field is constant, this wrong because
-    // the velocity field when solving the momentum equation will be different in
-    // each iteration. This should be generalized to work for all schemes.
-    // a possible workaround is to use zero out the coefficients matrix every
-    // iteration in finalaize(), same goes for below member functions.
     matrix(owner_id, owner_id) += a_C;
     matrix(owner_id, neighbor_id) += a_N;
 
@@ -87,7 +81,6 @@ void ConvectionBase::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fa
 
     // TODO: check if this is correct
     auto rho_f = _rho[face.owner()];
-
     auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
@@ -95,7 +88,6 @@ void ConvectionBase::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fa
 
     // in case owner cell is an upstream cell
     matrix(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
-
     rhs(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
 }
 
