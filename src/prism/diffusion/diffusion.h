@@ -94,6 +94,9 @@ void inline Diffusion<Corrector>::apply() {
     for (const auto& iface : _mesh.interior_faces()) {
         apply_interior(iface);
     }
+
+    // we've inserted all the triplets, now we can collect them into the matrix
+    collect();
 }
 
 template <NonOrthoCorrection Corrector>

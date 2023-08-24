@@ -4,6 +4,7 @@
 
 namespace prism::convection {
 void ConvectionBase::apply() {
+    // TODO: this is repeated in all FVSchemes, we should move it to the base class
     for (const auto& bface : _mesh.boundary_faces()) {
         apply_boundary(_mesh.cell(bface.owner()), bface);
     }
@@ -11,6 +12,9 @@ void ConvectionBase::apply() {
     for (const auto& iface : _mesh.interior_faces()) {
         apply_interior(iface);
     }
+
+    // we've inserted all the triplets, now we can collect them into the matrix
+    collect();
 }
 
 void ConvectionBase::apply_interior(const mesh::Face& face) {
@@ -32,11 +36,11 @@ void ConvectionBase::apply_interior(const mesh::Face& face) {
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face, _gradient_scheme);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face, _gradient_scheme); // NOLINT
 
-    matrix(owner_id, owner_id) += a_C;
-    matrix(owner_id, neighbor_id) += a_N;
+    insert(owner_id, owner_id, a_C);
+    insert(owner_id, neighbor_id, a_N);
 
-    matrix(neighbor_id, neighbor_id) += x_C;
-    matrix(neighbor_id, owner_id) += x_N;
+    insert(neighbor_id, neighbor_id, x_C);
+    insert(neighbor_id, owner_id, x_N);
 
     rhs(owner_id) += b;
     rhs(neighbor_id) += s;
@@ -87,7 +91,7 @@ void ConvectionBase::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fa
     // and should be generalized to work for all schemes.
 
     // in case owner cell is an upstream cell
-    matrix(cell.id(), cell.id()) += std::max(m_dot_f, 0.0);
+    insert(cell.id(), cell.id(), std::max(m_dot_f, 0.0));
     rhs(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
 }
 
@@ -115,7 +119,7 @@ void ConvectionBase::apply_boundary_outlet(const mesh::Cell& cell, const mesh::F
     // and should be generalized to work for all schemes.
 
     // Because this is an outlet, owner `cell` is an upstream cell
-    matrix(cell_id, cell_id) += m_dot_f;
+    insert(cell_id, cell_id, m_dot_f);
 }
 
 auto ConvectionBase::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
