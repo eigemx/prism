@@ -31,12 +31,13 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_interior(const mesh::Face
 
     // kappa * g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
-    matrix(owner_id, owner_id) += g_diff * _kappa;
-    matrix(neighbor_id, neighbor_id) += g_diff * _kappa;
+    auto dval = g_diff * _kappa;
+    insert(owner_id, owner_id, dval);
+    insert(neighbor_id, neighbor_id, dval);
 
     // off-diagonal coefficients
-    matrix(owner_id, neighbor_id) += -g_diff * _kappa;
-    matrix(neighbor_id, owner_id) += -g_diff * _kappa;
+    insert(owner_id, neighbor_id, -dval);
+    insert(neighbor_id, owner_id, -dval);
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
@@ -87,7 +88,7 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_boundary_fixed(const mesh
 
     auto g_diff = E_f.norm() / (d_Cf_norm + EPSILON);
 
-    matrix(cell_id, cell_id) += g_diff * _kappa;
+    insert(cell_id, cell_id, g_diff * _kappa);
     rhs(cell_id) += g_diff * _kappa * phi_wall;
 
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
@@ -113,11 +114,12 @@ void Diffusion<NonOrthoCorrection::None>::apply_interior(const mesh::Face& face)
     auto g_diff = face.area() / (d_CF_norm + EPSILON);
 
     // kappa * g_diff * (Φ_C - Φ_N)
-    matrix(owner_id, owner_id) += g_diff * _kappa;
-    matrix(neighbor_id, neighbor_id) += g_diff * _kappa;
+    auto dval = g_diff * _kappa;
+    insert(owner_id, owner_id, dval);
+    insert(neighbor_id, neighbor_id, dval);
 
-    matrix(owner_id, neighbor_id) += -g_diff * _kappa;
-    matrix(neighbor_id, owner_id) += -g_diff * _kappa;
+    insert(owner_id, neighbor_id, -dval);
+    insert(neighbor_id, owner_id, -dval);
 }
 
 template <>
@@ -137,7 +139,7 @@ void Diffusion<NonOrthoCorrection::None>::apply_boundary_fixed(const mesh::Cell&
 
     auto g_diff = face.area() / (d_Cf_norm + EPSILON);
 
-    matrix(cell_id, cell_id) += g_diff * _kappa;
+    insert(cell_id, cell_id, g_diff * _kappa);
     rhs(cell_id) += g_diff * _kappa * phi_wall;
 }
 
