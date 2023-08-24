@@ -3,6 +3,7 @@
 namespace prism::source {
 ConstantScalar::ConstantScalar(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {
     _volume_field.resize(phi.mesh().n_cells());
+
     for (const auto& cell : phi.mesh().cells()) {
         _volume_field[cell.id()] = cell.volume();
     }

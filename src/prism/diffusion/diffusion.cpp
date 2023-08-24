@@ -65,8 +65,7 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::correct_non_orhto_boundary_fixe
     auto phi_c = _phi[cell.id()];
 
     auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + EPSILON)) * e;
-
-    rhs()[cell.id()] += T_f.dot(grad_f) * _kappa;
+    rhs(cell.id()) += T_f.dot(grad_f) * _kappa;
 }
 
 template <>
@@ -89,7 +88,7 @@ void Diffusion<NonOrthoCorrection::OverRelaxed>::apply_boundary_fixed(const mesh
     auto g_diff = E_f.norm() / (d_Cf_norm + EPSILON);
 
     matrix(cell_id, cell_id) += g_diff * _kappa;
-    rhs()[cell_id] += g_diff * _kappa * phi_wall;
+    rhs(cell_id) += g_diff * _kappa * phi_wall;
 
     correct_non_orhto_boundary_fixed(cell, face, S_f - E_f);
 }

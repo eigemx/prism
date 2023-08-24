@@ -12,14 +12,14 @@
 #include "../print.h"
 
 namespace prism::mesh {
-auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType;
-auto parse_boundary_patch(const toml::table& table, const std::string& patch_name)
+auto inline boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType;
+auto inline parse_boundary_patch(const toml::table& table, const std::string& patch_name)
     -> BoundaryPatch;
-auto parse_nested_boundary_conditions(const toml::table& table, const std::string& patch_name)
-    -> BoundaryPatch;
-auto parse_field_boundary_condition(const toml::table& table,
-                                    const std::string& patch_name,
-                                    const std::string& field_name) -> BoundaryCondition;
+auto inline parse_nested_boundary_conditions(const toml::table& table,
+                                             const std::string& patch_name) -> BoundaryPatch;
+auto inline parse_field_boundary_condition(const toml::table& table,
+                                           const std::string& patch_name,
+                                           const std::string& field_name) -> BoundaryCondition;
 
 
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
@@ -48,7 +48,7 @@ auto parse_boundary_patch(const toml::table& table, const std::string& patch_nam
 
 auto parse_nested_boundary_conditions(const toml::table& table, const std::string& patch_name)
     -> BoundaryPatch {
-    // for each subtable, get its type and data
+    // for each sub-table, get its type and data
     std::map<std::string, BoundaryCondition> field_name_to_bc_map;
     const auto& patch_table = *(table[patch_name].as_table());
 
