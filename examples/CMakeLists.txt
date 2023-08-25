@@ -1,0 +1,2 @@
+add_subdirectory(convsolver)
+add_subdirectory(diffsolver)

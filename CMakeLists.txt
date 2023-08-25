@@ -50,13 +50,20 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # set SHOW_DEBUG_INFO to OFF by default
-if(NOT DEFINED SHOW_DEBUG_INFO)
-    set(SHOW_DEBUG_INFO OFF)
+if(NOT DEFINED PRISM_SHOW_DEBUG_INFO)
+    set(PRISM_SHOW_DEBUG_INFO OFF)
     message(STATUS "SHOW_DEBUG_INFO is not set, all debug info will be hidden.")
 endif()
 
+# set PRISM_BUILD_EXAMPLES to ON by default
+if(NOT DEFINED PRISM_BUILD_EXAMPLES)
+    set(PRISM_BUILD_EXAMPLES ON)
+    message(STATUS "PRISM_BUILD_EXAMPLES is set to ON by default, examples will be built.")
+    message(STATUS "Set PRISM_BUILD_EXAMPLES to OFF to disable building examples.")
+endif()
+
 # if option SHOW_DEBUG_INFO is set, define PRISM_DEBUG
-if(SHOW_DEBUG_INFO)
+if(PRISM_SHOW_DEBUG_INFO)
     message(STATUS "SHOW_DEBUG_INFO is set, all debug info will be shown.")
     add_definitions(-DPRISM_DEBUG)
 endif()
@@ -88,11 +95,11 @@ endif()
 
 
 add_subdirectory(src/prism)
-include_directories(src/)
+target_include_directories(prism PUBLIC src/)
 
-# apps
-add_subdirectory(src/apps/pmesh)
+# TODO: Take this out of the repository
+add_subdirectory(apps/pmesh)
 
-# solvers
-add_subdirectory(src/apps/diffsolver)
-add_subdirectory(src/apps/convsolver)
+if (PRISM_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()

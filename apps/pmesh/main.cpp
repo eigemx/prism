@@ -1,4 +1,4 @@
-#include <prism/core.h>
+#include <prism/prism.h>
 #include <toml++/toml.h>
 #include <unvpp/unvpp.h>
 

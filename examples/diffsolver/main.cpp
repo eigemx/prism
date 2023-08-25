@@ -7,7 +7,8 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
     print_header();
-    fmt::println("diffsolver - A steady state temperature diffusion solver\n");
+    fmt::println("diffsolver - A steady state temperature diffusion solver");
+    fmt::println("");
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
