@@ -39,10 +39,6 @@ include_directories(${TOMLPP_SOURCE_DIR}/include)
 set(CXXOPTS_SOURCE_DIR "external/cxxopts")
 include_directories(${CXXOPTS_SOURCE_DIR}/include)
 
-# setup tabulate
-set(TABULATE_SOURCE_DIR "external/tabulate")
-include_directories(${TABULATE_SOURCE_DIR}/single_include)
-
 # setup vtu11
 set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})
