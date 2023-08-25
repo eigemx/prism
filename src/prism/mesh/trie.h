@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 #include <variant>
 #include <vector>
@@ -14,9 +13,10 @@ class FacesLookupTrie {
     auto find(const std::vector<std::size_t>& face_labels) const -> std::optional<std::size_t>;
 
   private:
-    // forward declaration
+    // forward declarations
     struct VertexNode;
     struct TailNode;
+
     using Node = std::variant<VertexNode, TailNode>;
 
     struct VertexNode {
