@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "field.h"
@@ -12,9 +13,6 @@ namespace prism {
 
 class Equation : public LinearSystem {
   public:
-    // TODO: is it corect to call Scheme&& an rvalue reference?
-    // Equation constructor acceptes only an rvalue reference to a scheme. Because each
-    // equation should own its schemes.
     template <typename Scheme, typename... Schemes>
     Equation(Scheme&& scheme, Schemes&&... schemes);
 
@@ -35,11 +33,9 @@ class Equation : public LinearSystem {
     void add_scheme(S& scheme);
 
   private:
-    auto needs_update() const -> bool;
-
     std::vector<std::shared_ptr<FVScheme>> _schemes;
-    ScalarField& _phi;
-    ScalarField _phi_old;
+    ScalarField& _phi;    // Conserved field of the equation
+    ScalarField _phi_old; // Previous iteration value of the field
 
     std::size_t _n_corrected_schemes {0};
 };
@@ -49,17 +45,11 @@ Equation::Equation(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()),
       _phi_old(scheme.field()),
       LinearSystem(scheme.field().mesh().n_cells()) {
-    _schemes.reserve(sizeof...(Schemes) + 1);
+    // add the first mandatory scheme
     add_scheme(std::forward<Scheme>(scheme));
+
+    // add the rest of the schemes, if any
     (add_scheme(std::forward<Schemes>(schemes)), ...);
-
-    auto n_cells = _phi.mesh().n_cells();
-
-    assert(n_cells > 0 &&
-           "Equation constructor was called for a scalar field defined over an empty mesh.");
-
-    matrix() = SparseMatrix(n_cells, n_cells);
-    rhs() = VectorXd::Zero(n_cells);
 }
 
 template <typename S>
