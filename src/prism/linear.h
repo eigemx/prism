@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "print.h"
 #include "types.h"
 
 namespace prism {
@@ -9,6 +10,7 @@ namespace prism {
 class LinearSystem {
   public:
     LinearSystem(std::size_t n_cells) : _A(n_cells, n_cells), _b(n_cells) {
+        // set the right hand side to zero
         _b.setZero();
 
         // assume that the mesh is purely tetrahedral, so each cell has 3 neighbors
@@ -25,6 +27,11 @@ class LinearSystem {
     }
 
     void inline collect() {
+        if (_triplets.empty()) {
+            throw std::runtime_error(
+                "LinearSystem::collect() was called on an empty "
+                "triplet list. This should not happen.");
+        }
         _A.setFromTriplets(_triplets.begin(), _triplets.end());
         _triplets.clear();
     }
