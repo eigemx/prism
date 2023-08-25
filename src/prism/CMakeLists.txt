@@ -1,4 +1,4 @@
-add_library(prism-core
+add_library(prism
     # core sources
     field.cpp
     equation.cpp
@@ -15,5 +15,5 @@ add_library(prism-core
     gradient/least_squares.cpp
     convection/convection.cpp
     source/source.cpp
-    solver/relax.cpp
+    numerics/relax.cpp
 )
