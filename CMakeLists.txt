@@ -94,5 +94,5 @@ include_directories(src/)
 add_subdirectory(src/apps/pmesh)
 
 # solvers
-add_subdirectory(src/solvers/diffsolver)
-add_subdirectory(src/solvers/convsolver)
+add_subdirectory(src/apps/diffsolver)
+add_subdirectory(src/apps/convsolver)

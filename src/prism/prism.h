@@ -11,7 +11,7 @@
 #include "mesh/pmesh.h"
 #include "mesh/reorder.h"
 #include "mesh/unv.h"
+#include "numerics/solver.h"
 #include "print.h"
-#include "solver/solver.h"
 #include "source/source.h"
 #include "types.h"
