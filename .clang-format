@@ -31,7 +31,6 @@ BraceWrapping:
   IndentBraces:    false
 DerivePointerAlignment: false
 PointerAlignment: Left
-SortUsingDeclarationsOptions: true
 AccessModifierOffset: -2
 
 # https://stackoverflow.com/q/29483626/2839539

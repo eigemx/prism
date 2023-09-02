@@ -28,13 +28,6 @@ class Diffusion : public FVScheme {
           _gradient_scheme(std::move(gradient_scheme)),
           FVScheme(phi.mesh().n_cells()) {}
 
-    Diffusion(const Diffusion& other)
-        : _kappa(other._kappa),
-          _phi(other._phi),
-          _mesh(other._mesh),
-          _gradient_scheme(other._gradient_scheme->clone()),
-          FVScheme(other._mesh.n_cells()) {}
-
     // TODO: make each FVScheme own its own gradient scheme, and remove the
     // following clutter.
     // Each FVScheme should own its own gradient scheme, and should not share
