@@ -3,6 +3,7 @@ Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines
          -cppcoreguidelines-avoid-magic-numbers, 
          -cppcoreguidelines-narrowing-conversions,
          -cppcoreguidelines-pro-type-const-cast,
-         -modernize-use-nodiscard'
+         -modernize-use-nodiscard,
+         -readability-identifier-length'
 
 WarningsAsErrors: '*'
