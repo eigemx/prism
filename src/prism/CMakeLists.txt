@@ -16,4 +16,5 @@ add_library(prism
     convection/convection.cpp
     source/source.cpp
     numerics/relax.cpp
+    transient/backward_euler.cpp
 )

@@ -22,7 +22,6 @@ class Equation : public LinearSystem {
     auto inline field() const -> const ScalarField& { return _phi; }
     auto inline field() -> ScalarField& { return _phi; }
 
-    // previous iteration value of the scalar field
     auto inline field_prev_iter() const -> const ScalarField& { return _phi_old; }
     auto inline field_prev_iter() -> ScalarField& { return _phi_old; }
 

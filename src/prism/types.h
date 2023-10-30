@@ -11,4 +11,6 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using SparseMatrix = Eigen::SparseMatrix<double>;
 
+enum class Compressibility { Compressible, Incompressible };
+
 } // namespace prism
