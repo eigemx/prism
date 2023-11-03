@@ -4,7 +4,7 @@
 
 namespace prism {
 
-void Equation::update_coeffs() {
+void TransportEquation::update_coeffs() {
     const auto& mesh = _phi.mesh();
 
     // iterate over all equation's finite volume schemes
@@ -18,7 +18,7 @@ void Equation::update_coeffs() {
     }
 }
 
-void Equation::zero_out_coeffs() {
+void TransportEquation::zero_out_coeffs() {
     for (auto& scheme : _schemes) {
         scheme->matrix().setZero();
         scheme->rhs().setZero();

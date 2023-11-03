@@ -11,10 +11,10 @@
 
 namespace prism {
 
-class Equation : public LinearSystem {
+class TransportEquation : public LinearSystem {
   public:
     template <typename Scheme, typename... Schemes>
-    Equation(Scheme&& scheme, Schemes&&... schemes);
+    TransportEquation(Scheme&& scheme, Schemes&&... schemes);
 
     void update_coeffs();
     void zero_out_coeffs();
@@ -40,7 +40,7 @@ class Equation : public LinearSystem {
 };
 
 template <typename Scheme, typename... Schemes>
-Equation::Equation(Scheme&& scheme, Schemes&&... schemes)
+TransportEquation::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()),
       _phi_old(scheme.field()),
       LinearSystem(scheme.field().mesh().n_cells()) {
@@ -52,7 +52,7 @@ Equation::Equation(Scheme&& scheme, Schemes&&... schemes)
 }
 
 template <typename S>
-void Equation::add_scheme(S&& scheme) {
+void TransportEquation::add_scheme(S&& scheme) {
     const auto& field = scheme.field();
 
     if (scheme.requires_correction()) {
@@ -68,7 +68,7 @@ void Equation::add_scheme(S&& scheme) {
 }
 
 template <typename S>
-void Equation::add_scheme(S& scheme) {
+void TransportEquation::add_scheme(S& scheme) {
     const auto& field = scheme.field();
 
     if (scheme.requires_correction()) {

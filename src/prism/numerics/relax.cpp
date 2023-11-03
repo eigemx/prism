@@ -4,7 +4,7 @@
 #include "../print.h"
 
 namespace prism::solver {
-void ImplicitUnderRelaxation::pre_relax(Equation& eqn, double lambda) const {
+void ImplicitUnderRelaxation::pre_relax(TransportEquation& eqn, double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
         debug(
             "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
@@ -22,7 +22,7 @@ void ImplicitUnderRelaxation::pre_relax(Equation& eqn, double lambda) const {
     b += (1 - lambda) * A.diagonal().cwiseProduct(phi);
 }
 
-void ExplicitUnderRelaxation::post_relax(Equation& eqn, double lambda) const {
+void ExplicitUnderRelaxation::post_relax(TransportEquation& eqn, double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
         debug(
             "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"

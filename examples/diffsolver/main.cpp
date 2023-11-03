@@ -46,9 +46,9 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto eqn =
-        Equation(diffusion::Diffusion<diffusion::NonOrthoCorrection::None>(1e-5, T, T_grad),
-                 source::ConstantScalar(S));
+    auto eqn = TransportEquation(
+        diffusion::Diffusion<diffusion::NonOrthoCorrection::None>(1e-5, T, T_grad),
+        source::ConstantScalar(S));
 
     // solve
     auto solver = solver::BiCGSTAB<solver::ImplicitUnderRelaxation>();
