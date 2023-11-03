@@ -11,7 +11,7 @@ class BackwardEuler : public FVScheme, public TransientSchemeBase {
 
     void apply() override;
     auto inline field() -> ScalarField& override { return _phi; }
-    auto inline time_step() -> double { return _dt; }
+    auto inline time_step() const -> double { return _dt; }
     void set_time_step(double dt);
 
   private:

@@ -19,14 +19,14 @@ struct IterationStepData {
 // until convergence. And any consecutive call to solve() after convergence shall have no effect
 class SolverBase {
   public:
-    virtual void solve(Equation& eq, std::size_t n_iter, double eps, double lambda) = 0;
+    virtual void solve(TransportEquation& eq, std::size_t n_iter, double eps, double lambda) = 0;
     //virtual auto step(Equation& eq, double eps, double lambda) -> IterationStepData = 0;
 };
 
 template <typename Relaxer = ImplicitUnderRelaxation>
 class BiCGSTAB : public SolverBase {
   public:
-    void solve(Equation& eq,
+    void solve(TransportEquation& eq,
                std::size_t n_iter = 1000, // number of iterations
                double eps = 1e-4,         // convergence criteria
                double lambda = 1.0        // under-relaxation factor
@@ -36,7 +36,7 @@ class BiCGSTAB : public SolverBase {
 template <typename Relaxer = ImplicitUnderRelaxation>
 class GaussSeidel : public SolverBase {
   public:
-    void solve(Equation& eq,
+    void solve(TransportEquation& eq,
                std::size_t n_iter = 1000, // number of iterations
                double eps = 1e-4,         // convergence criteria
                double lambda = 1.0        // under-relaxation factor
@@ -44,7 +44,10 @@ class GaussSeidel : public SolverBase {
 };
 
 template <typename Relaxer>
-void BiCGSTAB<Relaxer>::solve(Equation& eqn, std::size_t n_iter, double eps, double lambda) {
+void BiCGSTAB<Relaxer>::solve(TransportEquation& eqn,
+                              std::size_t n_iter,
+                              double eps,
+                              double lambda) {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
 
@@ -82,7 +85,10 @@ void BiCGSTAB<Relaxer>::solve(Equation& eqn, std::size_t n_iter, double eps, dou
 }
 
 template <typename Relaxer>
-void GaussSeidel<Relaxer>::solve(Equation& eqn, std::size_t n_iter, double eps, double lambda) {
+void GaussSeidel<Relaxer>::solve(TransportEquation& eqn,
+                                 std::size_t n_iter,
+                                 double eps,
+                                 double lambda) {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
 
