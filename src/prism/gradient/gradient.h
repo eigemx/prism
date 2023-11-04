@@ -2,7 +2,11 @@
 
 #include "../field.h"
 #include "../mesh/pmesh.h"
+#include "../mesh/utilities.h"
 #include "../types.h"
+#include "Eigen/src/Core/Matrix.h"
+#include "prism/constants.h"
+
 
 namespace prism::gradient {
 
@@ -10,22 +14,28 @@ namespace prism::gradient {
 // All gradient schemes should inherit from this class and define gradient() function.
 class GradientSchemeBase {
   public:
+    GradientSchemeBase(const ScalarField& field) : _field(field) {}
     virtual auto gradient_at_cell(const mesh::Cell& c) -> Vector3d = 0;
-    virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d = 0;
-    virtual auto gradient_field() -> VectorField = 0;
+    virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d;
+    virtual auto gradient_field() -> VectorField;
 
     static auto gradient_at_boundary_face(const mesh::Face& f, const ScalarField& field)
         -> Vector3d;
+
+    virtual ~GradientSchemeBase() = default;
+
+  private:
+    const ScalarField& _field;
 };
 
 class GreenGauss : public GradientSchemeBase {
   public:
     GreenGauss(const ScalarField& field)
-        : _field(field), _cell_gradients(MatrixX3d::Zero(field.mesh().n_cells(), 3)) {}
+        : _field(field),
+          _cell_gradients(MatrixX3d::Zero(field.mesh().n_cells(), 3)),
+          GradientSchemeBase(field) {}
 
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
-    auto gradient_at_face(const mesh::Face& face) -> Vector3d override;
-    auto gradient_field() -> VectorField override;
 
   private:
     const ScalarField& _field;
@@ -36,8 +46,6 @@ class LeastSquares : public GradientSchemeBase {
   public:
     LeastSquares(const ScalarField& field);
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
-    auto gradient_at_face(const mesh::Face& face) -> Vector3d override;
-    auto gradient_field() -> VectorField override;
 
   private:
     void set_lsq_matrices();
@@ -85,6 +93,50 @@ auto inline GradientSchemeBase::gradient_at_boundary_face(const mesh::Face& face
                             "Non-implemented boundary type for boundary patch: '{}'",
                             boundary_patch.name()));
     }
+}
+
+auto inline GradientSchemeBase::gradient_at_face(const mesh::Face& face) -> Vector3d {
+    // interpolate gradient at surrounding cells to the face center
+    // interior face
+    if (face.has_neighbor()) {
+        const auto& mesh = _field.mesh();
+        const auto& owner_cell = mesh.cell(face.owner());
+        auto owner_grad = gradient_at_cell(owner_cell);
+
+        const auto& neighbor_cell = mesh.cell(face.neighbor().value());
+        auto neighbor_grad = gradient_at_cell(neighbor_cell);
+
+        auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
+
+        // Equation 9.33 without the correction part, a simple linear interpolation.
+        Vector3d grad = gc * owner_grad + (1. - gc) * neighbor_grad;
+
+        // correct the interpolation
+        auto phi_C = _field[owner_cell.id()];
+        auto phi_F = _field[neighbor_cell.id()];
+        auto d_CF = neighbor_cell.center() - owner_cell.center();
+        auto d_CF_norm = d_CF.norm();
+        Vector3d e_CF = d_CF / d_CF_norm;
+
+        auto correction = (phi_F - phi_C) / (d_CF_norm + EPSILON);
+        correction -= grad.dot(e_CF);
+
+        return grad + (e_CF * correction);
+    }
+
+    // boundary face
+    return gradient_at_boundary_face(face, _field);
+}
+
+auto inline GradientSchemeBase::gradient_field() -> VectorField {
+    auto grad_field_name = _field.name() + "_grad";
+    VectorField grad_field {grad_field_name, _field.mesh()};
+
+    for (const auto& cell : _field.mesh().cells()) {
+        grad_field.data().row(cell.id()) = gradient_at_cell(cell);
+    }
+
+    return grad_field;
 }
 
 } // namespace prism::gradient
