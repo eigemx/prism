@@ -30,20 +30,20 @@ class NoneCorrector : public Corrector {
   public:
     auto triplets_interior(const mesh::Cell& owner,
                            const mesh::Cell& neighbor,
-                           const mesh::Face& face) -> NonOrthoTriplets override = 0;
+                           const mesh::Face& face) -> NonOrthoTriplets override;
 
     auto triplets_boundary(const mesh::Cell& owner, const mesh::Face& face)
-        -> NonOrthoTriplets override = 0;
+        -> NonOrthoTriplets override;
 };
 
 class OverRelaxed : public Corrector {
   public:
     auto triplets_interior(const mesh::Cell& owner,
                            const mesh::Cell& neighbor,
-                           const mesh::Face& face) -> NonOrthoTriplets override = 0;
+                           const mesh::Face& face) -> NonOrthoTriplets override;
 
     auto triplets_boundary(const mesh::Cell& owner, const mesh::Face& face)
-        -> NonOrthoTriplets override = 0;
+        -> NonOrthoTriplets override;
 };
 
 } // namespace prism::nonortho
