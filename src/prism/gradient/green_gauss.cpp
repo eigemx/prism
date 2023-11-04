@@ -51,7 +51,6 @@ auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
         }
 
         // This is an internal face
-
         // Area normal vector, poitning out of the cell
         auto Sf = mesh::outward_area_vector(face, cell);
         grad += Sf * phi_interior_face(cell, face, mesh, _field, _cell_gradients);

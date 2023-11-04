@@ -10,11 +10,6 @@
 
 namespace prism::diffusion {
 
-enum class NonOrthoCorrection {
-    None,
-    OverRelaxed,
-};
-
 template <NonOrthoCorrection Corrector = NonOrthoCorrection::None>
 class Diffusion : public FVScheme {
   public:

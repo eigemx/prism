@@ -13,4 +13,6 @@ using SparseMatrix = Eigen::SparseMatrix<double>;
 
 enum class Compressibility { Compressible, Incompressible };
 
+enum class NonOrthoCorrection { None, OverRelaxed };
+
 } // namespace prism
