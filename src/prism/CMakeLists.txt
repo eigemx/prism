@@ -10,7 +10,6 @@ add_library(prism
     mesh/unv.cpp
     mesh/trie.cpp
     mesh/reorder.cpp
-    diffusion/diffusion.cpp
     gradient/green_gauss.cpp
     gradient/least_squares.cpp
     convection/convection.cpp

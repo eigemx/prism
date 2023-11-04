@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "prism/gradient/gradient.h"
+#include "prism/nonortho/nonortho.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -33,8 +34,6 @@ auto main(int argc, char* argv[]) -> int {
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
-    auto T_grad = gradient::create<gradient::GreenGauss>(T);
-
 
     // define a source term
     auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
@@ -48,9 +47,7 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto eqn = TransportEquation(
-        diffusion::Diffusion<diffusion::NonOrthoCorrection::None>(1e-5, T, T_grad),
-        source::ConstantScalar(S));
+    auto eqn = TransportEquation(diffusion::Diffusion(1e-5, T), source::ConstantScalar(S));
 
     // solve
     auto solver = solver::BiCGSTAB<solver::ImplicitUnderRelaxation>();
