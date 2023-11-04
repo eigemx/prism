@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "prism/gradient/gradient.h"
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
