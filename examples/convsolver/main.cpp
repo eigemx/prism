@@ -27,7 +27,6 @@ auto main(int argc, char* argv[]) -> int {
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
-    auto T_grad = gradient::create<gradient::LeastSquares>(T);
 
     // density field
     auto rho = ScalarField("density", mesh, 1.18);
@@ -50,7 +49,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity
     auto eqn = TransportEquation(diffusion::Diffusion(1e-2, T),
-                                 convection::SecondOrderUpwind(rho, U, T, T_grad));
+                                 convection::SecondOrderUpwind(rho, U, T));
 
     // solve
     auto solver = solver::BiCGSTAB();
