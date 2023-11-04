@@ -9,6 +9,13 @@ namespace prism {
 // A linear system of equations of the form Ax = b
 class LinearSystem {
   public:
+    LinearSystem() = delete;
+    LinearSystem(const LinearSystem& other) = default;
+    LinearSystem(LinearSystem&& other) = default;
+    auto operator=(const LinearSystem& other) -> LinearSystem& = default;
+    auto operator=(LinearSystem&& other) -> LinearSystem& = default;
+    virtual ~LinearSystem() = default;
+
     LinearSystem(std::size_t n_cells) : _A(n_cells, n_cells), _b(n_cells) {
         // set the right hand side to zero
         _b.setZero();

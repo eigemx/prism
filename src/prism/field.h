@@ -35,8 +35,10 @@ class ScalarField {
 
     auto inline name() const -> const std::string& { return _name; }
     auto inline name() -> std::string& { return _name; }
+
     auto inline data() const -> const VectorXd& { return *_data; }
     auto inline data() -> VectorXd& { return *_data; }
+
     auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
 
     using CoordinatesMapper = double(double, double, double);
