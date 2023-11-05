@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "fmt/core.h"
 #include "prism/gradient/gradient.h"
 
 auto main(int argc, char* argv[]) -> int {
@@ -23,7 +24,7 @@ auto main(int argc, char* argv[]) -> int {
     // read mesh
     fmt::print("Loading mesh file {}...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name).to_pmesh();
-    fmt::print("Okay.\n");
+    fmt::println("Okay.");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
@@ -47,7 +48,7 @@ auto main(int argc, char* argv[]) -> int {
     auto U = VectorField("velocity", mesh, inlet_velocity);
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
-    // where ρ is the density and u is the velocity
+    // where ρ is the density and u is the velocity vector
     auto eqn = TransportEquation(diffusion::Diffusion(1e-2, T),
                                  convection::SecondOrderUpwind(rho, U, T));
 

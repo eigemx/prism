@@ -1,7 +1,7 @@
 [top]
 [top.temperature]
 type = "fixed"
-value = 300
+value = 900
 
 [bottom]
 [bottom.temperature]
