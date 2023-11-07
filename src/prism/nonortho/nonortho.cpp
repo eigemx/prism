@@ -1,13 +1,13 @@
 #include "nonortho.h"
 
-#include "../constants.h"
-#include "../types.h"
+#include "prism/constants.h"
+#include "prism/types.h"
 
 namespace prism::nonortho {
-auto NoneCorrector::triplets_interior(const mesh::Cell& owner,    // NOLINT
-                                      const mesh::Cell& neighbor, // NOLINT
-                                      const mesh::Face& face) -> NonOrthoTriplets {
-    NonOrthoTriplets triplets;
+auto NoneCorrector::interior_triplet(const mesh::Cell& owner,    // NOLINT
+                                     const mesh::Cell& neighbor, // NOLINT
+                                     const mesh::Face& face) -> NonOrthoTriplet {
+    NonOrthoTriplet triplets;
 
     triplets.Sf = face.area_vector();
     triplets.Ef = triplets.Sf;
@@ -16,9 +16,9 @@ auto NoneCorrector::triplets_interior(const mesh::Cell& owner,    // NOLINT
     return triplets;
 }
 
-auto NoneCorrector::triplets_boundary(const mesh::Cell& owner, const mesh::Face& face) // NOLINT
-    -> NonOrthoTriplets {
-    NonOrthoTriplets triplets;
+auto NoneCorrector::boundary_triplet(const mesh::Cell& owner, const mesh::Face& face) // NOLINT
+    -> NonOrthoTriplet {
+    NonOrthoTriplet triplets;
 
     triplets.Sf = face.area_vector();
     triplets.Ef = triplets.Sf;
@@ -27,9 +27,9 @@ auto NoneCorrector::triplets_boundary(const mesh::Cell& owner, const mesh::Face&
     return triplets;
 }
 
-auto OverRelaxed::triplets_interior(const mesh::Cell& owner,
-                                    const mesh::Cell& neighbor,
-                                    const mesh::Face& face) -> NonOrthoTriplets {
+auto OverRelaxedCorrector::interior_triplet(const mesh::Cell& owner,
+                                            const mesh::Cell& neighbor,
+                                            const mesh::Face& face) -> NonOrthoTriplet {
     const auto& Sf = face.area_vector();
 
     // vector joining the centers of the two cells
@@ -42,11 +42,11 @@ auto OverRelaxed::triplets_interior(const mesh::Cell& owner,
     // orthogonal-like normal vector E_f using over-relaxed approach
     auto Ef = ((Sf.dot(Sf) / (e.dot(Sf) + EPSILON))) * e;
 
-    return NonOrthoTriplets {Sf, Ef, Sf - Ef};
+    return NonOrthoTriplet {Sf, Ef, Sf - Ef};
 }
 
-auto OverRelaxed::triplets_boundary(const mesh::Cell& owner, const mesh::Face& face)
-    -> NonOrthoTriplets {
+auto OverRelaxedCorrector::boundary_triplet(const mesh::Cell& owner, const mesh::Face& face)
+    -> NonOrthoTriplet {
     const auto& Sf = face.area_vector();
 
     // vector joining the centers of the cell and the face
@@ -56,6 +56,6 @@ auto OverRelaxed::triplets_boundary(const mesh::Cell& owner, const mesh::Face& f
 
     auto Ef = ((Sf.dot(Sf) / e.dot(Sf))) * e;
 
-    return NonOrthoTriplets {Sf, Ef, Sf - Ef};
+    return NonOrthoTriplet {Sf, Ef, Sf - Ef};
 }
 } // namespace prism::nonortho

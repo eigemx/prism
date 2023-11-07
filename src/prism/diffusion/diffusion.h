@@ -153,7 +153,7 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_interior(const mesh::Fa
     // unit vector in d_CF direction
     auto e = d_CF / d_CF_norm;
 
-    const auto& [Sf, Ef, Tf] = _corrector.triplets_interior(owner, neighbor, face);
+    const auto& [Sf, Ef, Tf] = _corrector.interior_triplet(owner, neighbor, face);
 
     // geometric diffusion coefficient
     auto g_diff = Ef.norm() / (d_CF_norm + EPSILON);
@@ -215,7 +215,7 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_fixed(const me
     auto d_Cf = face.center() - cell.center();
     auto d_Cf_norm = d_Cf.norm();
 
-    const auto& [_, Ef, Tf] = _corrector.triplets_boundary(cell, face);
+    const auto& [_, Ef, Tf] = _corrector.boundary_triplet(cell, face);
     auto g_diff = Ef.norm() / (d_Cf_norm + EPSILON);
 
     insert(cell_id, cell_id, g_diff * _kappa);
