@@ -10,7 +10,7 @@ class BackwardEuler : public FVScheme, public TransientSchemeBase {
     BackwardEuler(ScalarField& rho, ScalarField& phi, double dt);
 
     void apply() override;
-    auto inline field() -> ScalarField& override { return _phi; }
+    auto inline field() -> std::optional<ScalarField> override { return _phi; }
     auto inline time_step() const -> double { return _dt; }
     void set_time_step(double dt);
 

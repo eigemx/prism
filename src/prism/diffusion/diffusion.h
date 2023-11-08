@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../field.h"
-#include "../fvscheme.h"
-#include "../gradient/gradient.h"
-#include "../mesh/pmesh.h"
-#include "../nonortho/nonortho.h"
-#include "../types.h"
+#include "prism/field.h"
+#include "prism/fvscheme.h"
+#include "prism/gradient/gradient.h"
+#include "prism/mesh/pmesh.h"
+#include "prism/nonortho/nonortho.h"
+#include "prism/types.h"
 
 namespace prism::diffusion {
 
@@ -22,7 +22,8 @@ class Diffusion : public FVScheme {
           FVScheme(phi.mesh().n_cells()) {}
 
     void apply() override;
-    auto field() -> ScalarField& override { return _phi; }
+    auto field() -> std::optional<ScalarField> override { return _phi; }
+    auto requires_correction() const -> bool override { return true; }
 
   private:
     void apply_interior(const mesh::Face& face) override;
@@ -222,6 +223,18 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_fixed(const me
     rhs(cell_id) += g_diff * _kappa * phi_wall;
 
     correct_non_orhto_boundary_fixed(cell, face, Tf);
+}
+
+template <>
+auto inline Diffusion<nonortho::NoneCorrector, gradient::LeastSquares>::requires_correction()
+    const -> bool {
+    return false;
+}
+
+template <>
+auto inline Diffusion<nonortho::NoneCorrector, gradient::GreenGauss>::requires_correction() const
+    -> bool {
+    return false;
 }
 
 

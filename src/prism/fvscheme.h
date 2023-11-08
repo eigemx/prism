@@ -22,7 +22,11 @@ class FVScheme : public LinearSystem {
     // Override this method if the scheme does not require correction.
     virtual auto requires_correction() const -> bool { return true; }
 
-    virtual auto field() -> ScalarField& = 0;
+    // If the scheme contributes to the transport equation main matrix, then this method shall
+    // return the transport ScalarField, if not, such as the cases of a constant source term
+    // where there is no contribution to the main matrix, then this method should return
+    // a null option (the base class FVScheme implements this as the default case)
+    virtual auto field() -> std::optional<ScalarField> { return std::nullopt; }
 
   private:
     virtual void apply_interior(const mesh::Face& face) = 0;
