@@ -32,7 +32,7 @@ class ConvectionBase : public FVScheme {
 
     void apply() override;
 
-    auto inline field() -> ScalarField& override { return _phi; }
+    auto inline field() -> std::optional<ScalarField> override { return _phi; }
     auto inline grad_scheme() -> GradientScheme& { return _gradient_scheme; }
 
   private:
@@ -47,9 +47,9 @@ class ConvectionBase : public FVScheme {
     void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
-    ScalarField& _rho;
-    VectorField& _U;
-    ScalarField& _phi;
+    ScalarField _rho;
+    VectorField _U;
+    ScalarField _phi;
     const mesh::PMesh& _mesh;
     GradientScheme _gradient_scheme;
 };

@@ -11,6 +11,10 @@
 
 namespace prism {
 
+// TODO: Make TransportEquation check of a consisten conserved transport ScalarField
+// meaning that a transport equation shall have only one transport field.
+// Clean the below clutter!
+
 class TransportEquation : public LinearSystem {
   public:
     template <typename Scheme, typename... Schemes>
@@ -33,7 +37,7 @@ class TransportEquation : public LinearSystem {
 
   private:
     std::vector<std::shared_ptr<FVScheme>> _schemes;
-    ScalarField& _phi;    // Conserved field of the equation
+    ScalarField _phi;     // Conserved field of the equation
     ScalarField _phi_old; // Previous iteration value of the field
 
     std::size_t _n_corrected_schemes {0};
@@ -41,9 +45,9 @@ class TransportEquation : public LinearSystem {
 
 template <typename Scheme, typename... Schemes>
 TransportEquation::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
-    : _phi(scheme.field()),
-      _phi_old(scheme.field()),
-      LinearSystem(scheme.field().mesh().n_cells()) {
+    : _phi(scheme.field().value()),
+      _phi_old(scheme.field().value()),
+      LinearSystem(scheme.field().value().mesh().n_cells()) {
     // add the first mandatory scheme
     add_scheme(std::forward<Scheme>(scheme));
 
@@ -53,7 +57,7 @@ TransportEquation::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
 
 template <typename S>
 void TransportEquation::add_scheme(S&& scheme) {
-    const auto& field = scheme.field();
+    auto field = scheme.field().value();
 
     if (scheme.requires_correction()) {
         _n_corrected_schemes++;
@@ -69,7 +73,7 @@ void TransportEquation::add_scheme(S&& scheme) {
 
 template <typename S>
 void TransportEquation::add_scheme(S& scheme) {
-    const auto& field = scheme.field();
+    auto field = scheme.field().value();
 
     if (scheme.requires_correction()) {
         _n_corrected_schemes++;

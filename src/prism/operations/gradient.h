@@ -18,8 +18,6 @@ class Gradient : public FVScheme {
 
     void apply() override;
 
-    auto inline field() -> ScalarField& override { return _phi; }
-
   private:
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}

@@ -21,7 +21,6 @@ class ConstantScalar : public FVScheme {
     auto requires_correction() const -> bool override { return false; }
 
     void apply() override;
-    auto inline field() -> ScalarField& override { return _phi; }
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
@@ -40,7 +39,7 @@ class ImplicitPhi : public FVScheme {
     ImplicitPhi(ScalarField&& phi) = delete;
 
     void apply() override;
-    auto inline field() -> ScalarField& override { return _phi; }
+    auto inline field() -> std::optional<ScalarField> override { return _phi; }
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
