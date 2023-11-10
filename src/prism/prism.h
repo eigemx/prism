@@ -12,6 +12,8 @@
 #include "mesh/reorder.h"
 #include "mesh/unv.h"
 #include "numerics/solver.h"
+#include "operations/operations.h"
 #include "print.h"
 #include "source/source.h"
+#include "transient/transient.h"
 #include "types.h"
