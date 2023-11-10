@@ -16,4 +16,5 @@ add_library(prism
     numerics/relax.cpp
     transient/backward_euler.cpp
     nonortho/nonortho.cpp
+    operations/div.cpp
 )

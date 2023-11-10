@@ -155,6 +155,13 @@ class ToPMeshConverter {
      * this is because the implementation of to_pmesh() is expected to move the data from the
      * implementing object to the returned PMesh object.
    */
+    ToPMeshConverter() = default;
+    ToPMeshConverter(const ToPMeshConverter&) = default;
+    ToPMeshConverter(ToPMeshConverter&&) = default;
+    auto operator=(const ToPMeshConverter&) -> ToPMeshConverter& = default;
+    auto operator=(ToPMeshConverter&&) -> ToPMeshConverter& = default;
+    virtual ~ToPMeshConverter() = default;
+
     virtual auto to_pmesh() -> PMesh = 0;
 };
 

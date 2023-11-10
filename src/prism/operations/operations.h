@@ -5,7 +5,7 @@
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 
-namespace prism::source {
+namespace prism::ops {
 
 // Calculates the divergence of a vector field U: ∇.U
 auto div(const VectorField& U) -> ScalarField;
@@ -26,4 +26,4 @@ auto grad_z(const ScalarField& phi) -> ScalarField;
 template <typename GradientScheme>
 auto grad(const ScalarField& phi) -> VectorField;
 
-} // namespace prism::source
+} // namespace prism::ops
