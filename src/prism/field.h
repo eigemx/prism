@@ -11,18 +11,9 @@ namespace prism {
 
 class ScalarField {
   public:
-    ScalarField(const ScalarField& other)
-        : _mesh(other._mesh),
-          _name(other._name),
-          _data(std::make_shared<VectorXd>(other.data())) {}
-
+    ScalarField(const ScalarField& other) = default;
     ScalarField(ScalarField&& other) noexcept = default;
-    auto operator=(const ScalarField& other) -> ScalarField& {
-        _mesh = other._mesh;
-        _name = other._name;
-        _data = std::make_shared<VectorXd>(other.data());
-        return *this;
-    }
+    auto operator=(const ScalarField& other) -> ScalarField& = default;
     auto operator=(ScalarField&& other) noexcept -> ScalarField& = default;
     ~ScalarField() noexcept = default;
 

@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "../print.h"
 #include "boundary.h"
+#include "prism/print.h"
 
 // Vector of 6 quad faces
 template <typename T = std::vector<std::vector<std::size_t>>>

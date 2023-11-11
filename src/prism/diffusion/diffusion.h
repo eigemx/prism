@@ -9,17 +9,10 @@
 
 namespace prism::diffusion {
 
-template <typename NonOrthoCorrector = nonortho::NilCorrector,
-          typename GradientScheme = gradient::LeastSquares>
+template <typename NonOrthoCorrector = nonortho::OverRelaxedCorrector<>>
 class Diffusion : public FVScheme {
   public:
-    // Explicit gradient scheme is provided by the user
-    Diffusion(double kappa, ScalarField& phi)
-        : _kappa(kappa),
-          _phi(phi),
-          _mesh(phi.mesh()),
-          _gradient_scheme(phi),
-          FVScheme(phi.mesh().n_cells()) {}
+    Diffusion(double kappa, ScalarField& phi);
 
     void apply() override;
     auto field() -> std::optional<ScalarField> override { return _phi; }
@@ -29,22 +22,32 @@ class Diffusion : public FVScheme {
     void apply_interior(const mesh::Face& face) override;
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
+    void apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face);
     void correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
                                           const mesh::Face& face,
                                           const Vector3d& T_f);
 
-    void apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face);
-
     double _kappa;
-    ScalarField& _phi;
+    ScalarField _phi;
     const mesh::PMesh& _mesh;
-    GradientScheme _gradient_scheme;
     NonOrthoCorrector _corrector;
 };
 
+template <typename NonOrthoCorrector>
+Diffusion<NonOrthoCorrector>::Diffusion(double kappa, ScalarField& phi)
+    : _kappa(kappa),
+      _phi(phi),
+      _mesh(phi.mesh()),
+      FVScheme(phi.mesh().n_cells()),
+      _corrector(phi) {}
 
-template <typename NonOrthoCorrector, typename GradientScheme>
-void inline Diffusion<NonOrthoCorrector, GradientScheme>::apply() {
+template <>
+inline Diffusion<nonortho::NilCorrector>::Diffusion(double kappa, ScalarField& phi)
+    : _kappa(kappa), _phi(phi), _mesh(phi.mesh()), FVScheme(phi.mesh().n_cells()) {}
+
+
+template <typename NonOrthoCorrector>
+void inline Diffusion<NonOrthoCorrector>::apply() {
     /** @brief Applies discretized diffusion equation to the mesh.
      * The discretized equation is applied per face basis, using apply_interior() and 
      * apply_boundary() functions.
@@ -65,9 +68,9 @@ void inline Diffusion<NonOrthoCorrector, GradientScheme>::apply() {
     collect();
 }
 
-template <typename NonOrthoCorrector, typename GradientScheme>
-void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary(const mesh::Cell& cell,
-                                                                  const mesh::Face& face) {
+template <typename NonOrthoCorrector>
+void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Cell& cell,
+                                                  const mesh::Face& face) {
     /**
      * @brief Applies boundary discretized diffusion equation to the cell,
      * when the current face is a boundary face. The function iteself does not
@@ -119,10 +122,9 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary(const mesh::Ce
     }
 }
 
-template <typename NonOrthoCorrector, typename GradientScheme>
-void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_gradient(
-    const mesh::Cell& cell,
-    const mesh::Face& face) {
+template <typename NonOrthoCorrector>
+void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cell,
+                                                           const mesh::Face& face) {
     /** @brief Applies boundary discretized diffusion equation to the cell,
      * when the current face is a boundary face, and the boundary condition
      * is a general Von Neumann boundary condition, or fixed gradient boundary condition.
@@ -142,8 +144,8 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_gradient(
 }
 
 
-template <typename NonOrthoCorrector, typename GradientScheme>
-void Diffusion<NonOrthoCorrector, GradientScheme>::apply_interior(const mesh::Face& face) {
+template <typename NonOrthoCorrector>
+void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
     const auto& owner = _mesh.cell(face.owner());
     const auto& neighbor = _mesh.cell(face.neighbor().value());
 
@@ -174,17 +176,44 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_interior(const mesh::Fa
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
-    auto grad_f = _gradient_scheme.gradient_at_face(face);
+    auto grad_f = _corrector.grad_scheme().gradient_at_face(face);
     rhs(owner_id) += Tf.dot(grad_f) * _kappa;
     rhs(neighbor_id) += -Tf.dot(grad_f) * _kappa;
 }
 
+template <>
+void inline Diffusion<nonortho::NilCorrector>::apply_interior(const mesh::Face& face) {
+    const auto& owner = _mesh.cell(face.owner());
+    const auto& neighbor = _mesh.cell(face.neighbor().value());
 
-template <typename NonOrthoCorrector, typename GradientScheme>
-void Diffusion<NonOrthoCorrector, GradientScheme>::correct_non_orhto_boundary_fixed(
-    const mesh::Cell& cell,
-    const mesh::Face& face,
-    const Vector3d& T_f) {
+    // vector joining the centers of the two cells
+    auto d_CF = neighbor.center() - owner.center();
+    auto d_CF_norm = d_CF.norm();
+
+    auto Sf = face.area_vector();
+
+    // geometric diffusion coefficient
+    auto g_diff = Sf.norm() / (d_CF_norm + EPSILON);
+
+    auto owner_id = owner.id();
+    auto neighbor_id = neighbor.id();
+
+    // kappa * g_diff * (Φ_C - Φ_N)
+    // diagonal coefficients
+    auto dval = g_diff * _kappa;
+    insert(owner_id, owner_id, dval);
+    insert(neighbor_id, neighbor_id, dval);
+
+    // off-diagonal coefficients
+    insert(owner_id, neighbor_id, -dval);
+    insert(neighbor_id, owner_id, -dval);
+}
+
+
+template <typename NonOrthoCorrector>
+void Diffusion<NonOrthoCorrector>::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
+                                                                    const mesh::Face& face,
+                                                                    const Vector3d& T_f) {
     // we need to calculate the gradient of phi at the face
     // first let's calculate the vector joining the face center to the cell center
     auto d_CF = face.center() - cell.center();
@@ -203,9 +232,9 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::correct_non_orhto_boundary_fi
 }
 
 
-template <typename NonOrthoCorrector, typename GradientScheme>
-void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_fixed(const mesh::Cell& cell,
-                                                                        const mesh::Face& face) {
+template <typename NonOrthoCorrector>
+void Diffusion<NonOrthoCorrector>::apply_boundary_fixed(const mesh::Cell& cell,
+                                                        const mesh::Face& face) {
     // get the fixed phi variable associated with the face
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
@@ -226,14 +255,7 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_fixed(const me
 }
 
 template <>
-auto inline Diffusion<nonortho::NilCorrector, gradient::LeastSquares>::requires_correction() const
-    -> bool {
-    return false;
-}
-
-template <>
-auto inline Diffusion<nonortho::NilCorrector, gradient::GreenGauss>::requires_correction() const
-    -> bool {
+auto inline Diffusion<nonortho::NilCorrector>::requires_correction() const -> bool {
     return false;
 }
 

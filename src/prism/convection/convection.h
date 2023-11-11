@@ -1,13 +1,12 @@
 #pragma once
 
 #include <cmath>
-#include <memory>
 
-#include "../field.h"
-#include "../fvscheme.h"
-#include "../gradient/gradient.h"
-#include "../mesh/pmesh.h"
-#include "../mesh/utilities.h"
+#include "prism/field.h"
+#include "prism/fvscheme.h"
+#include "prism/gradient/gradient.h"
+#include "prism/mesh/pmesh.h"
+#include "prism/mesh/utilities.h"
 
 namespace prism::convection {
 
@@ -20,9 +19,9 @@ struct CoeffsTriplet {
 
 // Finite volume scheme for the discretization of the convection term
 template <typename GradientScheme>
-class ConvectionBase : public FVScheme {
+class IConvection : public FVScheme {
   public:
-    ConvectionBase(ScalarField& rho, VectorField& U, ScalarField& phi)
+    IConvection(ScalarField& rho, VectorField& U, ScalarField& phi)
         : _rho(rho),
           _U(U),
           _phi(phi),
@@ -48,7 +47,7 @@ class ConvectionBase : public FVScheme {
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
     ScalarField _rho;
-    VectorField _U;
+    VectorField& _U;
     ScalarField _phi;
     const mesh::PMesh& _mesh;
     GradientScheme _gradient_scheme;
@@ -56,10 +55,10 @@ class ConvectionBase : public FVScheme {
 
 // Central difference scheme
 template <typename G = gradient::LeastSquares>
-class CentralDifference : public ConvectionBase<G> {
+class CentralDifference : public IConvection<G> {
   public:
     CentralDifference(ScalarField& rho, VectorField& U, ScalarField& phi)
-        : ConvectionBase<G>(rho, U, phi) {}
+        : IConvection<G>(rho, U, phi) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -70,9 +69,9 @@ class CentralDifference : public ConvectionBase<G> {
 
 // Upwind scheme
 template <typename G = gradient::LeastSquares>
-class Upwind : public ConvectionBase<G> {
+class Upwind : public IConvection<G> {
   public:
-    Upwind(ScalarField& rho, VectorField& U, ScalarField& phi) : ConvectionBase<G>(rho, U, phi) {}
+    Upwind(ScalarField& rho, VectorField& U, ScalarField& phi) : IConvection<G>(rho, U, phi) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -82,10 +81,10 @@ class Upwind : public ConvectionBase<G> {
 
 // Second order upwind scheme
 template <typename G = gradient::LeastSquares>
-class SecondOrderUpwind : public ConvectionBase<G> {
+class SecondOrderUpwind : public IConvection<G> {
   public:
     SecondOrderUpwind(ScalarField& rho, VectorField& U, ScalarField& phi)
-        : ConvectionBase<G>(rho, U, phi) {}
+        : IConvection<G>(rho, U, phi) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -95,9 +94,9 @@ class SecondOrderUpwind : public ConvectionBase<G> {
 
 // QUICK scheme
 template <typename G = gradient::LeastSquares>
-class QUICK : public ConvectionBase<G> {
+class QUICK : public IConvection<G> {
   public:
-    QUICK(ScalarField& rho, VectorField& U, ScalarField& phi) : ConvectionBase<G>(rho, U, phi) {}
+    QUICK(ScalarField& rho, VectorField& U, ScalarField& phi) : IConvection<G>(rho, U, phi) {}
 
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
@@ -110,7 +109,7 @@ auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S
 }
 
 template <typename G>
-void ConvectionBase<G>::apply() {
+void IConvection<G>::apply() {
     // TODO: this is repeated in all FVSchemes, we should move it to the base class
     for (const auto& bface : _mesh.boundary_faces()) {
         apply_boundary(_mesh.cell(bface.owner()), bface);
@@ -125,7 +124,7 @@ void ConvectionBase<G>::apply() {
 }
 
 template <typename G>
-void ConvectionBase<G>::apply_interior(const mesh::Face& face) {
+void IConvection<G>::apply_interior(const mesh::Face& face) {
     const auto& owner = _mesh.cell(face.owner());
     const auto& neighbor = _mesh.cell(face.neighbor().value());
 
@@ -136,6 +135,8 @@ void ConvectionBase<G>::apply_interior(const mesh::Face& face) {
 
     // interpolated velocity vector and density at face centroid
     auto g_c = mesh::geo_weight(owner, neighbor, face);
+
+    // TODO: convert this to a utility function
     auto U_f = (g_c * _U[owner_id]) + ((1 - g_c) * _U[neighbor_id]);
     auto rho_f = (g_c * _rho[owner_id]) + ((1 - g_c) * _rho[neighbor_id]);
 
@@ -155,7 +156,7 @@ void ConvectionBase<G>::apply_interior(const mesh::Face& face) {
 }
 
 template <typename G>
-void ConvectionBase<G>::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
+void IConvection<G>::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
@@ -186,7 +187,7 @@ void ConvectionBase<G>::apply_boundary(const mesh::Cell& cell, const mesh::Face&
 }
 
 template <typename G>
-void ConvectionBase<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+void IConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
@@ -206,7 +207,7 @@ void ConvectionBase<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh:
 }
 
 template <typename G>
-void ConvectionBase<G>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
+void IConvection<G>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
     auto cell_id = cell.id();
 
     // face area vector
@@ -234,7 +235,7 @@ void ConvectionBase<G>::apply_boundary_outlet(const mesh::Cell& cell, const mesh
 }
 
 template <typename G>
-auto ConvectionBase<G>::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
+auto IConvection<G>::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
     const auto& boundary_patch = _mesh.face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_U.name());
 
