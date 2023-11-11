@@ -4,9 +4,9 @@
 #include "prism/types.h"
 
 namespace prism::nonortho {
-auto NoneCorrector::interior_triplet(const mesh::Cell& owner,    // NOLINT
-                                     const mesh::Cell& neighbor, // NOLINT
-                                     const mesh::Face& face) -> NonOrthoTriplet {
+auto NilCorrector::interior_triplet(const mesh::Cell& owner,    // NOLINT
+                                    const mesh::Cell& neighbor, // NOLINT
+                                    const mesh::Face& face) -> NonOrthoTriplet {
     NonOrthoTriplet triplets;
 
     triplets.Sf = face.area_vector();
@@ -16,7 +16,7 @@ auto NoneCorrector::interior_triplet(const mesh::Cell& owner,    // NOLINT
     return triplets;
 }
 
-auto NoneCorrector::boundary_triplet(const mesh::Cell& owner, const mesh::Face& face) // NOLINT
+auto NilCorrector::boundary_triplet(const mesh::Cell& owner, const mesh::Face& face) // NOLINT
     -> NonOrthoTriplet {
     NonOrthoTriplet triplets;
 
