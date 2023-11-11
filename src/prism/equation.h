@@ -57,15 +57,8 @@ TransportEquation::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
 
 template <typename S>
 void TransportEquation::add_scheme(S&& scheme) {
-    auto field = scheme.field().value();
-
     if (scheme.requires_correction()) {
         _n_corrected_schemes++;
-    }
-
-    if (&field.mesh() != &_phi.mesh()) {
-        throw std::runtime_error(
-            "Equation::add_scheme() was called with a scheme defined over a different mesh.");
     }
 
     _schemes.emplace_back(std::make_shared<S>(std::forward<S>(scheme)));
@@ -73,15 +66,8 @@ void TransportEquation::add_scheme(S&& scheme) {
 
 template <typename S>
 void TransportEquation::add_scheme(S& scheme) {
-    auto field = scheme.field().value();
-
     if (scheme.requires_correction()) {
         _n_corrected_schemes++;
-    }
-
-    if (&field.mesh() != &_phi.mesh()) {
-        throw std::runtime_error(
-            "Equation::add_scheme() was called with a scheme defined over a different mesh.");
     }
 
     _schemes.emplace_back(std::make_shared<S>(scheme));

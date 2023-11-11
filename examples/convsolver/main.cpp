@@ -1,9 +1,8 @@
 #include <prism/prism.h>
 
-#include <memory>
-
 #include "fmt/core.h"
 #include "prism/gradient/gradient.h"
+#include "prism/nonortho/nonortho.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -49,8 +48,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity vector
-    auto eqn = TransportEquation(diffusion::Diffusion(1e-2, T),
-                                 convection::SecondOrderUpwind(rho, U, T));
+    auto eqn = TransportEquation(diffusion::Diffusion<nonortho::NilCorrector>(1e-2, T),
+                                 convection::Upwind(rho, U, T));
 
     // solve
     auto solver = solver::BiCGSTAB();
