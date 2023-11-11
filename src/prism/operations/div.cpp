@@ -1,6 +1,7 @@
+#include <fmt/core.h>
+
 #include <stdexcept>
 
-#include "fmt/core.h"
 #include "operations.h"
 #include "prism/field.h"
 #include "prism/mesh/boundary.h"
@@ -107,8 +108,8 @@ auto boundary_face_flux(const mesh::PMesh& mesh,
         default:
             throw std::runtime_error(
                 // TODO: write better error message
-                "prism::ops::boundary_face_flux() was given a non-implemented boundary condition "
-                "type.");
+                "prism::ops::boundary_face_flux() was given a non-implemented boundary "
+                "condition");
     }
     return 0.0;
 }

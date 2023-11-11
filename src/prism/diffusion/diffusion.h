@@ -9,7 +9,7 @@
 
 namespace prism::diffusion {
 
-template <typename NonOrthoCorrector = nonortho::NoneCorrector,
+template <typename NonOrthoCorrector = nonortho::NilCorrector,
           typename GradientScheme = gradient::LeastSquares>
 class Diffusion : public FVScheme {
   public:
@@ -226,13 +226,13 @@ void Diffusion<NonOrthoCorrector, GradientScheme>::apply_boundary_fixed(const me
 }
 
 template <>
-auto inline Diffusion<nonortho::NoneCorrector, gradient::LeastSquares>::requires_correction()
-    const -> bool {
+auto inline Diffusion<nonortho::NilCorrector, gradient::LeastSquares>::requires_correction() const
+    -> bool {
     return false;
 }
 
 template <>
-auto inline Diffusion<nonortho::NoneCorrector, gradient::GreenGauss>::requires_correction() const
+auto inline Diffusion<nonortho::NilCorrector, gradient::GreenGauss>::requires_correction() const
     -> bool {
     return false;
 }

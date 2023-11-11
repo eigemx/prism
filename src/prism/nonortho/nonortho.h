@@ -25,7 +25,7 @@ class Corrector {
         -> NonOrthoTriplet = 0;
 };
 
-class NoneCorrector : public Corrector {
+class NilCorrector : public Corrector {
   public:
     auto interior_triplet(const mesh::Cell& owner,
                           const mesh::Cell& neighbor,
