@@ -26,10 +26,10 @@ auto main(int argc, char* argv[]) -> int {
     fmt::println("Okay.");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = ScalarField("temperature", mesh, 300.0);
+    auto T = ScalarField("T", mesh, 300.0);
 
     // density field
-    auto rho = ScalarField("density", mesh, 1.18);
+    auto rho = ScalarField("rho", mesh, 1.18);
 
     // set up a unifform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -46,7 +46,7 @@ auto main(int argc, char* argv[]) -> int {
     Vector3d inlet_velocity = inlet_patch->get_vector_bc("velocity");
     auto U = VectorField("velocity", mesh, inlet_velocity);
 
-    // solve for temperature convection: ∇.(ρuT) - ∇.(κ ∇T) = 0
+    // solve for temperature convection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity vector
     auto eqn = TransportEquation(diffusion::Diffusion<nonortho::NilCorrector>(1e-2, T),
                                  convection::Upwind(rho, U, T));
