@@ -8,8 +8,7 @@
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
 
-namespace prism::convection {
-
+namespace {
 // coefficients for the discretized convection equation for a face
 struct CoeffsTriplet {
     double a_C {}; // cell
@@ -17,22 +16,24 @@ struct CoeffsTriplet {
     double b {};   // source
 };
 
+auto inline face_mass_flow_rate(double rho, const prism::Vector3d& U, const prism::Vector3d& S)
+    -> double {
+    return rho * U.dot(S);
+}
+
+} // namespace
+
+namespace prism::convection {
 // Finite volume scheme for the discretization of the convection term
-template <typename GradientScheme>
+template <typename GradScheme>
 class IConvection : public FVScheme {
   public:
-    IConvection(ScalarField& rho, VectorField& U, ScalarField& phi)
-        : _rho(rho),
-          _U(U),
-          _phi(phi),
-          _mesh(phi.mesh()),
-          _gradient_scheme(phi),
-          FVScheme(phi.mesh().n_cells()) {}
+    IConvection(ScalarField& rho, VectorField& U, ScalarField& phi);
 
     void apply() override;
 
     auto inline field() -> std::optional<ScalarField> override { return _phi; }
-    auto inline grad_scheme() -> GradientScheme& { return _gradient_scheme; }
+    auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
 
   private:
     virtual auto interpolate(double m_dot,
@@ -50,7 +51,7 @@ class IConvection : public FVScheme {
     VectorField& _U;
     ScalarField _phi;
     const mesh::PMesh& _mesh;
-    GradientScheme _gradient_scheme;
+    GradScheme _gradient_scheme;
 };
 
 // Central difference scheme
@@ -79,6 +80,7 @@ class Upwind : public IConvection<G> {
                      const mesh::Face& face) -> CoeffsTriplet override;
 };
 
+
 // Second order upwind scheme
 template <typename G = gradient::LeastSquares>
 class SecondOrderUpwind : public IConvection<G> {
@@ -92,6 +94,7 @@ class SecondOrderUpwind : public IConvection<G> {
                      const mesh::Face& face) -> CoeffsTriplet override;
 };
 
+
 // QUICK scheme
 template <typename G = gradient::LeastSquares>
 class QUICK : public IConvection<G> {
@@ -104,9 +107,14 @@ class QUICK : public IConvection<G> {
                      const mesh::Face& face) -> CoeffsTriplet override;
 };
 
-auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S) -> double {
-    return rho * U.dot(S);
-}
+template <typename G>
+IConvection<G>::IConvection(ScalarField& rho, VectorField& U, ScalarField& phi)
+    : _rho(rho),
+      _U(U),
+      _phi(phi),
+      _mesh(phi.mesh()),
+      _gradient_scheme(phi),
+      FVScheme(phi.mesh().n_cells()) {}
 
 template <typename G>
 void IConvection<G>::apply() {
@@ -252,7 +260,7 @@ auto IConvection<G>::boundary_face_velocity(const mesh::Face& face) const -> Vec
 
         default:
             throw std::runtime_error(fmt::format(
-                "convection::ConvectionBase::boundary_face_velocity(): "
+                "convection::IConvection::boundary_face_velocity(): "
                 "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
                 boundary_patch.name(),
                 _U.name()));

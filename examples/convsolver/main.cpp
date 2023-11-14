@@ -1,6 +1,7 @@
 #include <prism/prism.h>
 
 #include "fmt/core.h"
+#include "prism/convection/convection.h"
 #include "prism/gradient/gradient.h"
 #include "prism/nonortho/nonortho.h"
 
@@ -26,7 +27,7 @@ auto main(int argc, char* argv[]) -> int {
     fmt::println("Okay.");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = ScalarField("T", mesh, 300.0);
+    auto T = ScalarField("temperature", mesh, 300.0);
 
     // density field
     auto rho = ScalarField("rho", mesh, 1.18);
@@ -48,8 +49,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity vector
-    auto eqn = TransportEquation(diffusion::Diffusion<nonortho::NilCorrector>(1e-2, T),
-                                 convection::Upwind(rho, U, T));
+    auto eqn = TransportEquation(diffusion::Diffusion(1e-2, T),
+                                 convection::SecondOrderUpwind<>(rho, U, T));
 
     // solve
     auto solver = solver::BiCGSTAB();
