@@ -1,20 +1,25 @@
 #pragma once
 
-#include "../field.h"
-#include "../mesh/pmesh.h"
-#include "../mesh/utilities.h"
-#include "../types.h"
-#include "Eigen/src/Core/Matrix.h"
 #include "prism/constants.h"
+#include "prism/field.h"
+#include "prism/mesh/pmesh.h"
+#include "prism/mesh/utilities.h"
+#include "prism/types.h"
 
 
 namespace prism::gradient {
 
 // Base class for gradient schemes for explicity calculating the cell gradient of a scalar field.
 // All gradient schemes should inherit from this class and define gradient() function.
-class GradientSchemeBase {
+class AbstractGradient {
   public:
-    GradientSchemeBase(const ScalarField& field) : _field(field) {}
+    AbstractGradient() = delete;
+    AbstractGradient(const ScalarField& field) : _field(field) {} // NOLINT
+    AbstractGradient(const AbstractGradient&) = default;
+    AbstractGradient(AbstractGradient&&) = default;
+    auto operator=(const AbstractGradient&) -> AbstractGradient& = delete;
+    auto operator=(AbstractGradient&&) -> AbstractGradient& = delete;
+
     virtual auto gradient_at_cell(const mesh::Cell& c) -> Vector3d = 0;
     virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d;
     virtual auto gradient_field() -> VectorField;
@@ -22,18 +27,18 @@ class GradientSchemeBase {
     static auto gradient_at_boundary_face(const mesh::Face& f, const ScalarField& field)
         -> Vector3d;
 
-    virtual ~GradientSchemeBase() = default;
+    virtual ~AbstractGradient() = default;
 
   private:
-    const ScalarField& _field;
+    const ScalarField _field;
 };
 
-class GreenGauss : public GradientSchemeBase {
+class GreenGauss : public AbstractGradient {
   public:
     GreenGauss(const ScalarField& field)
         : _field(field),
           _cell_gradients(MatrixX3d::Zero(field.mesh().n_cells(), 3)),
-          GradientSchemeBase(field) {}
+          AbstractGradient(field) {}
 
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
 
@@ -42,7 +47,7 @@ class GreenGauss : public GradientSchemeBase {
     MatrixX3d _cell_gradients;
 };
 
-class LeastSquares : public GradientSchemeBase {
+class LeastSquares : public AbstractGradient {
   public:
     LeastSquares(const ScalarField& field);
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
@@ -55,14 +60,8 @@ class LeastSquares : public GradientSchemeBase {
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
-template <typename G>
-auto create(const ScalarField& field)
-    -> std::enable_if_t<std::is_base_of_v<GradientSchemeBase, G>, std::shared_ptr<G>> {
-    return std::make_shared<G>(field);
-}
-
-auto inline GradientSchemeBase::gradient_at_boundary_face(const mesh::Face& face,
-                                                          const ScalarField& field) -> Vector3d {
+auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face,
+                                                        const ScalarField& field) -> Vector3d {
     const auto& boundary_patch = field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(field.name());
     auto bc_type = boundary_condition.bc_type();
@@ -95,7 +94,7 @@ auto inline GradientSchemeBase::gradient_at_boundary_face(const mesh::Face& face
     }
 }
 
-auto inline GradientSchemeBase::gradient_at_face(const mesh::Face& face) -> Vector3d {
+auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
     // interior face
     if (face.has_neighbor()) {
@@ -128,7 +127,7 @@ auto inline GradientSchemeBase::gradient_at_face(const mesh::Face& face) -> Vect
     return gradient_at_boundary_face(face, _field);
 }
 
-auto inline GradientSchemeBase::gradient_field() -> VectorField {
+auto inline AbstractGradient::gradient_field() -> VectorField {
     auto grad_field_name = _field.name() + "_grad";
     VectorField grad_field {grad_field_name, _field.mesh()};
 

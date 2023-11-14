@@ -5,7 +5,7 @@
 // also check if skewness correction is required here or not, as face_grad is being calculated
 // by weighting the gradients of the two adjacent cells.
 namespace prism::gradient {
-LeastSquares::LeastSquares(const ScalarField& field) : _field(field), GradientSchemeBase(field) {
+LeastSquares::LeastSquares(const ScalarField& field) : _field(field), AbstractGradient(field) {
     set_lsq_matrices();
 }
 
