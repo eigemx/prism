@@ -12,14 +12,14 @@ struct NonOrthoTriplet {
     Vector3d Sf {}, Ef {}, Tf {};
 };
 
-class ICorrector {
+class AbstractCorrector {
   public:
-    ICorrector() = default;
-    virtual ~ICorrector() = default;
-    ICorrector(const ICorrector&) = default;
-    ICorrector(ICorrector&&) noexcept = default;
-    auto operator=(const ICorrector&) -> ICorrector& = default;
-    auto operator=(ICorrector&&) noexcept -> ICorrector& = default;
+    AbstractCorrector() = default;
+    virtual ~AbstractCorrector() = default;
+    AbstractCorrector(const AbstractCorrector&) = default;
+    AbstractCorrector(AbstractCorrector&&) noexcept = default;
+    auto operator=(const AbstractCorrector&) -> AbstractCorrector& = default;
+    auto operator=(AbstractCorrector&&) noexcept -> AbstractCorrector& = default;
 
     virtual auto interior_triplet(const mesh::Cell& owner,
                                   const mesh::Cell& neighbor,
@@ -29,8 +29,7 @@ class ICorrector {
         -> NonOrthoTriplet = 0;
 };
 
-
-class NilCorrector : public ICorrector {
+class NilCorrector : public AbstractCorrector {
   public:
     auto interior_triplet(const mesh::Cell& owner,
                           const mesh::Cell& neighbor,
@@ -40,41 +39,56 @@ class NilCorrector : public ICorrector {
         -> NonOrthoTriplet override;
 };
 
-
 template <typename GradScheme = gradient::LeastSquares>
-class ICorrectorWithGradScheme : public ICorrector {
+class AbstractCorrectorWithGradient : public AbstractCorrector {
   public:
-    ICorrectorWithGradScheme(ScalarField& field) : _grad_scheme(field) {}
+    AbstractCorrectorWithGradient(ScalarField& field) : _grad_scheme(field) {}
     auto grad_scheme() -> GradScheme& { return _grad_scheme; }
 
+    auto interior_triplet(const mesh::Cell& owner,
+                          const mesh::Cell& neighbor,
+                          const mesh::Face& face) -> NonOrthoTriplet override;
+
+    auto boundary_triplet(const mesh::Cell& owner, const mesh::Face& face)
+        -> NonOrthoTriplet override;
+
+
   private:
+    virtual auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d = 0;
     GradScheme _grad_scheme;
 };
 
-
 template <typename GradScheme = gradient::LeastSquares>
-class OverRelaxedCorrector : public ICorrectorWithGradScheme<GradScheme> {
+class OverRelaxedCorrector : public AbstractCorrectorWithGradient<GradScheme> {
   public:
-    OverRelaxedCorrector(ScalarField& field) : ICorrectorWithGradScheme<GradScheme>(field) {}
-    auto interior_triplet(const mesh::Cell& owner,
-                          const mesh::Cell& neighbor,
-                          const mesh::Face& face) -> NonOrthoTriplet override;
+    OverRelaxedCorrector(ScalarField& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
 
-    auto boundary_triplet(const mesh::Cell& owner, const mesh::Face& face)
-        -> NonOrthoTriplet override;
+  private:
+    auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d override;
 };
 
+template <typename GradScheme = gradient::LeastSquares>
+class MinimumCorrector : public AbstractCorrectorWithGradient<GradScheme> {
+  public:
+    MinimumCorrector(ScalarField& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
+
+  private:
+    auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d override;
+};
+
+template <typename GradScheme = gradient::LeastSquares>
+class OrthogonalCorrector : public AbstractCorrectorWithGradient<GradScheme> {
+  public:
+    OrthogonalCorrector(ScalarField& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
+
+  private:
+    auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d override;
+};
 
 auto inline NilCorrector::interior_triplet(const mesh::Cell& owner,    // NOLINT
                                            const mesh::Cell& neighbor, // NOLINT
                                            const mesh::Face& face) -> NonOrthoTriplet {
-    NonOrthoTriplet triplets;
-
-    triplets.Sf = face.area_vector();
-    triplets.Ef = triplets.Sf;
-    triplets.Tf = Vector3d {0., 0., 0.};
-
-    return triplets;
+    return boundary_triplet(owner, face);
 }
 
 auto inline NilCorrector::boundary_triplet(const mesh::Cell& owner, // NOLINT
@@ -90,9 +104,9 @@ auto inline NilCorrector::boundary_triplet(const mesh::Cell& owner, // NOLINT
 }
 
 template <typename GradScheme>
-auto OverRelaxedCorrector<GradScheme>::interior_triplet(const mesh::Cell& owner,
-                                                        const mesh::Cell& neighbor,
-                                                        const mesh::Face& face)
+auto AbstractCorrectorWithGradient<GradScheme>::interior_triplet(const mesh::Cell& owner,
+                                                                 const mesh::Cell& neighbor,
+                                                                 const mesh::Face& face)
     -> NonOrthoTriplet {
     const auto& Sf = face.area_vector();
 
@@ -103,16 +117,14 @@ auto OverRelaxedCorrector<GradScheme>::interior_triplet(const mesh::Cell& owner,
     // unit vector in d_CF direction
     auto e = d_CF / d_CF_norm;
 
-    // orthogonal-like normal vector E_f using over-relaxed approach
-    auto Ef = ((Sf.dot(Sf) / (e.dot(Sf) + EPSILON))) * e;
+    auto Ef = decompose(Sf, e);
 
-    return NonOrthoTriplet {Sf, Ef, Sf - Ef};
+    return {Sf, Ef, Sf - Ef};
 }
 
-
 template <typename GradScheme>
-auto OverRelaxedCorrector<GradScheme>::boundary_triplet(const mesh::Cell& owner,
-                                                        const mesh::Face& face)
+auto AbstractCorrectorWithGradient<GradScheme>::boundary_triplet(const mesh::Cell& owner,
+                                                                 const mesh::Face& face)
     -> NonOrthoTriplet {
     const auto& Sf = face.area_vector();
 
@@ -121,9 +133,28 @@ auto OverRelaxedCorrector<GradScheme>::boundary_triplet(const mesh::Cell& owner,
     auto d_Cf_norm = d_Cf.norm();
     auto e = d_Cf / d_Cf_norm;
 
-    auto Ef = ((Sf.dot(Sf) / e.dot(Sf))) * e;
+    auto Ef = decompose(Sf, e);
 
-    return NonOrthoTriplet {Sf, Ef, Sf - Ef};
+    return {Sf, Ef, Sf - Ef};
 }
+
+template <typename GradScheme>
+auto inline OverRelaxedCorrector<GradScheme>::decompose(const Vector3d& Sf, const Vector3d& e)
+    -> Vector3d {
+    return ((Sf.dot(Sf) / (e.dot(Sf) + EPSILON))) * e;
+}
+
+template <typename GradScheme>
+auto inline MinimumCorrector<GradScheme>::decompose(const Vector3d& Sf, const Vector3d& e)
+    -> Vector3d {
+    return (e.dot(Sf)) * e;
+}
+
+template <typename GradScheme>
+auto inline OrthogonalCorrector<GradScheme>::decompose(const Vector3d& Sf, const Vector3d& e)
+    -> Vector3d {
+    return Sf.norm() * e;
+}
+
 
 } // namespace prism::nonortho
