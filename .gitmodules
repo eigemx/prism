@@ -24,3 +24,10 @@
 [submodule "external/vtu11"]
 	path = external/vtu11
 	url = https://github.com/phmkopp/vtu11
+
+[submodule "external/catch2"]
+	path = external/catch2
+	url = https://github.com/catchorg/Catch2
+[submodule "external/Catch2"]
+	path = external/Catch2
+	url = https://github.com/catchorg/Catch2
