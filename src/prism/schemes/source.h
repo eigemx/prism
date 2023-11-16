@@ -2,8 +2,8 @@
 
 // TODO: rename this to constant.h and move ImplicitPhi to somewher else
 
-#include "../field.h"
-#include "../fvscheme.h"
+#include "fvscheme.h"
+#include "prism/field.h"
 
 namespace prism::source {
 // source term is assumed to be always on the right hand side of the conserved equation.
@@ -59,6 +59,28 @@ ConstantScalar<Sign>::ConstantScalar(ScalarField& phi)
     for (const auto& cell : phi.mesh().cells()) {
         _volume_field[cell.id()] = cell.volume();
     }
+}
+
+template <>
+void inline ConstantScalar<SourceSign::Positive>::apply() {
+    rhs() = _phi.data().array() * _volume_field.array();
+}
+
+template <>
+void inline ConstantScalar<SourceSign::Negative>::apply() {
+    rhs() = -_phi.data().array() * _volume_field.array();
+}
+
+template <>
+void inline ImplicitPhi<SourceSign::Positive>::apply() {
+    matrix().setIdentity();
+    matrix() *= -_coeff;
+}
+
+template <>
+void inline ImplicitPhi<SourceSign::Negative>::apply() {
+    matrix().setIdentity();
+    matrix() *= _coeff;
 }
 
 } // namespace prism::source

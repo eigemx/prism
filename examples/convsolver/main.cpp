@@ -1,9 +1,5 @@
+#include <fmt/core.h>
 #include <prism/prism.h>
-
-#include "fmt/core.h"
-#include "prism/convection/convection.h"
-#include "prism/gradient/gradient.h"
-#include "prism/nonortho/nonortho.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;

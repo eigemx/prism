@@ -1,9 +1,6 @@
 #pragma once
 
 #include "prism/field.h"
-#include "prism/fvscheme.h"
-#include "prism/mesh/cell.h"
-#include "prism/mesh/face.h"
 
 namespace prism::ops {
 
