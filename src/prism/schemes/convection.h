@@ -2,8 +2,8 @@
 
 #include <cmath>
 
+#include "fvscheme.h"
 #include "prism/field.h"
-#include "prism/fvscheme.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"

@@ -4,9 +4,9 @@
 #include <string>
 
 #include "field.h"
-#include "fvscheme.h"
 #include "linear.h"
 #include "mesh/pmesh.h"
+#include "schemes/fvscheme.h"
 #include "types.h"
 
 namespace prism {

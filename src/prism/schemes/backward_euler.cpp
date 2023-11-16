@@ -1,4 +1,4 @@
-#include "backward_euler.h"
+#include "transient.h"
 
 namespace prism::transient {
 BackwardEuler::BackwardEuler(ScalarField& rho, ScalarField& phi, double dt)

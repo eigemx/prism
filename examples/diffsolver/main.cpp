@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "prism/gradient/gradient.h"
-#include "prism/nonortho/nonortho.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;

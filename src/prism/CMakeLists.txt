@@ -12,8 +12,7 @@ add_library(prism
     mesh/reorder.cpp
     gradient/green_gauss.cpp
     gradient/least_squares.cpp
-    source/source.cpp
     numerics/relax.cpp
-    transient/backward_euler.cpp
+    schemes/backward_euler.cpp
     operations/div.cpp
 )
