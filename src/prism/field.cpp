@@ -27,6 +27,27 @@ ScalarField::ScalarField(std::string name,
     : _mesh(&mesh), _name(std::move(name)), _data(std::move(data)) {}
 
 
+auto ScalarField::clone() const -> ScalarField {
+    return {_name, *_mesh, *_data};
+}
+
+auto ScalarField::map(CellMapper* mapper) -> ScalarField& {
+    for (std::size_t i = 0; i < _mesh->n_cells(); ++i) {
+        data()[i] = mapper(_mesh->cell(i));
+    }
+    return *this;
+}
+
+auto ScalarField::map(CoordinatesMapper* mapper) -> ScalarField& {
+    const auto n_cells = _mesh->n_cells();
+    for (std::size_t i = 0; i < n_cells; ++i) {
+        const auto& cell = _mesh->cell(i);
+        const auto& center = cell.center();
+        data()[i] = mapper(center.x(), center.y(), center.z());
+    }
+    return *this;
+}
+
 // VectorField constructors and methods
 VectorField::VectorField(std::string name, const mesh::PMesh& mesh)
     : _mesh(&mesh),
@@ -76,5 +97,6 @@ auto VectorField::y() -> ScalarField {
 auto VectorField::z() -> ScalarField {
     return {_name + "_z", *_mesh, _z};
 }
+
 
 } // namespace prism

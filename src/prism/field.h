@@ -30,25 +30,13 @@ class ScalarField {
 
     auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
 
+    auto clone() const -> ScalarField;
+
     using CoordinatesMapper = double(double, double, double);
     using CellMapper = double(const mesh::Cell&);
 
-    auto inline map(CellMapper* mapper) -> ScalarField& {
-        for (std::size_t i = 0; i < _mesh->n_cells(); ++i) {
-            data()[i] = mapper(_mesh->cell(i));
-        }
-        return *this;
-    }
-
-    auto inline map(CoordinatesMapper* mapper) -> ScalarField& {
-        const auto n_cells = _mesh->n_cells();
-        for (std::size_t i = 0; i < n_cells; ++i) {
-            const auto& cell = _mesh->cell(i);
-            const auto& center = cell.center();
-            data()[i] = mapper(center.x(), center.y(), center.z());
-        }
-        return *this;
-    }
+    auto map(CellMapper* mapper) -> ScalarField&;
+    auto map(CoordinatesMapper* mapper) -> ScalarField&;
 
     auto inline operator[](std::size_t i) const -> const double& { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
