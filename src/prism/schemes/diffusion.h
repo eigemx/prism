@@ -29,21 +29,16 @@ class Diffusion : public FVScheme {
 
     double _kappa;
     ScalarField _phi;
-    const mesh::PMesh& _mesh;
     NonOrthoCorrector _corrector;
 };
 
 template <typename NonOrthoCorrector>
 Diffusion<NonOrthoCorrector>::Diffusion(double kappa, ScalarField& phi)
-    : _kappa(kappa),
-      _phi(phi),
-      _mesh(phi.mesh()),
-      FVScheme(phi.mesh().n_cells()),
-      _corrector(phi) {}
+    : _kappa(kappa), _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {}
 
 template <>
 inline Diffusion<nonortho::NilCorrector>::Diffusion(double kappa, ScalarField& phi)
-    : _kappa(kappa), _phi(phi), _mesh(phi.mesh()), FVScheme(phi.mesh().n_cells()) {}
+    : _kappa(kappa), _phi(phi), FVScheme(phi.mesh().n_cells()) {}
 
 
 template <typename NonOrthoCorrector>
@@ -56,11 +51,11 @@ void inline Diffusion<NonOrthoCorrector>::apply() {
      * and if the scheme does not require explicit correction, it will not re-calculate
      * the scheme coefficients and will not zero out the scheme matrix and RHS vector.
      */
-    for (const auto& bface : _mesh.boundary_faces()) {
-        apply_boundary(_mesh.cell(bface.owner()), bface);
+    for (const auto& bface : _phi.mesh().boundary_faces()) {
+        apply_boundary(_phi.mesh().cell(bface.owner()), bface);
     }
 
-    for (const auto& iface : _mesh.interior_faces()) {
+    for (const auto& iface : _phi.mesh().interior_faces()) {
         apply_interior(iface);
     }
 
@@ -80,7 +75,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Cell& cell,
      * @param cell The cell that owns the boundary face.
      * @param face The boundary face.
      */
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
     switch (boundary_condition.bc_type()) {
@@ -133,7 +128,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cel
      * @param face The boundary face.
      */
     // get the fixed gradient (flux) value associated with the face
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     auto flux_wall = boundary_patch.get_scalar_bc(_phi.name());
 
     auto cell_id = cell.id();
@@ -146,8 +141,8 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cel
 
 template <typename NonOrthoCorrector>
 void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
-    const auto& owner = _mesh.cell(face.owner());
-    const auto& neighbor = _mesh.cell(face.neighbor().value());
+    const auto& owner = _phi.mesh().cell(face.owner());
+    const auto& neighbor = _phi.mesh().cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
     auto d_CF = neighbor.center() - owner.center();
@@ -183,8 +178,8 @@ void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
 
 template <>
 void inline Diffusion<nonortho::NilCorrector>::apply_interior(const mesh::Face& face) {
-    const auto& owner = _mesh.cell(face.owner());
-    const auto& neighbor = _mesh.cell(face.neighbor().value());
+    const auto& owner = _phi.mesh().cell(face.owner());
+    const auto& neighbor = _phi.mesh().cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
     auto d_CF = neighbor.center() - owner.center();
@@ -222,7 +217,7 @@ void Diffusion<NonOrthoCorrector>::correct_non_orhto_boundary_fixed(const mesh::
 
     // now we need to calculate the gradient of phi at the face center
     auto boundary_patch_id = face.boundary_patch_id().value();
-    const auto& face_boundary_patch = _mesh.boundary_patches()[boundary_patch_id];
+    const auto& face_boundary_patch = _phi.mesh().boundary_patches()[boundary_patch_id];
 
     auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
     auto phi_c = _phi[cell.id()];
@@ -236,7 +231,7 @@ template <typename NonOrthoCorrector>
 void Diffusion<NonOrthoCorrector>::apply_boundary_fixed(const mesh::Cell& cell,
                                                         const mesh::Face& face) {
     // get the fixed phi variable associated with the face
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
     auto cell_id = cell.id();

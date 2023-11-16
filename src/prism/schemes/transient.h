@@ -18,8 +18,8 @@ class BackwardEuler : public FVScheme, public AbstractTransientScheme {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
 
-    ScalarField& _rho;
-    ScalarField& _phi;
+    ScalarField _rho;
+    ScalarField _phi;
     ScalarField _rho_prev;
     ScalarField _phi_prev;
     VectorXd _volume_field;
