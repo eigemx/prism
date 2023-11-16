@@ -26,7 +26,7 @@ class ConstantScalar : public FVScheme {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
 
-    ScalarField& _phi;
+    ScalarField _phi;
     VectorXd _volume_field;
 };
 
@@ -47,7 +47,7 @@ class ImplicitPhi : public FVScheme {
 
     auto inline requires_correction() const -> bool override { return false; }
 
-    ScalarField& _phi;
+    ScalarField _phi;
     double _coeff {1.0};
 };
 

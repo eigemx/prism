@@ -46,9 +46,8 @@ class AbstractConvection : public FVScheme {
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
     ScalarField _rho;
-    VectorField& _U;
+    VectorField _U;
     ScalarField _phi;
-    const mesh::PMesh& _mesh;
     GradScheme _gradient_scheme;
 };
 
@@ -109,21 +108,16 @@ class QUICK : public AbstractConvection<G> {
 
 template <typename G>
 AbstractConvection<G>::AbstractConvection(ScalarField& rho, VectorField& U, ScalarField& phi)
-    : _rho(rho),
-      _U(U),
-      _phi(phi),
-      _mesh(phi.mesh()),
-      _gradient_scheme(phi),
-      FVScheme(phi.mesh().n_cells()) {}
+    : _rho(rho), _U(U), _phi(phi), _gradient_scheme(phi), FVScheme(phi.mesh().n_cells()) {}
 
 template <typename G>
 void AbstractConvection<G>::apply() {
     // TODO: this is repeated in all FVSchemes, we should move it to the base class
-    for (const auto& bface : _mesh.boundary_faces()) {
-        apply_boundary(_mesh.cell(bface.owner()), bface);
+    for (const auto& bface : _phi.mesh().boundary_faces()) {
+        apply_boundary(_phi.mesh().cell(bface.owner()), bface);
     }
 
-    for (const auto& iface : _mesh.interior_faces()) {
+    for (const auto& iface : _phi.mesh().interior_faces()) {
         apply_interior(iface);
     }
 
@@ -133,8 +127,8 @@ void AbstractConvection<G>::apply() {
 
 template <typename G>
 void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
-    const auto& owner = _mesh.cell(face.owner());
-    const auto& neighbor = _mesh.cell(face.neighbor().value());
+    const auto& owner = _phi.mesh().cell(face.owner());
+    const auto& neighbor = _phi.mesh().cell(face.neighbor().value());
 
     auto owner_id = owner.id();
     auto neighbor_id = neighbor.id();
@@ -165,7 +159,7 @@ void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
 
 template <typename G>
 void AbstractConvection<G>::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
     switch (boundary_condition.bc_type()) {
@@ -196,7 +190,7 @@ void AbstractConvection<G>::apply_boundary(const mesh::Cell& cell, const mesh::F
 
 template <typename G>
 void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
     const auto& S_f = face.area_vector();
@@ -234,7 +228,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
             fmt::format("convection::ConvectionBase::apply_boundary_outlet(): "
                         "Reverse flow detected at outlet boundary patch '{}'. "
                         "This may cause the solution to diverge.",
-                        _mesh.face_boundary_patch(face).name()));
+                        _phi.mesh().face_boundary_patch(face).name()));
     }
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
@@ -245,7 +239,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
 
 template <typename G>
 auto AbstractConvection<G>::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
-    const auto& boundary_patch = _mesh.face_boundary_patch(face);
+    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_U.name());
 
     switch (boundary_condition.bc_type()) {
