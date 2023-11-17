@@ -6,6 +6,7 @@
 
 namespace prism {
 
+using Eigen::Matrix3d;
 using Eigen::MatrixX3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;

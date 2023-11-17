@@ -13,9 +13,12 @@ template <typename NonOrthoCorrector = nonortho::OverRelaxedCorrector<>>
 class Diffusion : public FVScheme {
   public:
     Diffusion(double kappa, ScalarField& phi);
+    Diffusion(const Vector3d& kappa, ScalarField& phi);
 
     void apply() override;
     auto field() -> std::optional<ScalarField> override { return _phi; }
+
+    // requires_correction() will be overloaded to return false in case of NIlCorrector
     auto requires_correction() const -> bool override { return true; }
 
   private:
@@ -23,23 +26,40 @@ class Diffusion : public FVScheme {
     void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
     void apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face);
-    void correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
-                                          const mesh::Face& face,
-                                          const Vector3d& T_f);
+    void correct_nonorhto_boundary_fixed(const mesh::Cell& cell,
+                                         const mesh::Face& face,
+                                         const Vector3d& Tf_prime);
 
-    double _kappa;
+    Matrix3d _kappa_matrix;
     ScalarField _phi;
     NonOrthoCorrector _corrector;
 };
 
 template <typename NonOrthoCorrector>
 Diffusion<NonOrthoCorrector>::Diffusion(double kappa, ScalarField& phi)
-    : _kappa(kappa), _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {}
+    : _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {
+    _kappa_matrix = Matrix3d::Identity() * kappa;
+}
+
+template <typename NonOrthoCorrector>
+Diffusion<NonOrthoCorrector>::Diffusion(const Vector3d& kappa, ScalarField& phi)
+    : _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {
+    _kappa_matrix = Matrix3d::Identity();
+    _kappa_matrix.diagonal() = _kappa_matrix.diagonal().array() * kappa.array();
+}
 
 template <>
 inline Diffusion<nonortho::NilCorrector>::Diffusion(double kappa, ScalarField& phi)
-    : _kappa(kappa), _phi(phi), FVScheme(phi.mesh().n_cells()) {}
+    : _phi(phi), FVScheme(phi.mesh().n_cells()) {
+    _kappa_matrix = Matrix3d::Identity() * kappa;
+}
 
+template <>
+inline Diffusion<nonortho::NilCorrector>::Diffusion(const Vector3d& kappa, ScalarField& phi)
+    : _phi(phi), FVScheme(phi.mesh().n_cells()) {
+    _kappa_matrix = Matrix3d::Identity();
+    _kappa_matrix.diagonal() = _kappa_matrix.diagonal().array() * kappa.array();
+}
 
 template <typename NonOrthoCorrector>
 void inline Diffusion<NonOrthoCorrector>::apply() {
@@ -131,11 +151,9 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cel
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     auto flux_wall = boundary_patch.get_scalar_bc(_phi.name());
 
-    auto cell_id = cell.id();
-
     // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
     // and paragraph 8.6.8.2
-    rhs(cell_id) += -flux_wall * face.area();
+    rhs(cell.id()) += -flux_wall * face.area();
 }
 
 
@@ -152,28 +170,31 @@ void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
     auto e = d_CF / d_CF_norm;
 
     const auto& [Sf, Ef, Tf] = _corrector.interior_triplet(owner, neighbor, face);
+    Vector3d Ef_prime = _kappa_matrix * Ef;
 
     // geometric diffusion coefficient
-    auto g_diff = Ef.norm() / (d_CF_norm + EPSILON);
+    auto g_diff = Ef_prime.norm() / (d_CF_norm + EPSILON);
 
     auto owner_id = owner.id();
     auto neighbor_id = neighbor.id();
 
     // kappa * g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
-    auto dval = g_diff * _kappa;
-    insert(owner_id, owner_id, dval);
-    insert(neighbor_id, neighbor_id, dval);
+    insert(owner_id, owner_id, g_diff);
+    insert(neighbor_id, neighbor_id, g_diff);
 
     // off-diagonal coefficients
-    insert(owner_id, neighbor_id, -dval);
-    insert(neighbor_id, owner_id, -dval);
+    insert(owner_id, neighbor_id, -g_diff);
+    insert(neighbor_id, owner_id, -g_diff);
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     auto grad_f = _corrector.grad_scheme().gradient_at_face(face);
-    rhs(owner_id) += Tf.dot(grad_f) * _kappa;
-    rhs(neighbor_id) += -Tf.dot(grad_f) * _kappa;
+    Vector3d Tf_prime = _kappa_matrix * Tf;
+
+    // update right hand side
+    rhs(owner_id) += Tf_prime.dot(grad_f);
+    rhs(neighbor_id) += -Tf_prime.dot(grad_f);
 }
 
 template <>
@@ -185,30 +206,30 @@ void inline Diffusion<nonortho::NilCorrector>::apply_interior(const mesh::Face& 
     auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
 
-    auto Sf = face.area_vector();
+    const Vector3d& Sf = face.area_vector();
+    Vector3d Sf_prime = _kappa_matrix * Sf;
 
     // geometric diffusion coefficient
-    auto g_diff = Sf.norm() / (d_CF_norm + EPSILON);
+    auto g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
 
     auto owner_id = owner.id();
     auto neighbor_id = neighbor.id();
 
     // kappa * g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
-    auto dval = g_diff * _kappa;
-    insert(owner_id, owner_id, dval);
-    insert(neighbor_id, neighbor_id, dval);
+    insert(owner_id, owner_id, g_diff);
+    insert(neighbor_id, neighbor_id, g_diff);
 
     // off-diagonal coefficients
-    insert(owner_id, neighbor_id, -dval);
-    insert(neighbor_id, owner_id, -dval);
+    insert(owner_id, neighbor_id, -g_diff);
+    insert(neighbor_id, owner_id, -g_diff);
 }
 
 
 template <typename NonOrthoCorrector>
-void Diffusion<NonOrthoCorrector>::correct_non_orhto_boundary_fixed(const mesh::Cell& cell,
-                                                                    const mesh::Face& face,
-                                                                    const Vector3d& T_f) {
+void Diffusion<NonOrthoCorrector>::correct_nonorhto_boundary_fixed(const mesh::Cell& cell,
+                                                                   const mesh::Face& face,
+                                                                   const Vector3d& Tf_prime) {
     // we need to calculate the gradient of phi at the face
     // first let's calculate the vector joining the face center to the cell center
     auto d_CF = face.center() - cell.center();
@@ -223,7 +244,7 @@ void Diffusion<NonOrthoCorrector>::correct_non_orhto_boundary_fixed(const mesh::
     auto phi_c = _phi[cell.id()];
 
     auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + EPSILON)) * e;
-    rhs(cell.id()) += T_f.dot(grad_f) * _kappa;
+    rhs(cell.id()) += Tf_prime.dot(grad_f);
 }
 
 
@@ -241,12 +262,15 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_fixed(const mesh::Cell& cell,
     auto d_Cf_norm = d_Cf.norm();
 
     const auto& [_, Ef, Tf] = _corrector.boundary_triplet(cell, face);
-    auto g_diff = Ef.norm() / (d_Cf_norm + EPSILON);
+    Vector3d Ef_prime = _kappa_matrix * Ef;
 
-    insert(cell_id, cell_id, g_diff * _kappa);
-    rhs(cell_id) += g_diff * _kappa * phi_wall;
+    auto g_diff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
 
-    correct_non_orhto_boundary_fixed(cell, face, Tf);
+    insert(cell_id, cell_id, g_diff);
+    rhs(cell_id) += g_diff * phi_wall;
+
+    Vector3d Tf_prime = _kappa_matrix * Tf;
+    correct_nonorhto_boundary_fixed(cell, face, Tf_prime);
 }
 
 template <>
