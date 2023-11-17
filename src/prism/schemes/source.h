@@ -4,22 +4,28 @@
 
 #include "fvscheme.h"
 #include "prism/field.h"
+#include "prism/operations/operations.h"
 
 namespace prism::source {
 // source term is assumed to be always on the right hand side of the conserved equation.
 // we can control the sign of the source term by using the SourceSign template parameter.
 enum class SourceSign { Positive, Negative };
 
+
+class AbstractSource {};
+class AbstractImplicitSource : public AbstractSource {};
+class AbstractExplicitSource : public AbstractSource {};
+
 // Discretized constant source/sink term (like gravity), takes a scalar field
 // and adds it to the right hand side of the system of equation
+// coefficients are calculated during (and only during) initialization,
+// no corrections are required afterwards
 template <SourceSign Sign = SourceSign::Positive>
-class ConstantScalar : public FVScheme {
+class ConstantScalar : public FVScheme, public AbstractExplicitSource {
   public:
     ConstantScalar(ScalarField& phi);
-    ConstantScalar(ScalarField&& phi) = delete;
 
     auto requires_correction() const -> bool override { return false; }
-
     void apply() override;
 
   private:
@@ -30,9 +36,37 @@ class ConstantScalar : public FVScheme {
     VectorXd _volume_field;
 };
 
+
+template <SourceSign Sign = SourceSign::Positive>
+class Divergence : public FVScheme, public AbstractExplicitSource {
+  public:
+    Divergence(const VectorField& U);
+
+    void apply() override;
+
+  private:
+    void inline apply_interior(const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+
+    VectorField _U;
+};
+
+template <SourceSign Sign>
+Divergence<Sign>::Divergence(const VectorField& U) : FVScheme(U.mesh().n_cells(), false), _U(U) {}
+
+template <>
+void inline Divergence<SourceSign::Positive>::apply() {
+    rhs() = ops::div(_U).data();
+}
+
+template <>
+void inline Divergence<SourceSign::Negative>::apply() {
+    rhs() = ops::div(_U).data();
+}
+
 // TODO: Test this!
 template <SourceSign Sign = SourceSign::Positive>
-class ImplicitPhi : public FVScheme {
+class ImplicitPhi : public FVScheme, public AbstractImplicitSource {
   public:
     ImplicitPhi(ScalarField& phi, double coeff = 1.0)
         : _phi(phi), _coeff(coeff), FVScheme(phi.mesh().n_cells()) {}
@@ -53,7 +87,7 @@ class ImplicitPhi : public FVScheme {
 
 template <SourceSign Sign>
 ConstantScalar<Sign>::ConstantScalar(ScalarField& phi)
-    : _phi(phi), FVScheme(phi.mesh().n_cells()) {
+    : _phi(phi), FVScheme(phi.mesh().n_cells(), false) {
     _volume_field.resize(phi.mesh().n_cells());
 
     for (const auto& cell : phi.mesh().cells()) {

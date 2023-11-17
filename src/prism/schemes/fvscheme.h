@@ -11,7 +11,7 @@ namespace prism {
 
 class FVScheme : public LinearSystem {
   public:
-    FVScheme(std::size_t n_cells) : LinearSystem(n_cells) {}
+    FVScheme(std::size_t n_cells, bool need_matrix = true) : LinearSystem(n_cells, need_matrix) {}
 
     // apply the discretization scheme
     virtual void apply() = 0;
