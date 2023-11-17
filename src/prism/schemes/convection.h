@@ -45,9 +45,9 @@ class AbstractConvection : public FVScheme {
     void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
-    ScalarField _rho;
-    VectorField _U;
-    ScalarField _phi;
+    const ScalarField _rho;
+    const VectorField _U;
+    const ScalarField _phi;
     GradScheme _gradient_scheme;
 };
 
@@ -204,8 +204,9 @@ void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const m
     // and should be generalized to work for all schemes.
 
     // in case owner cell is an upstream cell
-    insert(cell.id(), cell.id(), std::max(m_dot_f, 0.0));
-    rhs(cell.id()) += std::max(-m_dot_f * phi_wall, 0.0);
+    const std::size_t cell_id = cell.id();
+    insert(cell_id, cell_id, std::max(m_dot_f, 0.0));
+    rhs(cell_id) += std::max(-m_dot_f * phi_wall, 0.0);
 }
 
 template <typename G>
@@ -255,7 +256,7 @@ auto AbstractConvection<G>::boundary_face_velocity(const mesh::Face& face) const
 
         default:
             throw std::runtime_error(fmt::format(
-                "convection::IConvection::boundary_face_velocity(): "
+                "convection::AbstractConvection::boundary_face_velocity(): "
                 "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
                 boundary_patch.name(),
                 _U.name()));
