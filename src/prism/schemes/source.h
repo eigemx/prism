@@ -54,23 +54,20 @@ class Divergence : public FVScheme, public AbstractExplicitSource {
 template <SourceSign Sign>
 Divergence<Sign>::Divergence(const VectorField& U) : FVScheme(U.mesh().n_cells(), false), _U(U) {}
 
-template <>
-void inline Divergence<SourceSign::Positive>::apply() {
-    rhs() = ops::div(_U).data();
-}
-
-template <>
-void inline Divergence<SourceSign::Negative>::apply() {
-    rhs() = ops::div(_U).data();
+template <SourceSign Sign>
+void inline Divergence<Sign>::apply() {
+    if (Sign == SourceSign::Positive) {
+        rhs() = ops::div(_U).data();
+        return;
+    }
+    rhs() = -ops::div(_U).data();
 }
 
 // TODO: Test this!
 template <SourceSign Sign = SourceSign::Positive>
-class ImplicitPhi : public FVScheme, public AbstractImplicitSource {
+class Field : public FVScheme, public AbstractImplicitSource {
   public:
-    ImplicitPhi(ScalarField& phi, double coeff = 1.0)
-        : _phi(phi), _coeff(coeff), FVScheme(phi.mesh().n_cells()) {}
-    ImplicitPhi(ScalarField&& phi) = delete;
+    Field(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
 
     void apply() override;
     auto inline field() -> std::optional<ScalarField> override { return _phi; }
@@ -82,7 +79,6 @@ class ImplicitPhi : public FVScheme, public AbstractImplicitSource {
     auto inline requires_correction() const -> bool override { return false; }
 
     ScalarField _phi;
-    double _coeff {1.0};
 };
 
 template <SourceSign Sign>
@@ -95,26 +91,22 @@ ConstantScalar<Sign>::ConstantScalar(ScalarField& phi)
     }
 }
 
-template <>
-void inline ConstantScalar<SourceSign::Positive>::apply() {
-    rhs() = _phi.data().array() * _volume_field.array();
-}
-
-template <>
-void inline ConstantScalar<SourceSign::Negative>::apply() {
+template <SourceSign Sign>
+void inline ConstantScalar<Sign>::apply() {
+    if (Sign == SourceSign::Positive) {
+        rhs() = _phi.data().array() * _volume_field.array();
+        return;
+    }
     rhs() = -_phi.data().array() * _volume_field.array();
 }
 
-template <>
-void inline ImplicitPhi<SourceSign::Positive>::apply() {
+template <SourceSign Sign>
+void inline Field<Sign>::apply() {
     matrix().setIdentity();
-    matrix() *= -_coeff;
-}
-
-template <>
-void inline ImplicitPhi<SourceSign::Negative>::apply() {
-    matrix().setIdentity();
-    matrix() *= _coeff;
+    if (Sign == SourceSign::Positive) {
+        matrix() *= -1;
+        return;
+    }
 }
 
 } // namespace prism::source
