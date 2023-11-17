@@ -31,7 +31,7 @@ class Diffusion : public FVScheme {
                                          const Vector3d& Tf_prime);
 
     Matrix3d _kappa_matrix;
-    ScalarField _phi;
+    const ScalarField _phi;
     NonOrthoCorrector _corrector;
 };
 

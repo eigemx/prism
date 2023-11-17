@@ -1,16 +1,15 @@
 #pragma once
 
-// TODO: rename this to constant.h and move ImplicitPhi to somewher else
-
 #include "fvscheme.h"
 #include "prism/field.h"
+#include "prism/gradient/gradient.h"
 #include "prism/operations/operations.h"
+
 
 namespace prism::source {
 // source term is assumed to be always on the right hand side of the conserved equation.
 // we can control the sign of the source term by using the SourceSign template parameter.
 enum class SourceSign { Positive, Negative };
-
 
 class AbstractSource {};
 class AbstractImplicitSource : public AbstractSource {};
@@ -32,10 +31,9 @@ class ConstantScalar : public FVScheme, public AbstractExplicitSource {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
 
-    ScalarField _phi;
+    const ScalarField _phi;
     VectorXd _volume_field;
 };
-
 
 template <SourceSign Sign = SourceSign::Positive>
 class Divergence : public FVScheme, public AbstractExplicitSource {
@@ -48,20 +46,25 @@ class Divergence : public FVScheme, public AbstractExplicitSource {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
 
-    VectorField _U;
+    const VectorField _U;
 };
 
-template <SourceSign Sign>
-Divergence<Sign>::Divergence(const VectorField& U) : FVScheme(U.mesh().n_cells(), false), _U(U) {}
+template <SourceSign Sign, typename GradientScheme = gradient::LeastSquares>
+class Gradient : public FVScheme {
+  public:
+    Gradient(ScalarField& phi, Coords coord)
+        : _phi(phi), _grad_scheme(phi), _coords(coord), FVScheme(phi.mesh().n_cells()) {}
 
-template <SourceSign Sign>
-void inline Divergence<Sign>::apply() {
-    if (Sign == SourceSign::Positive) {
-        rhs() = ops::div(_U).data();
-        return;
-    }
-    rhs() = -ops::div(_U).data();
-}
+    void apply() override;
+
+  private:
+    void inline apply_interior(const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+
+    ScalarField& _phi;
+    Coords _coords;
+    GradientScheme _grad_scheme;
+};
 
 // TODO: Test this!
 template <SourceSign Sign = SourceSign::Positive>
@@ -97,12 +100,57 @@ void inline ConstantScalar<Sign>::apply() {
         rhs() = _phi.data().array() * _volume_field.array();
         return;
     }
+
     rhs() = -_phi.data().array() * _volume_field.array();
+}
+
+template <SourceSign Sign>
+Divergence<Sign>::Divergence(const VectorField& U) : FVScheme(U.mesh().n_cells(), false), _U(U) {}
+
+template <SourceSign Sign>
+void inline Divergence<Sign>::apply() {
+    if (Sign == SourceSign::Positive) {
+        rhs() = ops::div(_U).data();
+        return;
+    }
+    rhs() = -ops::div(_U).data();
+}
+
+template <SourceSign Sign, typename GradientScheme>
+void Gradient<Sign, GradientScheme>::apply() {
+    auto grad_field = _grad_scheme.gradient_field();
+
+    switch (_coords) {
+        case Coords::X: {
+            rhs() = grad_field.x().data();
+            break;
+        }
+        case Coords::Y: {
+            rhs() = grad_field.y().data();
+            break;
+        }
+
+        case Coords::Z: {
+            rhs() = grad_field.z().data();
+            break;
+        }
+
+        default: {
+            // We should not reach this!
+            throw std::runtime_error(
+                "source::Gradient::apply() was given an unknown coordinate!");
+        }
+    }
+
+    if (Sign == SourceSign::Negative) {
+        rhs() = -rhs();
+    }
 }
 
 template <SourceSign Sign>
 void inline Field<Sign>::apply() {
     matrix().setIdentity();
+
     if (Sign == SourceSign::Positive) {
         matrix() *= -1;
         return;
