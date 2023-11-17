@@ -1,6 +1,8 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
 
+#include "prism/schemes/source.h"
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
@@ -45,8 +47,10 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature convection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and u is the velocity vector
-    auto eqn = TransportEquation(diffusion::Diffusion(1e-2, T),
-                                 convection::SecondOrderUpwind<>(rho, U, T));
+    auto eqn = TransportEquation(
+        diffusion::Diffusion(1e-2, T),
+        convection::SecondOrderUpwind<>(rho, U, T),
+        source::Divergence(U)); // This should not affect the solution, because ∇.U = 0
 
     // solve
     auto solver = solver::BiCGSTAB();

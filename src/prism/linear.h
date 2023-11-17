@@ -16,17 +16,20 @@ class LinearSystem {
     auto operator=(LinearSystem&& other) -> LinearSystem& = default;
     virtual ~LinearSystem() = default;
 
-    LinearSystem(std::size_t n_cells) : _A(n_cells, n_cells), _b(n_cells) {
+    LinearSystem(std::size_t n_cells, bool need_matrix = true)
+        : _A(n_cells, n_cells), _b(n_cells) {
         // set the right hand side to zero
         _b.setZero();
 
-        // assume that the mesh is purely tetrahedral, so each cell has 3 neighbors
-        // then the number of triplets (i, j, v) is 4 * n_cells
-        // this is the minimum number of triplets, but it is not the exact number
-        // In the general case of a polyhedral mesh, this number is not correct
-        // but can be treated as a warm-up for allocations.
-        // TODO: check if this is making any difference, and remove it if not.
-        _triplets.reserve(4 * n_cells);
+        if (need_matrix) {
+            // assume that the mesh is purely tetrahedral, so each cell has 3 neighbors
+            // then the number of triplets (i, j, v) is 4 * n_cells
+            // this is the minimum number of triplets, but it is not the exact number
+            // In the general case of a polyhedral mesh, this number is not correct
+            // but can be treated as a warm-up for allocations.
+            // TODO: check if this is making any difference, and remove it if not.
+            _triplets.reserve(4 * n_cells);
+        }
     }
 
     // setters and getters for matrix A in the right hand side of the linear system
