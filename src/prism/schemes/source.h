@@ -22,7 +22,7 @@ class AbstractExplicitSource : public AbstractSource {};
 template <SourceSign Sign = SourceSign::Positive>
 class ConstantScalar : public FVScheme, public AbstractExplicitSource {
   public:
-    ConstantScalar(ScalarField& phi);
+    ConstantScalar(ScalarField phi);
 
     auto requires_correction() const -> bool override { return false; }
     void apply() override;
@@ -52,8 +52,8 @@ class Divergence : public FVScheme, public AbstractExplicitSource {
 template <SourceSign Sign, typename GradientScheme = gradient::LeastSquares>
 class Gradient : public FVScheme {
   public:
-    Gradient(ScalarField& phi, Coords coord)
-        : _phi(phi), _grad_scheme(phi), _coords(coord), FVScheme(phi.mesh().n_cells()) {}
+    Gradient(ScalarField& phi, Coord coord)
+        : _phi(phi), _grad_scheme(phi), _coord(coord), FVScheme(phi.mesh().n_cells()) {}
 
     void apply() override;
 
@@ -61,8 +61,8 @@ class Gradient : public FVScheme {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
 
-    ScalarField& _phi;
-    Coords _coords;
+    ScalarField _phi;
+    Coord _coord;
     GradientScheme _grad_scheme;
 };
 
@@ -85,7 +85,7 @@ class Field : public FVScheme, public AbstractImplicitSource {
 };
 
 template <SourceSign Sign>
-ConstantScalar<Sign>::ConstantScalar(ScalarField& phi)
+ConstantScalar<Sign>::ConstantScalar(ScalarField phi)
     : _phi(phi), FVScheme(phi.mesh().n_cells(), false) {
     _volume_field.resize(phi.mesh().n_cells());
 
@@ -120,17 +120,17 @@ template <SourceSign Sign, typename GradientScheme>
 void Gradient<Sign, GradientScheme>::apply() {
     auto grad_field = _grad_scheme.gradient_field();
 
-    switch (_coords) {
-        case Coords::X: {
+    switch (_coord) {
+        case Coord::X: {
             rhs() = grad_field.x().data();
             break;
         }
-        case Coords::Y: {
+        case Coord::Y: {
             rhs() = grad_field.y().data();
             break;
         }
 
-        case Coords::Z: {
+        case Coord::Z: {
             rhs() = grad_field.z().data();
             break;
         }

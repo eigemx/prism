@@ -1,6 +1,9 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
 
+#include "prism/field.h"
+#include "prism/gradient/gradient.h"
+#include "prism/operations/operations.h"
 #include "prism/schemes/source.h"
 
 auto main(int argc, char* argv[]) -> int {
@@ -42,21 +45,32 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
+    // Set a uniform velocity field, with value equal to inlet velocity;
     Vector3d inlet_velocity = inlet_patch->get_vector_bc("velocity");
     auto U = VectorField("velocity", mesh, inlet_velocity);
 
-    // solve for temperature convection: ∇.(ρUT) - ∇.(κ ∇T) = 0
-    // where ρ is the density and u is the velocity vector
+    // A zero field, just to demonstrate how to add arbitray constant source terms
+    auto useLessField = ScalarField("zero", mesh, 0.0);
+
+    // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
+    // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = TransportEquation(
-        diffusion::Diffusion(1e-2, T),
-        convection::SecondOrderUpwind<>(rho, U, T),
-        source::Divergence(U)); // This should not affect the solution, because ∇.U = 0
+        // Add discretization schemes
+        convection::SecondOrderUpwind<>(rho, U, T), // ∇.(ρUT)
+        diffusion::Diffusion(1e-2, T),              // - ∇.(κ ∇T)
+        source::ConstantScalar(useLessField)        // S (sources are always added to the RHS)
+    );
 
     // solve
     auto solver = solver::BiCGSTAB();
     solver.solve(eqn, 2000, 1e-3);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
+
+    auto grad_field = gradient::LeastSquares(U.x()).gradient_field();
+    auto div_of_grad = ops::div(grad_field);
+
+    fmt::println("Here: {}", div_of_grad[0]);
 
     return 0;
 }

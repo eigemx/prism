@@ -110,6 +110,8 @@ class BoundaryPatch {
     auto get_vector_bc(const std::string& field_name) const -> Vector3d;
 
   private:
+    auto get_scalar_bc_subfield(const std::string& name) const -> double;
+
     std::string _name;
     std::map<std::string, BoundaryCondition> _field_name_to_bc_map;
 };
