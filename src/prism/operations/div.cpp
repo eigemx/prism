@@ -1,5 +1,3 @@
-#include <fmt/core.h>
-
 #include <stdexcept>
 
 #include "operations.h"
@@ -28,7 +26,7 @@ auto boundary_face_flux(const mesh::PMesh& mesh,
                         const mesh::Face& face,
                         const VectorField& U) -> double;
 
-auto div(const VectorField& U) -> ScalarField {
+auto div(const VectorField& U, bool return_face_data) -> ScalarField {
     std::string name = fmt::format("div({})", U.name());
     const mesh::PMesh& mesh = U.mesh();
 
@@ -37,6 +35,18 @@ auto div(const VectorField& U) -> ScalarField {
 
     for (const auto& cell : mesh.cells()) {
         data[cell.id()] = div_cell(mesh, cell, U);
+    }
+
+    if (return_face_data) {
+        VectorXd face_data;
+        face_data.resize(mesh.faces().size());
+
+        for (const auto& face : mesh.faces()) {
+            const auto& owner = mesh.cell(face.owner());
+            face_data[face.id()] = face_flux(mesh, owner, face, U);
+        }
+
+        return {name, mesh, data, face_data};
     }
 
     return {name, mesh, data};
@@ -84,9 +94,16 @@ auto boundary_face_flux(const mesh::PMesh& mesh,
                         const mesh::Cell& cell,
                         const mesh::Face& face,
                         const VectorField& U) -> double {
+    const auto& Sf = face.area_vector();
+
+    if (U.has_face_data()) {
+        // face values of U are available, no need to manually calculate them
+        const auto& Uf = U.value_at_face(face.id());
+        return Uf.dot(Sf);
+    }
+
     const auto& boundary_patch = mesh.boundary_patch(face);
     const auto& field_boundary_type = boundary_patch.get_bc(U.name());
-    const auto& Sf = face.area_vector();
 
     switch (field_boundary_type.bc_type()) {
         case mesh::BoundaryConditionType::Empty: {

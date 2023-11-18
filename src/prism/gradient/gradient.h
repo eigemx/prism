@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fmt/core.h>
+
 #include "prism/constants.h"
 #include "prism/field.h"
 #include "prism/mesh/pmesh.h"
@@ -128,14 +130,43 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
 }
 
 auto inline AbstractGradient::gradient_field() -> VectorField {
-    auto grad_field_name = _field.name() + "_grad";
-    VectorField grad_field {grad_field_name, _field.mesh()};
+    // TODO: This function is VERY expensive
+    auto grad_field_name = fmt::format("grad({})", _field.name());
+    const auto& mesh = _field.mesh();
 
-    for (const auto& cell : _field.mesh().cells()) {
-        grad_field.data().row(cell.id()) = gradient_at_cell(cell);
+    auto n_cells = mesh.n_cells();
+    auto n_faces = mesh.faces().size();
+
+    VectorXd grad_x = VectorXd::Zero(n_cells);
+    VectorXd grad_x_face_data = VectorXd::Zero(n_faces);
+
+    VectorXd grad_y = VectorXd::Zero(n_cells);
+    VectorXd grad_y_face_data = VectorXd::Zero(n_faces);
+
+    VectorXd grad_z = VectorXd::Zero(n_cells);
+    VectorXd grad_z_face_data = VectorXd::Zero(n_faces);
+
+    for (std::size_t i = 0; i < n_cells; ++i) {
+        const auto& cell_grad = gradient_at_cell(mesh.cell(i));
+        grad_x[i] = cell_grad[0];
+        grad_y[i] = cell_grad[1];
+        grad_z[i] = cell_grad[2];
     }
 
-    return grad_field;
+    for (std::size_t j = 0; j < n_faces; ++j) {
+        const auto& face_grad = gradient_at_face(mesh.face(j));
+        grad_x_face_data[j] = face_grad[0];
+        grad_y_face_data[j] = face_grad[1];
+        grad_z_face_data[j] = face_grad[2];
+    }
+
+    auto components_fields = std::array<ScalarField, 3> {
+        ScalarField(grad_field_name + "_x", mesh, grad_x, grad_x_face_data),
+        ScalarField(grad_field_name + "_y", mesh, grad_y, grad_y_face_data),
+        ScalarField(grad_field_name + "_z", mesh, grad_z, grad_z_face_data),
+    };
+
+    return {grad_field_name, mesh, components_fields};
 }
 
 } // namespace prism::gradient

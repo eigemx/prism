@@ -11,6 +11,7 @@
 
 namespace prism::mesh {
 
+// TODO: implement n_faces() and remove all occurences of mesh.faces().size()
 class PMesh {
   public:
     PMesh(std::vector<Vector3d> vertices,
