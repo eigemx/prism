@@ -1,12 +1,12 @@
 #pragma once
 
-
 #include <array>
 #include <memory>
 #include <string>
 
 #include "mesh/pmesh.h"
 #include "print.h"
+#include "prism/mesh/cell.h"
 #include "types.h"
 
 namespace prism {
@@ -23,15 +23,18 @@ class ScalarField {
     auto operator=(ScalarField&& other) noexcept -> ScalarField& = default;
     ~ScalarField() noexcept = default;
 
-
     auto inline name() const -> const std::string& { return _name; }
     auto inline name() -> std::string& { return _name; }
 
     auto inline data() const -> const VectorXd& { return *_data; }
     auto inline data() -> VectorXd& { return *_data; }
 
-    auto face_data() const -> const VectorXd& { return *_face_data; }
-    auto face_data() -> VectorXd& { return *_face_data; }
+    auto inline has_face_data() const -> bool { return _face_data != nullptr; }
+
+    auto value_at_cell(std::size_t cell_id) const -> double;
+    auto value_at_cell(const mesh::Cell& cell) const -> double;
+    auto value_at_face(std::size_t face_id) const -> double;
+    auto value_at_face(const mesh::Face& face) const -> double;
 
     auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
 
@@ -67,7 +70,10 @@ class VectorField {
 
     auto has_face_data() const -> bool;
 
+    auto value_at_cell(std::size_t cell_id) const -> Vector3d;
+    auto value_at_cell(const mesh::Cell& cell) const -> Vector3d;
     auto value_at_face(std::size_t face_id) const -> Vector3d;
+    auto value_at_face(const mesh::Face& face) const -> Vector3d;
 
     auto inline x() -> ScalarField { return _x; }
     auto inline y() -> ScalarField { return _y; }

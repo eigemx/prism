@@ -1,10 +1,6 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
 
-#include "prism/field.h"
-#include "prism/gradient/gradient.h"
-#include "prism/operations/operations.h"
-#include "prism/schemes/source.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
