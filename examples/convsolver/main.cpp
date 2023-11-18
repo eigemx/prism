@@ -67,10 +67,5 @@ auto main(int argc, char* argv[]) -> int {
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 
-    auto grad_field = gradient::LeastSquares(U.x()).gradient_field();
-    auto div_of_grad = ops::div(grad_field);
-
-    fmt::println("Here: {}", div_of_grad[0]);
-
     return 0;
 }

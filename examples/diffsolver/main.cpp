@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+#include "prism/gradient/gradient.h"
+#include "prism/operations/operations.h"
+
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -34,7 +37,7 @@ auto main(int argc, char* argv[]) -> int {
     auto T = ScalarField("temperature", mesh, 300.0);
 
     // define a source term
-    auto S = ScalarField("S", mesh).map([](const mesh::Cell& cell) {
+    auto S = ScalarField("S", mesh, 0.0).map([](const mesh::Cell& cell) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {
             return 100000.0;
