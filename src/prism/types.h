@@ -14,6 +14,6 @@ using SparseMatrix = Eigen::SparseMatrix<double>;
 
 enum class Compressibility { Compressible, Incompressible };
 
-enum class Coords { X, Y, Z };
+enum class Coord { X, Y, Z };
 
 } // namespace prism

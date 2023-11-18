@@ -4,14 +4,17 @@
 
 #include <toml++/toml.h>
 
-#include <fstream>
-#include <iostream>
+#include <stdexcept>
 #include <string_view>
 #include <unordered_map>
 
-#include "../print.h"
+#include "prism/print.h"
+
+// TODO: We're using name.substr(0, name.size() - 2) many times to get the parent field name
+// it's better to wrap this in a little inline function
 
 namespace prism::mesh {
+// Parsing boundary file functions
 auto inline boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType;
 auto inline parse_boundary_patch(const toml::table& table, const std::string& patch_name)
     -> BoundaryPatch;
@@ -20,7 +23,7 @@ auto inline parse_nested_boundary_conditions(const toml::table& table,
 auto inline parse_field_boundary_condition(const toml::table& table,
                                            const std::string& patch_name,
                                            const std::string& field_name) -> BoundaryCondition;
-
+auto is_component_field(const std::string& name) -> bool;
 
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionType {
     const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryConditionType> {
@@ -186,7 +189,55 @@ auto read_boundary_file(const std::filesystem::path& path,
     return boundary_patches;
 }
 
+
+auto is_component_field(const std::string& name) -> bool {
+    if (name.size() < 2) {
+        return false;
+    }
+
+    char last_char = name.back();
+    if (last_char == 'x' || last_char == 'y' || last_char == 'z') {
+        char second_last_char = *(name.rbegin() + 1);
+        return second_last_char == '_';
+    }
+
+    return false;
+}
+
+
+auto BoundaryPatch::get_bc(const std::string& field_name) const -> const BoundaryCondition& {
+    // Search for the field name in the boundary patch
+    auto it = _field_name_to_bc_map.find(field_name);
+
+    if (it == _field_name_to_bc_map.end()) {
+        // search for the parent field, if exists
+        if (is_component_field(field_name)) {
+            it = _field_name_to_bc_map.find(field_name.substr(0, field_name.size() - 2));
+        }
+    }
+
+    if (it == _field_name_to_bc_map.end()) {
+        // field not found
+        throw std::runtime_error(
+            fmt::format("BoundaryPatch::get_bc(): "
+                        "Boundary patch '{}' does not have a field named '{}'",
+                        _name,
+                        field_name));
+    }
+
+    return it->second;
+}
+
+
 auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double {
+    // in some cases we're dealing with a ScalarField that is a component of a parent VectorField,
+    // such as when dealing with the x-component ScalarField of a velocity VectorField U.
+    // in this case we won't find the boundary condition value for U_x as a single scalar BC,
+    // but we can get it from the first component of the vector BC value of U.
+    if (is_component_field(field_name)) {
+        return get_scalar_bc_subfield(field_name);
+    }
+
     // Search for the field name in the boundary patch
     auto it = _field_name_to_bc_map.find(field_name);
 
@@ -210,6 +261,7 @@ auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double
 
     return std::get<double>(it->second.value());
 }
+
 
 auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector3d {
     // Search for the field name in the boundary patch
@@ -236,20 +288,25 @@ auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector
     return std::get<Vector3d>(it->second.value());
 }
 
-auto BoundaryPatch::get_bc(const std::string& field_name) const -> const BoundaryCondition& {
-    // Search for the field name in the boundary patch
-    auto it = _field_name_to_bc_map.find(field_name);
+auto BoundaryPatch::get_scalar_bc_subfield(const std::string& name) const -> double {
+    const auto& vec_value = get_vector_bc(name.substr(0, name.size() - 2));
 
-    if (it == _field_name_to_bc_map.end()) {
-        // field not found
-        throw std::runtime_error(
-            fmt::format("BoundaryPatch::get_bc(): "
-                        "Boundary patch '{}' does not have a field named '{}'",
-                        _name,
-                        field_name));
+    switch (name.back()) {
+        case 'x':
+            return vec_value[0];
+        case 'y':
+            return vec_value[1];
+        case 'z':
+            return vec_value[2];
+        default: {
+            throw std::runtime_error(
+                "BoundaryPatch::get_scalar_bc_subfield was given a field with a name that does "
+                "not in with a valid Cartesian componenet.");
+        }
     }
 
-    return it->second;
+    // It should be impossible to reach this
+    return 0.0;
 }
 
 } // namespace prism::mesh

@@ -1,5 +1,5 @@
-#include "../mesh/utilities.h"
 #include "gradient.h"
+#include "prism/mesh/utilities.h"
 
 // TODO: Validate the results of using LeastSquares as an explicit gradient calculator,
 // also check if skewness correction is required here or not, as face_grad is being calculated
