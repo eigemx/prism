@@ -23,7 +23,6 @@ void inline check_mesh(const mesh::PMesh& mesh) {
     }
 }
 
-// ScalarField constructors
 ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh, double value)
     : _mesh(&mesh),
       _name(std::move(name)),
@@ -133,11 +132,13 @@ VectorField::VectorField(std::string name,
     }
 
     // check sub-fields naming consistency
-    if ((_x.name() != (name + "_x")) || (_y.name() != (name + "_y")) ||
-        (_z.name() != (name + "_z"))) {
+    if ((_x.name() != (_name + "_x")) || (_y.name() != (_name + "_y")) ||
+        (_z.name() != (_name + "_z"))) {
         throw std::runtime_error(fmt::format(
             "All VectorField component names should end with '_x', '_y' or '_z'. VectorField "
-            "constructor was given the following ScalarFields names: '{}', '{}', '{}",
+            "constructor for `{}` vector field was given the following ScalarFields names: '{}', "
+            "'{}', '{}",
+            _name,
             _x.name(),
             _y.name(),
             _z.name()));
