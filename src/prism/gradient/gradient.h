@@ -45,7 +45,7 @@ class GreenGauss : public AbstractGradient {
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
-    const ScalarField& _field;
+    const ScalarField _field;
     MatrixX3d _cell_gradients;
 };
 
@@ -58,7 +58,7 @@ class LeastSquares : public AbstractGradient {
     void set_lsq_matrices();
     auto boundary_face_phi(const mesh::Face& face) -> double;
 
-    const ScalarField& _field;
+    const ScalarField _field;
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 

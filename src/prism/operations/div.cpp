@@ -27,6 +27,10 @@ auto boundary_face_flux(const mesh::PMesh& mesh,
                         const VectorField& U) -> double;
 
 auto div(const VectorField& U, bool return_face_data) -> ScalarField {
+    // There is a room for optimization here, by first calculating the face fluxes
+    // and store the result in a vector x, and provide this vector to each call of div_cell()
+    // to avoid re-calling face_flux() for every cell, and avoid calling face_flux() again
+    // when we update face_data vector, which in this case will be the vector x.
     std::string name = fmt::format("div({})", U.name());
     const mesh::PMesh& mesh = U.mesh();
 
