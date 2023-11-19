@@ -21,39 +21,44 @@ auto interior_face_flux(const mesh::PMesh& mesh,
                         const mesh::Face& face,
                         const VectorField& U) -> double;
 
-auto boundary_face_flux(const mesh::PMesh& mesh,
-                        const mesh::Cell& cell,
-                        const mesh::Face& face,
-                        const VectorField& U) -> double;
+auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const VectorField& U)
+    -> double;
 
 auto div(const VectorField& U, bool return_face_data) -> ScalarField {
-    // There is a room for optimization here, by first calculating the face fluxes
-    // and store the result in a vector x, and provide this vector to each call of div_cell()
-    // to avoid re-calling face_flux() for every cell, and avoid calling face_flux() again
-    // when we update face_data vector, which in this case will be the vector x.
     std::string name = fmt::format("div({})", U.name());
     const mesh::PMesh& mesh = U.mesh();
 
-    VectorXd data;
-    data.resize(mesh.n_cells());
+    VectorXd cell_data;
+    cell_data.resize(mesh.n_cells());
 
     for (const auto& cell : mesh.cells()) {
-        data[cell.id()] = div_cell(mesh, cell, U);
+        cell_data[cell.id()] = div_cell(mesh, cell, U);
     }
 
     if (return_face_data) {
         VectorXd face_data;
         face_data.resize(mesh.faces().size());
 
-        for (const auto& face : mesh.faces()) {
-            const auto& owner = mesh.cell(face.owner());
-            face_data[face.id()] = face_flux(mesh, owner, face, U);
+        // We start with calculating the fluxes at boundary faces
+        for (const auto& bface : mesh.boundary_faces()) {
+            face_data[bface.id()] = boundary_face_flux(mesh, bface, U);
         }
 
-        return {name, mesh, data, face_data};
+        // for interior faces, we take the average of the divergence at the two sharing cells
+        for (const auto& iface : mesh.interior_faces()) {
+            const auto& owner = mesh.cell(iface.owner());
+            const auto& neighbor = mesh.cell(iface.neighbor().value());
+            auto gc = mesh::geo_weight(owner, neighbor, iface);
+
+            auto div_f = gc * cell_data[owner.id()];
+            div_f += (1 - gc) * cell_data[neighbor.id()];
+
+            face_data[iface.id()] = div_f;
+        }
+        return {name, mesh, cell_data, face_data};
     }
 
-    return {name, mesh, data};
+    return {name, mesh, cell_data};
 }
 
 auto div_cell(const mesh::PMesh& mesh, const mesh::Cell& cell, const VectorField& U) -> double {
@@ -72,7 +77,7 @@ auto face_flux(const mesh::PMesh& mesh,
                const mesh::Face& face,
                const VectorField& U) -> double {
     if (face.is_boundary()) {
-        return boundary_face_flux(mesh, cell, face, U);
+        return boundary_face_flux(mesh, face, U);
     }
     return interior_face_flux(mesh, cell, face, U);
 }
@@ -94,10 +99,8 @@ auto interior_face_flux(const mesh::PMesh& mesh,
     return Uf.dot(Sf);
 }
 
-auto boundary_face_flux(const mesh::PMesh& mesh,
-                        const mesh::Cell& cell,
-                        const mesh::Face& face,
-                        const VectorField& U) -> double {
+auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const VectorField& U)
+    -> double {
     const auto& Sf = face.area_vector();
 
     if (U.has_face_data()) {
@@ -122,7 +125,7 @@ auto boundary_face_flux(const mesh::PMesh& mesh,
 
         case mesh::BoundaryConditionType::Outlet:
         case mesh::BoundaryConditionType::Symmetry: {
-            const auto& Uf = U[cell.id()];
+            const auto& Uf = U[face.owner()];
             return Uf.dot(Sf);
         }
 
