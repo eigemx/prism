@@ -24,12 +24,6 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(args[1]).to_pmesh();
     fmt::println("Okay.");
 
-    //fmt::print("Reordering mesh cells...");
-    //auto cm = mesh::CuthillMckee(mesh);
-    //cm.reorder();
-    //fmt::println("Okay.");
-    //fmt::println("");
-
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = ScalarField("temperature", mesh, 300.0);
 
