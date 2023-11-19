@@ -1,12 +1,14 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
 
+#include <algorithm>
+
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
     print_header();
-    fmt::print("convsolver - A steady state temperature advection solver\n");
+    fmt::println("convsolver - A steady state temperature advection solver");
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
@@ -37,7 +39,8 @@ auto main(int argc, char* argv[]) -> int {
         });
 
     if (inlet_patch == mesh.boundary_patches().end()) {
-        error("No inlet patch found!");
+        fmt::println(
+            "Error: No boundary patch with name `inlet` was found, cannot set velocity field.");
         return 1;
     }
 

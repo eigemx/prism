@@ -101,6 +101,8 @@ auto interior_face_flux(const mesh::PMesh& mesh,
 
 auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const VectorField& U)
     -> double {
+    // this is a boundary face, where normal is always pointing outside of the cell
+    // no need to call mesh::outward_area_vector()
     const auto& Sf = face.area_vector();
 
     if (U.has_face_data()) {
