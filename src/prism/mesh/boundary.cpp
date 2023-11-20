@@ -2,13 +2,12 @@
 // expected fmt::format.
 #include "boundary.h"
 
+#include <fmt/format.h>
 #include <toml++/toml.h>
 
 #include <stdexcept>
 #include <string_view>
 #include <unordered_map>
-
-#include "prism/print.h"
 
 // TODO: We're using name.substr(0, name.size() - 2) many times to get the parent field name
 // it's better to wrap this in a little inline function

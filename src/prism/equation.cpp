@@ -1,6 +1,5 @@
 #include "equation.h"
 
-#include "print.h"
 
 namespace prism {
 

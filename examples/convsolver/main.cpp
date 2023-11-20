@@ -7,14 +7,13 @@
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
-    print_header();
     fmt::println("convsolver - A steady state temperature advection solver");
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
-        error("Usage: convsolver [mesh-file]");
+        fmt::println("Usage: convsolver [mesh-file]");
         return 1;
     }
 

@@ -3,11 +3,12 @@
 #include <string>
 #include <vector>
 
+#include "fmt/core.h"
+
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
-    print_header();
     fmt::println("diffsolver - A steady state temperature diffusion solver");
     fmt::println("");
 
@@ -15,7 +16,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
-        error("Usage: diffsolver [mesh-file]");
+        fmt::println("Usage: diffsolver [mesh-file]");
         return 1;
     }
 

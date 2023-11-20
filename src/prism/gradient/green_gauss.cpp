@@ -1,9 +1,7 @@
-#include <cassert>
 #include <cmath>
 
-#include "../mesh/utilities.h"
-#include "../print.h"
 #include "gradient.h"
+#include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
 

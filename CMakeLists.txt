@@ -44,6 +44,10 @@ set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})
 include_directories(${VTU11_SOURCE_DIR}/)
 
+# setup vtu11
+set(VTU11_SOURCE_DIR "external/spdlog")
+include_directories(${VTU11_SOURCE_DIR}/include)
+
 # set build type to release if not specified
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -60,12 +64,6 @@ if(NOT DEFINED PRISM_BUILD_EXAMPLES)
     set(PRISM_BUILD_EXAMPLES ON)
     message(STATUS "PRISM_BUILD_EXAMPLES is set to ON by default, examples will be built.")
     message(STATUS "Set PRISM_BUILD_EXAMPLES to OFF to disable building examples.")
-endif()
-
-# if option SHOW_DEBUG_INFO is set, define PRISM_DEBUG
-if(PRISM_SHOW_DEBUG_INFO)
-    message(STATUS "SHOW_DEBUG_INFO is set, all debug info will be shown.")
-    add_definitions(-DPRISM_DEBUG)
 endif()
 
 # set optimization flags for release builds for gcc, clang and msvc

@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "print.h"
 #include "types.h"
 
 namespace prism {

@@ -1,12 +1,12 @@
 #include "unv.h"
 
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <stdexcept>
 #include <string_view>
 
 #include "boundary.h"
-#include "prism/print.h"
-
 // Vector of 6 quad faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {

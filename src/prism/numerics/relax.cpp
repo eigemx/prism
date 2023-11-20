@@ -1,12 +1,13 @@
 #include "relax.h"
 
-#include "../constants.h"
-#include "../print.h"
+#include <spdlog/spdlog.h>
+
+#include "prism/constants.h"
 
 namespace prism::solver {
 void ImplicitUnderRelaxation::pre_relax(TransportEquation& eqn, double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
-        debug(
+        spdlog::debug(
             "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
             " either less than 0.0 or equals 1.0, skipping relaxation...");
         return;
@@ -24,7 +25,7 @@ void ImplicitUnderRelaxation::pre_relax(TransportEquation& eqn, double lambda) c
 
 void ExplicitUnderRelaxation::post_relax(TransportEquation& eqn, double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
-        debug(
+        spdlog::debug(
             "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
             " either less than 0.0 or equals 1.0, skipping relaxation...");
         return;
