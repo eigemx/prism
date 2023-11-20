@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <cmath>
 
 #include "fvscheme.h"
@@ -225,11 +227,11 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     if (m_dot_f <= 0.0) {
-        warn(
-            fmt::format("convection::ConvectionBase::apply_boundary_outlet(): "
-                        "Reverse flow detected at outlet boundary patch '{}'. "
-                        "This may cause the solution to diverge.",
-                        _phi.mesh().face_boundary_patch(face).name()));
+        spdlog::warn(
+            "convection::AbstractConvection::apply_boundary_outlet(): "
+            "Reverse flow detected at outlet boundary patch '{}'. "
+            "This may cause the solution to diverge.",
+            _phi.mesh().face_boundary_patch(face).name());
     }
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.

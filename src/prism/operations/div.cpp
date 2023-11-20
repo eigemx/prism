@@ -1,3 +1,5 @@
+#include <fmt/format.h>
+
 #include <stdexcept>
 
 #include "operations.h"

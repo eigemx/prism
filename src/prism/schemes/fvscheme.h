@@ -12,6 +12,8 @@ namespace prism {
 class FVScheme : public LinearSystem {
   public:
     FVScheme(std::size_t n_cells, bool need_matrix = true) : LinearSystem(n_cells, need_matrix) {}
+    FVScheme(std::size_t n_cells, std::string name, bool need_matrix = true)
+        : LinearSystem(n_cells, need_matrix), _name(std::move(name)) {}
 
     // apply the discretization scheme
     virtual void apply() = 0;
@@ -26,9 +28,13 @@ class FVScheme : public LinearSystem {
     // a null option (the base class FVScheme implements this as the default case)
     virtual auto field() -> std::optional<ScalarField> { return std::nullopt; }
 
+    auto name() const -> const std::string& { return _name; }
+
   private:
     virtual void apply_interior(const mesh::Face& face) = 0;
     virtual void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) = 0;
+
+    std::string _name;
 };
 
 } // namespace prism

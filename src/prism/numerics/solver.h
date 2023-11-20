@@ -1,11 +1,12 @@
 #pragma once
 
+#include <fmt/format.h>
+
 #include <Eigen/IterativeLinearSolvers>
 
-#include "../equation.h"
-#include "../field.h"
-#include "../print.h"
-#include "../types.h"
+#include "prism/equation.h"
+#include "prism/field.h"
+#include "prism/types.h"
 #include "relax.h"
 
 namespace prism::solver {

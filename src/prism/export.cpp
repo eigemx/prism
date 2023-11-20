@@ -1,9 +1,9 @@
 #include "export.h"
 
+#include <stdexcept>
 #include <vector>
 #include <vtu11/vtu11.hpp>
 
-#include "print.h"
 
 namespace prism {
 void export_field_vtu(const ScalarField& field, const std::string& file_name) {
@@ -51,7 +51,7 @@ void export_field_vtu(const ScalarField& field, const std::string& file_name) {
                 break;
 
             default:
-                error("Unsupported cell type for vtu export.");
+                throw std::runtime_error("Unsupported cell type for vtu export.");
                 break;
         }
     }
