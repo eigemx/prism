@@ -1,9 +1,8 @@
+#include <optional>
+
 #include "gradient.h"
 #include "prism/mesh/utilities.h"
 
-// TODO: Validate the results of using LeastSquares as an explicit gradient calculator,
-// also check if skewness correction is required here or not, as face_grad is being calculated
-// by weighting the gradients of the two adjacent cells.
 namespace prism::gradient {
 LeastSquares::LeastSquares(const ScalarField& field) : _field(field), AbstractGradient(field) {
     set_lsq_matrices();
@@ -25,7 +24,7 @@ void LeastSquares::set_lsq_matrices() {
 
             Vector3d d_CF {.0, .0, .0};
 
-            if (face.has_neighbor()) {
+            if (face.is_interior()) {
                 // interior face
                 const auto neighbor = mesh.other_sharing_cell(cell, face);
                 d_CF = neighbor.center() - cell.center();
@@ -45,21 +44,17 @@ void LeastSquares::set_lsq_matrices() {
 auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
     auto c_id = cell.id();
     const auto n_faces = cell.faces_ids().size();
-
     const auto& mesh = _field.mesh();
-
     const auto& inverse_matrix = _pinv_matrices[c_id];
-
     VectorXd phi_diff = VectorXd::Zero(n_faces);
-
     Vector3d grad {.0, .0, .0};
 
     for (std::size_t i = 0; i < n_faces; ++i) {
         auto f_id = cell.faces_ids()[i];
         const auto& face = mesh.face(f_id);
-        auto phi = _field[cell.id()];
+        auto phi = _field[c_id];
 
-        if (face.has_neighbor()) {
+        if (face.is_interior()) {
             // interior face
             const auto neighbor = mesh.other_sharing_cell(cell, face);
             auto nei_phi = _field[neighbor.id()];
@@ -67,33 +62,39 @@ auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
 
         } else {
             // boundary face
-            phi_diff[i] = boundary_face_phi(face) - phi;
+            auto bface_phi = boundary_face_phi(face);
+            if (!bface_phi.has_value()) {
+                // Empty faces do not have field values
+                continue;
+            }
+            phi_diff[i] = bface_phi.value() - phi;
         }
     }
-
-    grad = inverse_matrix * phi_diff;
-
-    return grad;
+    return inverse_matrix * phi_diff;
 }
 
-auto LeastSquares::boundary_face_phi(const mesh::Face& f) -> double {
+auto LeastSquares::boundary_face_phi(const mesh::Face& f) -> std::optional<double> {
     const auto& mesh = _field.mesh();
     const auto& patch = mesh.boundary_patch(f);
     const auto& bc = patch.get_bc(_field.name());
 
+    // TODO: There should be a unified function for boundary_face_phi()
+    // this is a repeated code
     switch (bc.bc_type()) {
+        case mesh::BoundaryConditionType::Empty:
+            return std::nullopt;
+
         case mesh::BoundaryConditionType::Fixed:
         case mesh::BoundaryConditionType::Inlet:
             return patch.get_scalar_bc(_field.name());
 
         case mesh::BoundaryConditionType::Symmetry:
-        case mesh::BoundaryConditionType::Empty:
         case mesh::BoundaryConditionType::Outlet:
             return _field[f.owner()];
 
         default:
             throw std::runtime_error(
-                fmt::format("gradient::LeastSquared::boundary_face_phi(): "
+                fmt::format("gradient::LeastSquares::boundary_face_phi(): "
                             "Non-implemented boundary type for boundary patch: '{}'",
                             patch.name()));
     }

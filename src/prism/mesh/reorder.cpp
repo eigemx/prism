@@ -126,7 +126,7 @@ void CuthillMckee::reorder(bool reverse) {
     for (auto& face : _mesh.faces()) {
         face.set_owner(old_to_new[face.owner()]);
 
-        if (face.has_neighbor()) {
+        if (face.is_interior()) {
             face.set_neighbor(old_to_new[face.neighbor().value()]);
         }
     }

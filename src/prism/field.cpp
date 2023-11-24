@@ -5,9 +5,11 @@
 
 #include <stdexcept>
 
+#include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
+#include "prism/mesh/utilities.h"
 
 namespace prism {
 
@@ -82,16 +84,58 @@ auto ScalarField::value_at_cell(const mesh::Cell& cell) const -> double {
 }
 
 auto ScalarField::value_at_face(std::size_t face_id) const -> double {
-    if (!has_face_data()) {
-        throw std::runtime_error(fmt::format(
-            "ScalarField::value_at_face() was called for field `{}` with no face data available.",
-            _name));
+    if (has_face_data()) {
+        // Face data were calculataed for us before calling the constructor,
+        // just return the value
+        return (*_face_data)[face_id];
     }
-    return (*_face_data)[face_id];
+
+    // We need to interpolate the value of the field at the face
+    const auto& face = _mesh->face(face_id);
+
+    if (face.is_interior()) {
+        return value_at_interior_face(face);
+    }
+
+    return value_at_boundary_face(face);
 }
 
 auto ScalarField::value_at_face(const mesh::Face& face) const -> double {
     return value_at_face(face.id());
+}
+
+auto ScalarField::value_at_interior_face(const mesh::Face& face) const -> double {
+    const auto& owner = _mesh->cell(face.owner());
+    const auto& neighbor = _mesh->cell(face.neighbor().value());
+    const auto gc = mesh::geo_weight(owner, neighbor, face);
+
+    double val = gc * (*_data)[owner.id()];
+    val += (1 - gc) * (*_data)[neighbor.id()];
+
+    return val;
+}
+
+auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double {
+    const auto& patch = _mesh->boundary_patch(face);
+    const auto& bc = patch.get_bc(_name);
+
+    switch (bc.bc_type()) {
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet: {
+            return patch.get_scalar_bc(_name);
+        }
+
+        case mesh::BoundaryConditionType::Symmetry:
+        case mesh::BoundaryConditionType::Outlet: {
+            return (*_data)[face.owner()];
+        }
+
+        default: {
+            throw std::runtime_error(
+                "ScalarField::value_at_boundary_face() knows how to calculate the scalar value "
+                "of the field only at Fixed, Inlet, Symmetry & Outlet boundary conditions.");
+        }
+    }
 }
 
 VectorField::VectorField(std::string name, const mesh::PMesh& mesh, double value)
@@ -154,13 +198,6 @@ auto VectorField::value_at_cell(const mesh::Cell& cell) const -> Vector3d {
 }
 
 auto VectorField::value_at_face(std::size_t face_id) const -> Vector3d {
-    if (!has_face_data()) {
-        throw std::runtime_error(
-            fmt::format("VectorField::face_data(): face data for vector field `{}` is not "
-                        "available, however, face_data() was called.",
-                        _name));
-    }
-
     return {_x.value_at_face(face_id), _y.value_at_face(face_id), _z.value_at_face(face_id)};
 }
 

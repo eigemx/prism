@@ -2,6 +2,10 @@
 
 #include <fmt/core.h>
 
+#include <optional>
+#include <stdexcept>
+#include <vector>
+
 #include "prism/constants.h"
 #include "prism/field.h"
 #include "prism/mesh/pmesh.h"
@@ -26,9 +30,6 @@ class AbstractGradient {
     virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d;
     virtual auto gradient_field() -> VectorField;
 
-    static auto gradient_at_boundary_face(const mesh::Face& f, const ScalarField& field)
-        -> Vector3d;
-
     virtual ~AbstractGradient() = default;
 
   private:
@@ -37,16 +38,18 @@ class AbstractGradient {
 
 class GreenGauss : public AbstractGradient {
   public:
-    GreenGauss(const ScalarField& field)
-        : _field(field),
-          _cell_gradients(MatrixX3d::Zero(field.mesh().n_cells(), 3)),
-          AbstractGradient(field) {}
-
+    GreenGauss(const ScalarField& field);
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
+    auto skewness_correction(const mesh::Face& face,
+                             const mesh::Cell& cell,
+                             const mesh::Cell& nei) const -> double;
+    auto _gradient_at_cell(const mesh::Cell& cell, bool correct_skewness = true) -> Vector3d;
+    auto green_gauss_face_integral(const mesh::Face& f) -> Vector3d;
+
     const ScalarField _field;
-    MatrixX3d _cell_gradients;
+    std::vector<Vector3d> _cell_gradients;
 };
 
 class LeastSquares : public AbstractGradient {
@@ -56,50 +59,16 @@ class LeastSquares : public AbstractGradient {
 
   private:
     void set_lsq_matrices();
-    auto boundary_face_phi(const mesh::Face& face) -> double;
+    auto boundary_face_phi(const mesh::Face& face) -> std::optional<double>;
 
     const ScalarField _field;
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
-auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face,
-                                                        const ScalarField& field) -> Vector3d {
-    const auto& boundary_patch = field.mesh().boundary_patch(face);
-    const auto& boundary_condition = boundary_patch.get_bc(field.name());
-    auto bc_type = boundary_condition.bc_type();
-
-    switch (bc_type) {
-        case mesh::BoundaryConditionType::Empty:
-        case mesh::BoundaryConditionType::Outlet:
-        case mesh::BoundaryConditionType::Symmetry: {
-            return Vector3d {0., 0., 0.};
-        }
-
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
-            const auto& phi_name = field.name();
-            auto phi = boundary_patch.get_scalar_bc(phi_name);
-            return phi * face.area_vector();
-        }
-
-        case mesh::BoundaryConditionType::FixedGradient: {
-            const auto& phi_name = field.name();
-            auto flux = boundary_patch.get_scalar_bc(phi_name + "-flux");
-            return flux * face.area_vector();
-        }
-
-        default:
-            throw std::runtime_error(
-                fmt::format("GradientSchemeBase::gradient_at_boundary_face(): "
-                            "Non-implemented boundary type for boundary patch: '{}'",
-                            boundary_patch.name()));
-    }
-}
-
 auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
-    // interior face
-    if (face.has_neighbor()) {
+    if (face.is_interior()) {
+        // interior face
         const auto& mesh = _field.mesh();
         const auto& owner_cell = mesh.cell(face.owner());
         auto owner_grad = gradient_at_cell(owner_cell);
@@ -110,11 +79,12 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
         auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
 
         // Equation 9.33 without the correction part, a simple linear interpolation.
-        Vector3d grad = gc * owner_grad + (1. - gc) * neighbor_grad;
+        Vector3d grad = (gc * owner_grad) + ((1. - gc) * neighbor_grad);
 
         // correct the interpolation
-        auto phi_C = _field[owner_cell.id()];
-        auto phi_F = _field[neighbor_cell.id()];
+        auto phi_C = _field.value_at_cell(owner_cell.id());
+        auto phi_F = _field.value_at_cell(neighbor_cell.id());
+
         auto d_CF = neighbor_cell.center() - owner_cell.center();
         auto d_CF_norm = d_CF.norm();
         Vector3d e_CF = d_CF / d_CF_norm;
@@ -126,7 +96,8 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
     }
 
     // boundary face
-    return gradient_at_boundary_face(face, _field);
+    //return gradient_at_boundary_face(face);
+    throw std::runtime_error("Don't know how to calculate gradient at boundary face!");
 }
 
 auto inline AbstractGradient::gradient_field() -> VectorField {
@@ -161,9 +132,9 @@ auto inline AbstractGradient::gradient_field() -> VectorField {
     }
 
     auto components_fields = std::array<ScalarField, 3> {
-        ScalarField(grad_field_name + "_x", mesh, grad_x, grad_x_face_data),
-        ScalarField(grad_field_name + "_y", mesh, grad_y, grad_y_face_data),
-        ScalarField(grad_field_name + "_z", mesh, grad_z, grad_z_face_data),
+        ScalarField(grad_field_name + "_x", mesh, std::move(grad_x), std::move(grad_x_face_data)),
+        ScalarField(grad_field_name + "_y", mesh, std::move(grad_y), std::move(grad_y_face_data)),
+        ScalarField(grad_field_name + "_z", mesh, std::move(grad_z), std::move(grad_z_face_data)),
     };
 
     return {grad_field_name, mesh, components_fields};

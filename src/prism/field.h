@@ -6,6 +6,7 @@
 
 #include "mesh/pmesh.h"
 #include "prism/mesh/cell.h"
+#include "prism/mesh/face.h"
 #include "types.h"
 
 namespace prism {
@@ -50,6 +51,9 @@ class ScalarField {
     auto inline operator()() -> VectorXd& { return *_data; }
 
   private:
+    auto value_at_interior_face(const mesh::Face& face) const -> double;
+    auto value_at_boundary_face(const mesh::Face& face) const -> double;
+
     const mesh::PMesh* _mesh = nullptr;
     std::string _name;
     std::shared_ptr<VectorXd> _data = nullptr;

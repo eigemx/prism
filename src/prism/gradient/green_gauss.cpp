@@ -1,41 +1,41 @@
 #include <cmath>
+#include <cstddef>
 
 #include "gradient.h"
+#include "prism/field.h"
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
 
-auto inline skewness_correction(const mesh::Cell& C,
-                                const mesh::Cell& F,
-                                const mesh::Face& f,
-                                const MatrixX3d& grad_field) -> double {
-    auto grad_sum = grad_field.row(C.id()) + grad_field.row(F.id());
-    auto vec = f.center() - (0.5 * (C.center() + F.center()));
+auto GreenGauss::skewness_correction(const mesh::Face& face,
+                                     const mesh::Cell& cell,
+                                     const mesh::Cell& nei) const -> double {
+    auto grad_sum = _cell_gradients[cell.id()] + _cell_gradients[nei.id()];
+    auto vec = face.center() - (0.5 * (cell.center() + nei.center()));
 
     return 0.5 * grad_sum.dot(vec);
 }
 
-auto inline phi_interior_face(const mesh::Cell& cell,
-                              const mesh::Face& face,
-                              const mesh::PMesh& mesh,
-                              const ScalarField& field,
-                              const MatrixX3d& grad_field) -> double {
-    bool is_owned = face.is_owned_by(cell.id());
-    auto neighbor_cell_id = is_owned ? face.neighbor().value() : face.owner();
+GreenGauss::GreenGauss(const ScalarField& field) : _field(field), AbstractGradient(field) {
+    // We need to perform a first run for calculating gradient at cells,
+    // to make the cell gradient vector _cell_gradients available if the user desires to call
+    // gradient_at_face() which requires a first run of gradient calculations, to perform
+    // correction for faces with skewness.
+    const std::size_t n_cells = _field.mesh().n_cells();
 
-    const auto& neighbor_cell = mesh.cell(neighbor_cell_id);
 
-    // Section 9.2, option #2, this is the calculate of ϕ` (page 278)
-    auto face_phi = 0.5 * (field[cell.id()] + field[neighbor_cell_id]);
-
-    // skewness correction
-    // ϕ = ϕ` + correction
-    face_phi += skewness_correction(cell, neighbor_cell, face, grad_field);
-
-    return face_phi;
+    _cell_gradients.reserve(n_cells);
+    for (const auto& cell : _field.mesh().cells()) {
+        // caclulate the gradient without skewness correction
+        _cell_gradients.emplace_back(_gradient_at_cell(cell, false));
+    }
 }
 
 auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
+    return _gradient_at_cell(cell, true);
+}
+
+auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = _field.mesh();
 
@@ -44,22 +44,63 @@ auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
 
         // This is a boundary face
         if (face.is_boundary()) {
-            grad += gradient_at_boundary_face(face, _field);
+            grad += green_gauss_face_integral(face);
             continue;
         }
 
         // This is an internal face
         // Area normal vector, poitning out of the cell
         auto Sf = mesh::outward_area_vector(face, cell);
-        grad += Sf * phi_interior_face(cell, face, mesh, _field, _cell_gradients);
-    }
+        const auto& nei = _field.mesh().other_sharing_cell(cell, face);
+        auto face_phi = 0.5 * (_field[cell.id()] + _field[nei.id()]);
 
+        if (correct_skewness) {
+            face_phi += skewness_correction(face, cell, nei);
+        }
+        grad += Sf * face_phi;
+    }
     grad /= cell.volume();
 
     // store the gradient to use it in next iterations, for skewness correction
-    _cell_gradients.row(cell.id()) = grad;
+    _cell_gradients[cell.id()] = grad;
 
     return grad;
 }
 
+auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
+    const auto& boundary_patch = _field.mesh().boundary_patch(face);
+    const auto& boundary_condition = boundary_patch.get_bc(_field.name());
+    auto bc_type = boundary_condition.bc_type();
+
+    switch (bc_type) {
+        case mesh::BoundaryConditionType::Empty: {
+            return Vector3d {0., 0., 0.};
+        }
+        case mesh::BoundaryConditionType::Outlet:
+        case mesh::BoundaryConditionType::Symmetry: {
+            const auto& owner = _field.mesh().cell(face.owner());
+            auto phi = _field.value_at_cell(owner);
+            return phi * face.area_vector();
+        }
+
+        case mesh::BoundaryConditionType::Fixed:
+        case mesh::BoundaryConditionType::Inlet: {
+            auto phi = _field.value_at_face(face);
+            return phi * face.area_vector();
+        }
+
+        case mesh::BoundaryConditionType::FixedGradient: {
+            // TODO: This is wrong, fixed gradient should be a vector not a scalar
+            const auto& phi_name = _field.name();
+            auto flux = boundary_patch.get_scalar_bc(phi_name);
+            return flux * face.area_vector();
+        }
+
+        default:
+            throw std::runtime_error(
+                fmt::format("GradientSchemeBase::gradient_at_boundary_face(): "
+                            "Non-implemented boundary type for boundary patch: '{}'",
+                            boundary_patch.name()));
+    }
+}
 } // namespace prism::gradient

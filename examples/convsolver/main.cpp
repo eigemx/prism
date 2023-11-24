@@ -3,6 +3,10 @@
 
 #include <algorithm>
 
+#include "prism/gradient/gradient.h"
+#include "prism/nonortho/nonortho.h"
+#include "prism/schemes/convection.h"
+
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -54,9 +58,9 @@ auto main(int argc, char* argv[]) -> int {
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = TransportEquation(
         // Add discretization schemes
-        convection::SecondOrderUpwind<>(rho, U, T), // ∇.(ρUT)
-        diffusion::Diffusion(1e-2, T),              // - ∇.(κ ∇T)
-        source::ConstantScalar(useLessField)        // S (sources are always added to the RHS)
+        convection::Upwind(rho, U, T),       // ∇.(ρUT)
+        diffusion::Diffusion(1e-2, T),       // - ∇.(κ ∇T)
+        source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 
     // solve
