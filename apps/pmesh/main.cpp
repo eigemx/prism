@@ -68,7 +68,7 @@ auto min_max_face_non_ortho(const prism::mesh::PMesh& prism_mesh) {
     auto max_non_ortho = std::numeric_limits<double>::min();
 
     for (const auto& face : prism_mesh.faces()) {
-        if (!face.has_neighbor()) {
+        if (!face.is_interior()) {
             continue;
         }
 

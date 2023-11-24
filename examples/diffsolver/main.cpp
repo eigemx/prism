@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "fmt/core.h"
+#include "prism/gradient/gradient.h"
+#include "prism/nonortho/nonortho.h"
 
 
 auto main(int argc, char* argv[]) -> int {
@@ -40,13 +42,19 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto eqn = TransportEquation(diffusion::Diffusion(1e-5, T), source::ConstantScalar(S));
+    auto eqn = TransportEquation(
+        diffusion::Diffusion<nonortho::OverRelaxedCorrector<gradient::GreenGauss>>(1e-5, T));
 
     // solve
     auto solver = solver::BiCGSTAB<solver::ImplicitUnderRelaxation>();
-    solver.solve(eqn, 100, 1e-6, 1);
+    solver.solve(eqn, 100, 1e-5, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
+
+    auto grader = gradient::GreenGauss(T);
+    auto _ = grader.gradient_field().x();
+    auto gradT_x = grader.gradient_field().x();
+    prism::export_field_vtu(gradT_x, "gradT_x.vtu");
 
     return 0;
 }

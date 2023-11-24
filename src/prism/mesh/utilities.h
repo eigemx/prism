@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cassert>
+#include <iostream>
+
 #include "cell.h"
 #include "face.h"
+#include "prism/types.h"
 
 namespace prism::mesh {
 /**
@@ -27,7 +31,10 @@ auto inline outward_area_vector(const Face& face, const Cell& cell) -> Vector3d 
  * @return double Geometric weighting factor between the two cells.
  */
 auto inline geo_weight(const Cell& c, const Cell& n, const Face& f) -> double {
-    return (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
+    auto gc = (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
+    assert(gc > 0 && "geo_weight() returned a negative weight factor");
+    assert(gc <= 1.0 && "geo_weight() returned a weight factor higher than 1.0");
+    return gc;
 }
 
 } // namespace prism::mesh

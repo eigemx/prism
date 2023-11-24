@@ -34,9 +34,9 @@ class Face {
     }
 
     auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
-    auto inline has_neighbor() const -> bool { return _neighbor.has_value(); }
+    auto inline is_interior() const -> bool { return _neighbor.has_value(); }
     auto inline set_neighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
-    auto inline is_boundary() const -> bool { return !has_neighbor(); }
+    auto inline is_boundary() const -> bool { return !is_interior(); }
 
     auto inline boundary_patch_id() const -> const std::optional<std::size_t>& {
         return _boundary_patch_id;

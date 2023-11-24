@@ -220,7 +220,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     const auto& S_f = face.area_vector();
 
     // use owner cell velocity as the velocity at the outlet face centroid
-    const auto& U_f = boundary_face_velocity(face);
+    const auto& U_f = _U.value_at_face(face);
 
     auto rho_f = _rho[face.owner()];
 
@@ -253,7 +253,7 @@ auto AbstractConvection<G>::boundary_face_velocity(const mesh::Face& face) const
 
         case mesh::BoundaryConditionType::Outlet:
         case mesh::BoundaryConditionType::Symmetry: {
-            return _U[face.owner()];
+            return _U.value_at_face(face);
         }
 
         default:

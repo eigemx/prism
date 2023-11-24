@@ -5,7 +5,7 @@
 #include <variant>
 #include <vector>
 
-#include "../types.h"
+#include "prism/types.h"
 
 namespace prism::mesh {
 

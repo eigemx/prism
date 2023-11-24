@@ -4,10 +4,10 @@
 #include <cmath>
 #include <iterator>
 
-#include "../types.h"
 #include "boundary.h"
 #include "cell.h"
 #include "face.h"
+#include "prism/types.h"
 
 namespace prism::mesh {
 
@@ -63,7 +63,7 @@ class PMesh {
      * @return const Cell& The other cell that shares the face with the given cell.
      */
     auto inline other_sharing_cell(const Cell& c, const Face& f) const -> const Cell& {
-        assert(f.has_neighbor() && "PMesh::other_sharing_cell() called on a boundary face!");
+        assert(f.is_interior() && "PMesh::other_sharing_cell() called on a boundary face!");
         auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
         return _cells[n_id];
     }

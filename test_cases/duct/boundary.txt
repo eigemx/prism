@@ -35,5 +35,6 @@ type = 'symmetry'
 [outlet]
 [outlet.temperature]
 type = 'outlet'
+value = 0.0
 [outlet.velocity]
 type = 'outlet'
