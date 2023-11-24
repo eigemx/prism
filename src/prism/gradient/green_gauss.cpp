@@ -78,8 +78,7 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
         }
         case mesh::BoundaryConditionType::Outlet:
         case mesh::BoundaryConditionType::Symmetry: {
-            const auto& owner = _field.mesh().cell(face.owner());
-            auto phi = _field.value_at_cell(owner);
+            auto phi = _field.value_at_face(face);
             return phi * face.area_vector();
         }
 
