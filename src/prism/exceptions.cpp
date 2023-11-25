@@ -1,6 +1,6 @@
 #include "exceptions.h"
 
-namespace prism {
+namespace prism::error {
 NonImplementedBoundaryCondition::NonImplementedBoundaryCondition(
     const std::string& func_name,
     const std::string& patch_name,
@@ -16,4 +16,4 @@ NonImplementedBoundaryCondition::NonImplementedBoundaryCondition(
 auto NonImplementedBoundaryCondition::what() const noexcept -> const char* {
     return _message.c_str();
 }
-} // namespace prism
+} // namespace prism::error

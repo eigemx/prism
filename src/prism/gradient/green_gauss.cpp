@@ -91,9 +91,10 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
         }
 
         default:
-            throw NonImplementedBoundaryCondition("GreenGauss::green_gauss_face_integral()",
-                                                  boundary_patch.name(),
-                                                  boundary_condition.bc_type_str());
+            throw error::NonImplementedBoundaryCondition(
+                "GreenGauss::green_gauss_face_integral()",
+                boundary_patch.name(),
+                boundary_condition.bc_type_str());
     }
 }
 } // namespace prism::gradient

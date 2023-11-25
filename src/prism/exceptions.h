@@ -7,7 +7,7 @@
 
 #include "fmt/core.h"
 
-namespace prism {
+namespace prism::error {
 class NonImplementedBoundaryCondition : public std::exception {
   public:
     NonImplementedBoundaryCondition(const std::string& func_name,
@@ -19,4 +19,4 @@ class NonImplementedBoundaryCondition : public std::exception {
     std::string _message;
 };
 
-} // namespace prism
+} // namespace prism::error

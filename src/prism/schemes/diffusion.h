@@ -132,9 +132,10 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face) {
         }
 
         default:
-            throw NonImplementedBoundaryCondition("prism::diffusion::Diffusion::apply_boundary()",
-                                                  boundary_patch.name(),
-                                                  boundary_condition.bc_type_str());
+            throw error::NonImplementedBoundaryCondition(
+                "prism::diffusion::Diffusion::apply_boundary()",
+                boundary_patch.name(),
+                boundary_condition.bc_type_str());
     }
 }
 
