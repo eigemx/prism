@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "prism/constants.h"
+#include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/face.h"
@@ -132,9 +133,9 @@ auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) 
         }
 
         default: {
-            throw std::runtime_error(
-                "AbstractGradient::gradient_at_boundary_face() was given a non-implemented "
-                "boundary condition type.");
+            throw NonImplementedBoundaryCondition("AbstractGradient::gradient_at_boundary_face()",
+                                                  boundary_patch.name(),
+                                                  boundary_condition.bc_type_str());
         }
     }
 

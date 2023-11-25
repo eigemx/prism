@@ -2,6 +2,7 @@
 #include <cstddef>
 
 #include "gradient.h"
+#include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/mesh/utilities.h"
 
@@ -90,10 +91,9 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
         }
 
         default:
-            throw std::runtime_error(
-                fmt::format("GradientSchemeBase::gradient_at_boundary_face(): "
-                            "Non-implemented boundary type for boundary patch: '{}'",
-                            boundary_patch.name()));
+            throw NonImplementedBoundaryCondition("GreenGauss::green_gauss_face_integral()",
+                                                  boundary_patch.name(),
+                                                  boundary_condition.bc_type_str());
     }
 }
 } // namespace prism::gradient

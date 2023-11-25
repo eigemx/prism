@@ -1,6 +1,6 @@
 [back]
 [back.temperature]
-type = 'empty'
+type = 'emmpty'
 
 [front]
 [front.temperature]

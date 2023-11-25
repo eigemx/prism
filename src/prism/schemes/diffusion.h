@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fvscheme.h"
+#include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/pmesh.h"
@@ -18,7 +19,7 @@ class Diffusion : public FVScheme {
     void apply() override;
     auto field() -> std::optional<ScalarField> override { return _phi; }
 
-    // this function will be overloaded to return false in case of NilCorrector
+    // This will ve overloaded to return false in case of NilCorrector
     auto requires_correction() const -> bool override { return true; }
 
   private:
@@ -116,7 +117,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face) {
         // This is a special case of the general Neumann boundary condition,
         // where the gradient of the field is zero at the boundary (flux is zero),
         // and will not result in any contribution to the right hand side of the equation,
-        // or the matrix coefficients. and no need for non-orthogonal correction.
+        // or the matrix coefficients, and no need for non-orthogonal correction.
         // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph,
         // and paragraph 8.6.8.2 - Chapter 8 in same reference.
         case mesh::BoundaryConditionType::Symmetry:
@@ -131,10 +132,9 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face) {
         }
 
         default:
-            throw std::runtime_error(
-                fmt::format("diffusion::Diffusion::apply_boundary(): "
-                            "Non-implemented boundary condition type for boundary patch: '{}'",
-                            boundary_patch.name()));
+            throw NonImplementedBoundaryCondition("prism::diffusion::Diffusion::apply_boundary()",
+                                                  boundary_patch.name(),
+                                                  boundary_condition.bc_type_str());
     }
 }
 

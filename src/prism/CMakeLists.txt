@@ -3,6 +3,7 @@ add_library(prism
     field.cpp
     equation.cpp
     export.cpp
+    exceptions.cpp
     mesh/face.cpp
     mesh/cell.cpp
     mesh/boundary.cpp
