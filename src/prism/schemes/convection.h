@@ -42,7 +42,7 @@ class AbstractConvection : public FVScheme {
                              const mesh::Face& face) -> CoeffsTriplet = 0;
 
     void apply_interior(const mesh::Face& face) override;
-    void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
+    void apply_boundary(const mesh::Face& face) override;
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
     void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
     auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
@@ -116,7 +116,7 @@ template <typename G>
 void AbstractConvection<G>::apply() {
     // TODO: this is repeated in all FVSchemes, we should move it to the base class
     for (const auto& bface : _phi.mesh().boundary_faces()) {
-        apply_boundary(_phi.mesh().cell(bface.owner()), bface);
+        apply_boundary(bface);
     }
 
     for (const auto& iface : _phi.mesh().interior_faces()) {
@@ -160,7 +160,8 @@ void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
 }
 
 template <typename G>
-void AbstractConvection<G>::apply_boundary(const mesh::Cell& cell, const mesh::Face& face) {
+void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
+    const auto& owner = _phi.mesh().cell(face.owner());
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
@@ -172,12 +173,12 @@ void AbstractConvection<G>::apply_boundary(const mesh::Cell& cell, const mesh::F
 
         case mesh::BoundaryConditionType::Fixed:
         case mesh::BoundaryConditionType::Inlet: {
-            apply_boundary_fixed(cell, face);
+            apply_boundary_fixed(owner, face);
             return;
         }
 
         case mesh::BoundaryConditionType::Outlet: {
-            apply_boundary_outlet(cell, face);
+            apply_boundary_outlet(owner, face);
             return;
         }
 

@@ -32,7 +32,7 @@ class ConstantScalar : public FVScheme, public AbstractExplicitSource {
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Face& face) override {}
 
     const ScalarField _phi;
     VectorXd _volume_field;
@@ -47,7 +47,7 @@ class Divergence : public FVScheme, public AbstractExplicitSource {
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Face& face) override {}
 
     const VectorField _U;
 };
@@ -64,7 +64,7 @@ class Gradient : public FVScheme, public AbstractExplicitSource {
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Face& face) override {}
 
     const ScalarField _phi;
     Coord _coord;
@@ -81,7 +81,7 @@ class Laplacian : public FVScheme, public AbstractExplicitSource {
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Face& face) override {}
 
     double _kappa;
     const ScalarField _phi;
@@ -99,7 +99,7 @@ class Field : public FVScheme, public AbstractImplicitSource {
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override {}
+    void inline apply_boundary(const mesh::Face& face) override {}
 
     auto inline requires_correction() const -> bool override { return false; }
 

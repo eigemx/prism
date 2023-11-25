@@ -32,7 +32,7 @@ class FVScheme : public LinearSystem {
 
   private:
     virtual void apply_interior(const mesh::Face& face) = 0;
-    virtual void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) = 0;
+    virtual void apply_boundary(const mesh::Face& face) = 0;
 
     std::string _name;
 };
