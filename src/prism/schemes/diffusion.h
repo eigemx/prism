@@ -4,6 +4,7 @@
 #include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/gradient/gradient.h"
+#include "prism/mesh/cell.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/types.h"
@@ -151,7 +152,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cel
      */
     // get the fixed gradient (flux) value associated with the face
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    auto wall_grad = boundary_patch.get_vector_bc(_phi.name());
+    const Vector3d wall_grad = boundary_patch.get_vector_bc(_phi.name());
 
     const Vector3d& Sf = face.area_vector();
     Vector3d Sf_prime = _kappa_matrix * Sf;
@@ -164,24 +165,24 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cel
 
 template <typename NonOrthoCorrector>
 void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
-    const auto& owner = _phi.mesh().cell(face.owner());
-    const auto& neighbor = _phi.mesh().cell(face.neighbor().value());
+    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
+    const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
-    auto d_CF = neighbor.center() - owner.center();
-    auto d_CF_norm = d_CF.norm();
+    const Vector3d d_CF = neighbor.center() - owner.center();
+    const double d_CF_norm = d_CF.norm();
 
     // unit vector in d_CF direction
-    auto e = d_CF / d_CF_norm;
+    const Vector3d e = d_CF / d_CF_norm;
 
     const auto& [Sf, Ef, Tf] = _corrector.interior_triplet(owner, neighbor, face);
     Vector3d Ef_prime = _kappa_matrix * Ef;
 
     // geometric diffusion coefficient
-    auto g_diff = Ef_prime.norm() / (d_CF_norm + EPSILON);
+    const double g_diff = Ef_prime.norm() / (d_CF_norm + EPSILON);
 
-    auto owner_id = owner.id();
-    auto neighbor_id = neighbor.id();
+    const std::size_t owner_id = owner.id();
+    const std::size_t neighbor_id = neighbor.id();
 
     // kappa * g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
@@ -194,7 +195,7 @@ void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
-    auto grad_f = _corrector.grad_scheme().gradient_at_face(face);
+    const Vector3d grad_f = _corrector.grad_scheme().gradient_at_face(face);
     Vector3d Tf_prime = _kappa_matrix * Tf;
 
     // update right hand side
@@ -204,8 +205,8 @@ void Diffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face) {
 
 template <>
 void inline Diffusion<nonortho::NilCorrector>::apply_interior(const mesh::Face& face) {
-    const auto& owner = _phi.mesh().cell(face.owner());
-    const auto& neighbor = _phi.mesh().cell(face.neighbor().value());
+    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
+    const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
     auto d_CF = neighbor.center() - owner.center();
@@ -215,10 +216,10 @@ void inline Diffusion<nonortho::NilCorrector>::apply_interior(const mesh::Face& 
     Vector3d Sf_prime = _kappa_matrix * Sf;
 
     // geometric diffusion coefficient
-    auto g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
+    const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
 
-    auto owner_id = owner.id();
-    auto neighbor_id = neighbor.id();
+    const std::size_t owner_id = owner.id();
+    const std::size_t neighbor_id = neighbor.id();
 
     // kappa * g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
@@ -237,16 +238,12 @@ void Diffusion<NonOrthoCorrector>::correct_nonorhto_boundary_fixed(const mesh::C
                                                                    const Vector3d& Tf_prime) {
     // we need to calculate the gradient of phi at the face
     // first let's calculate the vector joining the face center to the cell center
-    auto d_CF = face.center() - cell.center();
-    auto d_CF_norm = d_CF.norm();
-    auto e = d_CF / d_CF_norm;
+    const Vector3d d_CF = face.center() - cell.center();
+    const double d_CF_norm = d_CF.norm();
+    const Vector3d e = d_CF / d_CF_norm;
 
-    // now we need to calculate the gradient of phi at the face center
-    auto boundary_patch_id = face.boundary_patch_id().value();
-    const auto& face_boundary_patch = _phi.mesh().boundary_patches()[boundary_patch_id];
-
-    auto phi_wall = face_boundary_patch.get_scalar_bc(_phi.name());
-    auto phi_c = _phi[cell.id()];
+    const double phi_wall = _phi.value_at_face(face);
+    const double phi_c = _phi.value_at_cell(cell);
 
     auto grad_f = ((phi_wall - phi_c) / (d_CF_norm + EPSILON)) * e;
     rhs(cell.id()) += Tf_prime.dot(grad_f);
@@ -257,19 +254,18 @@ template <typename NonOrthoCorrector>
 void Diffusion<NonOrthoCorrector>::apply_boundary_fixed(const mesh::Cell& cell,
                                                         const mesh::Face& face) {
     // get the fixed phi variable associated with the face
-    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
+    const double phi_wall = _phi.value_at_face(face);
 
-    auto cell_id = cell.id();
+    const std::size_t cell_id = cell.id();
 
     // vector joining the centers of the cell and the face
-    auto d_Cf = face.center() - cell.center();
-    auto d_Cf_norm = d_Cf.norm();
+    const Vector3d d_Cf = face.center() - cell.center();
+    const double d_Cf_norm = d_Cf.norm();
 
     const auto& [_, Ef, Tf] = _corrector.boundary_triplet(cell, face);
     Vector3d Ef_prime = _kappa_matrix * Ef;
 
-    auto g_diff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
+    const double g_diff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
 
     insert(cell_id, cell_id, g_diff);
     rhs(cell_id) += g_diff * phi_wall;
