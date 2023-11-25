@@ -181,9 +181,11 @@ void AbstractConvection<G>::apply_boundary(const mesh::Cell& cell, const mesh::F
             return;
         }
 
+            // TODO: Implement FixedGradient
+
         default:
             throw std::runtime_error(fmt::format(
-                "convection::ConvectionBase::apply_boundary(): "
+                "convection::AbstactConvection::apply_boundary(): "
                 "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
                 boundary_patch.name(),
                 _U.name()));
@@ -240,6 +242,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     insert(cell_id, cell_id, m_dot_f);
 }
 
+// TODO: replace this with _U.value_at_face(face)
 template <typename G>
 auto AbstractConvection<G>::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);

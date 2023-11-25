@@ -8,6 +8,8 @@
 
 #include "prism/constants.h"
 #include "prism/field.h"
+#include "prism/mesh/boundary.h"
+#include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
 #include "prism/types.h"
@@ -31,6 +33,9 @@ class AbstractGradient {
     virtual auto gradient_field() -> VectorField;
 
     virtual ~AbstractGradient() = default;
+
+  protected:
+    virtual auto gradient_at_boundary_face(const mesh::Face& f) -> Vector3d;
 
   private:
     const ScalarField _field;
@@ -96,8 +101,45 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
     }
 
     // boundary face
-    //return gradient_at_boundary_face(face);
-    throw std::runtime_error("Don't know how to calculate gradient at boundary face!");
+    return gradient_at_boundary_face(face);
+}
+
+auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) -> Vector3d {
+    const auto& boundary_patch = _field.mesh().boundary_patch(face);
+    const auto& boundary_condition = boundary_patch.get_bc(_field.name());
+    auto bc_type = boundary_condition.bc_type();
+
+    switch (bc_type) {
+        case mesh::BoundaryConditionType::Empty:
+        case mesh::BoundaryConditionType::Symmetry:
+        case mesh::BoundaryConditionType::Outlet: {
+            return {0.0, 0.0, 0.0};
+        }
+
+        case mesh::BoundaryConditionType::Inlet:
+        case mesh::BoundaryConditionType::Fixed: {
+            const auto& owner = _field.mesh().cell(face.owner());
+            Vector3d e = face.center() - owner.center();
+            double d_Cf = e.norm();
+            e = e / e.norm();
+
+            double delta_phi = _field.value_at_face(face) - _field.value_at_cell(owner);
+            return (delta_phi / d_Cf) * e;
+        }
+
+        case mesh::BoundaryConditionType::FixedGradient: {
+            return boundary_patch.get_vector_bc(_field.name());
+        }
+
+        default: {
+            throw std::runtime_error(
+                "AbstractGradient::gradient_at_boundary_face() was given a non-implemented "
+                "boundary condition type.");
+        }
+    }
+
+    // We should never reach this
+    return {0.0, 0.0, 0.0};
 }
 
 auto inline AbstractGradient::gradient_field() -> VectorField {

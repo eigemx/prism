@@ -130,10 +130,24 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
             return (*_data)[face.owner()];
         }
 
+        case mesh::BoundaryConditionType::FixedGradient: {
+            Vector3d grad_at_boundary = patch.get_vector_bc(_name);
+            const auto& owner = _mesh->cell(face.owner());
+            Vector3d e = face.center() - owner.center();
+            double d_Cf = e.norm();
+            e = e / e.norm();
+            grad_at_boundary = grad_at_boundary * d_Cf;
+
+            double phi_wall = grad_at_boundary.dot(e) + value_at_cell(owner);
+
+            return phi_wall;
+        }
+
         default: {
             throw std::runtime_error(
                 "ScalarField::value_at_boundary_face() knows how to calculate the scalar value "
-                "of the field only at Fixed, Inlet, Symmetry & Outlet boundary conditions.");
+                "of the field only at Fixed, Inlet, Symmetry FixeGradient & Outlet boundary "
+                "conditions.");
         }
     }
 }

@@ -83,16 +83,10 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
         }
 
         case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
+        case mesh::BoundaryConditionType::Inlet:
+        case mesh::BoundaryConditionType::FixedGradient: {
             auto phi = _field.value_at_face(face);
             return phi * face.area_vector();
-        }
-
-        case mesh::BoundaryConditionType::FixedGradient: {
-            // TODO: This is wrong, fixed gradient should be a vector not a scalar
-            const auto& phi_name = _field.name();
-            auto flux = boundary_patch.get_scalar_bc(phi_name);
-            return flux * face.area_vector();
         }
 
         default:

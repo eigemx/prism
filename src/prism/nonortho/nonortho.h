@@ -43,7 +43,7 @@ template <typename GradScheme = gradient::LeastSquares>
 class AbstractCorrectorWithGradient : public AbstractCorrector {
   public:
     AbstractCorrectorWithGradient(ScalarField& field) : _grad_scheme(field) {}
-    auto grad_scheme() -> GradScheme& { return _grad_scheme; }
+    auto inline grad_scheme() -> GradScheme& { return _grad_scheme; }
 
     auto interior_triplet(const mesh::Cell& owner,
                           const mesh::Cell& neighbor,
