@@ -19,7 +19,7 @@ class Diffusion : public FVScheme {
     void apply() override;
     auto field() -> std::optional<ScalarField> override { return _phi; }
 
-    // This will ve overloaded to return false in case of NilCorrector
+    // This will be overloaded to return false in case of NilCorrector
     auto requires_correction() const -> bool override { return true; }
 
   private:
