@@ -73,6 +73,15 @@ class BoundaryCondition {
                       BoundaryConditionType patch_type)
         : _bc_value_type(type), _value(std::move(value)), _bc_type(patch_type) {}
 
+    BoundaryCondition(BoundaryConditionValueType type,
+                      BoundaryConditionValue value,
+                      BoundaryConditionType patch_type,
+                      std::string bc_type_str)
+        : _bc_value_type(type),
+          _value(std::move(value)),
+          _bc_type(patch_type),
+          _bc_type_str(std::move(bc_type_str)) {}
+
     auto inline value_type() const noexcept -> BoundaryConditionValueType {
         // Should we check if the value is Nil?
         // this always assumes that value is either scalar or vector.
@@ -80,8 +89,10 @@ class BoundaryCondition {
     }
     auto inline value() const noexcept -> const BoundaryConditionValue& { return _value; }
     auto inline bc_type() const noexcept -> BoundaryConditionType { return _bc_type; }
+    auto inline bc_type_str() const noexcept -> const std::string& { return _bc_type_str; }
 
   private:
+    std::string _bc_type_str;
     BoundaryConditionValueType _bc_value_type;
     BoundaryConditionValue _value;
     BoundaryConditionType _bc_type;

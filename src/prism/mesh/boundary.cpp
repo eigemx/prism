@@ -91,6 +91,7 @@ auto parse_field_boundary_condition(const toml::table& table,
                                     const std::string& patch_name,
                                     const std::string& field_name) -> BoundaryCondition {
     const auto& field_table = *(table[patch_name][field_name].as_table());
+
     if (!field_table.contains("type")) {
         throw std::runtime_error(
             fmt::format("boundary.cpp parse_field_boundary_condition(): "
@@ -112,7 +113,8 @@ auto parse_field_boundary_condition(const toml::table& table,
 
     if (bc_value.is_number() || bc_value.is_floating_point()) {
         double value = bc_value.value<double>().value();
-        return BoundaryCondition {BoundaryConditionValueType::Scalar, value, bc_type};
+        return BoundaryCondition {
+            BoundaryConditionValueType::Scalar, value, bc_type, std::string(bc_type_str)};
     }
 
     if (bc_value.is_array()) {
@@ -132,7 +134,8 @@ auto parse_field_boundary_condition(const toml::table& table,
                     array->at(1).value<double>().value(),
                     array->at(2).value<double>().value(),
                 },
-                bc_type};
+                bc_type,
+                std::string(bc_type_str)};
     }
 
     throw std::runtime_error(
