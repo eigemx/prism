@@ -58,8 +58,8 @@ auto main(int argc, char* argv[]) -> int {
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = TransportEquation(
         // Add discretization schemes
-        convection::Upwind(rho, U, T),       // ∇.(ρUT)
-        diffusion::Diffusion(1e-2, T),       // - ∇.(κ ∇T)
+        convection::SecondOrderUpwind<gradient::GreenGauss>(rho, U, T), // ∇.(ρUT)
+        diffusion::Diffusion(1e-2, T),                                  // - ∇.(κ ∇T)
         source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 

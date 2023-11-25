@@ -149,11 +149,14 @@ void Diffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::Cell& cel
      */
     // get the fixed gradient (flux) value associated with the face
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    auto flux_wall = boundary_patch.get_scalar_bc(_phi.name());
+    auto wall_grad = boundary_patch.get_vector_bc(_phi.name());
+
+    const Vector3d& Sf = face.area_vector();
+    Vector3d Sf_prime = _kappa_matrix * Sf;
 
     // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
     // and paragraph 8.6.8.2
-    rhs(cell.id()) += -flux_wall * face.area();
+    rhs(cell.id()) += wall_grad.dot(Sf_prime);
 }
 
 
