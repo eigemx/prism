@@ -18,12 +18,13 @@ class Diffusion : public FVScheme {
     void apply() override;
     auto field() -> std::optional<ScalarField> override { return _phi; }
 
-    // requires_correction() will be overloaded to return false in case of NilCorrector
+    // this function will be overloaded to return false in case of NilCorrector
     auto requires_correction() const -> bool override { return true; }
 
   private:
     void apply_interior(const mesh::Face& face) override;
-    void apply_boundary(const mesh::Cell& cell, const mesh::Face& face) override;
+    void apply_boundary(const mesh::Face& face) override;
+
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
     void apply_boundary_gradient(const mesh::Cell& cell, const mesh::Face& face);
     void correct_nonorhto_boundary_fixed(const mesh::Cell& cell,
@@ -72,7 +73,7 @@ void inline Diffusion<NonOrthoCorrector>::apply() {
      * the scheme coefficients and will not zero out the scheme matrix and RHS vector.
      */
     for (const auto& bface : _phi.mesh().boundary_faces()) {
-        apply_boundary(_phi.mesh().cell(bface.owner()), bface);
+        apply_boundary(bface);
     }
 
     for (const auto& iface : _phi.mesh().interior_faces()) {
@@ -84,8 +85,7 @@ void inline Diffusion<NonOrthoCorrector>::apply() {
 }
 
 template <typename NonOrthoCorrector>
-void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Cell& cell,
-                                                  const mesh::Face& face) {
+void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face) {
     /**
      * @brief Applies boundary discretized diffusion equation to the cell,
      * when the current face is a boundary face. The function iteself does not
@@ -95,6 +95,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Cell& cell,
      * @param cell The cell that owns the boundary face.
      * @param face The boundary face.
      */
+    const auto& owner = _phi.mesh().cell(face.owner());
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
@@ -107,7 +108,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Cell& cell,
         // fixed boundary patch, or Dirichlet boundary condition
         case mesh::BoundaryConditionType::Fixed:
         case mesh::BoundaryConditionType::Inlet: {
-            apply_boundary_fixed(cell, face);
+            apply_boundary_fixed(owner, face);
             return;
         }
 
@@ -125,7 +126,7 @@ void Diffusion<NonOrthoCorrector>::apply_boundary(const mesh::Cell& cell,
 
         // general Von Neumann boundary condition, or fixed gradient boundary condition.
         case mesh::BoundaryConditionType::FixedGradient: {
-            apply_boundary_gradient(cell, face);
+            apply_boundary_gradient(owner, face);
             return;
         }
 
