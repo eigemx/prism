@@ -3,10 +3,13 @@
 #include <spdlog/spdlog.h>
 
 #include <cmath>
+#include <cstddef>
 
 #include "fvscheme.h"
+#include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/gradient/gradient.h"
+#include "prism/mesh/cell.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
 
@@ -45,7 +48,6 @@ class AbstractConvection : public FVScheme {
     void apply_boundary(const mesh::Face& face) override;
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
     void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
-    auto boundary_face_velocity(const mesh::Face& face) const -> Vector3d;
 
     const ScalarField _rho;
     const VectorField _U;
@@ -129,22 +131,17 @@ void AbstractConvection<G>::apply() {
 
 template <typename G>
 void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
-    const auto& owner = _phi.mesh().cell(face.owner());
-    const auto& neighbor = _phi.mesh().cell(face.neighbor().value());
+    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
+    const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
 
-    auto owner_id = owner.id();
-    auto neighbor_id = neighbor.id();
+    const std::size_t owner_id = owner.id();
+    const std::size_t neighbor_id = neighbor.id();
 
-    auto S_f = mesh::outward_area_vector(face, owner);
+    const Vector3d& S_f = mesh::outward_area_vector(face, owner);
 
-    // interpolated velocity vector and density at face centroid
-    auto g_c = mesh::geo_weight(owner, neighbor, face);
-
-    // TODO: convert this to a utility function
-    auto U_f = (g_c * _U[owner_id]) + ((1 - g_c) * _U[neighbor_id]);
-    auto rho_f = (g_c * _rho[owner_id]) + ((1 - g_c) * _rho[neighbor_id]);
-
-    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+    const Vector3d U_f = _U.value_at_face(face);
+    const double rho_f = _rho.value_at_face(face);
+    const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
@@ -161,7 +158,7 @@ void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
 
 template <typename G>
 void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
-    const auto& owner = _phi.mesh().cell(face.owner());
+    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
@@ -183,27 +180,25 @@ void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
         }
 
             // TODO: Implement FixedGradient
-
         default:
-            throw std::runtime_error(fmt::format(
-                "convection::AbstactConvection::apply_boundary(): "
-                "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
+            throw error::NonImplementedBoundaryCondition(
+                "convection::AbstactConvection::apply_boundary()",
                 boundary_patch.name(),
-                _U.name()));
+                boundary_condition.bc_type_str());
     }
 }
 
 template <typename G>
 void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    auto phi_wall = boundary_patch.get_scalar_bc(_phi.name());
+    const double phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
-    const auto& S_f = face.area_vector();
-    const auto& U_f = boundary_face_velocity(face);
+    const Vector3d& S_f = face.area_vector();
+    const Vector3d U_f = _U.value_at_face(face);
 
     // TODO: check if this is correct
-    auto rho_f = _rho[face.owner()];
-    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+    const double rho_f = _rho.value_at_cell(cell);
+    const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
@@ -217,17 +212,15 @@ void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const m
 template <typename G>
 void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
                                                   const mesh::Face& face) {
-    auto cell_id = cell.id();
+    const std::size_t cell_id = cell.id();
 
     // face area vector
-    const auto& S_f = face.area_vector();
+    const Vector3d& S_f = face.area_vector();
 
     // use owner cell velocity as the velocity at the outlet face centroid
-    const auto& U_f = _U.value_at_face(face);
-
-    auto rho_f = _rho[face.owner()];
-
-    auto m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+    const Vector3d U_f = _U.value_at_face(face);
+    const double rho_f = _rho.value_at_cell(cell);
+    const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     if (m_dot_f <= 0.0) {
         spdlog::warn(
@@ -243,46 +236,20 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     insert(cell_id, cell_id, m_dot_f);
 }
 
-// TODO: replace this with _U.value_at_face(face)
-template <typename G>
-auto AbstractConvection<G>::boundary_face_velocity(const mesh::Face& face) const -> Vector3d {
-    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    const auto& boundary_condition = boundary_patch.get_bc(_U.name());
-
-    switch (boundary_condition.bc_type()) {
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
-            return boundary_patch.get_vector_bc(_U.name());
-        }
-
-        case mesh::BoundaryConditionType::Outlet:
-        case mesh::BoundaryConditionType::Symmetry: {
-            return _U.value_at_face(face);
-        }
-
-        default:
-            throw std::runtime_error(fmt::format(
-                "convection::AbstractConvection::boundary_face_velocity(): "
-                "Non-implemented boundary type for boundary patch: '{}' for field '{}'",
-                boundary_patch.name(),
-                _U.name()));
-    }
-}
-
 template <typename G>
 auto CentralDifference<G>::interpolate(double m_dot,
                                        const mesh::Cell& cell,
                                        const mesh::Cell& neighbor,
                                        const mesh::Face& face) -> CoeffsTriplet {
     // in case `cell` is the upstream cell
-    auto face_grad_phi = this->grad_scheme().gradient_at_face(face);
-    auto d_Cf = face.center() - cell.center();
-    auto a_C = std::max(m_dot, 0.0);
-    auto b = -std::max(m_dot, 0.0) * d_Cf.dot(face_grad_phi);
+    const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
+    const Vector3d d_Cf = face.center() - cell.center();
+    const double a_C = std::max(m_dot, 0.0);
+    double b = -std::max(m_dot, 0.0) * d_Cf.dot(face_grad_phi);
 
     // in case 'neighbor' is the upstream cell
-    auto d_Nf = face.center() - neighbor.center();
-    auto a_N = -std::max(-m_dot, 0.0);
+    const Vector3d d_Nf = face.center() - neighbor.center();
+    const double a_N = -std::max(-m_dot, 0.0);
     b += std::max(-m_dot, 0.0) * d_Nf.dot(face_grad_phi);
 
     return {a_C, a_N, b};
@@ -295,13 +262,11 @@ auto Upwind<G>::interpolate(double m_dot,
                             const mesh::Face& face)     // NOLINT
     -> CoeffsTriplet {
     // in case `cell` is the upstream cell
-    auto a_C = std::max(m_dot, 0.0);
+    const double a_C = std::max(m_dot, 0.0);
     // in case 'neighbor' is the upstream cell
-    auto a_N = -std::max(-m_dot, 0.0);
+    const double a_N = -std::max(-m_dot, 0.0);
 
-    auto b = 0.0;
-
-    return {a_C, a_N, b};
+    return {a_C, a_N, 0.0};
 }
 
 template <typename G>
@@ -310,24 +275,24 @@ auto SecondOrderUpwind<G>::interpolate(double m_dot,
                                        const mesh::Cell& neighbor,
                                        const mesh::Face& face) -> CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const auto& face_grad_phi = this->grad_scheme().gradient_at_face(face);
-    const auto& cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
-    const auto& neighbor_grad_phi = this->grad_scheme().gradient_at_cell(neighbor);
+    const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
+    const Vector3d cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
+    const Vector3d neighbor_grad_phi = this->grad_scheme().gradient_at_cell(neighbor);
 
-    auto d_Cf = face.center() - cell.center();
+    const Vector3d d_Cf = face.center() - cell.center();
     //auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
     auto correction = cell_grad_phi.dot(d_Cf);
 
-    auto a_C = std::max(m_dot, 0.0);
-    auto b1 = -std::max(m_dot, 0.0) * correction;
+    const double a_C = std::max(m_dot, 0.0);
+    const double b1 = -std::max(m_dot, 0.0) * correction;
 
     // in case 'neighbor' is the upstream cell
-    auto d_Nf = face.center() - neighbor.center();
+    const Vector3d d_Nf = face.center() - neighbor.center();
     //correction = d_Nf.dot((2 * neighbor_grad_phi) - face_grad_phi);
     correction = neighbor_grad_phi.dot(d_Nf);
 
-    auto a_N = -std::max(-m_dot, 0.0);
-    auto b2 = std::max(-m_dot, 0.0) * correction;
+    const double a_N = -std::max(-m_dot, 0.0);
+    const double b2 = std::max(-m_dot, 0.0) * correction;
 
     return {a_C, a_N, b1 + b2};
 }
@@ -338,22 +303,22 @@ auto QUICK<G>::interpolate(double m_dot,
                            const mesh::Cell& neighbor,
                            const mesh::Face& face) -> CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const auto& face_grad_phi = this->grad_scheme().gradient_at_face(face);
-    const auto& cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
-    const auto& neighbor_grad_phi = this->grad_scheme().gradient_at_cell(neighbor);
+    const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
+    const Vector3d cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
+    const Vector3d neighbor_grad_phi = this->grad_scheme().gradient_at_cell(neighbor);
 
-    auto d_Cf = face.center() - cell.center();
+    const Vector3d d_Cf = face.center() - cell.center();
     auto correction = 0.5 * d_Cf.dot(cell_grad_phi + face_grad_phi);
 
-    auto a_C = std::max(m_dot, 0.0);
-    auto b1 = -std::max(m_dot, 0.0) * correction;
+    const double a_C = std::max(m_dot, 0.0);
+    const double b1 = -std::max(m_dot, 0.0) * correction;
 
     // in case 'neighbor' is the upstream cell
-    auto d_Nf = face.center() - neighbor.center();
+    const Vector3d d_Nf = face.center() - neighbor.center();
     correction = 0.5 * d_Nf.dot(neighbor_grad_phi + face_grad_phi);
 
-    auto a_N = -std::max(-m_dot, 0.0);
-    auto b2 = std::max(-m_dot, 0.0) * correction;
+    const double a_N = -std::max(-m_dot, 0.0);
+    const double b2 = std::max(-m_dot, 0.0) * correction;
 
     return {a_C, a_N, b1 + b2};
 }
