@@ -13,7 +13,15 @@ enum class SourceSign { Positive, Negative };
 
 class AbstractSource {};
 class AbstractImplicitSource : public AbstractSource {};
-class AbstractExplicitSource : public AbstractSource {};
+class AbstractExplicitSource : public AbstractSource, public FVScheme {
+  public:
+    AbstractExplicitSource(std::size_t n_cells);
+    auto requires_correction() const -> bool final { return false; }
+
+  private:
+    void inline apply_interior(const mesh::Face& face) final {}
+    void inline apply_boundary(const mesh::Face& face) final {}
+};
 
 // Discretized constant source/sink term (like gravity), takes a scalar field
 // and adds it to the right hand side of the system of equation
@@ -23,32 +31,23 @@ class AbstractExplicitSource : public AbstractSource {};
 // TODO: ConstantScalar constructor should accept just a scalar value, and we should do the
 // remaining housekeeping with creating the needed ScalarField
 template <SourceSign Sign = SourceSign::Positive>
-class ConstantScalar : public FVScheme, public AbstractExplicitSource {
+class ConstantScalar : public AbstractExplicitSource {
   public:
     ConstantScalar(ScalarField phi);
-
-    auto requires_correction() const -> bool override { return false; }
     void apply() override;
 
   private:
-    void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Face& face) override {}
-
     const ScalarField _phi;
     VectorXd _volume_field;
 };
 
 template <SourceSign Sign = SourceSign::Positive>
-class Divergence : public FVScheme, public AbstractExplicitSource {
+class Divergence : public AbstractExplicitSource {
   public:
     Divergence(const VectorField& U);
-
     void apply() override;
 
   private:
-    void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Face& face) override {}
-
     const VectorField _U;
 };
 
@@ -56,16 +55,12 @@ class Divergence : public FVScheme, public AbstractExplicitSource {
 // for example the gradient of the pressure in the x-direction: ∂p/∂x
 template <SourceSign Sign = SourceSign::Positive,
           typename GradientScheme = gradient::LeastSquares>
-class Gradient : public FVScheme, public AbstractExplicitSource {
+class Gradient : public AbstractExplicitSource {
   public:
     Gradient(ScalarField& phi, Coord coord);
-
     void apply() override;
 
   private:
-    void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Face& face) override {}
-
     const ScalarField _phi;
     Coord _coord;
     GradientScheme _grad_scheme;
@@ -73,16 +68,12 @@ class Gradient : public FVScheme, public AbstractExplicitSource {
 
 template <SourceSign Sign = SourceSign::Positive,
           typename GradientScheme = gradient::LeastSquares>
-class Laplacian : public FVScheme, public AbstractExplicitSource {
+class Laplacian : public AbstractExplicitSource {
   public:
     Laplacian(double kappa, ScalarField& phi);
-
     void apply() override;
 
   private:
-    void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Face& face) override {}
-
     double _kappa;
     const ScalarField _phi;
     GradientScheme _grad_scheme;
@@ -93,7 +84,6 @@ template <SourceSign Sign = SourceSign::Positive>
 class Field : public FVScheme, public AbstractImplicitSource {
   public:
     Field(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
-
     void apply() override;
     auto inline field() -> std::optional<ScalarField> override { return _phi; }
 
@@ -106,9 +96,12 @@ class Field : public FVScheme, public AbstractImplicitSource {
     const ScalarField _phi;
 };
 
+inline AbstractExplicitSource::AbstractExplicitSource(std::size_t n_cells)
+    : FVScheme(n_cells, false) {}
+
 template <SourceSign Sign>
 ConstantScalar<Sign>::ConstantScalar(ScalarField phi)
-    : _phi(phi), FVScheme(phi.mesh().n_cells(), false) {
+    : _phi(phi), AbstractExplicitSource(phi.mesh().n_cells()) {
     _volume_field.resize(phi.mesh().n_cells());
 
     for (const auto& cell : phi.mesh().cells()) {
@@ -127,11 +120,12 @@ void inline ConstantScalar<Sign>::apply() {
 }
 
 template <SourceSign Sign>
-Divergence<Sign>::Divergence(const VectorField& U) : FVScheme(U.mesh().n_cells(), false), _U(U) {}
+Divergence<Sign>::Divergence(const VectorField& U)
+    : AbstractExplicitSource(U.mesh().n_cells()), _U(U) {}
 
 template <SourceSign Sign, typename GradientScheme>
 Gradient<Sign, GradientScheme>::Gradient(ScalarField& phi, Coord coord)
-    : _phi(phi), _grad_scheme(phi), _coord(coord), FVScheme(phi.mesh().n_cells()) {}
+    : _phi(phi), _grad_scheme(phi), _coord(coord), AbstractExplicitSource(phi.mesh().n_cells()) {}
 
 template <SourceSign Sign>
 void inline Divergence<Sign>::apply() {
@@ -175,7 +169,7 @@ void Gradient<Sign, GradientScheme>::apply() {
 
 template <SourceSign Sign, typename GradientScheme>
 Laplacian<Sign, GradientScheme>::Laplacian(double kappa, ScalarField& phi)
-    : FVScheme(phi.mesh().n_cells(), false),
+    : AbstractExplicitSource(phi.mesh().n_cells()),
       _kappa(kappa),
       _phi(phi),
       _grad_scheme(GradientScheme(phi)) {}
