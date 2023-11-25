@@ -35,10 +35,6 @@ include_directories(${UNVPP_SOURCE_DIR}/include)
 set(TOMLPP_SOURCE_DIR "external/tomlplusplus")
 include_directories(${TOMLPP_SOURCE_DIR}/include)
 
-# setup cxxopts
-set(CXXOPTS_SOURCE_DIR "external/cxxopts")
-include_directories(${CXXOPTS_SOURCE_DIR}/include)
-
 # setup vtu11
 set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})

@@ -17,10 +17,6 @@
 	path = external/tomlplusplus
 	url = https://github.com/marzer/tomlplusplus
 
-[submodule "external/cxxopts"]
-	path = external/cxxopts
-	url = https://github.com/jarro2783/cxxopts
-
 [submodule "external/vtu11"]
 	path = external/vtu11
 	url = https://github.com/phmkopp/vtu11
