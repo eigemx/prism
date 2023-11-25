@@ -39,7 +39,7 @@ auto div(const VectorField& U, bool return_face_data) -> ScalarField {
 
     if (return_face_data) {
         VectorXd face_data;
-        face_data.resize(mesh.faces().size());
+        face_data.resize(mesh.n_faces());
 
         // We start with calculating the fluxes at boundary faces
         for (const auto& bface : mesh.boundary_faces()) {
