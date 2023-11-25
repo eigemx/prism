@@ -68,18 +68,21 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
                                              BoundaryConditionValueType::Scalar,
                                              vec_value.x(),
                                              field_bc.bc_type(),
+                                             field_bc.bc_type_str(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_y",
                                          BoundaryCondition {
                                              BoundaryConditionValueType::Scalar,
                                              vec_value.y(),
                                              field_bc.bc_type(),
+                                             field_bc.bc_type_str(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_z",
                                          BoundaryCondition {
                                              BoundaryConditionValueType::Scalar,
                                              vec_value.z(),
                                              field_bc.bc_type(),
+                                             field_bc.bc_type_str(),
                                          }});
         }
     }
@@ -105,8 +108,10 @@ auto parse_field_boundary_condition(const toml::table& table,
 
 
     if (!field_table.contains("value")) {
-        return BoundaryCondition {
-            BoundaryConditionValueType::Nil, BoundaryConditionValue {}, bc_type};
+        return BoundaryCondition {BoundaryConditionValueType::Nil,
+                                  BoundaryConditionValue {},
+                                  bc_type,
+                                  std::string(bc_type_str)};
     }
 
     auto bc_value = field_table["value"];

@@ -133,9 +133,10 @@ auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) 
         }
 
         default: {
-            throw NonImplementedBoundaryCondition("AbstractGradient::gradient_at_boundary_face()",
-                                                  boundary_patch.name(),
-                                                  boundary_condition.bc_type_str());
+            throw error::NonImplementedBoundaryCondition(
+                "AbstractGradient::gradient_at_boundary_face()",
+                boundary_patch.name(),
+                boundary_condition.bc_type_str());
         }
     }
 

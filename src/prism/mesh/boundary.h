@@ -70,11 +70,6 @@ class BoundaryCondition {
   public:
     BoundaryCondition(BoundaryConditionValueType type,
                       BoundaryConditionValue value,
-                      BoundaryConditionType patch_type)
-        : _bc_value_type(type), _value(std::move(value)), _bc_type(patch_type) {}
-
-    BoundaryCondition(BoundaryConditionValueType type,
-                      BoundaryConditionValue value,
                       BoundaryConditionType patch_type,
                       std::string bc_type_str)
         : _bc_value_type(type),

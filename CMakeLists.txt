@@ -91,8 +91,6 @@ endif()
 add_subdirectory(src/prism)
 target_include_directories(prism PUBLIC src/)
 
-# TODO: Take this out of the repository
-add_subdirectory(apps/pmesh)
 
 if (PRISM_BUILD_EXAMPLES)
     add_subdirectory(examples)
