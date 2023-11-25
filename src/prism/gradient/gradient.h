@@ -150,7 +150,7 @@ auto inline AbstractGradient::gradient_field() -> VectorField {
     const auto& mesh = _field.mesh();
 
     auto n_cells = mesh.n_cells();
-    auto n_faces = mesh.faces().size();
+    auto n_faces = mesh.n_faces();
 
     VectorXd grad_x = VectorXd::Zero(n_cells);
     VectorXd grad_x_face_data = VectorXd::Zero(n_faces);

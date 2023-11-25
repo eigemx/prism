@@ -15,7 +15,10 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
       _boundary_patches(std::move(boundary_patches)),
       _boundary_faces_ids(std::move(boundary_faces_ids)),
       _interior_faces_ids(std::move(interior_faces_ids)),
-      _n_cells(_cells.size()) {}
+      _n_cells(_cells.size()),
+      _n_faces(_faces.size()) {
+    // TODO: Check if inputs constitutes a valid mesh.
+}
 
 auto PMesh::face_non_ortho(std::size_t face_id) const -> double {
     return face_non_ortho(_faces.at(face_id));

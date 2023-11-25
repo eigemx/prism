@@ -11,7 +11,6 @@
 
 namespace prism::mesh {
 
-// TODO: implement n_faces() and remove all occurences of mesh.faces().size()
 class PMesh {
   public:
     PMesh(std::vector<Vector3d> vertices,
@@ -54,6 +53,7 @@ class PMesh {
     auto face_non_ortho(const Face& face) const -> double;
 
     auto n_cells() const noexcept -> std::size_t { return _n_cells; }
+    auto n_faces() const noexcept -> std::size_t { return _n_faces; }
 
     /**
      * @brief Returns the cell that shares the face with the given cell.
@@ -147,6 +147,7 @@ class PMesh {
     std::vector<std::size_t> _boundary_faces_ids;
     std::vector<std::size_t> _interior_faces_ids;
     std::size_t _n_cells {};
+    std::size_t _n_faces {};
 };
 
 class ToPMeshConverter {
