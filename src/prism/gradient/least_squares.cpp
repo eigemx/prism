@@ -1,7 +1,7 @@
-#include <optional>
-
 #include "gradient.h"
+#include "prism/constants.h"
 #include "prism/mesh/utilities.h"
+#include "prism/types.h"
 
 namespace prism::gradient {
 LeastSquares::LeastSquares(const ScalarField& field) : _field(field), AbstractGradient(field) {
@@ -13,91 +13,79 @@ void LeastSquares::set_lsq_matrices() {
     _pinv_matrices.resize(mesh.n_cells());
 
     for (const auto& cell : mesh.cells()) {
-        auto c_id = cell.id();
-        auto n_faces = cell.faces_ids().size();
+        Matrix3d d_matrix = Matrix3d::Zero();
 
-        MatrixX3d d_matrix = MatrixX3d::Zero(n_faces, 3);
+        for (auto face_id : cell.faces_ids()) {
+            const auto& face = mesh.face(face_id);
 
-        for (std::size_t i = 0; i < n_faces; ++i) {
-            auto f_id = cell.faces_ids()[i];
-            const auto& face = mesh.face(f_id);
-
-            Vector3d d_CF {.0, .0, .0};
+            Vector3d r_CF = {.0, .0, .0};
+            double delta_phi = 0.0;
+            Matrix3d d_matrix_k = Matrix3d::Zero();
 
             if (face.is_interior()) {
                 // interior face
                 const auto neighbor = mesh.other_sharing_cell(cell, face);
-                d_CF = neighbor.center() - cell.center();
+                r_CF = neighbor.center() - cell.center();
+                delta_phi = _field.value_at_cell(neighbor) - _field.value_at_cell(cell);
             } else {
                 // boundary face
-                d_CF = face.center() - cell.center();
+                r_CF = face.center() - cell.center();
+                delta_phi = _field.value_at_face(face) - _field.value_at_cell(cell);
             }
 
-            d_matrix.row(i) = d_CF;
+            const double wk = 1 / (r_CF.norm() + EPSILON);
+            const double dx = r_CF.x();
+            const double dy = r_CF.y();
+            const double dz = r_CF.z();
+
+            // clang-format off
+            d_matrix_k << (dx * dx), (dx * dy), (dx * dz), 
+                          (dy * dx), (dy * dy), (dy * dz),
+                          (dz * dx), (dz * dy), (dz * dz);
+            // clang-format on
+
+            d_matrix += d_matrix_k * wk;
         }
 
         const auto& d_matrix_t = d_matrix.transpose();
-        _pinv_matrices[c_id] = (d_matrix_t * d_matrix).inverse() * d_matrix_t;
+        _pinv_matrices[cell.id()] = (d_matrix_t * d_matrix).inverse() * d_matrix_t;
     }
 }
 
 auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
-    auto c_id = cell.id();
     const auto n_faces = cell.faces_ids().size();
     const auto& mesh = _field.mesh();
-    const auto& inverse_matrix = _pinv_matrices[c_id];
-    VectorXd phi_diff = VectorXd::Zero(n_faces);
-    Vector3d grad {.0, .0, .0};
+    const auto& inverse_matrix = _pinv_matrices[cell.id()];
 
-    for (std::size_t i = 0; i < n_faces; ++i) {
-        auto f_id = cell.faces_ids()[i];
-        const auto& face = mesh.face(f_id);
-        auto phi = _field[c_id];
+    Vector3d b {0.0, 0.0, 0.0};
+
+    for (auto face_id : cell.faces_ids()) {
+        const auto& face = mesh.face(face_id);
+
+        double delta_phi = 0.0;
+        auto phi_cell = _field.value_at_cell(cell);
+        Vector3d r_CF = {.0, .0, .0};
 
         if (face.is_interior()) {
             // interior face
             const auto neighbor = mesh.other_sharing_cell(cell, face);
-            auto nei_phi = _field[neighbor.id()];
-            phi_diff[i] = nei_phi - phi;
+            r_CF = neighbor.center() - cell.center();
+            auto nei_phi = _field.value_at_cell(neighbor);
+            delta_phi = nei_phi - phi_cell;
 
         } else {
             // boundary face
-            auto bface_phi = boundary_face_phi(face);
-            if (!bface_phi.has_value()) {
-                // Empty faces do not have field values
-                continue;
-            }
-            phi_diff[i] = bface_phi.value() - phi;
+            auto bface_phi = _field.value_at_face(face);
+            r_CF = face.center() - cell.center();
+            delta_phi = bface_phi - phi_cell;
         }
+        const double wk = 1 / (r_CF.norm() + EPSILON);
+        const double dx = r_CF.x();
+        const double dy = r_CF.y();
+        const double dz = r_CF.z();
+        b += Vector3d {dx * delta_phi, dy * delta_phi, dz * delta_phi} * wk;
     }
-    return inverse_matrix * phi_diff;
-}
-
-auto LeastSquares::boundary_face_phi(const mesh::Face& f) -> std::optional<double> {
-    const auto& mesh = _field.mesh();
-    const auto& patch = mesh.boundary_patch(f);
-    const auto& bc = patch.get_bc(_field.name());
-
-    // TODO: There should be a unified function for boundary_face_phi()
-    // this is a repeated code
-    switch (bc.bc_type()) {
-        case mesh::BoundaryConditionType::Empty:
-            return std::nullopt;
-
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet:
-            return patch.get_scalar_bc(_field.name());
-
-        case mesh::BoundaryConditionType::Symmetry:
-        case mesh::BoundaryConditionType::Outlet:
-            return _field[f.owner()];
-
-        default:
-            throw std::runtime_error(
-                fmt::format("gradient::LeastSquares::boundary_face_phi(): "
-                            "Non-implemented boundary type for boundary patch: '{}'",
-                            patch.name()));
-    }
+    return inverse_matrix * b;
 }
 
 } // namespace prism::gradient

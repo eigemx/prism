@@ -44,7 +44,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
     auto eqn = TransportEquation(
-        diffusion::Diffusion<nonortho::OverRelaxedCorrector<gradient::GreenGauss>>(1e-5, T),
+        diffusion::Diffusion<nonortho::OverRelaxedCorrector<gradient::LeastSquares>>(1e-5, T),
         source::ConstantScalar(S));
 
     // solve
@@ -52,6 +52,9 @@ auto main(int argc, char* argv[]) -> int {
     solver.solve(eqn, 100, 1e-5, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
+
+    auto gradT_x = gradient::LeastSquares(T).gradient_field().x();
+    prism::export_field_vtu(gradT_x, "gradT_x_ls.vtu");
 
     return 0;
 }
