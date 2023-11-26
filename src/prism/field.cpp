@@ -5,6 +5,7 @@
 
 #include <stdexcept>
 
+#include "exceptions.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
@@ -125,6 +126,10 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
             return patch.get_scalar_bc(_name);
         }
 
+        // TODO: We return the field value of an empty face the same value as its owner cell.
+        // This makes many schemes and gradient methods to work without a special check for an
+        // empty face (like LeastSquares), check if this assumption is correct.
+        case mesh::BoundaryConditionType::Empty:
         case mesh::BoundaryConditionType::Symmetry:
         case mesh::BoundaryConditionType::Outlet: {
             return (*_data)[face.owner()];
@@ -138,16 +143,14 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
             e = e / e.norm();
             grad_at_boundary = grad_at_boundary * d_Cf;
 
-            double phi_wall = grad_at_boundary.dot(e) + value_at_cell(owner);
-
-            return phi_wall;
+            return grad_at_boundary.dot(e) + value_at_cell(owner);
         }
 
         default: {
-            throw std::runtime_error(
-                "ScalarField::value_at_boundary_face() knows how to calculate the scalar value "
-                "of the field only at Fixed, Inlet, Symmetry FixeGradient & Outlet boundary "
-                "conditions.");
+            throw error::NonImplementedBoundaryCondition(
+                fmt::format("ScalarField({})::value_at_boundary_face()", _name),
+                patch.name(),
+                bc.bc_type_str());
         }
     }
 }
