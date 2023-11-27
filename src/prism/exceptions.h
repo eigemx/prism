@@ -19,4 +19,13 @@ class NonImplementedBoundaryCondition : public std::exception {
     std::string _message;
 };
 
+class InvalidMesh : public std::exception {
+  public:
+    InvalidMesh(std::string message);
+    auto what() const noexcept -> const char* override;
+
+  private:
+    std::string _message;
+};
+
 } // namespace prism::error
