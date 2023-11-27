@@ -64,7 +64,7 @@ class LeastSquares : public AbstractGradient {
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
-    void set_lsq_matrices();
+    void set_pseudo_inv_matrices();
     auto boundary_face_phi(const mesh::Face& face) -> std::optional<double>;
 
     const ScalarField _field;

@@ -48,7 +48,6 @@ class ScalarField {
 
     auto inline operator[](std::size_t i) const -> const double& { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
-    auto inline operator()() -> VectorXd& { return *_data; }
 
   private:
     auto value_at_interior_face(const mesh::Face& face) const -> double;
