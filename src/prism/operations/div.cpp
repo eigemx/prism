@@ -1,8 +1,7 @@
 #include <fmt/format.h>
 
-#include <stdexcept>
-
 #include "operations.h"
+#include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
@@ -17,11 +16,6 @@ auto face_flux(const mesh::PMesh& mesh,
                const mesh::Cell& cell,
                const mesh::Face& face,
                const VectorField& U) -> double;
-
-auto interior_face_flux(const mesh::PMesh& mesh,
-                        const mesh::Cell& cell,
-                        const mesh::Face& face,
-                        const VectorField& U) -> double;
 
 auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const VectorField& U)
     -> double;
@@ -81,23 +75,9 @@ auto face_flux(const mesh::PMesh& mesh,
     if (face.is_boundary()) {
         return boundary_face_flux(mesh, face, U);
     }
-    return interior_face_flux(mesh, cell, face, U);
-}
 
-auto interior_face_flux(const mesh::PMesh& mesh,
-                        const mesh::Cell& cell,
-                        const mesh::Face& face,
-                        const VectorField& U) -> double {
-    const mesh::Cell& owner = mesh.cell(face.owner());
-    const mesh::Cell& neigbor = mesh.cell(face.neighbor().value());
-
-    double gc = mesh::geo_weight(owner, neigbor, face);
-
-    Vector3d Uf = gc * U[owner.id()];
-    Uf += (1 - gc) * U[neigbor.id()];
-
+    const Vector3d Uf = U.value_at_face(face);
     auto Sf = mesh::outward_area_vector(face, cell);
-
     return Uf.dot(Sf);
 }
 
@@ -114,30 +94,16 @@ auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const V
     }
 
     const auto& boundary_patch = mesh.boundary_patch(face);
-    const auto& field_boundary_type = boundary_patch.get_bc(U.name());
+    const auto& field_bc = boundary_patch.get_bc(U.name());
 
-    switch (field_boundary_type.bc_type()) {
+    switch (field_bc.bc_type()) {
         case mesh::BoundaryConditionType::Empty: {
             return 0.0;
         }
 
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
-            const auto& Uf = boundary_patch.get_vector_bc(U.name());
-            return Uf.dot(Sf);
-        }
-
-        case mesh::BoundaryConditionType::Outlet:
-        case mesh::BoundaryConditionType::Symmetry: {
-            const auto& Uf = U[face.owner()];
-            return Uf.dot(Sf);
-        }
-
         default:
-            throw std::runtime_error(
-                // TODO: write better error message
-                "prism::ops::boundary_face_flux() was given a non-implemented boundary "
-                "condition");
+            const auto& Uf = U.value_at_cell(face.owner());
+            return Uf.dot(Sf);
     }
     return 0.0;
 }

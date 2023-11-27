@@ -5,6 +5,7 @@
 
 #include "prism/gradient/gradient.h"
 #include "prism/nonortho/nonortho.h"
+#include "prism/operations/operations.h"
 #include "prism/schemes/convection.h"
 
 
@@ -68,6 +69,9 @@ auto main(int argc, char* argv[]) -> int {
     solver.solve(eqn, 2000, 1e-3);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
+
+    auto div = ops::div(U);
+    prism::export_field_vtu(div, "div.vtu");
 
     return 0;
 }
