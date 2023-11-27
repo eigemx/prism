@@ -73,6 +73,8 @@ void LeastSquares::set_pseudo_inv_matrices() {
 
 auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
     const auto& mesh = _field.mesh();
+
+    // right hand side of equation (9.27)
     Vector3d b {0.0, 0.0, 0.0};
 
     for (auto face_id : cell.faces_ids()) {
@@ -99,6 +101,8 @@ auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
         const double dx = r_CF.x();
         const double dy = r_CF.y();
         const double dz = r_CF.z();
+
+        // update the right hand side of equation (9.27)
         b += Vector3d {dx * delta_phi, dy * delta_phi, dz * delta_phi} * wk;
     }
     return _pinv_matrices[cell.id()] * b;

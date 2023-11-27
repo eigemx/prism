@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility> // std::pair
@@ -51,7 +52,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
 
     // fields
     std::filesystem::path _filename;
-    unvpp::Mesh unv_mesh;
+    std::unique_ptr<unvpp::Mesh> unv_mesh = {nullptr};
 
     BoundaryNameToFacesMap _boundary_name_to_faces_map;
     UnvIndexToBFaceIndexMap _unv_id_to_bface_index_map;

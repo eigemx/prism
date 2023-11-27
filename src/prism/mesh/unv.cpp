@@ -3,10 +3,12 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 #include <string_view>
 
 #include "boundary.h"
+#include "unvpp/unvpp.h"
 // Vector of 6 quad faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
@@ -51,21 +53,21 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 
 namespace prism::mesh {
 UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& filename)
-    : _filename(filename) {
-    unv_mesh = unvpp::read(filename);
+    : _filename(filename), unv_mesh(std::make_unique<unvpp::Mesh>(unvpp::read(filename))) {
+    ;
 
     // convert vertices to prism::Vector3d
-    for (const auto& v : unv_mesh.vertices) {
+    for (const auto& v : unv_mesh->vertices()) {
         _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
     }
 
-    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(unv_mesh.vertices.size());
+    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(unv_mesh->vertices().size());
 
     process_cells();
     process_groups();
 
     // clear unv_mesh to save memory
-    unv_mesh = {};
+    unv_mesh.release();
 }
 
 auto UnvToPMeshConverter::to_pmesh() -> PMesh {
@@ -105,7 +107,7 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
 void UnvToPMeshConverter::process_cells() {
     std::size_t unv_element_counter {0};
 
-    for (auto& element : unv_mesh.elements.value()) {
+    for (const auto& element : unv_mesh->elements().value()) {
         switch (element.type()) {
             // we don't care about lines
             case unvpp::ElementType::Line:
@@ -279,11 +281,11 @@ auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertic
 }
 
 void UnvToPMeshConverter::process_groups() {
-    if (!unv_mesh.groups) {
+    if (!unv_mesh->groups()) {
         throw std::runtime_error("Input UNV mesh has no groups (boundary patches)!");
     }
 
-    for (auto& group : unv_mesh.groups.value()) {
+    for (const auto& group : unv_mesh->groups().value()) {
         if (group.type() == unvpp::GroupType::Vertex) {
             continue;
         }
