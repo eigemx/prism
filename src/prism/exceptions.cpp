@@ -16,4 +16,11 @@ NonImplementedBoundaryCondition::NonImplementedBoundaryCondition(
 auto NonImplementedBoundaryCondition::what() const noexcept -> const char* {
     return _message.c_str();
 }
+
+InvalidMesh::InvalidMesh(std::string message) : _message(std::move(message)) {}
+
+auto InvalidMesh::what() const noexcept -> const char* {
+    return _message.c_str();
+}
+
 } // namespace prism::error

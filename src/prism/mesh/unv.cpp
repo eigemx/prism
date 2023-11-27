@@ -8,7 +8,9 @@
 #include <string_view>
 
 #include "boundary.h"
+#include "prism/exceptions.h"
 #include "unvpp/unvpp.h"
+
 // Vector of 6 quad faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
@@ -54,7 +56,12 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
 namespace prism::mesh {
 UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& filename)
     : _filename(filename), unv_mesh(std::make_unique<unvpp::Mesh>(unvpp::read(filename))) {
-    ;
+    // check that mesh has non-zero vertices
+    if (unv_mesh->vertices().empty()) {
+        throw error::InvalidMesh(fmt::format(
+            "UnvToPMeshConverter(): file {} has zero vertices, please check your mesh.",
+            filename.c_str()));
+    }
 
     // convert vertices to prism::Vector3d
     for (const auto& v : unv_mesh->vertices()) {
@@ -71,7 +78,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& filename)
 }
 
 auto UnvToPMeshConverter::to_pmesh() -> PMesh {
-    // TODO: accept custom boundar file path as an argument
+    // TODO: accept custom boundary file path as an argument
     std::vector<std::string_view> boundary_names;
 
     for (const auto& [name, _] : _boundary_name_to_faces_map) {
@@ -135,7 +142,9 @@ void UnvToPMeshConverter::process_cells() {
             // We shouldn't reach this, because we should've exhausted all possible element types
             // but, you never know!
             default:
-                throw std::runtime_error("Input UNV mesh contains an unsupported element type!");
+                throw error::InvalidMesh(
+                    "UnvToPMeshConverter::process_cells(): Input UNV mesh contains an "
+                    "unsupported element type!");
                 break;
         }
 
@@ -143,8 +152,9 @@ void UnvToPMeshConverter::process_cells() {
     }
 
     if (_cells.empty()) {
-        throw std::runtime_error(
-            "Input UNV mesh is either empty or two dimensional. Prism acceptes only 3D meshes");
+        throw error::InvalidMesh(
+            "UnvToPMeshConverter::process_cells(): Input UNV mesh is either empty or two "
+            "dimensional. Prism acceptes only 3D meshes");
     }
 }
 
@@ -282,7 +292,9 @@ auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertic
 
 void UnvToPMeshConverter::process_groups() {
     if (!unv_mesh->groups()) {
-        throw std::runtime_error("Input UNV mesh has no groups (boundary patches)!");
+        throw error::InvalidMesh(
+            "UnvToPMeshConverter::process_groups(): Input UNV mesh has no groups (boundary "
+            "patches)!");
     }
 
     for (const auto& group : unv_mesh->groups().value()) {
@@ -307,9 +319,10 @@ void UnvToPMeshConverter::process_groups() {
         }
 
         if (group_dimension_error) {
-            throw std::runtime_error(
-                "Input UNV contains boundary patches with non-face type elements. "
-                "Prism supports only boundary patches with two-dimensional elements.");
+            throw error::InvalidMesh(
+                "UnvToPMeshConverter::process_groups(): Input UNV contains boundary patches with "
+                "non-face type elements. Prism supports only boundary patches with "
+                "two-dimensional elements.");
         }
 
         // process the group
@@ -343,9 +356,9 @@ void UnvToPMeshConverter::check_boundary_faces() {
     }
 
     if (undefined_boundary_faces_count > 0) {
-        throw std::runtime_error(fmt::format(
-            "Input UNV mesh has {} boundary faces that are not part of any boundary patch. "
-            "Please check your mesh.",
+        throw error::InvalidMesh(fmt::format(
+            "UnvToPMeshConverter::check_boundary_faces(): Input UNV mesh has {} "
+            "boundary faces that are not part of any boundary patches. Please check your mesh.",
             undefined_boundary_faces_count));
     }
 }
