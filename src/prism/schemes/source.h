@@ -70,7 +70,7 @@ template <SourceSign Sign = SourceSign::Positive,
           typename GradientScheme = gradient::LeastSquares>
 class Laplacian : public AbstractExplicitSource {
   public:
-    Laplacian(double kappa, ScalarField& phi);
+    Laplacian(double kappa, ScalarField phi);
     void apply() override;
 
   private:
@@ -168,7 +168,7 @@ void Gradient<Sign, GradientScheme>::apply() {
 }
 
 template <SourceSign Sign, typename GradientScheme>
-Laplacian<Sign, GradientScheme>::Laplacian(double kappa, ScalarField& phi)
+Laplacian<Sign, GradientScheme>::Laplacian(double kappa, ScalarField phi)
     : AbstractExplicitSource(phi.mesh().n_cells()),
       _kappa(kappa),
       _phi(phi),
