@@ -101,9 +101,10 @@ auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const V
             return 0.0;
         }
 
-        default:
+        default: {
             const auto& Uf = U.value_at_face(face);
             return Uf.dot(Sf);
+        }
     }
     return 0.0;
 }

@@ -26,6 +26,12 @@ void inline check_mesh(const mesh::PMesh& mesh) {
     }
 }
 
+ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh)
+    : _name(std::move(name)), _mesh(&mesh) {
+    check_field_name(_name);
+    check_mesh(mesh);
+}
+
 ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh, double value)
     : _mesh(&mesh),
       _name(std::move(name)),
@@ -59,6 +65,7 @@ auto ScalarField::clone() const -> ScalarField {
     return {_name, *_mesh, *_data};
 }
 
+/*
 auto ScalarField::map(CellMapper* mapper) -> ScalarField& {
     for (std::size_t i = 0; i < _mesh->n_cells(); ++i) {
         data()[i] = mapper(_mesh->cell(i));
@@ -75,6 +82,7 @@ auto ScalarField::map(CoordinatesMapper* mapper) -> ScalarField& {
     }
     return *this;
 }
+*/
 
 auto ScalarField::value_at_cell(std::size_t cell_id) const -> double {
     return (*_data)[cell_id];
@@ -153,6 +161,25 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
                 bc.bc_type_str());
         }
     }
+}
+
+ConstScalarField::ConstScalarField(std::string name, const mesh::PMesh& mesh, double value)
+    : ScalarField(std::move(name), mesh), _value(value) {}
+
+auto ConstScalarField::value_at_cell(std::size_t cell_id) const -> double { // NOLINT
+    return _value;
+}
+
+auto ConstScalarField::value_at_cell(const mesh::Cell& cell) const -> double { // NOLINT
+    return _value;
+}
+
+auto ConstScalarField::value_at_interior_face(const mesh::Face& face) const -> double { // NOLINT
+    return _value;
+}
+
+auto ConstScalarField::clone() const -> ScalarField {
+    return ScalarField(name(), mesh(), _value); // NOLINT
 }
 
 VectorField::VectorField(std::string name, const mesh::PMesh& mesh, double value)

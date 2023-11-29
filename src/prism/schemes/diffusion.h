@@ -14,8 +14,8 @@ namespace prism::diffusion {
 template <typename NonOrthoCorrector = nonortho::OverRelaxedCorrector<>>
 class Diffusion : public FVScheme {
   public:
-    Diffusion(double kappa, ScalarField& phi);
-    Diffusion(const Vector3d& kappa, ScalarField& phi);
+    Diffusion(double kappa, ScalarField phi);
+    Diffusion(const Vector3d& kappa, ScalarField phi);
 
     void apply() override;
     auto field() -> std::optional<ScalarField> override { return _phi; }
@@ -39,26 +39,26 @@ class Diffusion : public FVScheme {
 };
 
 template <typename NonOrthoCorrector>
-Diffusion<NonOrthoCorrector>::Diffusion(double kappa, ScalarField& phi)
+Diffusion<NonOrthoCorrector>::Diffusion(double kappa, ScalarField phi)
     : _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {
     _kappa_matrix = Matrix3d::Identity() * kappa;
 }
 
 template <typename NonOrthoCorrector>
-Diffusion<NonOrthoCorrector>::Diffusion(const Vector3d& kappa, ScalarField& phi)
+Diffusion<NonOrthoCorrector>::Diffusion(const Vector3d& kappa, ScalarField phi)
     : _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {
     _kappa_matrix = Matrix3d::Identity();
     _kappa_matrix.diagonal() = _kappa_matrix.diagonal().array() * kappa.array();
 }
 
 template <>
-inline Diffusion<nonortho::NilCorrector>::Diffusion(double kappa, ScalarField& phi)
+inline Diffusion<nonortho::NilCorrector>::Diffusion(double kappa, ScalarField phi)
     : _phi(phi), FVScheme(phi.mesh().n_cells()) {
     _kappa_matrix = Matrix3d::Identity() * kappa;
 }
 
 template <>
-inline Diffusion<nonortho::NilCorrector>::Diffusion(const Vector3d& kappa, ScalarField& phi)
+inline Diffusion<nonortho::NilCorrector>::Diffusion(const Vector3d& kappa, ScalarField phi)
     : _phi(phi), FVScheme(phi.mesh().n_cells()) {
     _kappa_matrix = Matrix3d::Identity();
     _kappa_matrix.diagonal() = _kappa_matrix.diagonal().array() * kappa.array();

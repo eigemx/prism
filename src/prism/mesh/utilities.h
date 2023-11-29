@@ -5,6 +5,7 @@
 
 #include "cell.h"
 #include "face.h"
+#include "prism/mesh/pmesh.h"
 #include "prism/types.h"
 
 namespace prism::mesh {
@@ -35,6 +36,17 @@ auto inline geo_weight(const Cell& c, const Cell& n, const Face& f) -> double {
     assert(gc > 0 && "geo_weight() returned a negative weight factor");
     assert(gc <= 1.0 && "geo_weight() returned a weight factor higher than 1.0");
     return gc;
+}
+
+auto inline cells_volume_vec(const mesh::PMesh& mesh) -> VectorXd {
+    VectorXd vec;
+    vec.resize(mesh.n_cells());
+
+    for (const auto& cell : mesh.cells()) {
+        vec[cell.id()] = cell.volume();
+    }
+
+    return vec;
 }
 
 } // namespace prism::mesh

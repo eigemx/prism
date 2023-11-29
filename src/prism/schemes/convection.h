@@ -31,7 +31,7 @@ auto inline face_mass_flow_rate(double rho, const prism::Vector3d& U, const pris
 template <typename GradScheme>
 class AbstractConvection : public FVScheme {
   public:
-    AbstractConvection(ScalarField& rho, VectorField& U, ScalarField& phi);
+    AbstractConvection(ScalarField rho, VectorField U, ScalarField phi);
 
     void apply() override;
 
@@ -53,6 +53,8 @@ class AbstractConvection : public FVScheme {
     const VectorField _U;
     const ScalarField _phi;
     GradScheme _gradient_scheme;
+
+    std::size_t _n_reverse_flow_faces {0};
 };
 
 // Central difference scheme
@@ -62,6 +64,7 @@ class CentralDifference : public AbstractConvection<G> {
     CentralDifference(ScalarField& rho, VectorField& U, ScalarField& phi)
         : AbstractConvection<G>(rho, U, phi) {}
 
+  private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
@@ -73,9 +76,10 @@ class CentralDifference : public AbstractConvection<G> {
 template <typename G = gradient::LeastSquares>
 class Upwind : public AbstractConvection<G> {
   public:
-    Upwind(ScalarField& rho, VectorField& U, ScalarField& phi)
+    Upwind(ScalarField rho, VectorField U, ScalarField phi)
         : AbstractConvection<G>(rho, U, phi) {}
 
+  private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
@@ -87,9 +91,10 @@ class Upwind : public AbstractConvection<G> {
 template <typename G = gradient::LeastSquares>
 class SecondOrderUpwind : public AbstractConvection<G> {
   public:
-    SecondOrderUpwind(ScalarField& rho, VectorField& U, ScalarField& phi)
+    SecondOrderUpwind(ScalarField rho, VectorField U, ScalarField phi)
         : AbstractConvection<G>(rho, U, phi) {}
 
+  private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
@@ -101,9 +106,9 @@ class SecondOrderUpwind : public AbstractConvection<G> {
 template <typename G = gradient::LeastSquares>
 class QUICK : public AbstractConvection<G> {
   public:
-    QUICK(ScalarField& rho, VectorField& U, ScalarField& phi)
-        : AbstractConvection<G>(rho, U, phi) {}
+    QUICK(ScalarField rho, VectorField U, ScalarField phi) : AbstractConvection<G>(rho, U, phi) {}
 
+  private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
@@ -111,11 +116,17 @@ class QUICK : public AbstractConvection<G> {
 };
 
 template <typename G>
-AbstractConvection<G>::AbstractConvection(ScalarField& rho, VectorField& U, ScalarField& phi)
-    : _rho(rho), _U(U), _phi(phi), _gradient_scheme(phi), FVScheme(phi.mesh().n_cells()) {}
+AbstractConvection<G>::AbstractConvection(ScalarField rho, VectorField U, ScalarField phi)
+    : _rho(std::move(rho)),
+      _U(std::move(U)),
+      _phi(phi),
+      _gradient_scheme(phi),
+      FVScheme(phi.mesh().n_cells()) {}
 
 template <typename G>
 void AbstractConvection<G>::apply() {
+    _n_reverse_flow_faces = 0;
+
     // TODO: this is repeated in all FVSchemes, we should move it to the base class
     for (const auto& bface : _phi.mesh().boundary_faces()) {
         apply_boundary(bface);
@@ -222,7 +233,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     const double rho_f = _rho.value_at_cell(cell);
     const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
-    if (m_dot_f <= 0.0) {
+    if (m_dot_f < 0.0) {
         spdlog::warn(
             "convection::AbstractConvection::apply_boundary_outlet(): "
             "Reverse flow detected at outlet boundary patch '{}'. "
