@@ -11,87 +11,66 @@
 
 namespace prism {
 
-class ScalarField {
+class Field {
+  public:
+    Field(std::string name, const mesh::PMesh& mesh);
+
+    Field(const Field& other) = default;
+    Field(Field&& other) noexcept = default;
+    auto operator=(const Field& other) -> Field& = default;
+    auto operator=(Field&& other) noexcept -> Field& = default;
+    virtual ~Field() = default;
+
+    auto inline name() const -> const std::string& { return _name; }
+    auto inline name() -> std::string& { return _name; }
+
+    auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
+
+    virtual auto has_face_data() const -> bool { return false; }
+
+  private:
+    const mesh::PMesh* _mesh = nullptr;
+    std::string _name;
+};
+
+class ScalarField : public Field {
   public:
     ScalarField(std::string name, const mesh::PMesh& mesh, double value);
     ScalarField(std::string name, const mesh::PMesh& mesh, VectorXd data);
     ScalarField(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data);
 
-    ScalarField(const ScalarField& other) = default;
-    ScalarField(ScalarField&& other) noexcept = default;
-    auto operator=(const ScalarField& other) -> ScalarField& = default;
-    auto operator=(ScalarField&& other) noexcept -> ScalarField& = default;
-    virtual ~ScalarField() noexcept = default;
-
-    auto inline name() const -> const std::string& { return _name; }
-    auto inline name() -> std::string& { return _name; }
-
-    virtual auto inline data() const -> const VectorXd& { return *_data; }
+    auto inline data() const -> const VectorXd& { return *_data; }
     auto inline data() -> VectorXd& { return *_data; }
 
-    virtual auto inline has_face_data() const -> bool { return _face_data != nullptr; }
+    auto inline has_face_data() const -> bool override { return _face_data != nullptr; }
 
-    virtual auto value_at_cell(std::size_t cell_id) const -> double;
-    virtual auto value_at_cell(const mesh::Cell& cell) const -> double;
-    virtual auto value_at_face(std::size_t face_id) const -> double;
-    virtual auto value_at_face(const mesh::Face& face) const -> double;
+    auto value_at_cell(std::size_t cell_id) const -> double;
+    auto value_at_cell(const mesh::Cell& cell) const -> double;
 
-    auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
+    auto value_at_face(std::size_t face_id) const -> double;
+    auto value_at_face(const mesh::Face& face) const -> double;
 
-    virtual auto clone() const -> ScalarField;
+    auto clone() const -> ScalarField;
 
-    //using CoordinatesMapper = double(double, double, double);
-    //using CellMapper = double(const mesh::Cell&);
-    //virtual auto map(CellMapper* mapper) -> ScalarField&;
-    //virtual auto map(CoordinatesMapper* mapper) -> ScalarField&;
+    using CoordinatesMapper = double(double, double, double);
+    using CellMapper = double(const mesh::Cell&);
+    auto map(CellMapper* mapper) -> ScalarField&;
+    auto map(CoordinatesMapper* mapper) -> ScalarField&;
 
-    virtual auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
+    auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
 
   protected:
     ScalarField(std::string name, const mesh::PMesh& mesh);
-    virtual auto value_at_interior_face(const mesh::Face& face) const -> double;
-    virtual auto value_at_boundary_face(const mesh::Face& face) const -> double;
+    auto value_at_interior_face(const mesh::Face& face) const -> double;
+    auto value_at_boundary_face(const mesh::Face& face) const -> double;
 
   private:
-    const mesh::PMesh* _mesh = nullptr;
-    std::string _name;
     std::shared_ptr<VectorXd> _data = nullptr;
     std::shared_ptr<VectorXd> _face_data = nullptr;
 };
 
-// Sometimes we need to define a constant field over the mesh, such as gravity
-// or constant diffusion coefficient, it would be better if we can do this without
-// the memory overhead of ScalarField (defining the value at each cell).
-// ConstantScalarField solves this problem by overriding ScalarField getters,
-// and stores just a double value `_value` instead of a vector.
-class ConstScalarField : public ScalarField {
-  public:
-    ConstScalarField(std::string name, const mesh::PMesh& mesh, double value);
-
-    ConstScalarField(const ConstScalarField& other) = default;
-    ConstScalarField(ConstScalarField&& other) noexcept = default;
-    auto operator=(const ConstScalarField& other) -> ConstScalarField& = default;
-    auto operator=(ConstScalarField&& other) noexcept -> ConstScalarField& = default;
-    ~ConstScalarField() noexcept = default; // NOLINT
-
-    auto inline has_face_data() const -> bool override { return false; }
-
-    auto value_at_cell(std::size_t cell_id) const -> double override;
-    auto value_at_cell(const mesh::Cell& cell) const -> double override;
-
-    auto clone() const -> ScalarField override;
-
-    auto inline operator[](std::size_t i) const -> double override { return _value; } //NOLINT
-
-  private:
-    auto value_at_interior_face(const mesh::Face& face) const -> double override;
-
-    double _value {0.0};
-    VectorXd _data;
-};
-
-class VectorField {
+class VectorField : public Field {
   public:
     VectorField(std::string name, const mesh::PMesh& mesh, double value);
     VectorField(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
@@ -99,28 +78,45 @@ class VectorField {
                 const mesh::PMesh& mesh,
                 const std::array<ScalarField, 3>& fields);
 
-    auto inline name() const -> const std::string& { return _name; }
-    auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
-
-    auto has_face_data() const -> bool;
+    auto has_face_data() const -> bool override;
 
     auto value_at_cell(std::size_t cell_id) const -> Vector3d;
     auto value_at_cell(const mesh::Cell& cell) const -> Vector3d;
+
     auto value_at_face(std::size_t face_id) const -> Vector3d;
     auto value_at_face(const mesh::Face& face) const -> Vector3d;
 
-    auto inline x() -> ScalarField { return _x; }
-    auto inline y() -> ScalarField { return _y; }
-    auto inline z() -> ScalarField { return _z; }
+    auto inline x() -> ScalarField& { return _x; }
+    auto inline y() -> ScalarField& { return _y; }
+    auto inline z() -> ScalarField& { return _z; }
 
-    auto inline operator[](std::size_t i) const -> Vector3d {
-        return {_x.data()[i], _y.data()[i], _z.data()[i]};
-    }
+    auto operator[](std::size_t i) const -> Vector3d;
 
   private:
-    const mesh::PMesh* _mesh;
-    std::string _name;
     ScalarField _x, _y, _z;
+};
+
+class TensorField : public Field {
+  public:
+    TensorField(std::string name, const mesh::PMesh& mesh, double value);
+    TensorField(std::string name, const mesh::PMesh& mesh, Matrix3d data);
+    TensorField(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data);
+
+    auto value_at_cell(std::size_t cell_id) const -> const Matrix3d&;
+    auto value_at_cell(const mesh::Cell& cell) const -> const Matrix3d&;
+
+    auto value_at_face(std::size_t face_id) const -> Matrix3d;
+    auto value_at_face(const mesh::Face& face) const -> Matrix3d;
+
+    auto at(std::size_t i, std::size_t j, std::size_t k) -> double&;
+    auto at(std::size_t i, std::size_t j, std::size_t k) const -> double;
+
+    auto operator[](std::size_t i) -> Matrix3d&;
+    auto operator[](std::size_t i) const -> const Matrix3d&;
+
+  private:
+    void init_data_vec();
+    std::vector<Matrix3d> _data;
 };
 
 } // namespace prism
