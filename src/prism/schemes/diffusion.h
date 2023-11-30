@@ -46,20 +46,20 @@ Diffusion<NonOrthoCorrector>::Diffusion(double kappa, ScalarField phi)
 
 template <typename NonOrthoCorrector>
 Diffusion<NonOrthoCorrector>::Diffusion(const Vector3d& kappa, ScalarField phi)
-    : _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {
+    : _phi(std::move(phi)), FVScheme(phi.mesh().n_cells()), _corrector(phi) {
     _kappa_matrix = Matrix3d::Identity();
     _kappa_matrix.diagonal() = _kappa_matrix.diagonal().array() * kappa.array();
 }
 
 template <>
 inline Diffusion<nonortho::NilCorrector>::Diffusion(double kappa, ScalarField phi)
-    : _phi(phi), FVScheme(phi.mesh().n_cells()) {
+    : _phi(std::move(phi)), FVScheme(phi.mesh().n_cells()) {
     _kappa_matrix = Matrix3d::Identity() * kappa;
 }
 
 template <>
 inline Diffusion<nonortho::NilCorrector>::Diffusion(const Vector3d& kappa, ScalarField phi)
-    : _phi(phi), FVScheme(phi.mesh().n_cells()) {
+    : _phi(std::move(phi)), FVScheme(phi.mesh().n_cells()) {
     _kappa_matrix = Matrix3d::Identity();
     _kappa_matrix.diagonal() = _kappa_matrix.diagonal().array() * kappa.array();
 }
@@ -278,6 +278,5 @@ template <>
 auto inline Diffusion<nonortho::NilCorrector>::requires_correction() const -> bool {
     return false;
 }
-
 
 } // namespace prism::diffusion
