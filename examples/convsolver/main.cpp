@@ -3,6 +3,7 @@
 
 #include <algorithm>
 
+#include "prism/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/operations/operations.h"
@@ -55,13 +56,17 @@ auto main(int argc, char* argv[]) -> int {
     // A zero field, just to demonstrate how to add arbitray constant source terms
     auto useLessField = ScalarField("zero", mesh, 0.0);
 
+    // diffusion coefficient can be double, Matrix3d, or a TensorField, we just need to set the
+    // template parameter of Diffusion class when calling the constructor.
+    // we will make it a matrix just for demonstration
+    Matrix3d kappa = Matrix3d::Identity() * 1e-2;
+
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = TransportEquation(
-        // Add discretization schemes
-        convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
-        diffusion::Diffusion(1e-2, T),            // - ∇.(κ ∇T)
-        source::ConstantScalar(useLessField)      // S (sources are always added to the RHS)
+        convection::SecondOrderUpwind(rho, U, T),                         // ∇.(ρUT)
+        diffusion::Diffusion<Matrix3d, nonortho::NilCorrector>(kappa, T), // - ∇.(κ ∇T)
+        source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 
     // solve
