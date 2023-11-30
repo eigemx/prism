@@ -1,6 +1,9 @@
 #include <prism/prism.h>
 
+#include <iostream>
+
 #include "fmt/core.h"
+#include "prism/constants.h"
 #include "prism/equation.h"
 #include "prism/field.h"
 #include "prism/mesh/unv.h"
@@ -44,9 +47,17 @@ auto main(int argc, char* argv[]) -> int {
     const auto& uEqn_diag = uEqn.matrix().diagonal();
     const auto& vEqn_diag = vEqn.matrix().diagonal();
 
-    auto g = ConstScalarField("gravity", mesh, 9.81);
+    auto D_data = std::vector<prism::Matrix3d>();
+    D_data.reserve(mesh.n_cells());
 
-    fmt::println("Value at cell[10] = {}", g.value_at_cell(10));
-    auto iface = *(mesh.interior_faces().begin());
-    fmt::println("Value at face[{}] = {}", iface.id(), g.value_at_face(iface));
+    auto Du = vol_vec.array() / (uEqn_diag.array() + prism::EPSILON);
+    auto Dv = vol_vec.array() / (vEqn_diag.array() + prism::EPSILON);
+
+    for (std::size_t i = 0; i < mesh.n_cells(); ++i) {
+        Matrix3d Di;
+        Di << Du[i], 0, 0, 0, Dv[i], 0, 0, 0, 0;
+        D_data.emplace_back(std::move(Di));
+    }
+
+    auto D = prism::TensorField("D", mesh, D_data);
 }
