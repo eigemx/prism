@@ -1,13 +1,12 @@
-#include <prism/prism.h>
-
-#include <iostream>
-
 #include "fmt/core.h"
 #include "prism/constants.h"
 #include "prism/equation.h"
 #include "prism/field.h"
 #include "prism/mesh/unv.h"
 #include "prism/mesh/utilities.h"
+#include "prism/nonortho/nonortho.h"
+#include "prism/numerics/relax.h"
+#include "prism/numerics/solver.h"
 #include "prism/schemes/convection.h"
 #include "prism/schemes/diffusion.h"
 #include "prism/schemes/source.h"
@@ -22,22 +21,22 @@ auto main(int argc, char* argv[]) -> int {
 
     auto mesh = mesh::UnvToPMeshConverter(argv[1]).to_pmesh(); // NOLINT
 
-    auto U = VectorField("velocity", mesh, 0.0);
+    auto U = VectorField("velocity", mesh, Vector3d {1.0, 0.0, 0.0});
     auto P = ScalarField("pressure", mesh, 0.0);
     auto rho = ScalarField("density", mesh, 1.18);
 
-    auto uEqn =
-        TransportEquation(convection::Upwind(rho, U, U.x()),         // ∇.(ρUu)
-                          diffusion::AbstractDiffusion(1e-6, U.x()), // - ∇.(μ∇u)
-                          source::Gradient<source::SourceSign::Negative>(P, Coord::X), // ∂p/∂x
-                          source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
-        );
+    auto uEqn = TransportEquation(
+        convection::Upwind(rho, U, U.x()),                                           // ∇.(ρUu)
+        diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.x()), // - ∇.(μ∇u)
+        source::Gradient<source::SourceSign::Negative>(P, Coord::X),                 // ∂p/∂x
+        source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
+    );
 
-    auto vEqn = TransportEquation(convection::Upwind(rho, U, U.y()),
-                                  diffusion::AbstractDiffusion(1e-6, U.y()),
-                                  source::Gradient<source::SourceSign::Negative>(P, Coord::Y),
-                                  source::Laplacian(1e-6, U.y()));
-
+    auto vEqn = TransportEquation(
+        convection::Upwind(rho, U, U.y()),
+        diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.y()),
+        source::Gradient<source::SourceSign::Negative>(P, Coord::Y),
+        source::Laplacian(1e-6, U.y()));
 
     uEqn.update_coeffs();
     vEqn.update_coeffs();
@@ -60,4 +59,17 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     auto D = prism::TensorField("D", mesh, D_data);
+
+    // pressure equation
+    // Few things missing to implement:
+    // 1) it's actually ρD not just D
+    // 2) ∇.(ρU) not ∇.U
+    auto pEqn = TransportEquation(diffusion::Diffusion<TensorField, nonortho::NilCorrector>(D, P),
+                                  source::Divergence<source::SourceSign::Negative>(U));
+    pEqn.update_coeffs();
+
+    auto solver = solver::BiCGSTAB();
+    solver.solve(uEqn, 3, 1e-9, 0.9);
+    solver.solve(vEqn, 3, 1e-5, 0.9);
+    solver.solve(pEqn, 3, 1e-5, 0.95);
 }
