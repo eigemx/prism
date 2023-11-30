@@ -5,6 +5,7 @@
 #include "prism/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
+#include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/types.h"
@@ -25,7 +26,10 @@ class AbstractDiffusion : public FVScheme {
   private:
     void apply_interior(const mesh::Face& face) override;
     void apply_boundary(const mesh::Face& face) override;
-    virtual auto diffusion_scaled_vector(const Vector3d& vec, std::size_t face_id)
+
+    virtual auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
+        -> Vector3d = 0;
+    virtual auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Cell& cell)
         -> Vector3d = 0;
 
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
@@ -44,7 +48,10 @@ class Diffusion : public AbstractDiffusion<Corrector> {
     Diffusion(DiffusionCoeffType kappa, ScalarField phi);
 
   private:
-    auto diffusion_scaled_vector(const Vector3d& vec, std::size_t face_id) -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
+        -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Cell& cell)
+        -> Vector3d override;
     DiffusionCoeffType _kappa;
 };
 
@@ -54,7 +61,10 @@ class Diffusion<double, Corrector> : public AbstractDiffusion<Corrector> {
     Diffusion(double kappa, ScalarField phi);
 
   private:
-    auto diffusion_scaled_vector(const Vector3d& vec, std::size_t face_id) -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
+        -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Cell& cell)
+        -> Vector3d override;
     double _kappa;
 };
 
@@ -64,7 +74,10 @@ class Diffusion<Matrix3d, Corrector> : public AbstractDiffusion<Corrector> {
     Diffusion(Matrix3d kappa, ScalarField phi);
 
   private:
-    auto diffusion_scaled_vector(const Vector3d& vec, std::size_t face_id) -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
+        -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Cell& cell)
+        -> Vector3d override;
     Matrix3d _kappa;
 };
 
@@ -74,7 +87,10 @@ class Diffusion<TensorField, Corrector> : public AbstractDiffusion<Corrector> {
     Diffusion(TensorField kappa, ScalarField phi);
 
   private:
-    auto diffusion_scaled_vector(const Vector3d& vec, std::size_t face_id) -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
+        -> Vector3d override;
+    auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Cell& cell)
+        -> Vector3d override;
     TensorField _kappa;
 };
 
@@ -101,7 +117,15 @@ AbstractDiffusion<nonortho::NilCorrector>::AbstractDiffusion(ScalarField phi) //
 template <typename Corrector>
 auto Diffusion<double, Corrector>::Diffusion::diffusion_scaled_vector(
     const Vector3d& vec,
-    std::size_t face_id) // NOLINT
+    const mesh::Face& face) // NOLINT
+    -> Vector3d {
+    return _kappa * vec;
+}
+
+template <typename Corrector>
+auto Diffusion<double, Corrector>::Diffusion::diffusion_scaled_vector(
+    const Vector3d& vec,
+    const mesh::Cell& cell) // NOLINT
     -> Vector3d {
     return _kappa * vec;
 }
@@ -109,16 +133,32 @@ auto Diffusion<double, Corrector>::Diffusion::diffusion_scaled_vector(
 template <typename Corrector>
 auto Diffusion<Matrix3d, Corrector>::Diffusion::diffusion_scaled_vector(
     const Vector3d& vec,
-    std::size_t face_id) // NOLINT
+    const mesh::Face& face) // NOLINT
+    -> Vector3d {
+    return _kappa * vec;
+}
+
+template <typename Corrector>
+auto Diffusion<Matrix3d, Corrector>::Diffusion::diffusion_scaled_vector(
+    const Vector3d& vec,
+    const mesh::Cell& cell) // NOLINT
     -> Vector3d {
     return _kappa * vec;
 }
 
 template <typename Corrector>
 auto Diffusion<TensorField, Corrector>::Diffusion::diffusion_scaled_vector(const Vector3d& vec,
-                                                                           std::size_t face_id)
+                                                                           const mesh::Face& face)
     -> Vector3d {
-    return _kappa.value_at_face(face_id) * vec;
+    return _kappa.value_at_face(face) * vec;
+}
+
+template <typename Corrector>
+auto Diffusion<TensorField, Corrector>::Diffusion::diffusion_scaled_vector(
+    const Vector3d& vec,
+    const mesh::Cell& cell) // NOLINT
+    -> Vector3d {
+    return _kappa.value_at_cell(cell) * vec;
 }
 
 template <typename NonOrthoCorrector>
@@ -212,7 +252,7 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary_gradient(const mesh::C
     const Vector3d wall_grad = boundary_patch.get_vector_bc(_phi.name());
 
     const Vector3d& Sf = face.area_vector();
-    Vector3d Sf_prime = diffusion_scaled_vector(Sf, face.id());
+    Vector3d Sf_prime = diffusion_scaled_vector(Sf, cell);
 
     // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
     // and paragraph 8.6.8.2
@@ -233,7 +273,7 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face
     const Vector3d e = d_CF / d_CF_norm;
 
     const auto& [Sf, Ef, Tf] = _corrector.interior_triplet(owner, neighbor, face);
-    Vector3d Ef_prime = diffusion_scaled_vector(Ef, face.id());
+    Vector3d Ef_prime = diffusion_scaled_vector(Ef, face);
 
     // geometric diffusion coefficient
     const double g_diff = Ef_prime.norm() / (d_CF_norm + EPSILON);
@@ -253,7 +293,7 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_interior(const mesh::Face& face
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     const Vector3d grad_f = _corrector.grad_scheme().gradient_at_face(face);
-    Vector3d Tf_prime = diffusion_scaled_vector(Tf, face.id());
+    Vector3d Tf_prime = diffusion_scaled_vector(Tf, face);
 
     // update right hand side
     rhs(owner_id) += Tf_prime.dot(grad_f);
@@ -270,7 +310,7 @@ void inline AbstractDiffusion<nonortho::NilCorrector>::apply_interior(const mesh
     auto d_CF_norm = d_CF.norm();
 
     const Vector3d& Sf = face.area_vector();
-    Vector3d Sf_prime = diffusion_scaled_vector(Sf, face.id());
+    Vector3d Sf_prime = diffusion_scaled_vector(Sf, face);
 
     // geometric diffusion coefficient
     const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
@@ -321,14 +361,14 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary_fixed(const mesh::Cell
     const double d_Cf_norm = d_Cf.norm();
 
     const auto& [_, Ef, Tf] = _corrector.boundary_triplet(cell, face);
-    Vector3d Ef_prime = diffusion_scaled_vector(Ef, face.id());
+    Vector3d Ef_prime = diffusion_scaled_vector(Ef, cell);
 
     const double g_diff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
 
     insert(cell_id, cell_id, g_diff);
     rhs(cell_id) += g_diff * phi_wall;
 
-    Vector3d Tf_prime = diffusion_scaled_vector(Tf, face.id());
+    Vector3d Tf_prime = diffusion_scaled_vector(Tf, cell);
     correct_nonorhto_boundary_fixed(cell, face, Tf_prime);
 }
 
