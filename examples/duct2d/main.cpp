@@ -27,14 +27,14 @@ auto main(int argc, char* argv[]) -> int {
     auto rho = ScalarField("density", mesh, 1.18);
 
     auto uEqn =
-        TransportEquation(convection::Upwind(rho, U, U.x()), // ∇.(ρUu)
-                          diffusion::Diffusion(1e-6, U.x()), // - ∇.(μ∇u)
+        TransportEquation(convection::Upwind(rho, U, U.x()),         // ∇.(ρUu)
+                          diffusion::AbstractDiffusion(1e-6, U.x()), // - ∇.(μ∇u)
                           source::Gradient<source::SourceSign::Negative>(P, Coord::X), // ∂p/∂x
                           source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
         );
 
     auto vEqn = TransportEquation(convection::Upwind(rho, U, U.y()),
-                                  diffusion::Diffusion(1e-6, U.y()),
+                                  diffusion::AbstractDiffusion(1e-6, U.y()),
                                   source::Gradient<source::SourceSign::Negative>(P, Coord::Y),
                                   source::Laplacian(1e-6, U.y()));
 
