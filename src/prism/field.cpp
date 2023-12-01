@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 
 #include "exceptions.h"
@@ -13,6 +14,7 @@
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
+#include "spdlog/spdlog.h"
 
 namespace prism {
 
@@ -48,29 +50,20 @@ ScalarField::ScalarField(std::string name,
       _data(std::make_shared<VectorXd>(std::move(data))),
       _face_data(std::make_shared<VectorXd>(std::move(face_data))) {}
 
-auto ScalarField::clone() const -> ScalarField {
+void ScalarField::set_face_values(VectorXd values) {
+    if (values.size() != mesh().n_faces()) {
+        throw std::runtime_error(fmt::format(
+            "ScalarField::set_face_values(): trying to set face values for scalar field {}, with "
+            "a values vector having a different size that field's faces count.",
+            name()));
+    }
+
     if (has_face_data()) {
-        return {name(), mesh(), *_data, *_face_data};
+        spdlog::debug("Setting new face values to scalar field '{}', discarding old face values.",
+                      name());
     }
-    return {name(), mesh(), *_data};
-}
 
-
-auto ScalarField::map(CellMapper* mapper) -> ScalarField& {
-    for (std::size_t i = 0; i < mesh().n_cells(); ++i) {
-        data()[i] = mapper(mesh().cell(i));
-    }
-    return *this;
-}
-
-auto ScalarField::map(CoordinatesMapper* mapper) -> ScalarField& {
-    const auto n_cells = mesh().n_cells();
-    for (std::size_t i = 0; i < n_cells; ++i) {
-        const auto& cell = mesh().cell(i);
-        const auto& center = cell.center();
-        data()[i] = mapper(center.x(), center.y(), center.z());
-    }
-    return *this;
+    _face_data = std::make_shared<VectorXd>(std::move(values));
 }
 
 auto ScalarField::value_at_cell(std::size_t cell_id) const -> double {
@@ -151,6 +144,32 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
         }
     }
 }
+
+auto ScalarField::clone() const -> ScalarField {
+    if (has_face_data()) {
+        return {name(), mesh(), *_data, *_face_data};
+    }
+    return {name(), mesh(), *_data};
+}
+
+
+auto ScalarField::map(CellMapper* mapper) -> ScalarField& {
+    for (std::size_t i = 0; i < mesh().n_cells(); ++i) {
+        data()[i] = mapper(mesh().cell(i));
+    }
+    return *this;
+}
+
+auto ScalarField::map(CoordinatesMapper* mapper) -> ScalarField& {
+    const auto n_cells = mesh().n_cells();
+    for (std::size_t i = 0; i < n_cells; ++i) {
+        const auto& cell = mesh().cell(i);
+        const auto& center = cell.center();
+        data()[i] = mapper(center.x(), center.y(), center.z());
+    }
+    return *this;
+}
+
 
 VectorField::VectorField(std::string name, const mesh::PMesh& mesh, double value)
     : Field(std::move(name), mesh),
