@@ -26,9 +26,7 @@ class Field {
 
     auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
 
-    // TODO: rename this to has_boundary_data(), and we should in general
-    // store only the face boundary data, because we can always interpolate
-    // interior faces data.
+    // TODO: rename this to has_boundary_values()
     virtual auto has_face_data() const -> bool { return false; }
 
   private:
@@ -46,6 +44,7 @@ class ScalarField : public Field {
     auto inline data() -> VectorXd& { return *_data; }
 
     auto inline has_face_data() const -> bool override { return _face_data != nullptr; }
+    void set_face_values(VectorXd values);
 
     auto value_at_cell(std::size_t cell_id) const -> double;
     auto value_at_cell(const mesh::Cell& cell) const -> double;
