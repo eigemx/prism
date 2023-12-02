@@ -24,22 +24,23 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(argv[1]).to_pmesh(); // NOLINT
 
     auto rho = ScalarField("density", mesh, 1.18);
-    auto U = VectorField("velocity", mesh, Vector3d {0.0, 1.0, 0.0});
+    auto U = VectorField("velocity", mesh, Vector3d {0.05, 0.05, 0.0});
     auto P = ScalarField("pressure", mesh, 1.0);
     auto P_prime = ScalarField("pressure", mesh, 1.0);
 
     auto uEqn = TransportEquation(
         convection::Upwind(rho, U, U.x()),                                           // ∇.(ρUu)
         diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.x()), // - ∇.(μ∇u)
-        source::Gradient<source::SourceSign::Negative>(P, Coord::X),                 // ∂p/∂x
-        source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
+        source::Gradient<source::SourceSign::Negative>(P, Coord::X)                  // ∂p/∂x
+        //source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
     );
 
     auto vEqn = TransportEquation(
         convection::Upwind(rho, U, U.y()),
         diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.y()),
-        source::Gradient<source::SourceSign::Negative>(P, Coord::Y),
-        source::Laplacian(1e-6, U.y()));
+        source::Gradient<source::SourceSign::Negative>(P, Coord::Y)
+        //source::Laplacian(1e-6, U.y())
+    );
 
     auto solver = solver::BiCGSTAB();
 
@@ -70,8 +71,11 @@ auto main(int argc, char* argv[]) -> int {
 
         auto D = prism::TensorField("D", mesh, D_data);
 
-        solver.solve(uEqn, 2, 1e-9, 0.9);
-        solver.solve(vEqn, 2, 1e-5, 0.9);
+        fmt::println("Solving y-momentum equation");
+        solver.solve(vEqn, 2, 1e-3, 0.9);
+
+        fmt::println("Solving x-momentum equation");
+        solver.solve(uEqn, 2, 1e-3, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
         ops::rhie_chow_correct(U, D, P_prime);
@@ -81,11 +85,12 @@ auto main(int argc, char* argv[]) -> int {
         // 1) it's actually ρD not just D
         // 2) ∇.(ρU) not ∇.U
         auto pEqn = TransportEquation(
-            diffusion::Diffusion<TensorField, nonortho::NilCorrector>(D, P_prime),
+            diffusion::Diffusion<TensorField, nonortho::OverRelaxedCorrector<>>(D, P_prime),
             source::Divergence<source::SourceSign::Negative>(U));
 
         pEqn.update_coeffs();
-        solver.solve(pEqn, 2, 1e-5, 0.85);
+        fmt::println("Solving pressure correction equation");
+        solver.solve(pEqn, 10, 1e-5, 1);
 
         // update velocity fields
         auto p_grad = gradient::LeastSquares(P_prime);
