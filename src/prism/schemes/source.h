@@ -38,7 +38,6 @@ class ConstantScalar : public AbstractExplicitSource {
 
   private:
     const ScalarField _phi;
-    VectorXd _volume_field;
 };
 
 template <SourceSign Sign = SourceSign::Positive>
@@ -101,22 +100,17 @@ inline AbstractExplicitSource::AbstractExplicitSource(std::size_t n_cells)
 
 template <SourceSign Sign>
 ConstantScalar<Sign>::ConstantScalar(ScalarField phi)
-    : _phi(phi), AbstractExplicitSource(phi.mesh().n_cells()) {
-    _volume_field.resize(phi.mesh().n_cells());
-
-    for (const auto& cell : phi.mesh().cells()) {
-        _volume_field[cell.id()] = cell.volume();
-    }
-}
+    : _phi(phi), AbstractExplicitSource(phi.mesh().n_cells()) {}
 
 template <SourceSign Sign>
 void inline ConstantScalar<Sign>::apply() {
+    const auto& vol_field = _phi.mesh().cells_volume_vec();
+
     if (Sign == SourceSign::Positive) {
-        rhs() = _phi.data().array() * _volume_field.array();
+        rhs() = _phi.data().array() * vol_field.array();
         return;
     }
-
-    rhs() = -_phi.data().array() * _volume_field.array();
+    rhs() = -_phi.data().array() * vol_field.array();
 }
 
 template <SourceSign Sign>
@@ -139,19 +133,20 @@ void inline Divergence<Sign>::apply() {
 template <SourceSign Sign, typename GradientScheme>
 void Gradient<Sign, GradientScheme>::apply() {
     auto grad_field = _grad_scheme.gradient_field();
+    const auto& vol_field = _phi.mesh().cells_volume_vec();
 
     switch (_coord) {
         case Coord::X: {
-            rhs() = grad_field.x().data();
+            rhs() = grad_field.x().data() * vol_field.array();
             break;
         }
         case Coord::Y: {
-            rhs() = grad_field.y().data();
+            rhs() = grad_field.y().data() * vol_field.array();
             break;
         }
 
         case Coord::Z: {
-            rhs() = grad_field.z().data();
+            rhs() = grad_field.z().data() * vol_field.array();
             break;
         }
 
