@@ -38,6 +38,9 @@ class AbstractConvection : public FVScheme {
     auto inline field() -> std::optional<ScalarField> override { return _phi; }
     auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
 
+  protected:
+    auto inline n_reverse_flow_faces() -> std::size_t& { return _n_reverse_flow_faces; }
+
   private:
     virtual auto interpolate(double m_dot,
                              const mesh::Cell& cell,
@@ -138,6 +141,14 @@ void AbstractConvection<G>::apply() {
 
     // we've inserted all the triplets, now we can collect them into the matrix
     collect();
+
+    if (_n_reverse_flow_faces > 0) {
+        spdlog::warn(
+            "convection::AbstractConvection::apply(): "
+            "Reverse flow detected at {} faces in outlet boundary patch(es). "
+            "This may cause the solution to diverge.",
+            _n_reverse_flow_faces);
+    }
 }
 
 template <typename G>
@@ -234,11 +245,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
 
     if (m_dot_f < 0.0) {
-        spdlog::warn(
-            "convection::AbstractConvection::apply_boundary_outlet(): "
-            "Reverse flow detected at outlet boundary patch '{}'. "
-            "This may cause the solution to diverge.",
-            _phi.mesh().face_boundary_patch(face).name());
+        n_reverse_flow_faces()++;
     }
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
