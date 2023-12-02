@@ -47,13 +47,10 @@ class PMesh {
     auto face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch&;
     auto face_boundary_patch(const Face& face) const -> const BoundaryPatch&;
 
-    // TODO: this is only needed in mesh checkers,
-    // I don't think it should be part of the PMesh object
-    auto face_non_ortho(std::size_t face_id) const -> double;
-    auto face_non_ortho(const Face& face) const -> double;
-
     auto n_cells() const noexcept -> std::size_t { return _n_cells; }
     auto n_faces() const noexcept -> std::size_t { return _n_faces; }
+
+    auto cells_volume_vec() const noexcept -> const VectorXd& { return _cells_volume; }
 
     /**
      * @brief Returns the cell that shares the face with the given cell.
@@ -143,6 +140,7 @@ class PMesh {
     std::vector<Vector3d> _vertices;
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
+    VectorXd _cells_volume;
     std::vector<BoundaryPatch> _boundary_patches;
     std::vector<std::size_t> _boundary_faces_ids;
     std::vector<std::size_t> _interior_faces_ids;

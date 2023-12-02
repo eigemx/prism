@@ -43,10 +43,9 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto eqn = TransportEquation(
-        diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<gradient::LeastSquares>>(1e-5,
-                                                                                             T),
-        source::ConstantScalar(S));
+    auto eqn =
+        TransportEquation(diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-5, T),
+                          source::ConstantScalar(S));
 
     // solve
     auto solver = solver::BiCGSTAB<solver::ImplicitUnderRelaxation>();
