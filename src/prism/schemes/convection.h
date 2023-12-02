@@ -184,19 +184,19 @@ void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
-    switch (boundary_condition.bc_type()) {
-        case mesh::BoundaryConditionType::Empty:
-        case mesh::BoundaryConditionType::Symmetry: {
+    switch (boundary_condition.kind()) {
+        case mesh::BoundaryConditionKind::Empty:
+        case mesh::BoundaryConditionKind::Symmetry: {
             return;
         }
 
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
+        case mesh::BoundaryConditionKind::Fixed:
+        case mesh::BoundaryConditionKind::Inlet: {
             apply_boundary_fixed(owner, face);
             return;
         }
 
-        case mesh::BoundaryConditionType::Outlet: {
+        case mesh::BoundaryConditionKind::Outlet: {
             apply_boundary_outlet(owner, face);
             return;
         }
@@ -206,7 +206,7 @@ void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
             throw error::NonImplementedBoundaryCondition(
                 "convection::AbstactConvection::apply_boundary()",
                 boundary_patch.name(),
-                boundary_condition.bc_type_str());
+                boundary_condition.kind_string());
     }
 }
 

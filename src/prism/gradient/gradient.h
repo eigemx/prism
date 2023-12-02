@@ -108,17 +108,17 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
 auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_field.name());
-    auto bc_type = boundary_condition.bc_type();
+    auto bc_type = boundary_condition.kind();
 
     switch (bc_type) {
-        case mesh::BoundaryConditionType::Empty:
-        case mesh::BoundaryConditionType::Symmetry:
-        case mesh::BoundaryConditionType::Outlet: {
+        case mesh::BoundaryConditionKind::Empty:
+        case mesh::BoundaryConditionKind::Symmetry:
+        case mesh::BoundaryConditionKind::Outlet: {
             return {0.0, 0.0, 0.0};
         }
 
-        case mesh::BoundaryConditionType::Inlet:
-        case mesh::BoundaryConditionType::Fixed: {
+        case mesh::BoundaryConditionKind::Inlet:
+        case mesh::BoundaryConditionKind::Fixed: {
             const auto& owner = _field.mesh().cell(face.owner());
             Vector3d e = face.center() - owner.center();
             double d_Cf = e.norm();
@@ -128,7 +128,7 @@ auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) 
             return (delta_phi / d_Cf) * e;
         }
 
-        case mesh::BoundaryConditionType::FixedGradient: {
+        case mesh::BoundaryConditionKind::FixedGradient: {
             return boundary_patch.get_vector_bc(_field.name());
         }
 
@@ -136,7 +136,7 @@ auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) 
             throw error::NonImplementedBoundaryCondition(
                 "AbstractGradient::gradient_at_boundary_face()",
                 boundary_patch.name(),
-                boundary_condition.bc_type_str());
+                boundary_condition.kind_string());
         }
     }
 

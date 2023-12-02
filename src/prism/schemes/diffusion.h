@@ -198,15 +198,15 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
-    switch (boundary_condition.bc_type()) {
+    switch (boundary_condition.kind()) {
         // empty boundary patch, do nothing
-        case mesh::BoundaryConditionType::Empty: {
+        case mesh::BoundaryConditionKind::Empty: {
             return;
         }
 
         // fixed boundary patch, or Dirichlet boundary condition
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
+        case mesh::BoundaryConditionKind::Fixed:
+        case mesh::BoundaryConditionKind::Inlet: {
             apply_boundary_fixed(owner, face);
             return;
         }
@@ -218,13 +218,13 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face
         // or the matrix coefficients, and no need for non-orthogonal correction.
         // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph,
         // and paragraph 8.6.8.2 - Chapter 8 in same reference.
-        case mesh::BoundaryConditionType::Symmetry:
-        case mesh::BoundaryConditionType::Outlet: {
+        case mesh::BoundaryConditionKind::Symmetry:
+        case mesh::BoundaryConditionKind::Outlet: {
             return;
         }
 
         // general Von Neumann boundary condition, or fixed gradient boundary condition.
-        case mesh::BoundaryConditionType::FixedGradient: {
+        case mesh::BoundaryConditionKind::FixedGradient: {
             apply_boundary_gradient(owner, face);
             return;
         }
@@ -233,7 +233,7 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face
             throw error::NonImplementedBoundaryCondition(
                 "prism::diffusion::Diffusion::apply_boundary()",
                 boundary_patch.name(),
-                boundary_condition.bc_type_str());
+                boundary_condition.kind_string());
     }
 }
 

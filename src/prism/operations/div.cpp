@@ -96,8 +96,8 @@ auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const V
     const auto& boundary_patch = mesh.boundary_patch(face);
     const auto& field_bc = boundary_patch.get_bc(U.name());
 
-    switch (field_bc.bc_type()) {
-        case mesh::BoundaryConditionType::Empty: {
+    switch (field_bc.kind()) {
+        case mesh::BoundaryConditionKind::Empty: {
             return 0.0;
         }
 
