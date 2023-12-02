@@ -71,21 +71,21 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
 auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_field.name());
-    auto bc_type = boundary_condition.bc_type();
+    auto bc_type = boundary_condition.kind();
 
     switch (bc_type) {
-        case mesh::BoundaryConditionType::Empty: {
+        case mesh::BoundaryConditionKind::Empty: {
             return Vector3d {0., 0., 0.};
         }
-        case mesh::BoundaryConditionType::Outlet:
-        case mesh::BoundaryConditionType::Symmetry: {
+        case mesh::BoundaryConditionKind::Outlet:
+        case mesh::BoundaryConditionKind::Symmetry: {
             auto phi = _field.value_at_face(face);
             return phi * face.area_vector();
         }
 
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet:
-        case mesh::BoundaryConditionType::FixedGradient: {
+        case mesh::BoundaryConditionKind::Fixed:
+        case mesh::BoundaryConditionKind::Inlet:
+        case mesh::BoundaryConditionKind::FixedGradient: {
             auto phi = _field.value_at_face(face);
             return phi * face.area_vector();
         }
@@ -94,7 +94,7 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
             throw error::NonImplementedBoundaryCondition(
                 "GreenGauss::green_gauss_face_integral()",
                 boundary_patch.name(),
-                boundary_condition.bc_type_str());
+                boundary_condition.kind_string());
     }
 }
 } // namespace prism::gradient

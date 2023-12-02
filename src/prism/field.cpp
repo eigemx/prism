@@ -110,22 +110,22 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.get_bc(name());
 
-    switch (bc.bc_type()) {
-        case mesh::BoundaryConditionType::Fixed:
-        case mesh::BoundaryConditionType::Inlet: {
+    switch (bc.kind()) {
+        case mesh::BoundaryConditionKind::Fixed:
+        case mesh::BoundaryConditionKind::Inlet: {
             return patch.get_scalar_bc(name());
         }
 
         // TODO: We return the field value of an empty face the same value as its owner cell.
         // This makes many schemes and gradient methods to work without a special check for an
         // empty face (like LeastSquares), check if this assumption is correct.
-        case mesh::BoundaryConditionType::Empty:
-        case mesh::BoundaryConditionType::Symmetry:
-        case mesh::BoundaryConditionType::Outlet: {
+        case mesh::BoundaryConditionKind::Empty:
+        case mesh::BoundaryConditionKind::Symmetry:
+        case mesh::BoundaryConditionKind::Outlet: {
             return (*_data)[face.owner()];
         }
 
-        case mesh::BoundaryConditionType::FixedGradient: {
+        case mesh::BoundaryConditionKind::FixedGradient: {
             Vector3d grad_at_boundary = patch.get_vector_bc(name());
             const auto& owner = mesh().cell(face.owner());
             Vector3d e = face.center() - owner.center();
@@ -140,7 +140,7 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
             throw error::NonImplementedBoundaryCondition(
                 fmt::format("ScalarField({})::value_at_boundary_face()", name()),
                 patch.name(),
-                bc.bc_type_str());
+                bc.kind_string());
         }
     }
 }

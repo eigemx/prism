@@ -27,13 +27,15 @@ namespace prism::mesh {
  * value = 0.0
  * 
  */
-enum class BoundaryConditionType {
+enum class BoundaryConditionKind {
     Fixed,
     Inlet,
     Outlet,
     Symmetry,
     Empty,
     FixedGradient,
+    Slip,
+    NonSlip,
     Unknown, // for error handling
 };
 
@@ -45,7 +47,7 @@ enum class BoundaryConditionType {
  * defined below.
  * 
  */
-enum class BoundaryConditionValueType {
+enum class BoundaryConditionValueKind {
     Nil, // Empty or symmetry
     Scalar,
     Vector
@@ -68,29 +70,29 @@ using BoundaryConditionValue = std::variant<double, Vector3d>;
  */
 class BoundaryCondition {
   public:
-    BoundaryCondition(BoundaryConditionValueType type,
+    BoundaryCondition(BoundaryConditionValueKind type,
                       BoundaryConditionValue value,
-                      BoundaryConditionType patch_type,
+                      BoundaryConditionKind patch_type,
                       std::string bc_type_str)
-        : _bc_value_type(type),
+        : _value_kind(type),
           _value(std::move(value)),
-          _bc_type(patch_type),
-          _bc_type_str(std::move(bc_type_str)) {}
+          _kind(patch_type),
+          _kind_str(std::move(bc_type_str)) {}
 
-    auto inline value_type() const noexcept -> BoundaryConditionValueType {
+    auto inline value_kind() const noexcept -> BoundaryConditionValueKind {
         // Should we check if the value is Nil?
         // this always assumes that value is either scalar or vector.
-        return _bc_value_type;
+        return _value_kind;
     }
     auto inline value() const noexcept -> const BoundaryConditionValue& { return _value; }
-    auto inline bc_type() const noexcept -> BoundaryConditionType { return _bc_type; }
-    auto inline bc_type_str() const noexcept -> const std::string& { return _bc_type_str; }
+    auto inline kind() const noexcept -> BoundaryConditionKind { return _kind; }
+    auto inline kind_string() const noexcept -> const std::string& { return _kind_str; }
 
   private:
-    std::string _bc_type_str;
-    BoundaryConditionValueType _bc_value_type;
+    std::string _kind_str;
+    BoundaryConditionValueKind _value_kind;
     BoundaryConditionValue _value;
-    BoundaryConditionType _bc_type;
+    BoundaryConditionKind _kind;
 };
 
 /** @brief Boundary patch class
