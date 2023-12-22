@@ -1,4 +1,5 @@
 #include "fmt/core.h"
+#include "prism/boundary/fixed.h"
 #include "prism/constants.h"
 #include "prism/equation.h"
 #include "prism/field.h"
@@ -14,6 +15,7 @@
 #include "prism/schemes/source.h"
 #include "prism/types.h"
 
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
     if (argc < 2) {
@@ -26,21 +28,19 @@ auto main(int argc, char* argv[]) -> int {
     auto rho = ScalarField("density", mesh, 1.18);
     auto U = VectorField("velocity", mesh, Vector3d {0.05, 0.05, 0.0});
     auto P = ScalarField("pressure", mesh, 1.0);
-    auto P_prime = ScalarField("pressure", mesh, 1.0);
 
     auto uEqn = TransportEquation(
         convection::Upwind(rho, U, U.x()),                                           // ∇.(ρUu)
         diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.x()), // - ∇.(μ∇u)
-        source::Gradient<source::SourceSign::Negative>(P, Coord::X)                  // ∂p/∂x
-        //source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
+        source::Gradient<source::SourceSign::Negative>(P, Coord::X),                 // ∂p/∂x
+        source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
     );
 
     auto vEqn = TransportEquation(
         convection::Upwind(rho, U, U.y()),
         diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.y()),
-        source::Gradient<source::SourceSign::Negative>(P, Coord::Y)
-        //source::Laplacian(1e-6, U.y())
-    );
+        source::Gradient<source::SourceSign::Negative>(P, Coord::Y),
+        source::Laplacian(1e-6, U.y()));
 
     auto solver = solver::BiCGSTAB();
 
@@ -62,8 +62,8 @@ auto main(int argc, char* argv[]) -> int {
         for (std::size_t i = 0; i < mesh.n_cells(); ++i) {
             // clang-format off
             Matrix3d Di;
-            Di << Du[i], 0,     0, 
-                  0,     Dv[i], 0, 
+            Di << Du[i], 0,     0,
+                  0,     Dv[i], 0,
                   0,     0,     0;
             // clang-format on
             D_data.emplace_back(std::move(Di));
@@ -78,12 +78,13 @@ auto main(int argc, char* argv[]) -> int {
         solver.solve(uEqn, 2, 1e-3, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
-        ops::rhie_chow_correct(U, D, P_prime);
+        ops::rhie_chow_correct(U, D, P);
 
         // pressure equation
         // Few things missing to implement:
         // 1) it's actually ρD not just D
         // 2) ∇.(ρU) not ∇.U
+        auto P_prime = ScalarField("pressure", mesh, 0.0);
         auto pEqn = TransportEquation(
             diffusion::Diffusion<TensorField, nonortho::OverRelaxedCorrector<>>(D, P_prime),
             source::Divergence<source::SourceSign::Negative>(U));

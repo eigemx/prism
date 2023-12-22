@@ -28,17 +28,15 @@ auto inline face_mass_flow_rate(double rho, const prism::Vector3d& U, const pris
 }
 
 // Finite volume scheme for the discretization of the convection term
-template <typename GradScheme>
+template <typename GradScheme = gradient::LeastSquares>
 class AbstractConvection : public FVScheme {
   public:
     AbstractConvection(ScalarField rho, VectorField U, ScalarField phi);
-
     void apply() override;
-
     auto inline field() -> std::optional<ScalarField> override { return _phi; }
-    auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
 
   protected:
+    auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
     auto inline n_reverse_flow_faces() -> std::size_t& { return _n_reverse_flow_faces; }
 
   private:
@@ -130,7 +128,6 @@ template <typename G>
 void AbstractConvection<G>::apply() {
     _n_reverse_flow_faces = 0;
 
-    // TODO: this is repeated in all FVSchemes, we should move it to the base class
     for (const auto& bface : _phi.mesh().boundary_faces()) {
         apply_boundary(bface);
     }
