@@ -305,4 +305,10 @@ void TensorField::init_data_vec() {
     _data.reserve(mesh().n_cells());
 }
 
+PressureField::PressureField(std::string name, const mesh::PMesh& mesh, double value)
+    : ScalarField(std::move(name), mesh, value) {}
+
+PressureField::PressureField(std::string name, const mesh::PMesh& mesh, VectorXd data)
+    : ScalarField(std::move(name), mesh, std::move(data)) {}
+
 } // namespace prism
