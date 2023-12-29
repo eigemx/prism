@@ -143,9 +143,6 @@ class Tensor : public AbstractField<Matrix3d> {
     auto value_at_face(std::size_t face_id) const -> Matrix3d override;
     auto value_at_face(const mesh::Face& face) const -> Matrix3d override;
 
-    auto at(std::size_t i, std::size_t j, std::size_t k) -> double&;
-    auto at(std::size_t i, std::size_t j, std::size_t k) const -> double;
-
     auto operator[](std::size_t i) -> Matrix3d&;
     auto operator[](std::size_t i) const -> const Matrix3d&;
 
