@@ -16,45 +16,81 @@
 #include "prism/mesh/utilities.h"
 #include "spdlog/spdlog.h"
 
-namespace prism {
+namespace prism::field {
 
-void inline check_field_name(const std::string& name) {
-    if (name.empty()) {
-        throw std::runtime_error("Cannot create a Field with an empty name.");
+Uniform::Uniform(std::string name, const mesh::PMesh& mesh, double value)
+    : AbstractField(std::move(name), mesh), _value(value) {
+    spdlog::debug(
+        "Creating uniform scalar field: '{}' with double value = {}", this->name(), value);
+}
+
+auto Uniform::value_at_cell(std::size_t cell_id) const -> double { // NOLINT
+    return _value;
+}
+
+auto Uniform::value_at_cell(const mesh::Cell& cell) const -> double { // NOLINT
+    return _value;
+}
+
+auto Uniform::value_at_face(std::size_t face_id) const -> double { // NOLINT
+    return _value;
+}
+
+auto Uniform::value_at_face(const mesh::Face& face) const -> double { // NOLINT
+    return _value;
+}
+
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value)
+    : AbstractField(std::move(name), mesh),
+      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)) {
+    spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
+}
+
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
+    : AbstractField(std::move(name), mesh), _data(std::make_shared<VectorXd>(std::move(data))) {
+    if (_data->size() != mesh.n_cells()) {
+        throw std::runtime_error(fmt::format(
+            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
+            "different size than mesh's cell count.",
+            this->name()));
     }
+
+    spdlog::debug("Creating scalar field: '{}' with a vector data of size = {}",
+                  this->name(),
+                  _data->size());
 }
 
-void inline check_mesh(const mesh::PMesh& mesh) {
-    if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundary_patches().empty()) {
-        throw std::runtime_error("Cannot create a field over an empty mesh.");
-    }
-}
-
-Field::Field(std::string name, const mesh::PMesh& mesh) : _name(std::move(name)), _mesh(&mesh) {
-    check_field_name(_name);
-    check_mesh(mesh);
-}
-
-ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh, double value)
-    : Field(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)) {}
-
-ScalarField::ScalarField(std::string name, const mesh::PMesh& mesh, VectorXd data)
-    : Field(std::move(name), mesh), _data(std::make_shared<VectorXd>(std::move(data))) {}
-
-ScalarField::ScalarField(std::string name,
-                         const mesh::PMesh& mesh,
-                         VectorXd data,
-                         VectorXd face_data)
-    : Field(std::move(name), mesh),
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data)
+    : AbstractField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
-      _face_data(std::make_shared<VectorXd>(std::move(face_data))) {}
+      _face_data(std::make_shared<VectorXd>(std::move(face_data))) {
+    if (_data->size() != mesh.n_cells()) {
+        throw std::runtime_error(fmt::format(
+            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
+            "different size than mesh's cell count.",
+            this->name()));
+    }
 
-void ScalarField::set_face_values(VectorXd values) {
+    if (_face_data->size() != mesh.n_faces()) {
+        throw std::runtime_error(
+            fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
+                        "vector that has a different size than mesh's faces count.",
+                        this->name()));
+    }
+
+    spdlog::debug(
+        "Creating scalar field: '{}' with a cell data vector of size = {} and face data vector "
+        "of size = {}",
+        this->name(),
+        _data->size(),
+        _face_data->size());
+}
+
+void Scalar::set_face_values(VectorXd values) {
     if (values.size() != mesh().n_faces()) {
         throw std::runtime_error(fmt::format(
-            "ScalarField::set_face_values(): trying to set face values for scalar field {}, with "
-            "a values vector having a different size that field's faces count.",
+            "ScalarField::set_face_values(): cannot set face values for scalar field {}, to a "
+            "face data vector having a different size that field's faces count.",
             name()));
     }
 
@@ -66,15 +102,17 @@ void ScalarField::set_face_values(VectorXd values) {
     _face_data = std::make_shared<VectorXd>(std::move(values));
 }
 
-auto ScalarField::value_at_cell(std::size_t cell_id) const -> double {
-    return (*_data)[cell_id];
-}
-
-auto ScalarField::value_at_cell(const mesh::Cell& cell) const -> double {
+auto Scalar::value_at_cell(const mesh::Cell& cell) const -> double {
     return value_at_cell(cell.id());
 }
 
-auto ScalarField::value_at_face(std::size_t face_id) const -> double {
+auto Scalar::value_at_cell(std::size_t cell_id) const -> double {
+    assert(_data != nullptr);           // NOLINT
+    assert(cell_id < mesh().n_cells()); // NOLINT
+    return (*_data)[cell_id];
+}
+
+auto Scalar::value_at_face(std::size_t face_id) const -> double {
     if (has_face_data()) {
         // Face data were calculataed for us before calling the constructor,
         // just return the value
@@ -91,22 +129,23 @@ auto ScalarField::value_at_face(std::size_t face_id) const -> double {
     return value_at_boundary_face(face);
 }
 
-auto ScalarField::value_at_face(const mesh::Face& face) const -> double {
+auto Scalar::value_at_face(const mesh::Face& face) const -> double {
     return value_at_face(face.id());
 }
 
-auto ScalarField::value_at_interior_face(const mesh::Face& face) const -> double {
+auto Scalar::value_at_interior_face(const mesh::Face& face) const -> double {
+    assert(face.is_interior()); // NOLINT
     const auto& owner = mesh().cell(face.owner());
     const auto& neighbor = mesh().cell(face.neighbor().value());
-    const auto gc = mesh::geo_weight(owner, neighbor, face);
 
+    const auto gc = mesh::geo_weight(owner, neighbor, face);
     double val = gc * (*_data)[owner.id()];
     val += (1 - gc) * (*_data)[neighbor.id()];
 
     return val;
 }
 
-auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double {
+auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.get_bc(name());
 
@@ -116,9 +155,9 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
             return patch.get_scalar_bc(name());
         }
 
-        // TODO: We return the field value of an empty face the same value as its owner cell.
-        // This makes many schemes and gradient methods to work without a special check for an
-        // empty face (like LeastSquares), check if this assumption is correct.
+        // TODO: We return the field value of an empty face the same value as its owner cell. This
+        // makes many schemes and gradient methods work without a special check for an empty face
+        // (like LeastSquares), check if this assumption is correct.
         case mesh::BoundaryConditionKind::Empty:
         case mesh::BoundaryConditionKind::Symmetry:
         case mesh::BoundaryConditionKind::Outlet: {
@@ -145,48 +184,20 @@ auto ScalarField::value_at_boundary_face(const mesh::Face& face) const -> double
     }
 }
 
-auto ScalarField::clone() const -> ScalarField {
-    if (has_face_data()) {
-        return {name(), mesh(), *_data, *_face_data};
-    }
-    return {name(), mesh(), *_data};
-}
-
-
-auto ScalarField::map(CellMapper* mapper) -> ScalarField& {
-    for (std::size_t i = 0; i < mesh().n_cells(); ++i) {
-        data()[i] = mapper(mesh().cell(i));
-    }
-    return *this;
-}
-
-auto ScalarField::map(CoordinatesMapper* mapper) -> ScalarField& {
-    const auto n_cells = mesh().n_cells();
-    for (std::size_t i = 0; i < n_cells; ++i) {
-        const auto& cell = mesh().cell(i);
-        const auto& center = cell.center();
-        data()[i] = mapper(center.x(), center.y(), center.z());
-    }
-    return *this;
-}
-
-
-VectorField::VectorField(std::string name, const mesh::PMesh& mesh, double value)
-    : Field(std::move(name), mesh),
+Vector::Vector(std::string name, const mesh::PMesh& mesh, double value)
+    : AbstractField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, value),
       _y(this->name() + "_y", mesh, value),
       _z(this->name() + "_z", mesh, value) {}
 
-VectorField::VectorField(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
-    : Field(std::move(name), mesh),
+Vector::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
+    : AbstractField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, data[0]),
       _y(this->name() + "_y", mesh, data[1]),
       _z(this->name() + "_z", mesh, data[2]) {}
 
-VectorField::VectorField(std::string name,
-                         const mesh::PMesh& mesh,
-                         const std::array<ScalarField, 3>& fields)
-    : Field(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
+Vector::Vector(std::string name, const mesh::PMesh& mesh, const std::array<Scalar, 3>& fields)
+    : AbstractField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
     // check mesh consistency
     for (const auto& field : fields) {
         if (&mesh != &field.mesh()) {
@@ -211,104 +222,119 @@ VectorField::VectorField(std::string name,
     }
 }
 
-auto VectorField::value_at_cell(std::size_t cell_id) const -> Vector3d {
+auto Vector::value_at_cell(std::size_t cell_id) const -> Vector3d {
     return operator[](cell_id);
 }
 
-auto VectorField::value_at_cell(const mesh::Cell& cell) const -> Vector3d {
+auto Vector::value_at_cell(const mesh::Cell& cell) const -> Vector3d {
     return value_at_cell(cell.id());
 }
 
-auto VectorField::value_at_face(std::size_t face_id) const -> Vector3d {
+auto Vector::value_at_face(std::size_t face_id) const -> Vector3d {
     return {_x.value_at_face(face_id), _y.value_at_face(face_id), _z.value_at_face(face_id)};
 }
 
-auto VectorField::value_at_face(const mesh::Face& face) const -> Vector3d {
+auto Vector::value_at_face(const mesh::Face& face) const -> Vector3d {
     return value_at_face(face.id());
 }
 
-auto VectorField::has_face_data() const -> bool {
+auto Vector::has_face_data() const -> bool {
     return _x.has_face_data() && _y.has_face_data() && _z.has_face_data();
 }
 
-auto VectorField::operator[](std::size_t i) const -> Vector3d {
+auto Vector::operator[](std::size_t i) const -> Vector3d {
     return {_x.data()[i], _y.data()[i], _z.data()[i]};
 }
 
-TensorField::TensorField(std::string name, const mesh::PMesh& mesh, double value)
-    : Field(std::move(name), mesh) {
-    init_data_vec();
-
+Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
+    : AbstractField(std::move(name), mesh) {
+    spdlog::debug("Creating tensor field: '{}' with double value = {}", this->name(), value);
     const std::size_t n_cells = this->mesh().n_cells();
+    _data.reserve(n_cells);
     for (std::size_t i = 0; i < n_cells; ++i) {
         _data.emplace_back(Matrix3d::Ones() * value);
     }
 }
 
-TensorField::TensorField(std::string name, const mesh::PMesh& mesh, Matrix3d data)
-    : Field(std::move(name), mesh) {
-    init_data_vec();
+Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
+    : AbstractField(std::move(name), mesh) {
+    spdlog::debug("Creating a uniform tensor field: '{}' given a Matrix3d object", this->name());
 
     const std::size_t n_cells = this->mesh().n_cells();
+    _data.reserve(n_cells);
     for (std::size_t i = 0; i < n_cells; ++i) {
-        _data.emplace_back(std::move(data));
+        _data.push_back(data);
     }
 }
 
-TensorField::TensorField(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data)
-    : Field(std::move(name), mesh), _data(std::move(data)) {}
+Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data)
+    : AbstractField(std::move(name), mesh), _data(std::move(data)) {
+    spdlog::debug("Creating a  tensor field: '{}' given a vector of Matrix3d objects",
+                  this->name());
 
-auto TensorField::value_at_cell(std::size_t cell_id) const -> const Matrix3d& {
+    if (_data.size() != mesh.n_cells()) {
+        throw std::runtime_error(
+            fmt::format("field::Tensor() cannot create a tensor field '{}' given a vector of "
+                        "Matrix3d that has a different size than mesh's cell count.",
+                        this->name()));
+    }
+}
+
+auto Tensor::value_at_cell(std::size_t cell_id) const -> Matrix3d {
+    assert(cell_id < mesh().n_cells());
     return _data[cell_id];
 }
 
-auto TensorField::value_at_cell(const mesh::Cell& cell) const -> const Matrix3d& {
+auto Tensor::value_at_cell(const mesh::Cell& cell) const -> Matrix3d {
     return _data[cell.id()];
 }
 
-auto TensorField::value_at_face(std::size_t face_id) const -> Matrix3d {
-    const auto& mesh = this->mesh();
-    const mesh::Face& face = mesh.face(face_id);
+auto Tensor::value_at_face(std::size_t face_id) const -> Matrix3d {
+    const mesh::Face& face = this->mesh().face(face_id);
     return value_at_face(face);
 }
 
-auto TensorField::value_at_face(const mesh::Face& face) const -> Matrix3d {
+auto Tensor::value_at_face(const mesh::Face& face) const -> Matrix3d {
     const auto& mesh = this->mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
+
+    if (face.is_boundary()) {
+        spdlog::warn(
+            "field::Tensor::value_at_face() was called on a boundary face (face id = {}). "
+            "Returning value of the tensor field at owner cell.",
+            face.id());
+
+        return _data[owner.id()];
+    }
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
     const double gc = mesh::geo_weight(owner, neighbor, face);
 
     return (gc * _data[owner.id()]) + ((1 - gc) * _data[neighbor.id()]);
 }
 
-auto TensorField::at(std::size_t i, std::size_t j, std::size_t k) -> double& {
+auto Tensor::at(std::size_t i, std::size_t j, std::size_t k) -> double& {
     // i -> cell id
     // j -> row number
     // k -> column number
     return _data[i].coeffRef(j, k);
 }
 
-auto TensorField::at(std::size_t i, std::size_t j, std::size_t k) const -> double {
+auto Tensor::at(std::size_t i, std::size_t j, std::size_t k) const -> double {
     return _data[i](j, k);
 }
 
-auto TensorField::operator[](std::size_t i) -> Matrix3d& {
+auto Tensor::operator[](std::size_t i) -> Matrix3d& {
     return _data[i];
 }
 
-auto TensorField::operator[](std::size_t i) const -> const Matrix3d& {
+auto Tensor::operator[](std::size_t i) const -> const Matrix3d& {
     return _data[i];
 }
 
-void TensorField::init_data_vec() {
-    assert(mesh().n_cells() > 0 && "TensorField::init_data_vec() has a zero cells mesh");
-    _data.reserve(mesh().n_cells());
-}
+Pressure::Pressure(std::string name, const mesh::PMesh& mesh, double value)
+    : Scalar(std::move(name), mesh, value) {}
 
-PressureField::PressureField(std::string name, const mesh::PMesh& mesh, double value)
-    : ScalarField(std::move(name), mesh, value) {}
+Pressure::Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data)
+    : Scalar(std::move(name), mesh, std::move(data)) {}
 
-PressureField::PressureField(std::string name, const mesh::PMesh& mesh, VectorXd data)
-    : ScalarField(std::move(name), mesh, std::move(data)) {}
-
-} // namespace prism
+} // namespace prism::field

@@ -7,8 +7,8 @@
 
 namespace prism::ops {
 
-void rhie_chow_correct(VectorField& U,
-                       const TensorField& D,
+void rhie_chow_correct(field::Vector& U,
+                       const field::Tensor& D,
                        gradient::AbstractGradient* p_grad_scheme) {
     const auto& mesh = U.mesh();
 

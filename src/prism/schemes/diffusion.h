@@ -15,10 +15,10 @@ namespace prism::diffusion {
 template <typename NonOrthoCorrector = nonortho::OverRelaxedCorrector<>>
 class AbstractDiffusion : public FVScheme {
   public:
-    AbstractDiffusion(ScalarField phi);
+    AbstractDiffusion(field::Scalar phi);
 
     void apply() override;
-    auto field() -> std::optional<ScalarField> override { return _phi; }
+    auto field() -> std::optional<field::Scalar> override { return _phi; }
 
     // This will be overloaded to return false in case of NilCorrector
     auto requires_correction() const -> bool override { return true; }
@@ -38,14 +38,14 @@ class AbstractDiffusion : public FVScheme {
                                          const mesh::Face& face,
                                          const Vector3d& Tf_prime);
 
-    const ScalarField _phi;
+    const field::Scalar _phi;
     NonOrthoCorrector _corrector;
 };
 
 template <typename DiffusionCoeffType, typename Corrector>
 class Diffusion : public AbstractDiffusion<Corrector> {
   public:
-    Diffusion(DiffusionCoeffType kappa, ScalarField phi);
+    Diffusion(DiffusionCoeffType kappa, field::Scalar phi);
 
   private:
     auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
@@ -58,7 +58,7 @@ class Diffusion : public AbstractDiffusion<Corrector> {
 template <typename Corrector>
 class Diffusion<double, Corrector> : public AbstractDiffusion<Corrector> {
   public:
-    Diffusion(double kappa, ScalarField phi);
+    Diffusion(double kappa, field::Scalar phi);
 
   private:
     auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
@@ -71,7 +71,7 @@ class Diffusion<double, Corrector> : public AbstractDiffusion<Corrector> {
 template <typename Corrector>
 class Diffusion<Matrix3d, Corrector> : public AbstractDiffusion<Corrector> {
   public:
-    Diffusion(Matrix3d kappa, ScalarField phi);
+    Diffusion(Matrix3d kappa, field::Scalar phi);
 
   private:
     auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
@@ -82,36 +82,36 @@ class Diffusion<Matrix3d, Corrector> : public AbstractDiffusion<Corrector> {
 };
 
 template <typename Corrector>
-class Diffusion<TensorField, Corrector> : public AbstractDiffusion<Corrector> {
+class Diffusion<field::Tensor, Corrector> : public AbstractDiffusion<Corrector> {
   public:
-    Diffusion(TensorField kappa, ScalarField phi);
+    Diffusion(field::Tensor kappa, field::Scalar phi);
 
   private:
     auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Face& face)
         -> Vector3d override;
     auto diffusion_scaled_vector(const Vector3d& vec, const mesh::Cell& cell)
         -> Vector3d override;
-    TensorField _kappa;
+    field::Tensor _kappa;
 };
 
 template <typename Corrector>
-Diffusion<double, Corrector>::Diffusion(double kappa, ScalarField phi)
+Diffusion<double, Corrector>::Diffusion(double kappa, field::Scalar phi)
     : _kappa(kappa), AbstractDiffusion<Corrector>(std::move(phi)) {}
 
 template <typename Corrector>
-Diffusion<Matrix3d, Corrector>::Diffusion(Matrix3d kappa, ScalarField phi)
+Diffusion<Matrix3d, Corrector>::Diffusion(Matrix3d kappa, field::Scalar phi)
     : _kappa(std::move(kappa)), AbstractDiffusion<Corrector>(std::move(phi)) {}
 
 template <typename Corrector>
-Diffusion<TensorField, Corrector>::Diffusion(TensorField kappa, ScalarField phi)
+Diffusion<field::Tensor, Corrector>::Diffusion(field::Tensor kappa, field::Scalar phi)
     : _kappa(std::move(kappa)), AbstractDiffusion<Corrector>(std::move(phi)) {}
 
 template <typename NonOrthoCorrector>
-AbstractDiffusion<NonOrthoCorrector>::AbstractDiffusion(ScalarField phi)
+AbstractDiffusion<NonOrthoCorrector>::AbstractDiffusion(field::Scalar phi)
     : _phi(phi), FVScheme(phi.mesh().n_cells()), _corrector(phi) {}
 
 template <>
-AbstractDiffusion<nonortho::NilCorrector>::AbstractDiffusion(ScalarField phi) // NOLINT
+AbstractDiffusion<nonortho::NilCorrector>::AbstractDiffusion(field::Scalar phi) // NOLINT
     : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
 
 template <typename Corrector>
@@ -147,14 +147,14 @@ auto Diffusion<Matrix3d, Corrector>::Diffusion::diffusion_scaled_vector(
 }
 
 template <typename Corrector>
-auto Diffusion<TensorField, Corrector>::Diffusion::diffusion_scaled_vector(const Vector3d& vec,
-                                                                           const mesh::Face& face)
-    -> Vector3d {
+auto Diffusion<field::Tensor, Corrector>::Diffusion::diffusion_scaled_vector(
+    const Vector3d& vec,
+    const mesh::Face& face) -> Vector3d {
     return _kappa.value_at_face(face) * vec;
 }
 
 template <typename Corrector>
-auto Diffusion<TensorField, Corrector>::Diffusion::diffusion_scaled_vector(
+auto Diffusion<field::Tensor, Corrector>::Diffusion::diffusion_scaled_vector(
     const Vector3d& vec,
     const mesh::Cell& cell) // NOLINT
     -> Vector3d {
@@ -164,9 +164,9 @@ auto Diffusion<TensorField, Corrector>::Diffusion::diffusion_scaled_vector(
 template <typename NonOrthoCorrector>
 void inline AbstractDiffusion<NonOrthoCorrector>::apply() {
     /** @brief Applies discretized diffusion equation to the mesh.
-     * The discretized equation is applied per face basis, using apply_interior() and 
+     * The discretized equation is applied per face basis, using apply_interior() and
      * apply_boundary() functions.
-     * 
+     *
      * The function will check at first if the scheme has completed the first iteration,
      * and if the scheme does not require explicit correction, it will not re-calculate
      * the scheme coefficients and will not zero out the scheme matrix and RHS vector.

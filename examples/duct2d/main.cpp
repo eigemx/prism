@@ -14,10 +14,14 @@
 #include "prism/schemes/diffusion.h"
 #include "prism/schemes/source.h"
 #include "prism/types.h"
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
 
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
+
+    spdlog::set_level(spdlog::level::level_enum::debug);
     if (argc < 2) {
         fmt::println("usage: {} [mesh-file]", argv[1]); // NOLINT
         return 1;
@@ -25,9 +29,9 @@ auto main(int argc, char* argv[]) -> int {
 
     auto mesh = mesh::UnvToPMeshConverter(argv[1]).to_pmesh(); // NOLINT
 
-    auto rho = ScalarField("density", mesh, 1.18);
-    auto U = VectorField("velocity", mesh, Vector3d {0.05, 0.05, 0.0});
-    auto P = ScalarField("pressure", mesh, 1.0);
+    auto rho = field::Scalar("density", mesh, 1.18);
+    auto U = field::Vector("velocity", mesh, Vector3d {0.05, 0.05, 0.0});
+    auto P = field::Scalar("pressure", mesh, 1.0);
 
     auto uEqn = TransportEquation(
         convection::Upwind(rho, U, U.x()),                                           // ∇.(ρUu)
@@ -69,12 +73,12 @@ auto main(int argc, char* argv[]) -> int {
             D_data.emplace_back(std::move(Di));
         }
 
-        auto D = prism::TensorField("D", mesh, D_data);
+        auto D = prism::field::Tensor("D", mesh, D_data);
 
-        fmt::println("Solving y-momentum equation");
+        spdlog::info("Solving y-momentum equation");
         solver.solve(vEqn, 2, 1e-3, 0.9);
 
-        fmt::println("Solving x-momentum equation");
+        spdlog::info("Solving x-momentum equation");
         solver.solve(uEqn, 2, 1e-3, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
@@ -84,13 +88,13 @@ auto main(int argc, char* argv[]) -> int {
         // Few things missing to implement:
         // 1) it's actually ρD not just D
         // 2) ∇.(ρU) not ∇.U
-        auto P_prime = ScalarField("pressure", mesh, 0.0);
+        auto P_prime = field::Scalar("pressure", mesh, 0.0);
         auto pEqn = TransportEquation(
-            diffusion::Diffusion<TensorField, nonortho::OverRelaxedCorrector<>>(D, P_prime),
+            diffusion::Diffusion<field::Tensor, nonortho::OverRelaxedCorrector<>>(D, P_prime),
             source::Divergence<source::SourceSign::Negative>(U));
 
         pEqn.update_coeffs();
-        fmt::println("Solving pressure correction equation");
+        spdlog::info("Solving pressure correction equation");
         solver.solve(pEqn, 10, 1e-5, 1);
 
         // update velocity fields

@@ -23,7 +23,7 @@ namespace prism::gradient {
 class AbstractGradient {
   public:
     AbstractGradient() = delete;
-    AbstractGradient(const ScalarField& field) : _field(field) {} // NOLINT
+    AbstractGradient(const field::Scalar& field) : _field(field) {} // NOLINT
     AbstractGradient(const AbstractGradient&) = default;
     AbstractGradient(AbstractGradient&&) = default;
     auto operator=(const AbstractGradient&) -> AbstractGradient& = delete;
@@ -31,7 +31,7 @@ class AbstractGradient {
 
     virtual auto gradient_at_cell(const mesh::Cell& c) -> Vector3d = 0;
     virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d;
-    virtual auto gradient_field() -> VectorField;
+    virtual auto gradient_field() -> field::Vector;
 
     virtual ~AbstractGradient() = default;
 
@@ -39,12 +39,12 @@ class AbstractGradient {
     virtual auto gradient_at_boundary_face(const mesh::Face& f) -> Vector3d;
 
   private:
-    const ScalarField _field;
+    const field::Scalar _field;
 };
 
 class GreenGauss : public AbstractGradient {
   public:
-    GreenGauss(const ScalarField& field);
+    GreenGauss(const field::Scalar& field);
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
@@ -54,20 +54,20 @@ class GreenGauss : public AbstractGradient {
     auto _gradient_at_cell(const mesh::Cell& cell, bool correct_skewness = true) -> Vector3d;
     auto green_gauss_face_integral(const mesh::Face& f) -> Vector3d;
 
-    const ScalarField _field;
+    const field::Scalar _field;
     std::vector<Vector3d> _cell_gradients;
 };
 
 class LeastSquares : public AbstractGradient {
   public:
-    LeastSquares(const ScalarField& field);
+    LeastSquares(const field::Scalar& field);
     auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
     void set_pseudo_inv_matrices();
     auto boundary_face_phi(const mesh::Face& face) -> std::optional<double>;
 
-    const ScalarField _field;
+    const field::Scalar _field;
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
@@ -144,7 +144,7 @@ auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) 
     return {0.0, 0.0, 0.0};
 }
 
-auto inline AbstractGradient::gradient_field() -> VectorField {
+auto inline AbstractGradient::gradient_field() -> field::Vector {
     // TODO: This function is VERY expensive
     auto grad_field_name = fmt::format("grad({})", _field.name());
     const auto& mesh = _field.mesh();
@@ -175,10 +175,13 @@ auto inline AbstractGradient::gradient_field() -> VectorField {
         grad_z_face_data[j] = face_grad[2];
     }
 
-    auto components_fields = std::array<ScalarField, 3> {
-        ScalarField(grad_field_name + "_x", mesh, std::move(grad_x), std::move(grad_x_face_data)),
-        ScalarField(grad_field_name + "_y", mesh, std::move(grad_y), std::move(grad_y_face_data)),
-        ScalarField(grad_field_name + "_z", mesh, std::move(grad_z), std::move(grad_z_face_data)),
+    auto components_fields = std::array<field::Scalar, 3> {
+        field::Scalar(
+            grad_field_name + "_x", mesh, std::move(grad_x), std::move(grad_x_face_data)),
+        field::Scalar(
+            grad_field_name + "_y", mesh, std::move(grad_y), std::move(grad_y_face_data)),
+        field::Scalar(
+            grad_field_name + "_z", mesh, std::move(grad_z), std::move(grad_z_face_data)),
     };
 
     return {grad_field_name, mesh, components_fields};

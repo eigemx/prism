@@ -42,7 +42,7 @@ class NilCorrector : public AbstractCorrector {
 template <typename GradScheme = gradient::LeastSquares>
 class AbstractCorrectorWithGradient : public AbstractCorrector {
   public:
-    AbstractCorrectorWithGradient(ScalarField& field) : _grad_scheme(field) {}
+    AbstractCorrectorWithGradient(field::Scalar& field) : _grad_scheme(field) {}
     auto inline grad_scheme() -> GradScheme& { return _grad_scheme; }
 
     auto interior_triplet(const mesh::Cell& owner,
@@ -61,7 +61,8 @@ class AbstractCorrectorWithGradient : public AbstractCorrector {
 template <typename GradScheme = gradient::LeastSquares>
 class OverRelaxedCorrector : public AbstractCorrectorWithGradient<GradScheme> {
   public:
-    OverRelaxedCorrector(ScalarField& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
+    OverRelaxedCorrector(field::Scalar& field)
+        : AbstractCorrectorWithGradient<GradScheme>(field) {}
 
   private:
     auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d override;
@@ -70,7 +71,7 @@ class OverRelaxedCorrector : public AbstractCorrectorWithGradient<GradScheme> {
 template <typename GradScheme = gradient::LeastSquares>
 class MinimumCorrector : public AbstractCorrectorWithGradient<GradScheme> {
   public:
-    MinimumCorrector(ScalarField& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
+    MinimumCorrector(field::Scalar& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
 
   private:
     auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d override;
@@ -79,7 +80,8 @@ class MinimumCorrector : public AbstractCorrectorWithGradient<GradScheme> {
 template <typename GradScheme = gradient::LeastSquares>
 class OrthogonalCorrector : public AbstractCorrectorWithGradient<GradScheme> {
   public:
-    OrthogonalCorrector(ScalarField& field) : AbstractCorrectorWithGradient<GradScheme>(field) {}
+    OrthogonalCorrector(field::Scalar& field)
+        : AbstractCorrectorWithGradient<GradScheme>(field) {}
 
   private:
     auto decompose(const Vector3d& Sf, const Vector3d& e) -> Vector3d override;

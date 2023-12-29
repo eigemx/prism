@@ -6,7 +6,7 @@
 #include "prism/types.h"
 
 namespace prism::gradient {
-LeastSquares::LeastSquares(const ScalarField& field) : _field(field), AbstractGradient(field) {
+LeastSquares::LeastSquares(const field::Scalar& field) : _field(field), AbstractGradient(field) {
     set_pseudo_inv_matrices();
 }
 

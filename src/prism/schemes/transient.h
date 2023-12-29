@@ -7,10 +7,10 @@ class AbstractTransientScheme {};
 
 class BackwardEuler : public FVScheme, public AbstractTransientScheme {
   public:
-    BackwardEuler(ScalarField& rho, ScalarField& phi, double dt);
+    BackwardEuler(field::Scalar& rho, field::Scalar& phi, double dt);
 
     void apply() override;
-    auto inline field() -> std::optional<ScalarField> override { return _phi; }
+    auto inline field() -> std::optional<field::Scalar> override { return _phi; }
     auto inline time_step() const -> double { return _dt; }
     void set_time_step(double dt);
 
@@ -18,10 +18,10 @@ class BackwardEuler : public FVScheme, public AbstractTransientScheme {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Face& face) override {}
 
-    ScalarField _rho;
-    ScalarField _phi;
-    ScalarField _rho_prev;
-    ScalarField _phi_prev;
+    field::Scalar _rho;
+    field::Scalar _phi;
+    field::Scalar _rho_prev;
+    field::Scalar _phi_prev;
     VectorXd _volume_field;
     double _dt {1e-8};
 };
