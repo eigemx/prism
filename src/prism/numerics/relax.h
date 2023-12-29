@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../equation.h"
+#include "prism/equation.h"
 
 namespace prism::solver {
 

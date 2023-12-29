@@ -1,7 +1,7 @@
 #include "transient.h"
 
 namespace prism::transient {
-BackwardEuler::BackwardEuler(ScalarField& rho, ScalarField& phi, double dt)
+BackwardEuler::BackwardEuler(field::Scalar& rho, field::Scalar& phi, double dt)
     : _rho(rho),
       _phi(phi),
       _dt(dt),

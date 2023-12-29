@@ -33,21 +33,21 @@ class AbstractExplicitSource : public AbstractSource, public FVScheme {
 template <SourceSign Sign = SourceSign::Positive>
 class ConstantScalar : public AbstractExplicitSource {
   public:
-    ConstantScalar(ScalarField phi);
+    ConstantScalar(field::Scalar phi);
     void apply() override;
 
   private:
-    const ScalarField _phi;
+    const field::Scalar _phi;
 };
 
 template <SourceSign Sign = SourceSign::Positive>
 class Divergence : public AbstractExplicitSource {
   public:
-    Divergence(const VectorField& U);
+    Divergence(const field::Vector& U);
     void apply() override;
 
   private:
-    const VectorField _U;
+    const field::Vector _U;
 };
 
 // Adds a source for a gradient of a scalar field, in a specific coordinate
@@ -56,11 +56,11 @@ template <SourceSign Sign = SourceSign::Positive,
           typename GradientScheme = gradient::LeastSquares>
 class Gradient : public AbstractExplicitSource {
   public:
-    Gradient(ScalarField& phi, Coord coord);
+    Gradient(field::Scalar& phi, Coord coord);
     void apply() override;
 
   private:
-    const ScalarField _phi;
+    const field::Scalar _phi;
     Coord _coord;
     GradientScheme _grad_scheme;
 };
@@ -69,12 +69,12 @@ template <SourceSign Sign = SourceSign::Positive,
           typename GradientScheme = gradient::LeastSquares>
 class Laplacian : public AbstractExplicitSource {
   public:
-    Laplacian(double kappa, ScalarField phi);
+    Laplacian(double kappa, field::Scalar phi);
     void apply() override;
 
   private:
     double _kappa;
-    const ScalarField _phi;
+    const field::Scalar _phi;
     GradientScheme _grad_scheme;
 };
 
@@ -82,9 +82,9 @@ class Laplacian : public AbstractExplicitSource {
 template <SourceSign Sign = SourceSign::Positive>
 class Field : public FVScheme, public AbstractImplicitSource {
   public:
-    Field(ScalarField& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
+    Field(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
     void apply() override;
-    auto inline field() -> std::optional<ScalarField> override { return _phi; }
+    auto inline field() -> std::optional<field::Scalar> override { return _phi; }
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
@@ -92,14 +92,14 @@ class Field : public FVScheme, public AbstractImplicitSource {
 
     auto inline requires_correction() const -> bool override { return false; }
 
-    const ScalarField _phi;
+    const field::Scalar _phi;
 };
 
 inline AbstractExplicitSource::AbstractExplicitSource(std::size_t n_cells)
     : FVScheme(n_cells, false) {}
 
 template <SourceSign Sign>
-ConstantScalar<Sign>::ConstantScalar(ScalarField phi)
+ConstantScalar<Sign>::ConstantScalar(field::Scalar phi)
     : _phi(phi), AbstractExplicitSource(phi.mesh().n_cells()) {}
 
 template <SourceSign Sign>
@@ -114,11 +114,11 @@ void inline ConstantScalar<Sign>::apply() {
 }
 
 template <SourceSign Sign>
-Divergence<Sign>::Divergence(const VectorField& U)
+Divergence<Sign>::Divergence(const field::Vector& U)
     : AbstractExplicitSource(U.mesh().n_cells()), _U(U) {}
 
 template <SourceSign Sign, typename GradientScheme>
-Gradient<Sign, GradientScheme>::Gradient(ScalarField& phi, Coord coord)
+Gradient<Sign, GradientScheme>::Gradient(field::Scalar& phi, Coord coord)
     : _phi(phi), _grad_scheme(phi), _coord(coord), AbstractExplicitSource(phi.mesh().n_cells()) {}
 
 template <SourceSign Sign>
@@ -137,16 +137,16 @@ void Gradient<Sign, GradientScheme>::apply() {
 
     switch (_coord) {
         case Coord::X: {
-            rhs() = grad_field.x().data() * vol_field.array();
+            rhs() = grad_field.x().data().array() * vol_field.array();
             break;
         }
         case Coord::Y: {
-            rhs() = grad_field.y().data() * vol_field.array();
+            rhs() = grad_field.y().data().array() * vol_field.array();
             break;
         }
 
         case Coord::Z: {
-            rhs() = grad_field.z().data() * vol_field.array();
+            rhs() = grad_field.z().data().array() * vol_field.array();
             break;
         }
 
@@ -163,7 +163,7 @@ void Gradient<Sign, GradientScheme>::apply() {
 }
 
 template <SourceSign Sign, typename GradientScheme>
-Laplacian<Sign, GradientScheme>::Laplacian(double kappa, ScalarField phi)
+Laplacian<Sign, GradientScheme>::Laplacian(double kappa, field::Scalar phi)
     : AbstractExplicitSource(phi.mesh().n_cells()),
       _kappa(kappa),
       _phi(phi),

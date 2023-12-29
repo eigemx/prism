@@ -26,7 +26,7 @@ class FVScheme : public LinearSystem {
     // return the transport ScalarField, if not, such as the cases of a constant source term
     // where there is no contribution to the main matrix, then this method should return
     // a null option (the base class FVScheme implements this as the default case)
-    virtual auto field() -> std::optional<ScalarField> { return std::nullopt; }
+    virtual auto field() -> std::optional<field::Scalar> { return std::nullopt; }
 
     auto name() const -> const std::string& { return _name; }
 

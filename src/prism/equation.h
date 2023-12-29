@@ -23,11 +23,11 @@ class TransportEquation : public LinearSystem {
     void update_coeffs();
     void zero_out_coeffs();
 
-    auto inline field() const -> const ScalarField& { return _phi; }
-    auto inline field() -> ScalarField& { return _phi; }
+    auto inline field() const -> const field::Scalar& { return _phi; }
+    auto inline field() -> field::Scalar& { return _phi; }
 
-    auto inline field_prev_iter() const -> const ScalarField& { return _phi_old; }
-    auto inline field_prev_iter() -> ScalarField& { return _phi_old; }
+    auto inline field_prev_iter() const -> const field::Scalar& { return _phi_old; }
+    auto inline field_prev_iter() -> field::Scalar& { return _phi_old; }
 
     template <typename S>
     void add_scheme(S&& scheme);
@@ -37,8 +37,8 @@ class TransportEquation : public LinearSystem {
 
   private:
     std::vector<std::shared_ptr<FVScheme>> _schemes;
-    ScalarField _phi;     // Conserved field of the equation
-    ScalarField _phi_old; // Previous iteration value of the field
+    field::Scalar _phi;     // Conserved field of the equation
+    field::Scalar _phi_old; // Previous iteration value of the field
 
     std::size_t _n_corrected_schemes {0};
 };

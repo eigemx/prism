@@ -10,17 +10,17 @@
 #include "prism/mesh/utilities.h"
 
 namespace prism::ops {
-auto div_cell(const mesh::PMesh& mesh, const mesh::Cell& cell, const VectorField& U) -> double;
+auto div_cell(const mesh::PMesh& mesh, const mesh::Cell& cell, const field::Vector& U) -> double;
 
 auto face_flux(const mesh::PMesh& mesh,
                const mesh::Cell& cell,
                const mesh::Face& face,
-               const VectorField& U) -> double;
+               const field::Vector& U) -> double;
 
-auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const VectorField& U)
+auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const field::Vector& U)
     -> double;
 
-auto div(const VectorField& U, bool return_face_data) -> ScalarField {
+auto div(const field::Vector& U, bool return_face_data) -> field::Scalar {
     std::string name = fmt::format("div({})", U.name());
     const mesh::PMesh& mesh = U.mesh();
 
@@ -57,7 +57,7 @@ auto div(const VectorField& U, bool return_face_data) -> ScalarField {
     return {name, mesh, cell_data};
 }
 
-auto div_cell(const mesh::PMesh& mesh, const mesh::Cell& cell, const VectorField& U) -> double {
+auto div_cell(const mesh::PMesh& mesh, const mesh::Cell& cell, const field::Vector& U) -> double {
     double sum = 0.0;
 
     for (auto face_id : cell.faces_ids()) {
@@ -71,7 +71,7 @@ auto div_cell(const mesh::PMesh& mesh, const mesh::Cell& cell, const VectorField
 auto face_flux(const mesh::PMesh& mesh,
                const mesh::Cell& cell,
                const mesh::Face& face,
-               const VectorField& U) -> double {
+               const field::Vector& U) -> double {
     if (face.is_boundary()) {
         return boundary_face_flux(mesh, face, U);
     }
@@ -81,7 +81,7 @@ auto face_flux(const mesh::PMesh& mesh,
     return Uf.dot(Sf);
 }
 
-auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const VectorField& U)
+auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const field::Vector& U)
     -> double {
     // this is a boundary face, where normal is always pointing outside of the cell
     // no need to call mesh::outward_area_vector()

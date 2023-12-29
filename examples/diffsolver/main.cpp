@@ -7,10 +7,14 @@
 #include "prism/gradient/gradient.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/schemes/source.h"
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
 
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
+
+    spdlog::set_level(spdlog::level::level_enum::debug);
 
     fmt::println("diffsolver - A steady state temperature diffusion solver");
     fmt::println("");
@@ -29,16 +33,17 @@ auto main(int argc, char* argv[]) -> int {
     fmt::println("Okay.");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = ScalarField("temperature", mesh, 300.0);
+    auto T = field::Scalar("temperature", mesh, 300.0);
 
     // define a source term
-    auto S = ScalarField("S", mesh, 0.0).map([](const mesh::Cell& cell) {
+    prism::VectorXd source_field_data = VectorXd::Zero(mesh.n_cells());
+    for (const auto& cell : mesh.cells()) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {
-            return 100000.0;
+            source_field_data[cell.id()] = 100000.0;
         }
-        return 0.0;
-    });
+    }
+    auto S = field::Scalar("S", mesh, source_field_data);
 
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0

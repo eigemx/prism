@@ -31,10 +31,10 @@ auto main(int argc, char* argv[]) -> int {
     fmt::println("Okay.");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = ScalarField("temperature", mesh, 300.0);
+    auto T = field::Scalar("temperature", mesh, 300.0);
 
     // density field
-    auto rho = ScalarField("rho", mesh, 1.18);
+    auto rho = field::Scalar("rho", mesh, 1.18);
 
     // set up a unifform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -51,10 +51,10 @@ auto main(int argc, char* argv[]) -> int {
 
     // Set a uniform velocity field, with value equal to inlet velocity;
     Vector3d inlet_velocity = inlet_patch->get_vector_bc("velocity");
-    auto U = VectorField("velocity", mesh, inlet_velocity);
+    auto U = field::Vector("velocity", mesh, inlet_velocity);
 
     // A zero field, just to demonstrate how to add arbitray constant source terms
-    auto useLessField = ScalarField("zero", mesh, 0.0);
+    auto useLessField = field::Scalar("zero", mesh, 0.0);
 
     // diffusion coefficient can be double, Matrix3d, or a TensorField, we just need to set the
     // template parameter of Diffusion class when calling the constructor.
