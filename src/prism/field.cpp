@@ -312,17 +312,6 @@ auto Tensor::value_at_face(const mesh::Face& face) const -> Matrix3d {
     return (gc * _data[owner.id()]) + ((1 - gc) * _data[neighbor.id()]);
 }
 
-auto Tensor::at(std::size_t i, std::size_t j, std::size_t k) -> double& {
-    // i -> cell id
-    // j -> row number
-    // k -> column number
-    return _data[i].coeffRef(j, k);
-}
-
-auto Tensor::at(std::size_t i, std::size_t j, std::size_t k) const -> double {
-    return _data[i](j, k);
-}
-
 auto Tensor::operator[](std::size_t i) -> Matrix3d& {
     return _data[i];
 }
