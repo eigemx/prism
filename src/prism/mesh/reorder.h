@@ -1,14 +1,14 @@
 #pragma once
 
 
-#include "../types.h"
 #include "pmesh.h"
+#include "prism/types.h"
 
 namespace prism::mesh {
 
 class CuthillMckee {
   public:
-    CuthillMckee(PMesh& mesh);
+    CuthillMckee(PMesh& mesh) noexcept;
     auto reorder(bool reverse = false) -> void;
 
   private:
@@ -16,7 +16,7 @@ class CuthillMckee {
 
     class Node {
       public:
-        Node(std::size_t id, std::size_t degree) : _id(id), _degree(degree) {}
+        Node(std::size_t id, std::size_t degree) noexcept : _id(id), _degree(degree) {}
 
         auto inline id() const -> std::size_t { return _id; }
         auto inline id() -> std::size_t& { return _id; }

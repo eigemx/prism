@@ -6,6 +6,40 @@
 #include "spdlog/spdlog.h"
 
 namespace prism::mesh {
+
+namespace detail {
+FaceIterator::FaceIterator(const std::vector<Face>& faces,
+                           const std::vector<std::size_t>& ids,
+                           std::size_t position)
+    : _faces(faces), _ids(ids), _current(position) {}
+
+auto FaceIterator::operator++() -> FaceIterator& {
+    _current++;
+    return *this;
+}
+
+auto FaceIterator::operator++(int) -> FaceIterator {
+    auto tmp = *this;
+    ++(*this);
+    return tmp;
+}
+
+auto FaceIterator::operator*() const -> const Face& {
+    return _faces[_ids[_current]];
+}
+auto FaceIterator::operator->() const -> const Face* {
+    return &_faces[_ids[_current]];
+}
+
+auto FaceIterator::operator==(const FaceIterator& other) const -> bool {
+    return _current == other._current;
+}
+
+auto FaceIterator::operator!=(const FaceIterator& other) const -> bool {
+    return !(*this == other);
+}
+} // namespace detail
+
 PMesh::PMesh(std::vector<Vector3d> vertices,
              std::vector<Cell> cells,
              std::vector<Face> faces,
@@ -48,6 +82,12 @@ auto PMesh::face_boundary_patch(std::size_t face_id) const -> const BoundaryPatc
 auto PMesh::face_boundary_patch(const Face& face) const -> const BoundaryPatch& {
     assert(face.is_boundary() && "PMesh::face_boundary_patch() was called on an interior face");
     return _boundary_patches[face.boundary_patch_id().value()];
+}
+
+auto PMesh::other_sharing_cell(const Cell& c, const Face& f) const -> const Cell& {
+    assert(f.is_interior() && "PMesh::other_sharing_cell() called on a boundary face!");
+    auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
+    return _cells[n_id];
 }
 
 
