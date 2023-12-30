@@ -5,7 +5,7 @@
 #include <queue>
 
 namespace prism::mesh {
-CuthillMckee::CuthillMckee(PMesh& mesh) : _mesh(mesh) {
+CuthillMckee::CuthillMckee(PMesh& mesh) noexcept : _mesh(mesh) {
     auto n_cells = mesh.cells().size();
     _nodes.reserve(n_cells);
 
