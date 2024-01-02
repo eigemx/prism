@@ -25,16 +25,19 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     auto to_pmesh() -> PMesh override;
 
   private:
-    // BFaceData (we need a better name) maps a boundary face Unv element index to:
-    // 1) its index in `this->faces()`
-    // 2) whether the face is contained in a defined boundary batch or not
-    // we use the bool value to check if all boundary faces are contained in a
-    // defined boundary batch or not.
-    using BFaceData = std::pair<std::size_t, bool>;
-    using UnvIndexToBFaceIndexMap = std::map<std::size_t, BFaceData>;
+    // BoundaryFaceData (we need a better name) is a pair of:
+    // 1) the boundary face index in `this->faces()`.
+    // 2) whether the face is contained in a defined boundary batch or not.
+    // we use the bool value to check if the faces is an "orphan" boundary face (a boundary face
+    // that has no boundary patch defined in the input mesh), "true" means that the face is
+    // located in a well defined boundary patch, and "false" otherwise.
+    using BoundaryFaceData = std::pair<std::size_t, bool>;
 
-    // map a patch name to a set of faces ids in `_faces` vector
-    using BoundaryNameToFacesMap = std::map<std::string, std::vector<std::size_t>>;
+    // maps a boundary face Unv element index to BoundaryFaceData defined above
+    using UnvIndexToBFaceDataMap = std::map<std::size_t, BoundaryFaceData>;
+
+    // maps a patch name to a set of faces ids in `_faces` vector
+    using PatchNameToFacesIdsMap = std::map<std::string, std::vector<std::size_t>>;
 
     // cells
     void process_cells();
@@ -54,18 +57,15 @@ class UnvToPMeshConverter : public ToPMeshConverter {
 
     // fields
     std::unique_ptr<unvpp::Mesh> _unv_mesh = {nullptr};
-
-    BoundaryNameToFacesMap _boundary_name_to_faces_map;
-    UnvIndexToBFaceIndexMap _unv_id_to_bface_index_map;
+    PatchNameToFacesIdsMap _boundary_name_to_faces_map;
+    UnvIndexToBFaceDataMap _unv_id_to_bface_index_map;
     std::unique_ptr<FacesLookupTrie> _faces_lookup_trie;
-
     std::vector<Vector3d> _vertices;
     std::vector<Face> _faces;
     std::vector<Cell> _cells;
     std::vector<std::size_t> _boundary_faces;
     std::vector<std::size_t> _interior_faces;
     std::vector<BoundaryPatch> _boundary_patches;
-
     std::size_t _cell_id_counter {0};
     std::size_t _face_id_counter {0};
 };
