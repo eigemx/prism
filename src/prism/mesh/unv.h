@@ -12,18 +12,20 @@
 #include "cell.h"
 #include "face.h"
 #include "pmesh.h"
+#include "prism/mesh/boundary.h"
 #include "trie.h"
 
 namespace prism::mesh {
 
 class UnvToPMeshConverter : public ToPMeshConverter {
   public:
-    UnvToPMeshConverter(const std::filesystem::path& filename);
+    UnvToPMeshConverter(const std::filesystem::path& mesh_path,
+                        const std::filesystem::path& boundary_path);
 
     auto to_pmesh() -> PMesh override;
 
   private:
-    // map a boundary face Unv element index to:
+    // BFaceData (we need a better name) maps a boundary face Unv element index to:
     // 1) its index in `this->faces()`
     // 2) whether the face is contained in a defined boundary batch or not
     // we use the bool value to check if all boundary faces are contained in a
@@ -51,8 +53,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
         -> std::optional<std::size_t>;
 
     // fields
-    std::filesystem::path _filename;
-    std::unique_ptr<unvpp::Mesh> unv_mesh = {nullptr};
+    std::unique_ptr<unvpp::Mesh> _unv_mesh = {nullptr};
 
     BoundaryNameToFacesMap _boundary_name_to_faces_map;
     UnvIndexToBFaceIndexMap _unv_id_to_bface_index_map;
@@ -63,6 +64,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     std::vector<Cell> _cells;
     std::vector<std::size_t> _boundary_faces;
     std::vector<std::size_t> _interior_faces;
+    std::vector<BoundaryPatch> _boundary_patches;
 
     std::size_t _cell_id_counter {0};
     std::size_t _face_id_counter {0};

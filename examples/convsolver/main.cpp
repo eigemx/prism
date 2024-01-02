@@ -2,6 +2,7 @@
 #include <prism/prism.h>
 
 #include <algorithm>
+#include <filesystem>
 
 #include "prism/field.h"
 #include "prism/gradient/gradient.h"
@@ -26,8 +27,9 @@ auto main(int argc, char* argv[]) -> int {
     auto unv_file_name = args[1];
 
     // read mesh
-    fmt::print("Loading mesh file {}...", unv_file_name);
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name).to_pmesh();
+    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
+    fmt::print("Loading mesh file `{}`...", unv_file_name);
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
     fmt::println("Okay.");
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]

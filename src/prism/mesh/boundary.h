@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <string>
 #include <variant>
@@ -117,11 +118,15 @@ class BoundaryPatch {
     auto get_scalar_bc(const std::string& field_name) const -> double;
     auto get_vector_bc(const std::string& field_name) const -> Vector3d;
 
+    auto faces_ids() const noexcept -> const std::vector<std::size_t>& { return _faces_ids; }
+    auto faces_ids() noexcept -> std::vector<std::size_t>& { return _faces_ids; }
+
   private:
     auto get_scalar_bc_subfield(const std::string& name) const -> double;
 
     std::string _name;
     std::map<std::string, BoundaryCondition> _field_name_to_bc_map;
+    std::vector<std::size_t> _faces_ids;
 };
 
 /** @brief Read boundary file

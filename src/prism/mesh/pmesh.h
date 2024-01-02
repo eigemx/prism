@@ -19,7 +19,6 @@ struct FaceIterator {
     using pointer = Face*;
     using reference = Face&;
 
-    // TODO: Use std::span and avoid std::vector allocations to create the iterator
     FaceIterator(const std::vector<Face>& faces,
                  const std::vector<std::size_t>& ids,
                  std::size_t position);
@@ -36,6 +35,32 @@ struct FaceIterator {
     const std::vector<std::size_t>& _ids;
     std::size_t _current {};
 };
+
+
+struct BoundaryFaces {
+    BoundaryFaces(const std::vector<Face>& faces,
+                  const std::vector<std::size_t>& boundary_faces_ids);
+
+    auto begin() const -> detail::FaceIterator;
+    auto end() const -> detail::FaceIterator;
+
+  private:
+    const std::vector<Face>& _faces;
+    const std::vector<std::size_t>& _boundary_faces_ids;
+};
+
+struct InteriorFaces {
+    InteriorFaces(const std::vector<Face>& faces,
+                  const std::vector<std::size_t>& interior_faces_ids);
+
+    auto begin() const -> detail::FaceIterator;
+    auto end() const -> detail::FaceIterator;
+
+  private:
+    const std::vector<Face>& _faces;
+    const std::vector<std::size_t>& _interior_faces_ids;
+};
+
 } // namespace detail
 
 class PMesh {
@@ -76,38 +101,8 @@ class PMesh {
 
     auto other_sharing_cell(const Cell& c, const Face& f) const -> const Cell&;
 
-    struct BoundaryFaces {
-        BoundaryFaces(const std::vector<Face>& faces,
-                      const std::vector<std::size_t>& boundary_faces_ids)
-            : _faces(faces), _boundary_faces_ids(boundary_faces_ids) {}
-
-        auto begin() const -> detail::FaceIterator { return {_faces, _boundary_faces_ids, 0}; }
-        auto end() const -> detail::FaceIterator {
-            return {_faces, _boundary_faces_ids, _boundary_faces_ids.size()};
-        }
-
-      private:
-        const std::vector<Face>& _faces;
-        const std::vector<std::size_t>& _boundary_faces_ids;
-    };
-
-    struct InteriorFaces {
-        InteriorFaces(const std::vector<Face>& faces,
-                      const std::vector<std::size_t>& interior_faces_ids)
-            : _faces(faces), _interior_faces_ids(interior_faces_ids) {}
-
-        auto begin() const -> detail::FaceIterator { return {_faces, _interior_faces_ids, 0}; }
-        auto end() const -> detail::FaceIterator {
-            return {_faces, _interior_faces_ids, _interior_faces_ids.size()};
-        }
-
-      private:
-        const std::vector<Face>& _faces;
-        const std::vector<std::size_t>& _interior_faces_ids;
-    };
-
-    auto boundary_faces() const -> BoundaryFaces { return {_faces, _boundary_faces_ids}; }
-    auto interior_faces() const -> InteriorFaces { return {_faces, _interior_faces_ids}; }
+    auto boundary_faces() const -> detail::BoundaryFaces { return {_faces, _boundary_faces_ids}; }
+    auto interior_faces() const -> detail::InteriorFaces { return {_faces, _interior_faces_ids}; }
 
   private:
     std::vector<Vector3d> _vertices;

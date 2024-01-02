@@ -27,7 +27,12 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
-    auto mesh = mesh::UnvToPMeshConverter(argv[1]).to_pmesh(); // NOLINT
+    const auto* unv_file_name = argv[1]; // NOLINT
+
+    // read mesh
+    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
+    fmt::print("Loading mesh file `{}`...", unv_file_name);
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto rho = field::Scalar("density", mesh, 1.18);
     auto U = field::Vector("velocity", mesh, Vector3d {0.05, 0.05, 0.0});
