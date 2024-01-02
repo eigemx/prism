@@ -38,6 +38,29 @@ auto FaceIterator::operator==(const FaceIterator& other) const -> bool {
 auto FaceIterator::operator!=(const FaceIterator& other) const -> bool {
     return !(*this == other);
 }
+
+BoundaryFaces::BoundaryFaces(const std::vector<Face>& faces,
+                             const std::vector<std::size_t>& boundary_faces_ids)
+    : _faces(faces), _boundary_faces_ids(boundary_faces_ids) {}
+
+auto BoundaryFaces::begin() const -> detail::FaceIterator {
+    return {_faces, _boundary_faces_ids, 0};
+}
+
+auto BoundaryFaces::end() const -> detail::FaceIterator {
+    return {_faces, _boundary_faces_ids, _boundary_faces_ids.size()};
+}
+
+InteriorFaces::InteriorFaces(const std::vector<Face>& faces,
+                             const std::vector<std::size_t>& interior_faces_ids)
+    : _faces(faces), _interior_faces_ids(interior_faces_ids) {}
+
+auto InteriorFaces::begin() const -> detail::FaceIterator {
+    return {_faces, _interior_faces_ids, 0};
+}
+auto InteriorFaces::end() const -> detail::FaceIterator {
+    return {_faces, _interior_faces_ids, _interior_faces_ids.size()};
+}
 } // namespace detail
 
 PMesh::PMesh(std::vector<Vector3d> vertices,

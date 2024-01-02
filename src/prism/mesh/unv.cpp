@@ -3,18 +3,22 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
 
 #include "boundary.h"
+#include "fmt/core.h"
 #include "prism/exceptions.h"
+#include "spdlog/spdlog.h"
 #include "unvpp/unvpp.h"
 
 // Vector of 6 quad faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T hfaces(6);
+    T hfaces;
+    hfaces.resize(6);
 
     hfaces[0] = {c[1], c[2], c[6], c[5]};
     hfaces[1] = {c[0], c[4], c[7], c[3]};
@@ -29,7 +33,8 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
 // Vector of 4 triangular faces
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T tfaces(4);
+    T tfaces;
+    tfaces.resize(4);
 
     tfaces[0] = {c[0], c[2], c[1]};
     tfaces[1] = {c[1], c[2], c[3]};
@@ -42,71 +47,75 @@ auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
 // Vector of 5 faces (3 quads & 2 triangels)
 template <typename T = std::vector<std::vector<std::size_t>>>
 auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T tfaces(5);
+    T wfaces;
+    wfaces.resize(5);
 
-    tfaces[0] = {c[0], c[2], c[1]};
-    tfaces[1] = {c[3], c[4], c[5]};
-    tfaces[2] = {c[0], c[1], c[4], c[3]};
-    tfaces[3] = {c[0], c[3], c[5], c[2]};
-    tfaces[4] = {c[1], c[2], c[5], c[4]};
+    wfaces[0] = {c[0], c[2], c[1]};
+    wfaces[1] = {c[3], c[4], c[5]};
+    wfaces[2] = {c[0], c[1], c[4], c[3]};
+    wfaces[3] = {c[0], c[3], c[5], c[2]};
+    wfaces[4] = {c[1], c[2], c[5], c[4]};
 
-    return tfaces;
+    return wfaces;
 }
 
 namespace prism::mesh {
-UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& filename)
-    : _filename(filename), unv_mesh(std::make_unique<unvpp::Mesh>(unvpp::read(filename))) {
+UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
+                                         const std::filesystem::path& boundary_path) {
+    _unv_mesh = std::make_unique<unvpp::Mesh>(unvpp::read(mesh_path));
+
     // check that mesh has non-zero vertices
-    if (unv_mesh->vertices().empty()) {
+    if (_unv_mesh->vertices().empty()) {
         throw error::InvalidMesh(fmt::format(
-            "UnvToPMeshConverter(): file {} has zero vertices, please check your mesh.",
-            filename.c_str()));
+            "UnvToPMeshConverter(): file `{}` has zero vertices, please check your mesh.",
+            mesh_path.c_str()));
     }
 
     // convert vertices to prism::Vector3d
-    for (const auto& v : unv_mesh->vertices()) {
+    for (const auto& v : _unv_mesh->vertices()) {
         _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
     }
 
-    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(unv_mesh->vertices().size());
+    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(_unv_mesh->vertices().size());
 
     process_cells();
     process_groups();
 
-    // clear unv_mesh to save memory
-    unv_mesh.release();
-}
-
-auto UnvToPMeshConverter::to_pmesh() -> PMesh {
-    // TODO: accept custom boundary file path as an argument
     std::vector<std::string_view> boundary_names;
 
     for (const auto& [name, _] : _boundary_name_to_faces_map) {
         boundary_names.push_back(name);
     }
 
-    // get parent directory from _filename
-    auto parent_dir = _filename.parent_path();
+    _boundary_patches = read_boundary_file(boundary_path, boundary_names);
 
-    // TODO: accept custom boundary file path as an argument
-    auto boundary_patches = read_boundary_file(parent_dir / "boundary.txt", boundary_names);
+    fmt::println("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
 
-    // for each boundary patch, set the faces that belong to it
-    std::size_t boundary_index {0};
-    for (auto& patch : boundary_patches) {
-        auto& faces_ids = _boundary_name_to_faces_map.at(patch.name());
+    // for each boundary patch, set the faces that belong to it, and make the patch aware of the
+    // ids of the faces it owns
+    std::size_t boundary_patch_id {0};
+    for (auto& patch : _boundary_patches) {
+        const auto& faces_ids = _boundary_name_to_faces_map[patch.name()];
 
         for (auto face_id : faces_ids) {
-            _faces[face_id].set_boundary_patch_id(boundary_index);
+            _faces[face_id].set_boundary_patch_id(boundary_patch_id);
         }
-        ++boundary_index;
+
+        patch.faces_ids() = faces_ids;
+        ++boundary_patch_id;
     }
 
-    // move all resources to PMesh constructor, UnvToPMeshConverter is no longer needed
+    // clear _unv_mesh to save memory
+    _unv_mesh.release();
+}
+
+auto UnvToPMeshConverter::to_pmesh() -> PMesh {
+    // TODO: This makes UnvToPMeshConverter usable only once, but the user is not aware (fix).
+    // move all resources to PMesh object, UnvToPMeshConverter is no longer needed
     return {std::move(_vertices),
             std::move(_cells),
             std::move(_faces),
-            std::move(boundary_patches),
+            std::move(_boundary_patches),
             std::move(_boundary_faces),
             std::move(_interior_faces)};
 }
@@ -114,7 +123,7 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
 void UnvToPMeshConverter::process_cells() {
     std::size_t unv_element_counter {0};
 
-    for (const auto& element : unv_mesh->elements().value()) {
+    for (const auto& element : _unv_mesh->elements().value()) {
         switch (element.type()) {
             // we don't care about lines
             case unvpp::ElementType::Line:
@@ -127,7 +136,8 @@ void UnvToPMeshConverter::process_cells() {
 
                 // we will need UNV id of this boundary face later when we process groups
                 _unv_id_to_bface_index_map[unv_element_counter] =
-                    // current face has a UNV id equals unv_element_counter, and not yet found in a group
+                    // current face has a UNV id equals unv_element_counter, and not yet found in
+                    // a group
                     std::make_pair(boundary_face_id, false);
                 break;
             }
@@ -140,7 +150,6 @@ void UnvToPMeshConverter::process_cells() {
                 break;
 
             // We shouldn't reach this, because we should've exhausted all possible element types
-            // but, you never know!
             default:
                 throw error::InvalidMesh(
                     "UnvToPMeshConverter::process_cells(): Input UNV mesh contains an "
@@ -148,12 +157,12 @@ void UnvToPMeshConverter::process_cells() {
                 break;
         }
 
-        unv_element_counter++;
+        ++unv_element_counter;
     }
 
     if (_cells.empty()) {
         throw error::InvalidMesh(
-            "UnvToPMeshConverter::process_cells(): Input UNV mesh is either empty or two "
+            "UnvToPMeshConverter::process_cells(): Input UNV mesh is either empty or flat two "
             "dimensional. Prism acceptes only 3D meshes");
     }
 }
@@ -260,8 +269,7 @@ auto UnvToPMeshConverter::process_boundary_face(const unvpp::Element& boundary_f
     auto sorted_face_vertices = boundary_face.vertices_ids();
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
 
-    // this a new face, we need to call Face() constructor
-    // and push the new face to `_faces` vector
+    // this a new face, we need to call Face() constructor and push the new face to `_faces`
     auto face_id = _face_id_counter++;
 
     std::vector<Vector3d> face_vertices;
@@ -273,7 +281,7 @@ auto UnvToPMeshConverter::process_boundary_face(const unvpp::Element& boundary_f
 
     auto new_face = Face(face_vertices, boundary_face.vertices_ids());
 
-    // this face does not yet have an owner, this will be set later by process_face()
+    // this face does not yet have an owner, its owner will be set later by process_face()
     new_face.id() = face_id;
     _faces.emplace_back(std::move(new_face));
     _faces_lookup_trie->insert(sorted_face_vertices, face_id);
@@ -291,16 +299,17 @@ auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertic
 }
 
 void UnvToPMeshConverter::process_groups() {
-    if (!unv_mesh->groups()) {
+    if (!_unv_mesh->groups()) {
         throw error::InvalidMesh(
             "UnvToPMeshConverter::process_groups(): Input UNV mesh has no groups (boundary "
             "patches)!");
     }
 
-    for (const auto& group : unv_mesh->groups().value()) {
+    for (const auto& group : _unv_mesh->groups().value()) {
         if (group.type() == unvpp::GroupType::Vertex) {
             continue;
         }
+
         const auto& unique_types = group.unique_element_types();
 
         bool group_dimension_error = false;
@@ -321,8 +330,7 @@ void UnvToPMeshConverter::process_groups() {
         if (group_dimension_error) {
             throw error::InvalidMesh(
                 "UnvToPMeshConverter::process_groups(): Input UNV contains boundary patches with "
-                "non-face type elements. Prism supports only boundary patches with "
-                "two-dimensional elements.");
+                "non-face type elements (cell zones). Prism supports only single-zone meshes.");
         }
 
         // process the group
@@ -333,14 +341,17 @@ void UnvToPMeshConverter::process_groups() {
 }
 
 void UnvToPMeshConverter::process_group(const unvpp::Group& group) {
-    auto group_faces = std::vector<std::size_t>();
+    assert(group.elements_ids().size > 0 &&
+           "UnvToPMeshConverter::process_group() cannot handle an empty group");
+    std::vector<std::size_t> group_faces;
     group_faces.reserve(group.elements_ids().size());
 
-    // copy the group elements ids to group_faces after transforming them using _unv_id_to_bface_index_map
-    for (const auto& element_id : group.elements_ids()) {
-        auto& face_data = _unv_id_to_bface_index_map[element_id];
-        group_faces.push_back(face_data.first);
-        face_data.second = true;
+    // copy the group elements ids to group_faces after transforming them using
+    // _unv_id_to_bface_index_map
+    for (const auto element_id : group.elements_ids()) {
+        auto& [face_index, is_contained_in_patch] = _unv_id_to_bface_index_map[element_id];
+        group_faces.push_back(face_index);
+        is_contained_in_patch = true;
     }
 
     _boundary_name_to_faces_map.insert({group.name(), std::move(group_faces)});

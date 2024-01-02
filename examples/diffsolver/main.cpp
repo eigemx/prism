@@ -27,10 +27,12 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
+    auto unv_file_name = args[1];
+
     // read mesh
-    fmt::print("Loading mesh file {}...", args[1]);
-    auto mesh = mesh::UnvToPMeshConverter(args[1]).to_pmesh();
-    fmt::println("Okay.");
+    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
+    fmt::print("Loading mesh file `{}`...", unv_file_name);
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = field::Scalar("temperature", mesh, 300.0);
