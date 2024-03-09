@@ -30,13 +30,13 @@ namespace prism::mesh {
  */
 enum class BoundaryConditionKind {
     Fixed,
-    Inlet,
+    VelocityInlet,
     Outlet,
     Symmetry,
     Empty,
     FixedGradient,
-    Slip,
-    NonSlip,
+    SlipWall,
+    NonSlipWall,
     Unknown, // for error handling
 };
 

@@ -117,7 +117,7 @@ auto inline AbstractGradient::gradient_at_boundary_face(const mesh::Face& face) 
             return {0.0, 0.0, 0.0};
         }
 
-        case mesh::BoundaryConditionKind::Inlet:
+        case mesh::BoundaryConditionKind::VelocityInlet:
         case mesh::BoundaryConditionKind::Fixed: {
             const auto& owner = _field.mesh().cell(face.owner());
             Vector3d e = face.center() - owner.center();

@@ -1,8 +1,9 @@
-// TODO: boundary file reading results in segmenation fault in case boundary file is not as per the
-// expected format.
+// TODO: boundary file reading results in segmenation fault in case boundary file is not as per
+// the expected format.
 #include "boundary.h"
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include <toml++/toml.h>
 
 #include <stdexcept>
@@ -27,16 +28,19 @@ auto is_component_field(const std::string& name) -> bool;
 auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionKind {
     const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryConditionKind> {
         {"fixed", BoundaryConditionKind::Fixed},
-        {"inlet", BoundaryConditionKind::Inlet},
+        // TODO: Should this ve velocityInlet?
+        {"inlet", BoundaryConditionKind::VelocityInlet},
         {"outlet", BoundaryConditionKind::Outlet},
         {"gradient", BoundaryConditionKind::FixedGradient},
         {"symmetry", BoundaryConditionKind::Symmetry},
         {"empty", BoundaryConditionKind::Empty},
+        // TODO: Implement remaining boundary condition kinds
     };
 
     auto it = bc_type_map.find(type);
 
     if (it == bc_type_map.end()) {
+        spdlog::warn("Boundary conditions file contains an unknown boundary patch type {}", type);
         return BoundaryConditionKind::Unknown;
     }
 
@@ -97,7 +101,7 @@ auto parse_field_boundary_condition(const toml::table& table,
 
     if (!field_table.contains("type")) {
         throw std::runtime_error(
-            fmt::format("boundary.cpp parse_field_boundary_condition(): "
+            fmt::format("mesh/boundary.cpp::parse_field_boundary_condition(): "
                         "Boundary patch '{}' field '{}' does not have a type or value.",
                         patch_name,
                         field_name));
@@ -127,7 +131,7 @@ auto parse_field_boundary_condition(const toml::table& table,
 
         if (array->size() != 3) {
             throw std::runtime_error(
-                fmt::format("boundary.cpp parse_field_boundary_condition(): "
+                fmt::format("mesh/boundary.cpp::parse_field_boundary_condition(): "
                             "Array value for field '{}' for patch '{}' is not a 3D vector",
                             field_name,
                             patch_name));
@@ -144,7 +148,7 @@ auto parse_field_boundary_condition(const toml::table& table,
     }
 
     throw std::runtime_error(
-        fmt::format("boundary.cpp parse_field_boundary_condition(): "
+        fmt::format("mesh/boundary.cpp::parse_field_boundary_condition(): "
                     "Boundary patch '{}' field '{}' has an invalid type or value.",
                     patch_name,
                     field_name));
@@ -226,7 +230,7 @@ auto BoundaryPatch::get_bc(const std::string& field_name) const -> const Boundar
     if (it == _field_name_to_bc_map.end()) {
         // field not found
         throw std::runtime_error(
-            fmt::format("BoundaryPatch::get_bc(): "
+            fmt::format("mesh/boundary.cpp::BoundaryPatch::get_bc(): "
                         "Boundary patch '{}' does not have a field named '{}'",
                         _name,
                         field_name));
