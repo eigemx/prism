@@ -151,7 +151,7 @@ auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
 
     switch (bc.kind()) {
         case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::Inlet: {
+        case mesh::BoundaryConditionKind::VelocityInlet: {
             return patch.get_scalar_bc(name());
         }
 

@@ -84,7 +84,7 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
         }
 
         case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::Inlet:
+        case mesh::BoundaryConditionKind::VelocityInlet:
         case mesh::BoundaryConditionKind::FixedGradient: {
             auto phi = _field.value_at_face(face);
             return phi * face.area_vector();

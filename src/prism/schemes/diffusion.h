@@ -194,8 +194,9 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face
      * @param cell The cell that owns the boundary face.
      * @param face The boundary face.
      */
-    const auto& owner = _phi.mesh().cell(face.owner());
-    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
+    const auto& mesh = _phi.mesh();
+    const auto& owner = mesh.cell(face.owner());
+    const auto& boundary_patch = mesh.face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
 
     switch (boundary_condition.kind()) {
@@ -206,7 +207,7 @@ void AbstractDiffusion<NonOrthoCorrector>::apply_boundary(const mesh::Face& face
 
         // fixed boundary patch, or Dirichlet boundary condition
         case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::Inlet: {
+        case mesh::BoundaryConditionKind::VelocityInlet: {
             apply_boundary_fixed(owner, face);
             return;
         }

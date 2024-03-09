@@ -1,5 +1,6 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -13,6 +14,8 @@
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
+    spdlog::set_level(spdlog::level::level_enum::debug);
+
 
     fmt::println("convsolver - A steady state temperature advection solver");
 

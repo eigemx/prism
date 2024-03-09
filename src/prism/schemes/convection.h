@@ -189,7 +189,7 @@ void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
         }
 
         case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::Inlet: {
+        case mesh::BoundaryConditionKind::VelocityInlet: {
             apply_boundary_fixed(owner, face);
             return;
         }
