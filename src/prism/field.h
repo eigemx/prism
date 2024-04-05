@@ -62,9 +62,9 @@ AbstractField<CellValueType>::AbstractField(std::string name, const mesh::PMesh&
 }
 
 
-class Uniform : public AbstractField<double> {
+class UniformScalar : public AbstractField<double> {
   public:
-    Uniform(std::string name, const mesh::PMesh& mesh, double value);
+    UniformScalar(std::string name, const mesh::PMesh& mesh, double value);
 
     auto value_at_cell(std::size_t cell_id) const -> double override;
     auto value_at_cell(const mesh::Cell& cell) const -> double override;

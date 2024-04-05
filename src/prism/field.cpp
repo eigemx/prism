@@ -18,25 +18,25 @@
 
 namespace prism::field {
 
-Uniform::Uniform(std::string name, const mesh::PMesh& mesh, double value)
+UniformScalar::UniformScalar(std::string name, const mesh::PMesh& mesh, double value)
     : AbstractField(std::move(name), mesh), _value(value) {
     spdlog::debug(
         "Creating uniform scalar field: '{}' with double value = {}", this->name(), value);
 }
 
-auto Uniform::value_at_cell(std::size_t cell_id) const -> double { // NOLINT
+auto UniformScalar::value_at_cell(std::size_t cell_id) const -> double { // NOLINT
     return _value;
 }
 
-auto Uniform::value_at_cell(const mesh::Cell& cell) const -> double { // NOLINT
+auto UniformScalar::value_at_cell(const mesh::Cell& cell) const -> double { // NOLINT
     return _value;
 }
 
-auto Uniform::value_at_face(std::size_t face_id) const -> double { // NOLINT
+auto UniformScalar::value_at_face(std::size_t face_id) const -> double { // NOLINT
     return _value;
 }
 
-auto Uniform::value_at_face(const mesh::Face& face) const -> double { // NOLINT
+auto UniformScalar::value_at_face(const mesh::Face& face) const -> double { // NOLINT
     return _value;
 }
 
