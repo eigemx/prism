@@ -13,7 +13,7 @@ enum class SourceSign { Positive, Negative };
 
 class AbstractSource {};
 class AbstractImplicitSource : public AbstractSource {};
-class AbstractExplicitSource : public AbstractSource, public FVScheme {
+class AbstractExplicitSource : public AbstractSource, public FVScheme<field::Scalar> {
   public:
     AbstractExplicitSource(std::size_t n_cells);
     auto requires_correction() const -> bool final { return false; }
@@ -80,7 +80,7 @@ class Laplacian : public AbstractExplicitSource {
 
 // TODO: Test this!
 template <SourceSign Sign = SourceSign::Positive>
-class Field : public FVScheme, public AbstractImplicitSource {
+class Field : public FVScheme<field::Scalar>, public AbstractImplicitSource {
   public:
     Field(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
     void apply() override;

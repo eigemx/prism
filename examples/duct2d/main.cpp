@@ -1,5 +1,4 @@
 #include "fmt/core.h"
-#include "prism/boundary/fixed.h"
 #include "prism/constants.h"
 #include "prism/equation.h"
 #include "prism/field.h"

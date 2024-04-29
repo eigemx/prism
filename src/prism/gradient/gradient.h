@@ -14,6 +14,7 @@
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
 #include "prism/types.h"
+#include "spdlog/spdlog.h"
 
 
 namespace prism::gradient {

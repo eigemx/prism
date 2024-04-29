@@ -17,7 +17,6 @@ add_library(prism
     # gradient
     gradient/green_gauss.cpp
     gradient/least_squares.cpp
-    numerics/relax.cpp
 
     # schemes
     schemes/backward_euler.cpp

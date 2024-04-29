@@ -40,6 +40,6 @@ ExperimentalAutoDetectBinPacking: false
 
 # If false, a function call’s arguments will either be all on the same line or will have one line each.
 BinPackArguments: false
-# If false, a function call’s arguments will either be all
+# If false, a function call’s parameters will either be all
 # on the same line or will have one line each.
 BinPackParameters: false
