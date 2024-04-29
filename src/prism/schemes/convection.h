@@ -29,7 +29,7 @@ auto inline face_mass_flow_rate(double rho, const prism::Vector3d& U, const pris
 
 // Finite volume scheme for the discretization of the convection term
 template <typename GradScheme = gradient::LeastSquares>
-class AbstractConvection : public FVScheme {
+class AbstractConvection : public FVScheme<field::Scalar> {
   public:
     AbstractConvection(field::Scalar rho, field::Vector U, field::Scalar phi);
     void apply() override;

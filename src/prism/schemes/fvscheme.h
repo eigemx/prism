@@ -9,6 +9,7 @@
 
 namespace prism {
 
+template <typename Field>
 class FVScheme : public LinearSystem {
   public:
     FVScheme(std::size_t n_cells, bool need_matrix = true) : LinearSystem(n_cells, need_matrix) {}
@@ -26,11 +27,12 @@ class FVScheme : public LinearSystem {
     // return the transport ScalarField, if not, such as the cases of a constant source term
     // where there is no contribution to the main matrix, then this method should return
     // a null option (the base class FVScheme implements this as the default case)
-    virtual auto field() -> std::optional<field::Scalar> { return std::nullopt; }
+    virtual auto field() -> std::optional<Field> { return std::nullopt; }
 
     auto name() const -> const std::string& { return _name; }
 
   private:
+    // TODO: remove apply boundary
     virtual void apply_interior(const mesh::Face& face) = 0;
     virtual void apply_boundary(const mesh::Face& face) = 0;
 

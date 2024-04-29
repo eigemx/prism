@@ -4,8 +4,10 @@
 #include <vector>
 
 #include "fmt/core.h"
+#include "prism/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/nonortho/nonortho.h"
+#include "prism/schemes/diffusion.h"
 #include "prism/schemes/source.h"
 #include "spdlog/common.h"
 #include "spdlog/spdlog.h"
@@ -50,12 +52,13 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
+    auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
     auto eqn =
-        TransportEquation(diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-5, T),
-                          source::ConstantScalar(S));
+        TransportEquation(diffusion::NonCorrectedDiffusion(kappa, T), source::ConstantScalar(S));
 
     // solve
-    auto solver = solver::BiCGSTAB<solver::ImplicitUnderRelaxation>();
+    auto solver =
+        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
     solver.solve(eqn, 100, 1e-5, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");

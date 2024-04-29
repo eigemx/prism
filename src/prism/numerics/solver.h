@@ -18,37 +18,41 @@ struct IterationStepData {
 
 // TODO: solve() should return each time an iteraion is finished (with the current residual),
 // until convergence. And any consecutive call to solve() after convergence shall have no effect
+template <typename Field>
 class AbstractSolver {
   public:
-    virtual void solve(TransportEquation& eq, std::size_t n_iter, double eps, double lambda) = 0;
+    virtual void solve(TransportEquation<Field>& eq,
+                       std::size_t n_iter,
+                       double eps,
+                       double lambda) = 0;
     // virtual auto step(Equation& eq, double eps, double lambda) -> IterationStepData = 0;
 };
 
-template <typename Relaxer = ImplicitUnderRelaxation>
-class BiCGSTAB : public AbstractSolver {
+template <typename Field, typename Relaxer>
+class BiCGSTAB : public AbstractSolver<Field> {
   public:
-    void solve(TransportEquation& eq,
+    void solve(TransportEquation<Field>& eq,
                std::size_t n_iter = 1000, // number of iterations
                double eps = 1e-4,         // convergence criteria
                double lambda = 1.0        // under-relaxation factor
                ) override;
 };
 
-template <typename Relaxer = ImplicitUnderRelaxation>
-class GaussSeidel : public AbstractSolver {
+template <typename Field, typename Relaxer>
+class GaussSeidel : public AbstractSolver<Field> {
   public:
-    void solve(TransportEquation& eq,
+    void solve(TransportEquation<Field>& eq,
                std::size_t n_iter = 1000, // number of iterations
                double eps = 1e-4,         // convergence criteria
                double lambda = 1.0        // under-relaxation factor
                ) override;
 };
 
-template <typename Relaxer>
-void BiCGSTAB<Relaxer>::solve(TransportEquation& eqn,
-                              std::size_t n_iter,
-                              double eps,
-                              double lambda) {
+template <typename Field, typename Relaxer>
+void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
+                                     std::size_t n_iter,
+                                     double eps,
+                                     double lambda) {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
 
@@ -85,11 +89,11 @@ void BiCGSTAB<Relaxer>::solve(TransportEquation& eqn,
     }
 }
 
-template <typename Relaxer>
-void GaussSeidel<Relaxer>::solve(TransportEquation& eqn,
-                                 std::size_t n_iter,
-                                 double eps,
-                                 double lambda) {
+template <typename Field, typename Relaxer>
+void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
+                                        std::size_t n_iter,
+                                        double eps,
+                                        double lambda) {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
 

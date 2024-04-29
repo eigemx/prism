@@ -1,11 +1,12 @@
 #pragma once
 
 #include "fvscheme.h"
+#include "prism/field.h"
 
 namespace prism::transient {
 class AbstractTransientScheme {};
 
-class BackwardEuler : public FVScheme, public AbstractTransientScheme {
+class BackwardEuler : public FVScheme<field::Scalar>, public AbstractTransientScheme {
   public:
     BackwardEuler(field::Scalar& rho, field::Scalar& phi, double dt);
 

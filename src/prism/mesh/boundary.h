@@ -35,9 +35,9 @@ enum class BoundaryConditionKind {
     Symmetry,
     Empty,
     FixedGradient,
-    SlipWall,
-    NonSlipWall,
-    Unknown, // for error handling
+    SlipWall,    // TODO: remove, keep it simple.
+    NonSlipWall, // TODO: remove, keep it simple.
+    Unknown,     // for error handling
 };
 
 /** @brief Enum class for boundary condition value types
