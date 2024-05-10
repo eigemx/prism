@@ -19,8 +19,12 @@
 #include "spdlog/spdlog.h"
 
 namespace prism::diffusion {
+//
 // forward declarations
-class AbstractDiffusion;
+//
+
+// Abstract base for diffusion schemes
+class IDiffusion;
 
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
 class CorrectedDiffusion;
@@ -52,23 +56,17 @@ class Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
 // side of the equation, or the matrix coefficients, and no need for non-orthogonal correction.
 // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph, and
 // paragraph 8.6.8.2 - Chapter 8 in same reference.
-template <typename K, typename N, typename G>
-class Symmetry<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
-    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
-  public:
-    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
-               const mesh::BoundaryPatch& patch) const override {}
+template <>
+class Symmetry<diffusion::IDiffusion> : public FVSchemeBoundaryHandler<diffusion::IDiffusion> {
+    void apply(diffusion::IDiffusion& scheme, const mesh::BoundaryPatch& patch) const override {}
     auto inline name() const -> std::string override { return "symmetry"; }
 };
 
 // We treat outlet boundary condition in diffusion scheme same as symmetry (zero gradient of the
 // conserved scalar field)
-template <typename K, typename N, typename G>
-class Outlet<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
-    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
-  public:
-    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
-               const mesh::BoundaryPatch& patch) const override {}
+template <>
+class Outlet<diffusion::IDiffusion> : public FVSchemeBoundaryHandler<diffusion::IDiffusion> {
+    void apply(diffusion::IDiffusion& scheme, const mesh::BoundaryPatch& patch) const override {}
     auto inline name() const -> std::string override { return "outlet"; }
 };
 
@@ -123,16 +121,15 @@ class FixedGradient<diffusion::NonCorrectedDiffusion<K, field::Scalar>>
 
 } // namespace prism::boundary
 
-// TODO: Implement NonCorrectedDiffusion
 namespace prism::diffusion {
 
-class AbstractDiffusion {};
+class IDiffusion {};
 
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
           typename GradScheme = gradient::LeastSquares,
           typename Field = field::Scalar>
-class CorrectedDiffusion : public AbstractDiffusion, public FVScheme<Field> {
+class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
   public:
     CorrectedDiffusion(KappaType kappa, Field phi);
 
@@ -160,7 +157,7 @@ class CorrectedDiffusion : public AbstractDiffusion, public FVScheme<Field> {
 };
 
 template <typename KappaType = field::UniformScalar, typename Field = field::Scalar>
-class NonCorrectedDiffusion : public AbstractDiffusion, public FVScheme<Field> {
+class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
   public:
     NonCorrectedDiffusion(KappaType kappa, field::Scalar phi);
 
@@ -191,8 +188,6 @@ CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::CorrectedDi
     KappaType kappa,
     Field phi)
     : _phi(phi), FVScheme<Field>(phi.mesh().n_cells()), _kappa(kappa), _grad_scheme(phi) {
-    // default implementation of FVScheme::requires_correction should return true, let's make sure
-    // it does.
     assert(this->requires_correction() == true &&
            "CorrectedDiffusion::requires_correction() must return true");
 
