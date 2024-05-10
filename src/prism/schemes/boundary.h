@@ -12,8 +12,6 @@
 
 namespace prism::boundary {
 
-// To avoid using template parameters "Scheme" and "Field" later when used in BoundaryManager
-// class implementation.
 class AbstractBoundaryHandler {
   public:
     AbstractBoundaryHandler() = default;

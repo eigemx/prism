@@ -9,12 +9,61 @@
 #include "prism/exceptions.h"
 #include "prism/field.h"
 #include "prism/gradient/gradient.h"
+#include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
+#include "prism/schemes/boundary.h"
+#include "prism/types.h"
 
 
 namespace prism::convection {
+// forward declarations
+template <typename GradScheme>
+class IConvection;
+} // namespace prism::convection
+
+namespace prism::boundary {
+template <typename G>
+class Fixed<convection::IConvection<G>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
+  public:
+    void apply(convection::IConvection<G>& scheme,
+               const mesh::BoundaryPatch& patch) const override;
+    auto inline name() const -> std::string override { return "fixed"; }
+};
+
+template <typename G>
+class Empty<convection::IConvection<G>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
+  public:
+    void apply(convection::IConvection<G>& scheme,
+               const mesh::BoundaryPatch& patch) const override {}
+    auto inline name() const -> std::string override { return "empty"; }
+};
+
+template <typename G>
+class Symmetry<convection::IConvection<G>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
+  public:
+    void apply(convection::IConvection<G>& scheme,
+               const mesh::BoundaryPatch& patch) const override {}
+    auto inline name() const -> std::string override { return "symmetry"; }
+};
+
+template <typename G>
+class Outlet<convection::IConvection<G>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
+  public:
+    void apply(convection::IConvection<G>& scheme,
+               const mesh::BoundaryPatch& patch) const override;
+    auto inline name() const -> std::string override { return "outlet"; }
+};
+} // namespace prism::boundary
+
+namespace prism::convection {
+
+namespace detail {
 // coefficients for the discretized convection equation for a face
 struct CoeffsTriplet {
     double a_C {}; // cell
@@ -22,18 +71,22 @@ struct CoeffsTriplet {
     double b {};   // source
 };
 
-auto inline face_mass_flow_rate(double rho, const prism::Vector3d& U, const prism::Vector3d& S)
-    -> double {
+auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S) -> double {
     return rho * U.dot(S);
 }
+} // namespace detail
+
 
 // Finite volume scheme for the discretization of the convection term
 template <typename GradScheme = gradient::LeastSquares>
-class AbstractConvection : public FVScheme<field::Scalar> {
+class IConvection : public FVScheme<field::Scalar> {
   public:
-    AbstractConvection(field::Scalar rho, field::Vector U, field::Scalar phi);
+    IConvection(field::Scalar rho, field::Vector U, field::Scalar phi);
     void apply() override;
     auto inline field() -> std::optional<field::Scalar> override { return _phi; }
+
+    using BCManager = boundary::BoundaryHandlersManager<IConvection<GradScheme>>;
+    auto bc_manager() -> BCManager&;
 
   protected:
     auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
@@ -43,7 +96,7 @@ class AbstractConvection : public FVScheme<field::Scalar> {
     virtual auto interpolate(double m_dot,
                              const mesh::Cell& cell,
                              const mesh::Cell& neighbor,
-                             const mesh::Face& face) -> CoeffsTriplet = 0;
+                             const mesh::Face& face) -> detail::CoeffsTriplet = 0;
 
     void apply_interior(const mesh::Face& face) override;
     void apply_boundary(const mesh::Face& face) override;
@@ -56,69 +109,68 @@ class AbstractConvection : public FVScheme<field::Scalar> {
     GradScheme _gradient_scheme;
 
     std::size_t _n_reverse_flow_faces {0};
+    BCManager _bc_manager;
 };
 
 // Central difference scheme
 template <typename G = gradient::LeastSquares>
-class CentralDifference : public AbstractConvection<G> {
+class CentralDifference : public IConvection<G> {
   public:
     CentralDifference(field::Scalar& rho, field::Vector& U, field::Scalar& phi)
-        : AbstractConvection<G>(rho, U, phi) {}
+        : IConvection<G>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> CoeffsTriplet override;
+                     const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
 
 
 // Upwind scheme
 template <typename G = gradient::LeastSquares>
-class Upwind : public AbstractConvection<G> {
+class Upwind : public IConvection<G> {
   public:
-    Upwind(field::Scalar rho, field::Vector U, field::Scalar phi)
-        : AbstractConvection<G>(rho, U, phi) {}
+    Upwind(field::Scalar rho, field::Vector U, field::Scalar phi) : IConvection<G>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> CoeffsTriplet override;
+                     const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
 
 
 // Second order upwind scheme
 template <typename G = gradient::LeastSquares>
-class SecondOrderUpwind : public AbstractConvection<G> {
+class SecondOrderUpwind : public IConvection<G> {
   public:
     SecondOrderUpwind(field::Scalar rho, field::Vector U, field::Scalar phi)
-        : AbstractConvection<G>(rho, U, phi) {}
+        : IConvection<G>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> CoeffsTriplet override;
+                     const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
 
 
 // QUICK scheme
 template <typename G = gradient::LeastSquares>
-class QUICK : public AbstractConvection<G> {
+class QUICK : public IConvection<G> {
   public:
-    QUICK(field::Scalar rho, field::Vector U, field::Scalar phi)
-        : AbstractConvection<G>(rho, U, phi) {}
+    QUICK(field::Scalar rho, field::Vector U, field::Scalar phi) : IConvection<G>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> CoeffsTriplet override;
+                     const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
 
 template <typename G>
-AbstractConvection<G>::AbstractConvection(field::Scalar rho, field::Vector U, field::Scalar phi)
+IConvection<G>::IConvection(field::Scalar rho, field::Vector U, field::Scalar phi)
     : _rho(std::move(rho)),
       _U(std::move(U)),
       _phi(phi),
@@ -126,7 +178,7 @@ AbstractConvection<G>::AbstractConvection(field::Scalar rho, field::Vector U, fi
       FVScheme(phi.mesh().n_cells()) {}
 
 template <typename G>
-void AbstractConvection<G>::apply() {
+void IConvection<G>::apply() {
     _n_reverse_flow_faces = 0;
 
     for (const auto& bface : _phi.mesh().boundary_faces()) {
@@ -150,7 +202,7 @@ void AbstractConvection<G>::apply() {
 }
 
 template <typename G>
-void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
+void IConvection<G>::apply_interior(const mesh::Face& face) {
     const mesh::Cell& owner = _phi.mesh().cell(face.owner());
     const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
 
@@ -161,7 +213,7 @@ void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
 
     const Vector3d U_f = _U.value_at_face(face);
     const double rho_f = _rho.value_at_face(face);
-    const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+    const double m_dot_f = detail::face_mass_flow_rate(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
@@ -177,7 +229,7 @@ void AbstractConvection<G>::apply_interior(const mesh::Face& face) {
 }
 
 template <typename G>
-void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
+void IConvection<G>::apply_boundary(const mesh::Face& face) {
     const mesh::Cell& owner = _phi.mesh().cell(face.owner());
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
@@ -209,7 +261,7 @@ void AbstractConvection<G>::apply_boundary(const mesh::Face& face) {
 }
 
 template <typename G>
-void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
+void IConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
     const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
     const double phi_wall = boundary_patch.get_scalar_bc(_phi.name());
 
@@ -218,7 +270,7 @@ void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const m
 
     // TODO: check if this is correct
     const double rho_f = _rho.value_at_cell(cell);
-    const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+    const double m_dot_f = detail::face_mass_flow_rate(rho_f, U_f, S_f);
 
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
@@ -230,8 +282,7 @@ void AbstractConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const m
 }
 
 template <typename G>
-void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
-                                                  const mesh::Face& face) {
+void IConvection<G>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
     const std::size_t cell_id = cell.id();
 
     // face area vector
@@ -240,7 +291,7 @@ void AbstractConvection<G>::apply_boundary_outlet(const mesh::Cell& cell,
     // use owner cell velocity as the velocity at the outlet face centroid
     const Vector3d U_f = _U.value_at_face(face);
     const double rho_f = _rho.value_at_cell(cell);
-    const double m_dot_f = face_mass_flow_rate(rho_f, U_f, S_f);
+    const double m_dot_f = detail::face_mass_flow_rate(rho_f, U_f, S_f);
 
     if (m_dot_f < 0.0) {
         n_reverse_flow_faces()++;
@@ -256,7 +307,7 @@ template <typename G>
 auto CentralDifference<G>::interpolate(double m_dot,
                                        const mesh::Cell& cell,
                                        const mesh::Cell& neighbor,
-                                       const mesh::Face& face) -> CoeffsTriplet {
+                                       const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
     const Vector3d d_Cf = face.center() - cell.center();
@@ -276,7 +327,7 @@ auto Upwind<G>::interpolate(double m_dot,
                             const mesh::Cell& cell,     // NOLINT
                             const mesh::Cell& neighbor, // NOLINT
                             const mesh::Face& face)     // NOLINT
-    -> CoeffsTriplet {
+    -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const double a_C = std::max(m_dot, 0.0);
     // in case 'neighbor' is the upstream cell
@@ -289,7 +340,7 @@ template <typename G>
 auto SecondOrderUpwind<G>::interpolate(double m_dot,
                                        const mesh::Cell& cell,
                                        const mesh::Cell& neighbor,
-                                       const mesh::Face& face) -> CoeffsTriplet {
+                                       const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
     const Vector3d cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
@@ -317,7 +368,7 @@ template <typename G>
 auto QUICK<G>::interpolate(double m_dot,
                            const mesh::Cell& cell,
                            const mesh::Cell& neighbor,
-                           const mesh::Face& face) -> CoeffsTriplet {
+                           const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
     const Vector3d cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);

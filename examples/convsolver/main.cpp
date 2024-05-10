@@ -61,22 +61,20 @@ auto main(int argc, char* argv[]) -> int {
     // A zero field, just to demonstrate how to add arbitray constant source terms
     auto useLessField = field::Scalar("zero", mesh, 0.0);
 
-    // diffusion coefficient can be double, Matrix3d, or a TensorField, we just need to set the
-    // template parameter of Diffusion class when calling the constructor.
-    // we will make it a matrix just for demonstration
-    Matrix3d kappa = Matrix3d::Identity() * 1e-2;
+    auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = TransportEquation(
-        convection::SecondOrderUpwind(rho, U, T),                         // ∇.(ρUT)
-        diffusion::Diffusion<Matrix3d, nonortho::NilCorrector>(kappa, T), // - ∇.(κ ∇T)
-        source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
+        convection::SecondOrderUpwind(rho, U, T),   // ∇.(ρUT)
+        diffusion::NonCorrectedDiffusion(kappa, T), // - ∇.(κ ∇T)
+        source::ConstantScalar(useLessField)        // S (sources are always added to the RHS)
     );
 
     // solve
-    auto solver = solver::BiCGSTAB();
-    solver.solve(eqn, 2000, 1e-3);
+    auto solver =
+        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    solver.solve(eqn, 100, 1e-5, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 
