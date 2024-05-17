@@ -34,21 +34,9 @@ class NonCorrectedDiffusion;
 } // namespace prism::diffusion
 
 namespace prism::boundary {
-
 //
-// CorrectedDiffusion default boundary handlers
+// Symmetry and Outlet boundary handlers for general IDiffusion based schemes.
 //
-
-// Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion with a conserved
-// general scalar field (for example: velocity component or temperature).
-template <typename K, typename N, typename G>
-class Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
-    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
-  public:
-    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
-               const mesh::BoundaryPatch& patch) const override;
-    auto inline name() const -> std::string override { return "fixed"; }
-};
 
 // Boundary handler for symmetry boundary condition, or zero gradient boundary condition. This is
 // a special case of the general Neumann boundary condition, where the gradient of the field is
@@ -68,6 +56,20 @@ template <>
 class Outlet<diffusion::IDiffusion> : public FVSchemeBoundaryHandler<diffusion::IDiffusion> {
     void apply(diffusion::IDiffusion& scheme, const mesh::BoundaryPatch& patch) const override {}
     auto inline name() const -> std::string override { return "outlet"; }
+};
+//
+// CorrectedDiffusion default boundary handlers
+//
+
+// Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion with a conserved
+// general scalar field (for example: velocity component or temperature).
+template <typename K, typename N, typename G>
+class Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
+    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
+  public:
+    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
+               const mesh::BoundaryPatch& patch) const override;
+    auto inline name() const -> std::string override { return "fixed"; }
 };
 
 // general Von Neumann boundary condition, or fixed gradient boundary condition.

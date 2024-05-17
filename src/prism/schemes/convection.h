@@ -58,6 +58,9 @@ class Outlet<convection::IConvection<G>>
     void apply(convection::IConvection<G>& scheme,
                const mesh::BoundaryPatch& patch) const override;
     auto inline name() const -> std::string override { return "outlet"; }
+
+  private:
+    std::size_t _n_reverse_flow_faces {0};
 };
 } // namespace prism::boundary
 
@@ -75,7 +78,6 @@ auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S
     return rho * U.dot(S);
 }
 } // namespace detail
-
 
 // Finite volume scheme for the discretization of the convection term
 template <typename GradScheme = gradient::LeastSquares>
