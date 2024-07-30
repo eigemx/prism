@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstddef>
 
+#include "convection_boundary.h"
 #include "fvscheme.h"
 #include "prism/exceptions.h"
 #include "prism/field.h"
@@ -14,55 +15,8 @@
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
 #include "prism/schemes/boundary.h"
+#include "prism/schemes/diffusion.h"
 #include "prism/types.h"
-
-
-namespace prism::convection {
-// forward declarations
-template <typename GradScheme>
-class IConvection;
-} // namespace prism::convection
-
-namespace prism::boundary {
-template <typename G>
-class Fixed<convection::IConvection<G>>
-    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
-  public:
-    void apply(convection::IConvection<G>& scheme,
-               const mesh::BoundaryPatch& patch) const override;
-    auto inline name() const -> std::string override { return "fixed"; }
-};
-
-template <typename G>
-class Empty<convection::IConvection<G>>
-    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
-  public:
-    void apply(convection::IConvection<G>& scheme,
-               const mesh::BoundaryPatch& patch) const override {}
-    auto inline name() const -> std::string override { return "empty"; }
-};
-
-template <typename G>
-class Symmetry<convection::IConvection<G>>
-    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
-  public:
-    void apply(convection::IConvection<G>& scheme,
-               const mesh::BoundaryPatch& patch) const override {}
-    auto inline name() const -> std::string override { return "symmetry"; }
-};
-
-template <typename G>
-class Outlet<convection::IConvection<G>>
-    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
-  public:
-    void apply(convection::IConvection<G>& scheme,
-               const mesh::BoundaryPatch& patch) const override;
-    auto inline name() const -> std::string override { return "outlet"; }
-
-  private:
-    std::size_t _n_reverse_flow_faces {0};
-};
-} // namespace prism::boundary
 
 namespace prism::convection {
 
@@ -73,11 +27,6 @@ struct CoeffsTriplet {
     double a_N {}; // neighbor
     double b {};   // source
 };
-
-auto inline face_mdot(double rho, const Vector3d& U, const Vector3d& S) -> double {
-    // face mass flow rate
-    return rho * U.dot(S);
-}
 } // namespace detail
 
 // Finite volume scheme for the discretization of the convection term
@@ -85,11 +34,15 @@ template <typename GradScheme = gradient::LeastSquares>
 class IConvection : public FVScheme<field::Scalar> {
   public:
     IConvection(field::Scalar rho, field::Vector U, field::Scalar phi);
+
     void apply() override;
+
     auto inline field() -> std::optional<field::Scalar> override { return _phi; }
+    auto inline U() -> const field::Vector& { return _U; }
+    auto inline rho() -> const field::Scalar& { return _rho; }
 
     using BCManager = boundary::BoundaryHandlersManager<IConvection<GradScheme>>;
-    auto bc_manager() -> BCManager&;
+    auto bc_manager() -> BCManager& { return _bc_manager; }
 
   protected:
     auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
@@ -101,17 +54,13 @@ class IConvection : public FVScheme<field::Scalar> {
                              const mesh::Face& face) -> detail::CoeffsTriplet = 0;
 
     void apply_interior(const mesh::Face& face) override;
-    void apply_boundary(const mesh::Face& face) override;
+    void apply_boundary(const mesh::Face& face) override {}
     void apply_boundary();
-    void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
-    void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
 
     const field::Scalar _rho;
     const field::Vector _U;
     const field::Scalar _phi;
     GradScheme _gradient_scheme;
-
-    std::size_t _n_reverse_flow_faces {0};
     BCManager _bc_manager;
 };
 
@@ -178,13 +127,18 @@ IConvection<G>::IConvection(field::Scalar rho, field::Vector U, field::Scalar ph
       _U(std::move(U)),
       _phi(phi),
       _gradient_scheme(phi),
-      FVScheme(phi.mesh().n_cells()) {}
+      FVScheme(phi.mesh().n_cells()) {
+    // add default boundary handlers for IConvection based types
+    using Scheme = std::remove_reference_t<decltype(*this)>;
+    _bc_manager.template add_handler<boundary::Empty<Scheme>>();
+    _bc_manager.template add_handler<boundary::Fixed<Scheme>>();
+    _bc_manager.template add_handler<boundary::Outlet<Scheme>>();
+    _bc_manager.template add_handler<boundary::Symmetry<Scheme>>();
+}
 
 template <typename G>
 void IConvection<G>::apply() {
-    for (const auto& bface : _phi.mesh().boundary_faces()) {
-        apply_boundary(bface);
-    }
+    apply_boundary();
 
     for (const auto& iface : _phi.mesh().interior_faces()) {
         apply_interior(iface);
@@ -203,7 +157,7 @@ void IConvection<G>::apply_interior(const mesh::Face& face) {
 
     const Vector3d U_f = _U.value_at_face(face);
     const double rho_f = _rho.value_at_face(face);
-    const double m_dot_f = detail::face_mdot(rho_f, U_f, S_f);
+    const double m_dot_f = ops::face_mdot(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
@@ -220,112 +174,7 @@ void IConvection<G>::apply_interior(const mesh::Face& face) {
 
 template <typename G>
 void IConvection<G>::apply_boundary() {
-    const mesh::PMesh& mesh = _phi.mesh();
-
-    for (const auto& patch : mesh.boundary_patches()) {
-        const mesh::BoundaryCondition& bc = patch.get_bc(_phi.name());
-        spdlog::debug(
-            "IConvection::apply_boundary(): assigning a boundary handler for boundary "
-            "condition type '{}' in patch '{}'.",
-            bc.kind_string(),
-            patch.name());
-
-        auto handler_creator_opt = _bc_manager.get_handler(bc.kind_string());
-
-        if (!handler_creator_opt.has_value()) {
-            throw error::NonImplementedBoundaryCondition(
-                "IConvection::apply_boundary()", patch.name(), bc.kind_string());
-        }
-
-        auto handler = handler_creator_opt.value()();
-
-        using Scheme = std::remove_reference_t<decltype(*this)>;
-        auto fv_handler =
-            std::dynamic_pointer_cast<boundary::FVSchemeBoundaryHandler<Scheme>>(handler);
-
-        spdlog::debug(
-            "CorrectedDiffusion::apply_boundary(): Applying boundary condition type '{}' on "
-            "patch '{}'.",
-            fv_handler->name(),
-            patch.name());
-
-        fv_handler->apply(*this, patch);
-    }
-}
-
-template <typename G>
-void IConvection<G>::apply_boundary(const mesh::Face& face) {
-    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
-    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    const auto& boundary_condition = boundary_patch.get_bc(_phi.name());
-
-    switch (boundary_condition.kind()) {
-        case mesh::BoundaryConditionKind::Empty:
-        case mesh::BoundaryConditionKind::Symmetry: {
-            return;
-        }
-
-        case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::VelocityInlet: {
-            apply_boundary_fixed(owner, face);
-            return;
-        }
-
-        case mesh::BoundaryConditionKind::Outlet: {
-            apply_boundary_outlet(owner, face);
-            return;
-        }
-
-            // TODO: Implement FixedGradient
-        default:
-            throw error::NonImplementedBoundaryCondition(
-                "convection::AbstactConvection::apply_boundary()",
-                boundary_patch.name(),
-                boundary_condition.kind_string());
-    }
-}
-
-template <typename G>
-void IConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face) {
-    const auto& boundary_patch = _phi.mesh().face_boundary_patch(face);
-    const double phi_wall = boundary_patch.get_scalar_bc(_phi.name());
-
-    const Vector3d& S_f = face.area_vector();
-    const Vector3d U_f = _U.value_at_face(face);
-
-    // TODO: check if this is correct
-    const double rho_f = _rho.value_at_cell(cell);
-    const double m_dot_f = detail::face_mdot(rho_f, U_f, S_f);
-
-    // TODO: this assumes an upwind based scheme, this is wrong for central schemes
-    // and should be generalized to work for all schemes.
-
-    // in case owner cell is an upstream cell
-    const std::size_t cell_id = cell.id();
-    insert(cell_id, cell_id, std::max(m_dot_f, 0.0));
-    rhs(cell_id) += std::max(-m_dot_f * phi_wall, 0.0);
-}
-
-template <typename G>
-void IConvection<G>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face) {
-    const std::size_t cell_id = cell.id();
-
-    // face area vector
-    const Vector3d& S_f = face.area_vector();
-
-    // use owner cell velocity as the velocity at the outlet face centroid
-    const Vector3d U_f = _U.value_at_face(face);
-    const double rho_f = _rho.value_at_cell(cell);
-    const double m_dot_f = detail::face_mdot(rho_f, U_f, S_f);
-
-    if (m_dot_f < 0.0) {
-        // n_reverse_flow_faces()++;
-    }
-    // TODO: this assumes an upwind based scheme, this is wrong for central schemes
-    // and should be generalized to work for all schemes.
-
-    // Because this is an outlet, owner `cell` is an upstream cell
-    insert(cell_id, cell_id, m_dot_f);
+    boundary::detail::apply_boundary("IConvection", *this);
 }
 
 template <typename G>
