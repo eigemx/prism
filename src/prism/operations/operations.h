@@ -16,4 +16,9 @@ auto mag(const field::Vector& U, bool return_face_data = true) -> field::Scalar;
 // Calculates the curl of a vector field U
 auto curl(const field::Vector& U, bool return_face_data = true) -> field::Vector;
 
+// face mass flow rate
+auto inline face_mdot(double rho, const Vector3d& U, const Vector3d& S) -> double {
+    return rho * U.dot(S);
+}
+
 } // namespace prism::ops
