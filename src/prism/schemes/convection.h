@@ -74,7 +74,8 @@ struct CoeffsTriplet {
     double b {};   // source
 };
 
-auto inline face_mass_flow_rate(double rho, const Vector3d& U, const Vector3d& S) -> double {
+auto inline face_mdot(double rho, const Vector3d& U, const Vector3d& S) -> double {
+    // face mass flow rate
     return rho * U.dot(S);
 }
 } // namespace detail
@@ -92,7 +93,6 @@ class IConvection : public FVScheme<field::Scalar> {
 
   protected:
     auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
-    auto inline n_reverse_flow_faces() -> std::size_t& { return _n_reverse_flow_faces; }
 
   private:
     virtual auto interpolate(double m_dot,
@@ -102,6 +102,7 @@ class IConvection : public FVScheme<field::Scalar> {
 
     void apply_interior(const mesh::Face& face) override;
     void apply_boundary(const mesh::Face& face) override;
+    void apply_boundary();
     void apply_boundary_fixed(const mesh::Cell& cell, const mesh::Face& face);
     void apply_boundary_outlet(const mesh::Cell& cell, const mesh::Face& face);
 
@@ -181,25 +182,12 @@ IConvection<G>::IConvection(field::Scalar rho, field::Vector U, field::Scalar ph
 
 template <typename G>
 void IConvection<G>::apply() {
-    _n_reverse_flow_faces = 0;
-
     for (const auto& bface : _phi.mesh().boundary_faces()) {
         apply_boundary(bface);
     }
 
     for (const auto& iface : _phi.mesh().interior_faces()) {
         apply_interior(iface);
-    }
-
-    // we've inserted all the triplets, now we can collect them into the matrix
-    collect();
-
-    if (_n_reverse_flow_faces > 0) {
-        spdlog::warn(
-            "convection::AbstractConvection::apply(): "
-            "Reverse flow detected at {} faces in outlet boundary patch(es). "
-            "This may cause the solution to diverge.",
-            _n_reverse_flow_faces);
     }
 }
 
@@ -215,7 +203,7 @@ void IConvection<G>::apply_interior(const mesh::Face& face) {
 
     const Vector3d U_f = _U.value_at_face(face);
     const double rho_f = _rho.value_at_face(face);
-    const double m_dot_f = detail::face_mass_flow_rate(rho_f, U_f, S_f);
+    const double m_dot_f = detail::face_mdot(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
@@ -228,6 +216,41 @@ void IConvection<G>::apply_interior(const mesh::Face& face) {
 
     rhs(owner_id) += b;
     rhs(neighbor_id) += s;
+}
+
+template <typename G>
+void IConvection<G>::apply_boundary() {
+    const mesh::PMesh& mesh = _phi.mesh();
+
+    for (const auto& patch : mesh.boundary_patches()) {
+        const mesh::BoundaryCondition& bc = patch.get_bc(_phi.name());
+        spdlog::debug(
+            "IConvection::apply_boundary(): assigning a boundary handler for boundary "
+            "condition type '{}' in patch '{}'.",
+            bc.kind_string(),
+            patch.name());
+
+        auto handler_creator_opt = _bc_manager.get_handler(bc.kind_string());
+
+        if (!handler_creator_opt.has_value()) {
+            throw error::NonImplementedBoundaryCondition(
+                "IConvection::apply_boundary()", patch.name(), bc.kind_string());
+        }
+
+        auto handler = handler_creator_opt.value()();
+
+        using Scheme = std::remove_reference_t<decltype(*this)>;
+        auto fv_handler =
+            std::dynamic_pointer_cast<boundary::FVSchemeBoundaryHandler<Scheme>>(handler);
+
+        spdlog::debug(
+            "CorrectedDiffusion::apply_boundary(): Applying boundary condition type '{}' on "
+            "patch '{}'.",
+            fv_handler->name(),
+            patch.name());
+
+        fv_handler->apply(*this, patch);
+    }
 }
 
 template <typename G>
@@ -272,7 +295,7 @@ void IConvection<G>::apply_boundary_fixed(const mesh::Cell& cell, const mesh::Fa
 
     // TODO: check if this is correct
     const double rho_f = _rho.value_at_cell(cell);
-    const double m_dot_f = detail::face_mass_flow_rate(rho_f, U_f, S_f);
+    const double m_dot_f = detail::face_mdot(rho_f, U_f, S_f);
 
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
@@ -293,10 +316,10 @@ void IConvection<G>::apply_boundary_outlet(const mesh::Cell& cell, const mesh::F
     // use owner cell velocity as the velocity at the outlet face centroid
     const Vector3d U_f = _U.value_at_face(face);
     const double rho_f = _rho.value_at_cell(cell);
-    const double m_dot_f = detail::face_mass_flow_rate(rho_f, U_f, S_f);
+    const double m_dot_f = detail::face_mdot(rho_f, U_f, S_f);
 
     if (m_dot_f < 0.0) {
-        n_reverse_flow_faces()++;
+        // n_reverse_flow_faces()++;
     }
     // TODO: this assumes an upwind based scheme, this is wrong for central schemes
     // and should be generalized to work for all schemes.
