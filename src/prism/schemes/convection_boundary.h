@@ -58,8 +58,7 @@ void Fixed<convection::IConvection<G>>::apply(convection::IConvection<G>& scheme
     for (const auto face_id : patch.faces_ids()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
-        const auto& boundary_patch = phi.mesh().face_boundary_patch(face);
-        const double phi_wall = boundary_patch.get_scalar_bc(phi.name());
+        const double phi_wall = patch.get_scalar_bc(phi.name());
 
         const Vector3d& S_f = face.area_vector();
         const Vector3d U_f = scheme.U().value_at_face(face);
@@ -73,6 +72,9 @@ void Fixed<convection::IConvection<G>>::apply(convection::IConvection<G>& scheme
         // and should be generalized to work for all schemes.
 
         // in case owner cell is an upstream cell
+        // TODO: face value should be the same regardless of the upstream cell mass flow rate, so,
+        // applying the right hand side should not depend on a std::max() call and should be
+        // definite.
         const std::size_t cell_id = owner.id();
         scheme.insert(cell_id, cell_id, std::max(m_dot_f, 0.0));
         scheme.rhs(cell_id) += std::max(-m_dot_f * phi_wall, 0.0);
