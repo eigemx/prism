@@ -54,7 +54,7 @@ auto main(int argc, char* argv[]) -> int {
     // where κ is the diffusion coefficient
     auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
     auto eqn =
-        TransportEquation(diffusion::NonCorrectedDiffusion(kappa, T), source::ConstantScalar(S));
+        TransportEquation(diffusion::CorrectedDiffusion(kappa, T), source::ConstantScalar(S));
 
     // solve
     auto solver =
