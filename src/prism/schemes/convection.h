@@ -147,14 +147,14 @@ void IConvection<G>::apply() {
 
 template <typename G>
 void IConvection<G>::apply_interior(const mesh::Face& face) {
-    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
-    const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
+    const auto& mesh = _phi.mesh();
+    const mesh::Cell& owner = mesh.cell(face.owner());
+    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
 
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
 
     const Vector3d& S_f = mesh::outward_area_vector(face, owner);
-
     const Vector3d U_f = _U.value_at_face(face);
     const double rho_f = _rho.value_at_face(face);
     const double m_dot_f = ops::face_mdot(rho_f, U_f, S_f);
