@@ -34,9 +34,7 @@ template <typename GradScheme = gradient::LeastSquares>
 class IConvection : public FVScheme<field::Scalar> {
   public:
     IConvection(field::Scalar rho, field::Vector U, field::Scalar phi);
-
     void apply() override;
-
     auto inline field() -> std::optional<field::Scalar> override { return _phi; }
     auto inline U() -> const field::Vector& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
