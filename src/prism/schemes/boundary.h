@@ -175,7 +175,7 @@ void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
         }
 
         spdlog::debug(
-            "{}::apply_boundary(): Applying boundary condition type '{}' on "
+            "{}::apply_boundary(): applying boundary condition type '{}' on "
             "patch '{}'.",
             scheme_name,
             handler->name(),
