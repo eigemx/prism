@@ -20,31 +20,33 @@ class NonCorrectedDiffusion;
 
 namespace prism::boundary {
 //
-// Symmetry and Outlet boundary handlers for general IDiffusion based schemes.
+// CorrectedDiffusion default boundary handlers
 //
-
 // Boundary handler for symmetry boundary condition, or zero gradient boundary condition. This is
 // a special case of the general Neumann boundary condition, where the gradient of the field is
 // zero at the boundary (flux is zero), and will not result in any contribution to the right hand
 // side of the equation, or the matrix coefficients, and no need for non-orthogonal correction.
 // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph, and
 // paragraph 8.6.8.2 - Chapter 8 in same reference.
-template <>
-class Symmetry<diffusion::IDiffusion> : public FVSchemeBoundaryHandler<diffusion::IDiffusion> {
-    void apply(diffusion::IDiffusion& scheme, const mesh::BoundaryPatch& patch) override {}
+template <typename K, typename N, typename G>
+class Symmetry<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
+    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
+  public:
+    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
+               const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "symmetry"; }
 };
 
 // We treat outlet boundary condition in diffusion scheme same as symmetry (zero gradient of the
 // conserved scalar field)
-template <>
-class Outlet<diffusion::IDiffusion> : public FVSchemeBoundaryHandler<diffusion::IDiffusion> {
-    void apply(diffusion::IDiffusion& scheme, const mesh::BoundaryPatch& patch) override {}
+template <typename K, typename N, typename G>
+class Outlet<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
+    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
+  public:
+    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
+               const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "outlet"; }
 };
-//
-// CorrectedDiffusion default boundary handlers
-//
 
 // Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion with a conserved
 // general scalar field (for example: velocity component or temperature).
