@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "prism/boundary.h"
+#include "prism/field/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
@@ -48,6 +50,8 @@ class IField {
 
     virtual auto value_at_face(std::size_t face_id) const -> CellValueType = 0;
     virtual auto value_at_face(const mesh::Face& face) const -> CellValueType = 0;
+
+    using ValueType = CellValueType;
 
   private:
     const mesh::PMesh* _mesh = nullptr;
@@ -97,14 +101,21 @@ class Scalar : public IField<double> {
 
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
+    using BHManager =
+        prism::boundary::BoundaryHandlersManager<Scalar,
+                                                 boundary::FieldBoundaryHandler<Scalar, double>>;
+    auto bg_manager() -> BHManager& { return _bh_manager; }
 
   protected:
     auto value_at_interior_face(const mesh::Face& face) const -> double;
     auto value_at_boundary_face(const mesh::Face& face) const -> double;
 
   private:
+    BHManager _bh_manager;
     std::shared_ptr<VectorXd> _data = nullptr;
     std::shared_ptr<VectorXd> _face_data = nullptr;
+
+    void register_default_handlers();
 };
 
 class Vector : public IField<Vector3d> {

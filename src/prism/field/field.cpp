@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "prism/exceptions.h"
+#include "prism/field/boundary.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
@@ -44,6 +45,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value)
     : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)) {
     spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
+    register_default_handlers();
 }
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
@@ -58,6 +60,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
     spdlog::debug("Creating scalar field: '{}' with a vector data of size = {}",
                   this->name(),
                   _data->size());
+    register_default_handlers();
 }
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data)
@@ -84,6 +87,8 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorX
         this->name(),
         _data->size(),
         _face_data->size());
+
+    register_default_handlers();
 }
 
 void Scalar::set_face_values(VectorXd values) {
@@ -145,43 +150,29 @@ auto Scalar::value_at_interior_face(const mesh::Face& face) const -> double {
     return val;
 }
 
+void Scalar::register_default_handlers() {
+    _bh_manager.add_handler<field::boundary::Fixed>();
+    _bh_manager.add_handler<field::boundary::VelocityInlet>();
+    _bh_manager.add_handler<field::boundary::Empty>();
+    _bh_manager.add_handler<field::boundary::Symmetry>();
+    _bh_manager.add_handler<field::boundary::Outlet>();
+    _bh_manager.add_handler<field::boundary::FixedGradient>();
+}
+
 auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.get_bc(name());
 
-    switch (bc.kind()) {
-        case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::VelocityInlet: {
-            return patch.get_scalar_bc(name());
-        }
+    auto handler = _bh_manager.get_handler(bc.kind_string());
 
-        // TODO: We return the field value of an empty face the same value as its owner cell. This
-        // makes many schemes and gradient methods work without a special check for an empty face
-        // (like LeastSquares), check if this assumption is correct.
-        case mesh::BoundaryConditionKind::Empty:
-        case mesh::BoundaryConditionKind::Symmetry:
-        case mesh::BoundaryConditionKind::Outlet: {
-            return (*_data)[face.owner()];
-        }
-
-        case mesh::BoundaryConditionKind::FixedGradient: {
-            Vector3d grad_at_boundary = patch.get_vector_bc(name());
-            const auto& owner = mesh().cell(face.owner());
-            Vector3d e = face.center() - owner.center();
-            double d_Cf = e.norm();
-            e = e / e.norm();
-            grad_at_boundary = grad_at_boundary * d_Cf;
-
-            return grad_at_boundary.dot(e) + value_at_cell(owner);
-        }
-
-        default: {
-            throw error::NonImplementedBoundaryCondition(
-                fmt::format("ScalarField({})::value_at_boundary_face()", name()),
-                patch.name(),
-                bc.kind_string());
-        }
+    if (handler == nullptr) {
+        throw error::NonImplementedBoundaryCondition(
+            fmt::format("ScalarField({})::value_at_boundary_face()", name()),
+            patch.name(),
+            bc.kind_string());
     }
+
+    return handler->get(*this, face);
 }
 
 Vector::Vector(std::string name, const mesh::PMesh& mesh, double value)
