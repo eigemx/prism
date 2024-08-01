@@ -21,6 +21,7 @@
 
 namespace prism::diffusion {
 
+// Abstract base for diffusion schemes
 class IDiffusion {};
 
 template <typename KappaType = field::UniformScalar,

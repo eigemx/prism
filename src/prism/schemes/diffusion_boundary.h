@@ -7,8 +7,6 @@ namespace prism::diffusion {
 //
 // forward declarations
 //
-
-// Abstract base for diffusion schemes
 class IDiffusion;
 
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
