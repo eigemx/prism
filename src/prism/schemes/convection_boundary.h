@@ -21,14 +21,6 @@ class Fixed<convection::IConvection<G>>
 };
 
 template <typename G>
-class Empty<convection::IConvection<G>>
-    : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
-  public:
-    void apply(convection::IConvection<G>& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "empty"; }
-};
-
-template <typename G>
 class Symmetry<convection::IConvection<G>>
     : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
   public:

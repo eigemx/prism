@@ -26,15 +26,15 @@ void inline check_mesh(const mesh::PMesh& mesh) {
 } // namespace detail
 
 template <typename CellValueType>
-class AbstractField {
+class IField {
   public:
-    AbstractField(std::string name, const mesh::PMesh& mesh);
+    IField(std::string name, const mesh::PMesh& mesh);
 
-    AbstractField(const AbstractField& other) = default;
-    AbstractField(AbstractField&& other) noexcept = default;
-    auto operator=(const AbstractField& other) -> AbstractField& = default;
-    auto operator=(AbstractField&& other) noexcept -> AbstractField& = default;
-    virtual ~AbstractField() = default;
+    IField(const IField& other) = default;
+    IField(IField&& other) noexcept = default;
+    auto operator=(const IField& other) -> IField& = default;
+    auto operator=(IField&& other) noexcept -> IField& = default;
+    virtual ~IField() = default;
 
     auto inline name() const -> const std::string& { return _name; }
     auto inline name() -> std::string& { return _name; }
@@ -55,14 +55,14 @@ class AbstractField {
 };
 
 template <typename CellValueType>
-AbstractField<CellValueType>::AbstractField(std::string name, const mesh::PMesh& mesh)
+IField<CellValueType>::IField(std::string name, const mesh::PMesh& mesh)
     : _name(std::move(name)), _mesh(&mesh) {
     detail::check_field_name(_name);
     detail::check_mesh(mesh);
 }
 
 
-class UniformScalar : public AbstractField<double> {
+class UniformScalar : public IField<double> {
   public:
     UniformScalar(std::string name, const mesh::PMesh& mesh, double value);
 
@@ -76,7 +76,7 @@ class UniformScalar : public AbstractField<double> {
     double _value {0.0};
 };
 
-class Scalar : public AbstractField<double> {
+class Scalar : public IField<double> {
   public:
     Scalar(std::string name, const mesh::PMesh& mesh, double value);
     Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data);
@@ -107,7 +107,7 @@ class Scalar : public AbstractField<double> {
     std::shared_ptr<VectorXd> _face_data = nullptr;
 };
 
-class Vector : public AbstractField<Vector3d> {
+class Vector : public IField<Vector3d> {
   public:
     Vector(std::string name, const mesh::PMesh& mesh, double value);
     Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
@@ -131,7 +131,7 @@ class Vector : public AbstractField<Vector3d> {
     Scalar _x, _y, _z;
 };
 
-class Tensor : public AbstractField<Matrix3d> {
+class Tensor : public IField<Matrix3d> {
   public:
     Tensor(std::string name, const mesh::PMesh& mesh, double value);
     Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data);

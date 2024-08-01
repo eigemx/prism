@@ -19,7 +19,7 @@
 namespace prism::field {
 
 UniformScalar::UniformScalar(std::string name, const mesh::PMesh& mesh, double value)
-    : AbstractField(std::move(name), mesh), _value(value) {
+    : IField(std::move(name), mesh), _value(value) {
     spdlog::debug(
         "Creating uniform scalar field: '{}' with double value = {}", this->name(), value);
 }
@@ -41,13 +41,13 @@ auto UniformScalar::value_at_face(const mesh::Face& face) const -> double { // N
 }
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value)
-    : AbstractField(std::move(name), mesh),
+    : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)) {
     spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
 }
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
-    : AbstractField(std::move(name), mesh), _data(std::make_shared<VectorXd>(std::move(data))) {
+    : IField(std::move(name), mesh), _data(std::make_shared<VectorXd>(std::move(data))) {
     if (_data->size() != mesh.n_cells()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
@@ -61,7 +61,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
 }
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data)
-    : AbstractField(std::move(name), mesh),
+    : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
       _face_data(std::make_shared<VectorXd>(std::move(face_data))) {
     if (_data->size() != mesh.n_cells()) {
@@ -185,19 +185,19 @@ auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
 }
 
 Vector::Vector(std::string name, const mesh::PMesh& mesh, double value)
-    : AbstractField(std::move(name), mesh),
+    : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, value),
       _y(this->name() + "_y", mesh, value),
       _z(this->name() + "_z", mesh, value) {}
 
 Vector::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
-    : AbstractField(std::move(name), mesh),
+    : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, data[0]),
       _y(this->name() + "_y", mesh, data[1]),
       _z(this->name() + "_z", mesh, data[2]) {}
 
 Vector::Vector(std::string name, const mesh::PMesh& mesh, const std::array<Scalar, 3>& fields)
-    : AbstractField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
+    : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
     // check mesh consistency
     for (const auto& field : fields) {
         if (&mesh != &field.mesh()) {
@@ -247,7 +247,7 @@ auto Vector::operator[](std::size_t i) const -> Vector3d {
 }
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
-    : AbstractField(std::move(name), mesh) {
+    : IField(std::move(name), mesh) {
     spdlog::debug("Creating tensor field: '{}' with double value = {}", this->name(), value);
     const std::size_t n_cells = this->mesh().n_cells();
     _data.reserve(n_cells);
@@ -257,7 +257,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
 }
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
-    : AbstractField(std::move(name), mesh) {
+    : IField(std::move(name), mesh) {
     spdlog::debug("Creating a uniform tensor field: '{}' given a Matrix3d object", this->name());
 
     const std::size_t n_cells = this->mesh().n_cells();
@@ -268,7 +268,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
 }
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data)
-    : AbstractField(std::move(name), mesh), _data(std::move(data)) {
+    : IField(std::move(name), mesh), _data(std::move(data)) {
     spdlog::debug("Creating a  tensor field: '{}' given a vector of Matrix3d objects",
                   this->name());
 
