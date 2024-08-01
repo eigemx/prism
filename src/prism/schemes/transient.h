@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fvscheme.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 
 namespace prism::transient {
 class AbstractTransientScheme {};

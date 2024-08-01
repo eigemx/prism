@@ -8,7 +8,7 @@
 
 #include "prism/constants.h"
 #include "prism/exceptions.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
@@ -89,6 +89,7 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
         Vector3d grad = (gc * owner_grad) + ((1. - gc) * neighbor_grad);
 
         // correct the interpolation
+        /*
         auto phi_C = _field.value_at_cell(owner_cell.id());
         auto phi_F = _field.value_at_cell(neighbor_cell.id());
 
@@ -100,6 +101,8 @@ auto inline AbstractGradient::gradient_at_face(const mesh::Face& face) -> Vector
         correction -= grad.dot(e_CF);
 
         return grad + (e_CF * correction);
+        */
+        return grad;
     }
 
     // boundary face

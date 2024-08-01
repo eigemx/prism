@@ -4,8 +4,8 @@
 
 #include <Eigen/IterativeLinearSolvers>
 
-#include "prism/equation.h"
-#include "prism/field.h"
+#include "prism/equation/equation.h"
+#include "prism/field/field.h"
 #include "prism/types.h"
 #include "relax.h"
 

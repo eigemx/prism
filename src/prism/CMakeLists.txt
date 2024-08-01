@@ -1,6 +1,6 @@
 add_library(prism
     # core sources
-    field.cpp
+    field/field.cpp
     export.cpp
     exceptions.cpp
 

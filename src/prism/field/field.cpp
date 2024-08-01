@@ -8,7 +8,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "exceptions.h"
+#include "prism/exceptions.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"

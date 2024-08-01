@@ -2,15 +2,40 @@
 
 #include <cstddef>
 
-#include "prism/field.h"
+#include "prism/mesh/face.h"
+#include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
+#include "prism/types.h"
+
 
 namespace prism::ops {
 
-void rhie_chow_correct(field::Vector& U,
-                       const field::Tensor& D,
-                       gradient::AbstractGradient* p_grad_scheme) {
+auto correct_grad(const mesh::PMesh& mesh,
+                  const mesh::Face& face,
+                  const field::Pressure& P,
+                  const Vector3d& grad_p_f) -> Vector3d {
+    // TODO: owner and neighbor cells finders, and cell centroid distance calculators are all
+    // over the codebase this should be a utility function
+    const auto& owner = mesh.cell(face.owner());
+    const auto& neighbor = mesh.cell(face.neighbor().value());
+
+    auto P_owner = P.value_at_cell(owner);
+    auto P_neigh = P.value_at_cell(neighbor);
+
+    auto d_CF = neighbor.center() - owner.center();
+    auto d_CF_norm = d_CF.norm();
+    Vector3d e_CF = d_CF / d_CF_norm;
+
+    auto P_correction = (P_neigh - P_owner) / d_CF.norm();
+    P_correction -= grad_p_f.dot(e_CF);
+
+    return grad_p_f + (P_correction * e_CF);
+}
+
+template <typename GradScheme>
+void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pressure& P) {
     const auto& mesh = U.mesh();
+    GradScheme p_grad_scheme(P);
 
     VectorXd u_face_data;
     VectorXd v_face_data;
@@ -21,20 +46,14 @@ void rhie_chow_correct(field::Vector& U,
 
     for (const auto& face : mesh.interior_faces()) {
         const std::size_t face_id = face.id();
-        const Vector3d Uf = U.value_at_face(face);
-        const Matrix3d Df = D.value_at_face(face);
-        const Vector3d grad_p_f = p_grad_scheme->gradient_at_face(face);
+        const Vector3d& Uf = U.value_at_face(face);
+        const Matrix3d& Df = D.value_at_face(face);
+        const Vector3d& grad_p_f = p_grad_scheme.gradient_at_face(face);
 
-        // TODO: owner and neighbor cells finders are all over the codebase
-        // this should be a utility function
-        const auto& owner = mesh.cell(face.owner());
-        const auto& neighbor = mesh.cell(face.neighbor().value());
-        const double gc = mesh::geo_weight(owner, neighbor, face);
-        Vector3d avg_grad = gc * p_grad_scheme->gradient_at_cell(owner);
-        avg_grad += (1 - gc) * p_grad_scheme->gradient_at_cell(neighbor);
+        Vector3d grad_p_f_corr = grad_p_f + correct_grad(mesh, face, P, grad_p_f);
 
         // Equation 15.60
-        Vector3d Uf_corrected = Uf - (Df * (grad_p_f - avg_grad));
+        Vector3d Uf_corrected = Uf - (Df * (grad_p_f_corr - grad_p_f));
         u_face_data[face_id] = Uf_corrected.x();
         v_face_data[face_id] = Uf_corrected.y();
         w_face_data[face_id] = Uf_corrected.z();
@@ -47,8 +66,8 @@ void rhie_chow_correct(field::Vector& U,
         // Equation (15.110)
         const Vector3d Ub = U.value_at_cell(owner);
         const Matrix3d& Df = D.value_at_cell(owner);
-        const Vector3d grad_p_f = p_grad_scheme->gradient_at_face(face);
-        const Vector3d grad_p_C = p_grad_scheme->gradient_at_cell(owner);
+        const Vector3d grad_p_f = p_grad_scheme.gradient_at_face(face);
+        const Vector3d grad_p_C = p_grad_scheme.gradient_at_cell(owner);
 
         // Equation (15.111)
         Vector3d Ub_corrected = Ub - (Df * (grad_p_f - grad_p_C));

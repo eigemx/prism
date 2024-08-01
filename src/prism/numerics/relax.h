@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "prism/constants.h"
-#include "prism/equation.h"
+#include "prism/equation/equation.h"
 
 namespace prism::solver {
 

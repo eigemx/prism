@@ -8,7 +8,7 @@
 #include "convection_boundary.h"
 #include "fvscheme.h"
 #include "prism/exceptions.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"

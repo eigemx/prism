@@ -5,13 +5,6 @@
 #include <algorithm>
 #include <filesystem>
 
-#include "prism/field.h"
-#include "prism/gradient/gradient.h"
-#include "prism/nonortho/nonortho.h"
-#include "prism/operations/operations.h"
-#include "prism/schemes/convection.h"
-
-
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
     spdlog::set_level(spdlog::level::level_enum::debug);
