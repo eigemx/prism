@@ -41,7 +41,9 @@ class IConvection : public FVScheme<field::Scalar> {
     auto inline U() -> const field::Vector& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
-    using BCManager = boundary::BoundaryHandlersManager<IConvection<GradScheme>>;
+    using BCManager = boundary::BoundaryHandlersManager<
+        IConvection<GradScheme>,
+        boundary::FVSchemeBoundaryHandler<IConvection<GradScheme>>>;
     auto bc_manager() -> BCManager& { return _bc_manager; }
 
   protected:
