@@ -80,9 +80,7 @@ class NonSlipWall : public FVSchemeBoundaryHandler<Scheme> {
 namespace detail {
 template <typename Scheme>
 void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
-    assert(_scheme.field().has_value() &&
-           "diffusion::detail::apply_boundary() was called on a scheme that does not have a "
-           "valid field");
+    assert(_scheme.field().has_value());
 
     auto _phi = scheme.field().value();
     const mesh::PMesh& mesh = _phi.mesh();

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include <map>
 #include <memory>
 #include <string>
+
+#include "prism/mesh/pmesh.h"
 
 namespace prism::boundary {
 
@@ -21,10 +21,13 @@ class IBoundaryHandler {
 template <typename Scheme, typename BaseHandler>
 class BoundaryHandlersManager {
   public:
-    auto get_handler(const std::string& bc) -> std::shared_ptr<BaseHandler>;
+    auto get_handler(const std::string& bc) const -> std::shared_ptr<BaseHandler>;
 
     template <typename Handler>
     void add_handler();
+
+    // TODO: add option to remove handler, in case user wants to substitute a default handler with
+    // a custom one
 
   private:
     using InstanceCreatorPtr = std::shared_ptr<IBoundaryHandler> (*)();
@@ -38,18 +41,14 @@ auto create_handler_instance() -> std::shared_ptr<IBoundaryHandler> {
 }
 
 template <typename Scheme, typename BaseHandler>
-auto BoundaryHandlersManager<Scheme, BaseHandler>::get_handler(const std::string& bc)
+auto BoundaryHandlersManager<Scheme, BaseHandler>::get_handler(const std::string& bc) const
     -> std::shared_ptr<BaseHandler> {
     if (!_bc_map.contains(bc)) {
-        spdlog::error(
-            "BoundaryManager::get_handler() do not have a handler for boundary condition with "
-            "name: '{}'",
-            bc);
         return nullptr;
     }
 
-    auto handler_creator = _bc_map[bc];   // handler instance creator function
-    auto raw_handler = handler_creator(); // std::shared_ptr<IBoundaryHandler>
+    auto handler_creator = _bc_map.at(bc); // handler instance creator function
+    auto raw_handler = handler_creator();  // std::shared_ptr<IBoundaryHandler>
 
     // we need to cast std::shared_ptr<IBoundaryHandler> to
     // std::shared_ptr<FVSchemeBoundaryHandler<Scheme>>
