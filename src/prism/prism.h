@@ -1,9 +1,9 @@
 #pragma once
 
 #include "constants.h"
-#include "equation.h"
+#include "equation/equation.h"
 #include "export.h"
-#include "field.h"
+#include "field/field.h"
 #include "gradient/gradient.h"
 #include "mesh/pmesh.h"
 #include "mesh/reorder.h"

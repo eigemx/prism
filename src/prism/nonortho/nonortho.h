@@ -1,7 +1,7 @@
 #pragma once
 
 #include "prism/constants.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/types.h"

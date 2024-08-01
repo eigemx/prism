@@ -3,7 +3,6 @@
 
 #include "gradient.h"
 #include "prism/exceptions.h"
-#include "prism/field.h"
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {

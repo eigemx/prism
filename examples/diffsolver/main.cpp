@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "fmt/core.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/schemes/diffusion.h"

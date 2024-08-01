@@ -3,11 +3,11 @@
 #include <memory>
 #include <string>
 
-#include "field.h"
-#include "linear.h"
-#include "mesh/pmesh.h"
-#include "schemes/fvscheme.h"
-#include "types.h"
+#include "prism/field/field.h"
+#include "prism/linear.h"
+#include "prism/mesh/pmesh.h"
+#include "prism/schemes/fvscheme.h"
+#include "prism/types.h"
 
 namespace prism {
 
@@ -88,5 +88,8 @@ class TransportEquation : public LinearSystem {
 
     std::size_t _n_corrected_schemes {0};
 };
+
+class MomentumEquation : public TransportEquation<field::Scalar> {};
+
 
 } // namespace prism

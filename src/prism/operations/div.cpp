@@ -2,7 +2,7 @@
 
 #include "operations.h"
 #include "prism/exceptions.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"

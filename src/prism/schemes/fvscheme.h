@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/linear.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/types.h"

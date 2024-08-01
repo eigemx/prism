@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fvscheme.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/operations/operations.h"
 

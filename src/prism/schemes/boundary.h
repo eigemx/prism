@@ -6,22 +6,13 @@
 #include <stdexcept>
 #include <string>
 
+#include "prism/boundary.h"
 #include "prism/exceptions.h"
-#include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/mesh/boundary.h"
 #include "spdlog/spdlog.h"
 
 namespace prism::boundary {
-
-class IBoundaryHandler {
-  public:
-    IBoundaryHandler() = default;
-    IBoundaryHandler(IBoundaryHandler&) = default;
-    IBoundaryHandler(IBoundaryHandler&&) noexcept = default;
-    auto operator=(const IBoundaryHandler&) -> IBoundaryHandler& = default;
-    auto operator=(IBoundaryHandler&&) noexcept -> IBoundaryHandler& = default;
-    virtual ~IBoundaryHandler() = default;
-};
 
 template <typename Scheme>
 class FVSchemeBoundaryHandler : public IBoundaryHandler {
@@ -159,14 +150,6 @@ void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
 
     for (const auto& patch : mesh.boundary_patches()) {
         const mesh::BoundaryCondition& bc = patch.get_bc(_phi.name());
-
-        spdlog::debug(
-            "{}::apply_boundary(): assigning a boundary handler for boundary "
-            "condition type '{}' in patch '{}'.",
-            scheme_name,
-            bc.kind_string(),
-            patch.name());
-
         auto handler = scheme.bc_manager().get_handler(bc.kind_string());
 
         if (handler == nullptr) {
