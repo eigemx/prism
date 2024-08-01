@@ -38,8 +38,9 @@ class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     auto grad_scheme() -> GradScheme& { return _grad_scheme; }
     auto kappa() -> KappaType { return _kappa; }
 
-    using BCManager = boundary::BoundaryHandlersManager<
-        CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>>;
+    using Scheme = CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>;
+    using BCManager =
+        boundary::BoundaryHandlersManager<Scheme, boundary::FVSchemeBoundaryHandler<Scheme>>;
     auto bc_manager() -> BCManager& { return _bc_manager; }
 
   private:
@@ -65,7 +66,9 @@ class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     auto requires_correction() const -> bool override { return false; }
     auto kappa() -> KappaType { return _kappa; }
 
-    using BCManager = boundary::BoundaryHandlersManager<NonCorrectedDiffusion<KappaType, Field>>;
+    using Scheme = NonCorrectedDiffusion<KappaType, Field>;
+    using BCManager =
+        boundary::BoundaryHandlersManager<Scheme, boundary::FVSchemeBoundaryHandler<Scheme>>;
     auto bc_manager() -> BCManager& { return _bc_manager; }
 
   private:
