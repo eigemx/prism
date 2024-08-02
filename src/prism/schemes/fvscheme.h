@@ -7,7 +7,7 @@
 #include "prism/mesh/pmesh.h"
 #include "prism/types.h"
 
-namespace prism {
+namespace prism::scheme {
 
 template <typename Field>
 class FVScheme : public LinearSystem {
@@ -39,4 +39,4 @@ class FVScheme : public LinearSystem {
     std::string _name;
 };
 
-} // namespace prism
+} // namespace prism::scheme

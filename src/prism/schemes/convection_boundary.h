@@ -4,14 +4,14 @@
 #include "prism/operations/operations.h"
 #include "spdlog/spdlog.h"
 
-namespace prism::convection {
+namespace prism::scheme::convection {
 // forward declarations
 template <typename GradScheme>
 class IConvection;
 
-} // namespace prism::convection
+} // namespace prism::scheme::convection
 
-namespace prism::boundary {
+namespace prism::scheme::boundary {
 template <typename G>
 class Fixed<convection::IConvection<G>>
     : public FVSchemeBoundaryHandler<convection::IConvection<G>> {
@@ -111,4 +111,4 @@ void Outlet<convection::IConvection<G>>::apply(convection::IConvection<G>& schem
                      patch.name());
     }
 }
-} // namespace prism::boundary
+} // namespace prism::scheme::boundary

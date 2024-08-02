@@ -18,7 +18,7 @@
 #include "prism/schemes/diffusion.h"
 #include "prism/types.h"
 
-namespace prism::convection {
+namespace prism::scheme::convection {
 
 namespace detail {
 // coefficients for the discretized convection equation for a face
@@ -41,7 +41,7 @@ class IConvection : public FVScheme<field::Scalar> {
     auto inline U() -> const field::Vector& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
-    using BCManager = boundary::BoundaryHandlersManager<
+    using BCManager = prism::boundary::BoundaryHandlersManager<
         IConvection<GradScheme>,
         boundary::FVSchemeBoundaryHandler<IConvection<GradScheme>>>;
     auto bc_manager() -> BCManager& { return _bc_manager; }
@@ -132,10 +132,10 @@ IConvection<G>::IConvection(field::Scalar rho, field::Vector U, field::Scalar ph
       FVScheme(phi.mesh().n_cells()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<boundary::Symmetry<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
 }
 
 template <typename G>
@@ -269,4 +269,4 @@ auto QUICK<G>::interpolate(double m_dot,
 }
 
 
-} // namespace prism::convection
+} // namespace prism::scheme::convection

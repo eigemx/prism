@@ -82,7 +82,7 @@ class TransportEquation : public LinearSystem {
     }
 
   private:
-    std::vector<std::shared_ptr<FVScheme<Field>>> _schemes;
+    std::vector<std::shared_ptr<scheme::FVScheme<Field>>> _schemes;
     Field _phi;     // Conserved field of the equation
     Field _phi_old; // Previous iteration value of the field
 

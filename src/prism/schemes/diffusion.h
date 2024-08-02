@@ -19,7 +19,7 @@
 #include "prism/types.h"
 #include "spdlog/spdlog.h"
 
-namespace prism::diffusion {
+namespace prism::scheme::diffusion {
 
 // Abstract base for diffusion schemes
 class IDiffusion {};
@@ -40,7 +40,8 @@ class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
 
     using Scheme = CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>;
     using BCManager =
-        boundary::BoundaryHandlersManager<Scheme, boundary::FVSchemeBoundaryHandler<Scheme>>;
+        prism::boundary::BoundaryHandlersManager<Scheme,
+                                                 boundary::FVSchemeBoundaryHandler<Scheme>>;
     auto bc_manager() -> BCManager& { return _bc_manager; }
 
   private:
@@ -68,7 +69,8 @@ class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
 
     using Scheme = NonCorrectedDiffusion<KappaType, Field>;
     using BCManager =
-        boundary::BoundaryHandlersManager<Scheme, boundary::FVSchemeBoundaryHandler<Scheme>>;
+        prism::boundary::BoundaryHandlersManager<Scheme,
+                                                 boundary::FVSchemeBoundaryHandler<Scheme>>;
     auto bc_manager() -> BCManager& { return _bc_manager; }
 
   private:
@@ -94,11 +96,11 @@ CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::CorrectedDi
 
     // add default boundary handlers for CorrectedDiffusion
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<boundary::Symmetry<Scheme>>();
-    _bc_manager.template add_handler<boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<boundary::FixedGradient<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::FixedGradient<Scheme>>();
 }
 
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
@@ -181,11 +183,11 @@ NonCorrectedDiffusion<KappaType, Field>::NonCorrectedDiffusion(KappaType kappa, 
 
     // add default boundary handlers for NonCorrectedDiffusion
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<boundary::Symmetry<Scheme>>();
-    _bc_manager.template add_handler<boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<boundary::FixedGradient<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::FixedGradient<Scheme>>();
 }
 
 template <typename KappaType, typename Field>
@@ -232,4 +234,4 @@ void inline NonCorrectedDiffusion<KappaType, Field>::apply_interior(const mesh::
     this->insert(owner_id, neighbor_id, -g_diff);
     this->insert(neighbor_id, owner_id, -g_diff);
 }
-} // namespace prism::diffusion
+} // namespace prism::scheme::diffusion

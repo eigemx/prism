@@ -3,7 +3,7 @@
 #include "boundary.h"
 #include "prism/constants.h"
 
-namespace prism::diffusion {
+namespace prism::scheme::diffusion {
 //
 // forward declarations
 //
@@ -14,9 +14,9 @@ class CorrectedDiffusion;
 
 template <typename KappaType, typename Field>
 class NonCorrectedDiffusion;
-} // namespace prism::diffusion
+} // namespace prism::scheme::diffusion
 
-namespace prism::boundary {
+namespace prism::scheme::boundary {
 //
 // CorrectedDiffusion default boundary handlers
 //
@@ -235,4 +235,4 @@ void FixedGradient<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
     }
 }
 
-} // namespace prism::boundary
+} // namespace prism::scheme::boundary

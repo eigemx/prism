@@ -3,7 +3,7 @@
 #include "fvscheme.h"
 #include "prism/field/field.h"
 
-namespace prism::transient {
+namespace prism::scheme::transient {
 class AbstractTransientScheme {};
 
 class BackwardEuler : public FVScheme<field::Scalar>, public AbstractTransientScheme {
@@ -27,4 +27,4 @@ class BackwardEuler : public FVScheme<field::Scalar>, public AbstractTransientSc
     double _dt {1e-8};
 };
 
-} // namespace prism::transient
+} // namespace prism::scheme::transient

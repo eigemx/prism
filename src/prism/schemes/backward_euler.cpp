@@ -1,6 +1,6 @@
 #include "transient.h"
 
-namespace prism::transient {
+namespace prism::scheme::transient {
 BackwardEuler::BackwardEuler(field::Scalar& rho, field::Scalar& phi, double dt)
     : _rho(rho),
       _phi(phi),
@@ -36,4 +36,4 @@ void BackwardEuler::apply() {
     rhs() = (_rho_prev.data().array() * _volume_field.array() * _phi_prev.data().array()) / _dt;
 }
 
-} // namespace prism::transient
+} // namespace prism::scheme::transient
