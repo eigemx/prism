@@ -19,7 +19,7 @@ struct IterationStepData {
 // TODO: solve() should return each time an iteraion is finished (with the current residual),
 // until convergence. And any consecutive call to solve() after convergence shall have no effect
 template <typename Field>
-class AbstractSolver {
+class ISolver {
   public:
     virtual void solve(TransportEquation<Field>& eq,
                        std::size_t n_iter,
@@ -29,7 +29,7 @@ class AbstractSolver {
 };
 
 template <typename Field, typename Relaxer>
-class BiCGSTAB : public AbstractSolver<Field> {
+class BiCGSTAB : public ISolver<Field> {
   public:
     void solve(TransportEquation<Field>& eq,
                std::size_t n_iter = 1000, // number of iterations
@@ -39,7 +39,7 @@ class BiCGSTAB : public AbstractSolver<Field> {
 };
 
 template <typename Field, typename Relaxer>
-class GaussSeidel : public AbstractSolver<Field> {
+class GaussSeidel : public ISolver<Field> {
   public:
     void solve(TransportEquation<Field>& eq,
                std::size_t n_iter = 1000, // number of iterations
