@@ -8,7 +8,7 @@
 namespace prism::solver {
 
 template <typename Field>
-class RelaxerBase {
+class IRelaxer {
   public:
     // pre_relax() is called before solving the equation (suitable for implicit schemes)
     virtual void pre_relax(TransportEquation<Field>& eqn, double lambda) const = 0;
@@ -18,7 +18,7 @@ class RelaxerBase {
 };
 
 template <typename Field>
-class ImplicitUnderRelaxation : public RelaxerBase<Field> {
+class ImplicitUnderRelaxation : public IRelaxer<Field> {
   public:
     void pre_relax(TransportEquation<Field>& eqn, double lambda) const override;
 
@@ -27,7 +27,7 @@ class ImplicitUnderRelaxation : public RelaxerBase<Field> {
 };
 
 template <typename Field>
-class ExplicitUnderRelaxation : public RelaxerBase<Field> {
+class ExplicitUnderRelaxation : public IRelaxer<Field> {
   public:
     // no pre_relax() is needed for explicit under-relaxation
     void inline pre_relax(TransportEquation<Field>& eqn, double lambda) const override {}
