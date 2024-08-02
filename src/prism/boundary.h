@@ -1,7 +1,10 @@
 #pragma once
 
+#include <fmt/format.h>
+
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "prism/mesh/pmesh.h"
@@ -26,8 +29,7 @@ class BoundaryHandlersManager {
     template <typename Handler>
     void add_handler();
 
-    // TODO: add option to remove handler, in case user wants to substitute a default handler with
-    // a custom one
+    void remove_handler(const std::string& bc);
 
   private:
     using InstanceCreatorPtr = std::shared_ptr<IBoundaryHandler> (*)();
@@ -51,7 +53,7 @@ auto BoundaryHandlersManager<Scheme, BaseHandler>::get_handler(const std::string
     auto raw_handler = handler_creator();  // std::shared_ptr<IBoundaryHandler>
 
     // we need to cast std::shared_ptr<IBoundaryHandler> to
-    // std::shared_ptr<FVSchemeBoundaryHandler<Scheme>>
+    // std::shared_ptr<BaseHandler>
     auto handler = std::dynamic_pointer_cast<BaseHandler>(raw_handler);
 
     return handler;
@@ -73,6 +75,19 @@ template <typename DerivedHandler>
 void BoundaryHandlersManager<Scheme, BaseHandler>::add_handler() {
     DerivedHandler temp;
     add_handler(temp.name(), &boundary::create_handler_instance<DerivedHandler>);
+}
+
+template <typename Scheme, typename BaseHandler>
+void BoundaryHandlersManager<Scheme, BaseHandler>::remove_handler(const std::string& bc) {
+    const auto it = _bc_map.find(bc);
+    if (it != _bc_map.end()) {
+        _bc_map.erase(it);
+        return;
+    }
+    throw std::runtime_error(
+        fmt::format("BoundaryHandlersManager::remove_hander() was given a non-existent boundary "
+                    "handler name ({})",
+                    bc));
 }
 
 } // namespace prism::boundary
