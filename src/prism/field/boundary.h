@@ -8,11 +8,6 @@ namespace prism::field {
 class Scalar;
 }
 
-// In convection & diffusion schemes, we defined the boundary condition handlers directly in
-// namespace prism::boundary, but since field.h is included in most header files there will be
-// redefinition of type conflict (when defining boundary handlers again for diffusion &
-// convection), so we avoid this by introducing a nested namespace inside prism::field to include
-// the definition of field boundary handlers.
 namespace prism::field::boundary {
 
 template <typename Field, typename ValueType>

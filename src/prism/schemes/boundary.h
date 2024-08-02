@@ -12,10 +12,10 @@
 #include "prism/mesh/boundary.h"
 #include "spdlog/spdlog.h"
 
-namespace prism::boundary {
+namespace prism::scheme::boundary {
 
 template <typename Scheme>
-class FVSchemeBoundaryHandler : public IBoundaryHandler {
+class FVSchemeBoundaryHandler : public prism::boundary::IBoundaryHandler {
   public:
     virtual auto name() const -> std::string = 0;
     virtual void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) = 0;
@@ -106,4 +106,4 @@ void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
 }
 } // namespace detail
 
-} // namespace prism::boundary
+} // namespace prism::scheme::boundary
