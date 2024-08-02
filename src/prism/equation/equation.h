@@ -89,7 +89,4 @@ class TransportEquation : public LinearSystem {
     std::size_t _n_corrected_schemes {0};
 };
 
-class MomentumEquation : public TransportEquation<field::Scalar> {};
-
-
 } // namespace prism
