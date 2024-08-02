@@ -14,24 +14,14 @@
 namespace prism::field {
 
 namespace detail {
-void inline check_field_name(const std::string& name) {
-    if (name.empty()) {
-        throw std::runtime_error("Cannot create a Field with an empty name.");
-    }
-}
-
-void inline check_mesh(const mesh::PMesh& mesh) {
-    if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundary_patches().empty()) {
-        throw std::runtime_error("Cannot create a field over an empty mesh.");
-    }
-}
+void inline check_field_name(const std::string& name);
+void inline check_mesh(const mesh::PMesh& mesh);
 } // namespace detail
 
 template <typename CellValueType>
 class IField {
   public:
     IField(std::string name, const mesh::PMesh& mesh);
-
     IField(const IField& other) = default;
     IField(IField&& other) noexcept = default;
     auto operator=(const IField& other) -> IField& = default;
@@ -40,14 +30,10 @@ class IField {
 
     auto inline name() const -> const std::string& { return _name; }
     auto inline name() -> std::string& { return _name; }
-
     auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
-
     virtual auto has_face_data() const -> bool { return false; }
-
     virtual auto value_at_cell(std::size_t cell_id) const -> CellValueType = 0;
     virtual auto value_at_cell(const mesh::Cell& cell) const -> CellValueType = 0;
-
     virtual auto value_at_face(std::size_t face_id) const -> CellValueType = 0;
     virtual auto value_at_face(const mesh::Face& face) const -> CellValueType = 0;
 
@@ -72,7 +58,6 @@ class UniformScalar : public IField<double> {
 
     auto value_at_cell(std::size_t cell_id) const -> double override;
     auto value_at_cell(const mesh::Cell& cell) const -> double override;
-
     auto value_at_face(std::size_t face_id) const -> double override;
     auto value_at_face(const mesh::Face& face) const -> double override;
 
@@ -89,16 +74,12 @@ class Scalar : public IField<double> {
     // TODO: check that _data is not null before returning, and maybe wrap it in an optional type
     auto inline data() const -> const VectorXd& { return *_data; }
     auto inline data() -> VectorXd& { return *_data; }
-
     auto inline has_face_data() const -> bool override { return _face_data != nullptr; }
     void set_face_values(VectorXd values);
-
     auto value_at_cell(std::size_t cell_id) const -> double override;
     auto value_at_cell(const mesh::Cell& cell) const -> double override;
-
     auto value_at_face(std::size_t face_id) const -> double override;
     auto value_at_face(const mesh::Face& face) const -> double override;
-
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
     using BHManager =

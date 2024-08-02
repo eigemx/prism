@@ -18,6 +18,19 @@
 #include "spdlog/spdlog.h"
 
 namespace prism::field {
+namespace detail {
+void inline check_field_name(const std::string& name) {
+    if (name.empty()) {
+        throw std::runtime_error("Cannot create a Field with an empty name.");
+    }
+}
+
+void inline check_mesh(const mesh::PMesh& mesh) {
+    if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundary_patches().empty()) {
+        throw std::runtime_error("Cannot create a field over an empty mesh.");
+    }
+}
+} // namespace detail
 
 UniformScalar::UniformScalar(std::string name, const mesh::PMesh& mesh, double value)
     : IField(std::move(name), mesh), _value(value) {
