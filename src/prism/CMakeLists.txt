@@ -15,6 +15,8 @@ add_library(prism
     mesh/trie.cpp
     mesh/reorder.cpp
 
+    nonortho/nonortho.cpp
+
     # gradient
     gradient/green_gauss.cpp
     gradient/least_squares.cpp
