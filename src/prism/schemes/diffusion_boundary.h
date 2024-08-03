@@ -129,15 +129,14 @@ void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        const auto& [_, Ef, Tf] = corrector.boundary_triplet(owner, face);
-        Vector3d Ef_prime = kappa.value_at_cell(owner) * Ef;
+        const Vector3d Sf_prime = kappa.value_at_face(face) * face.area_vector();
+
+        const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
 
         const double g_diff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
 
         scheme.insert(cell_id, cell_id, g_diff);
         scheme.rhs(cell_id) += g_diff * phi_wall;
-
-        Vector3d Tf_prime = kappa.value_at_cell(owner) * Tf;
 
         // correct non-orhtogonality
         const double phi_c = phi.value_at_cell(owner);
