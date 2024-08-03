@@ -1,23 +1,18 @@
 #pragma once
 
 #include <cassert>
-#include <memory>
 #include <type_traits>
 
 #include "boundary.h"
 #include "diffusion_boundary.h"
-#include "fmt/core.h"
 #include "fvscheme.h"
-#include "prism/exceptions.h"
 #include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
-#include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/types.h"
-#include "spdlog/spdlog.h"
 
 namespace prism::scheme::diffusion {
 
@@ -50,8 +45,8 @@ class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     void apply_boundary(const mesh::Face& face) override {}
     void apply_boundary();
 
-    const Field _phi;
-    const KappaType _kappa;
+    Field _phi;
+    KappaType _kappa;
     NonOrthoCorrector _corrector;
     GradScheme _grad_scheme;
     BCManager _bc_manager;
@@ -78,8 +73,8 @@ class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     void apply_boundary(const mesh::Face& face) override {}
     void apply_boundary();
 
-    const Field _phi;
-    const KappaType _kappa;
+    Field _phi;
+    KappaType _kappa;
     BCManager _bc_manager;
 };
 
@@ -142,9 +137,9 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 
     // unit vector in d_CF direction
     const Vector3d e = d_CF / d_CF_norm;
+    const Vector3d Sf_prime = _kappa.value_at_face(face) * face.area_vector();
 
-    const auto& [Sf, Ef, Tf] = _corrector.interior_triplet(owner, neighbor, face);
-    Vector3d Ef_prime = _kappa.value_at_face(face) * Ef;
+    const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
     const double g_diff = Ef_prime.norm() / (d_CF_norm + EPSILON);
@@ -164,7 +159,6 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     const Vector3d grad_f = _grad_scheme.gradient_at_face(face);
-    Vector3d Tf_prime = _kappa.value_at_face(face) * Tf;
 
     // update right hand side
     this->rhs(owner_id) += Tf_prime.dot(grad_f);
