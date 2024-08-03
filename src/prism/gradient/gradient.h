@@ -3,20 +3,13 @@
 #include <fmt/core.h>
 
 #include <optional>
-#include <stdexcept>
 #include <vector>
 
 #include "prism/boundary.h"
-#include "prism/constants.h"
-#include "prism/exceptions.h"
 #include "prism/field/field.h"
 #include "prism/gradient/boundary.h"
-#include "prism/mesh/boundary.h"
 #include "prism/mesh/face.h"
-#include "prism/mesh/pmesh.h"
-#include "prism/mesh/utilities.h"
 #include "prism/types.h"
-#include "spdlog/spdlog.h"
 
 
 namespace prism::gradient {
@@ -37,16 +30,16 @@ class IGradient {
     virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d;
     virtual auto gradient_field() -> field::Vector;
 
-    using BHManager =
+    using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<IGradient, boundary::GradSchemeBoundaryHandler>;
-    auto bh_manager() -> BHManager& { return _bh_manager; }
+    auto bh_manager() -> BoundaryHandlersManager& { return _bh_manager; }
 
   protected:
     virtual auto gradient_at_boundary_face(const mesh::Face& f) -> Vector3d;
 
   private:
-    const field::Scalar _field;
-    BHManager _bh_manager;
+    field::Scalar _field;
+    BoundaryHandlersManager _bh_manager;
 };
 
 class GreenGauss : public IGradient {
@@ -61,7 +54,7 @@ class GreenGauss : public IGradient {
     auto _gradient_at_cell(const mesh::Cell& cell, bool correct_skewness = true) -> Vector3d;
     auto green_gauss_face_integral(const mesh::Face& f) -> Vector3d;
 
-    const field::Scalar _field;
+    field::Scalar _field;
     std::vector<Vector3d> _cell_gradients;
 };
 
@@ -74,7 +67,7 @@ class LeastSquares : public IGradient {
     void set_pseudo_inv_matrices();
     auto boundary_face_phi(const mesh::Face& face) -> std::optional<double>;
 
-    const field::Scalar _field;
+    field::Scalar _field;
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 

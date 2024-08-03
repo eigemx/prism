@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prism/field/field.h"
+#include "prism/field/pressure.h"
 #include "prism/gradient/gradient.h"
 
 namespace prism::ops {

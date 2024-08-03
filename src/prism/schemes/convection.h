@@ -7,15 +7,12 @@
 
 #include "convection_boundary.h"
 #include "fvscheme.h"
-#include "prism/exceptions.h"
 #include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
-#include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
 #include "prism/schemes/boundary.h"
-#include "prism/schemes/diffusion.h"
 #include "prism/types.h"
 
 namespace prism::scheme::convection {
@@ -59,9 +56,9 @@ class IConvection : public FVScheme<field::Scalar> {
     void apply_boundary(const mesh::Face& face) override {}
     void apply_boundary();
 
-    const field::Scalar _rho;
-    const field::Vector _U;
-    const field::Scalar _phi;
+    field::Scalar _rho;
+    field::Vector _U;
+    field::Scalar _phi;
     GradScheme _gradient_scheme;
     BCManager _bc_manager;
 };

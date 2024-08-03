@@ -1,6 +1,7 @@
 #include "gradient.h"
 
 #include "prism/exceptions.h"
+#include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
 IGradient::IGradient(const field::Scalar& field) : _field(field) { // NOLINT
