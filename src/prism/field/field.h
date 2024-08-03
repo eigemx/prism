@@ -2,6 +2,7 @@
 
 #include <array>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "prism/boundary.h"
@@ -14,8 +15,8 @@
 namespace prism::field {
 
 namespace detail {
-void inline check_field_name(const std::string& name);
-void inline check_mesh(const mesh::PMesh& mesh);
+void check_field_name(const std::string& name);
+void check_mesh(const mesh::PMesh& mesh);
 } // namespace detail
 
 template <typename CellValueType>
@@ -65,41 +66,77 @@ class UniformScalar : public IField<double> {
     double _value {0.0};
 };
 
+namespace detail {
+template <typename ComponentType>
+class Vector;
+}
+
+class Scalar;
+using Vector = detail::Vector<Scalar>;
+
 class Scalar : public IField<double> {
   public:
-    Scalar(std::string name, const mesh::PMesh& mesh, double value);
-    Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data);
-    Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data);
+    Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* parent = nullptr);
+    Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector* parent = nullptr);
+    Scalar(std::string name,
+           const mesh::PMesh& mesh,
+           VectorXd data,
+           VectorXd face_data,
+           Vector* parent = nullptr);
 
     // TODO: check that _data is not null before returning, and maybe wrap it in an optional type
     auto inline data() const -> const VectorXd& { return *_data; }
     auto inline data() -> VectorXd& { return *_data; }
+
     auto inline has_face_data() const -> bool override { return _face_data != nullptr; }
     void set_face_values(VectorXd values);
+
     auto value_at_cell(std::size_t cell_id) const -> double override;
     auto value_at_cell(const mesh::Cell& cell) const -> double override;
     auto value_at_face(std::size_t face_id) const -> double override;
     auto value_at_face(const mesh::Face& face) const -> double override;
+
+    auto parent() -> std::optional<Vector>;
+
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
-    using BHManager =
+
+    using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<Scalar,
                                                  boundary::FieldBoundaryHandler<Scalar, double>>;
-    auto bg_manager() -> BHManager& { return _bh_manager; }
+    auto bg_manager() -> BoundaryHandlersManager& { return _bh_manager; }
 
   protected:
     auto value_at_interior_face(const mesh::Face& face) const -> double;
     auto value_at_boundary_face(const mesh::Face& face) const -> double;
 
   private:
-    BHManager _bh_manager;
+    BoundaryHandlersManager _bh_manager;
     std::shared_ptr<VectorXd> _data = nullptr;
     std::shared_ptr<VectorXd> _face_data = nullptr;
+    Vector* _parent = nullptr;
 
     void register_default_handlers();
 };
 
-class Vector : public IField<Vector3d> {
+template <typename ComponentType>
+class IVector {
+  public:
+    IVector() = default;
+    IVector(IVector&) = default;
+    IVector(IVector&&) noexcept = default;
+    auto operator=(const IVector&) -> IVector& = default;
+    auto operator=(IVector&&) noexcept -> IVector& = default;
+    virtual ~IVector() = default;
+
+    virtual auto x() -> ComponentType& = 0;
+    virtual auto y() -> ComponentType& = 0;
+    virtual auto z() -> ComponentType& = 0;
+};
+
+namespace detail {
+template <typename ComponentType>
+class Vector : public IField<Vector3d>, public IVector<ComponentType> {
   public:
     Vector(std::string name, const mesh::PMesh& mesh, double value);
     Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
@@ -113,15 +150,16 @@ class Vector : public IField<Vector3d> {
     auto value_at_face(std::size_t face_id) const -> Vector3d override;
     auto value_at_face(const mesh::Face& face) const -> Vector3d override;
 
-    auto inline x() -> Scalar& { return _x; }
-    auto inline y() -> Scalar& { return _y; }
-    auto inline z() -> Scalar& { return _z; }
+    auto inline x() -> ComponentType& override { return _x; }
+    auto inline y() -> ComponentType& override { return _y; }
+    auto inline z() -> ComponentType& override { return _z; }
 
     auto operator[](std::size_t i) const -> Vector3d;
 
   private:
-    Scalar _x, _y, _z;
+    ComponentType _x, _y, _z;
 };
+} // namespace detail
 
 class Tensor : public IField<Matrix3d> {
   public:
@@ -142,12 +180,79 @@ class Tensor : public IField<Matrix3d> {
     std::vector<Matrix3d> _data;
 };
 
-class Pressure : public Scalar {
-  public:
-    Pressure(std::string name, const mesh::PMesh& mesh, double value);
-    Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data);
-    Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data);
-};
+namespace detail {
+template <typename ComponentType>
+Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, double value)
+    : IField(std::move(name), mesh),
+      _x(this->name() + "_x", mesh, value),
+      _y(this->name() + "_y", mesh, value),
+      _z(this->name() + "_z", mesh, value) {}
 
+template <typename ComponentType>
+Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
+    : IField(std::move(name), mesh),
+      _x(this->name() + "_x", mesh, data[0]),
+      _y(this->name() + "_y", mesh, data[1]),
+      _z(this->name() + "_z", mesh, data[2]) {}
+
+template <typename ComponentType>
+Vector<ComponentType>::Vector(std::string name,
+                              const mesh::PMesh& mesh,
+                              const std::array<Scalar, 3>& fields)
+    : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
+    // check mesh consistency
+    for (const auto& field : fields) {
+        if (&mesh != &field.mesh()) {
+            throw std::runtime_error(
+                fmt::format("VectorField constructor was given a ScalarField component with name "
+                            "`{}` that is defined over a different mesh",
+                            field.name()));
+        }
+    }
+
+    // check sub-fields naming consistency
+    if ((_x.name() != (this->name() + "_x")) || (_y.name() != (this->name() + "_y")) ||
+        (_z.name() != (this->name() + "_z"))) {
+        throw std::runtime_error(fmt::format(
+            "All VectorField component names should end with '_x', '_y' or '_z'. VectorField "
+            "constructor for `{}` vector field was given the following ScalarFields names: '{}', "
+            "'{}', '{}",
+            this->name(),
+            _x.name(),
+            _y.name(),
+            _z.name()));
+    }
+}
+
+template <typename ComponentType>
+auto Vector<ComponentType>::value_at_cell(std::size_t cell_id) const -> Vector3d {
+    return operator[](cell_id);
+}
+
+template <typename ComponentType>
+auto Vector<ComponentType>::value_at_cell(const mesh::Cell& cell) const -> Vector3d {
+    return value_at_cell(cell.id());
+}
+
+template <typename ComponentType>
+auto Vector<ComponentType>::value_at_face(std::size_t face_id) const -> Vector3d {
+    return {_x.value_at_face(face_id), _y.value_at_face(face_id), _z.value_at_face(face_id)};
+}
+
+template <typename ComponentType>
+auto Vector<ComponentType>::value_at_face(const mesh::Face& face) const -> Vector3d {
+    return value_at_face(face.id());
+}
+
+template <typename ComponentType>
+auto Vector<ComponentType>::has_face_data() const -> bool {
+    return _x.has_face_data() && _y.has_face_data() && _z.has_face_data();
+}
+
+template <typename ComponentType>
+auto Vector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
+    return {_x.data()[i], _y.data()[i], _z.data()[i]};
+}
+} // namespace detail
 
 } // namespace prism::field

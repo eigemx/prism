@@ -2,6 +2,7 @@
 #include "prism/constants.h"
 #include "prism/equation.h"
 #include "prism/field.h"
+#include "prism/field/field.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/unv.h"
 #include "prism/mesh/utilities.h"
@@ -34,21 +35,21 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto rho = field::Scalar("density", mesh, 1.18);
-    auto U = field::Vector("velocity", mesh, Vector3d {0.05, 0.05, 0.0});
+    auto U = field::Vector("velocity", mesh, {0.05, 0.05, 0.0});
     auto P = field::Scalar("pressure", mesh, 1.0);
 
     auto uEqn = TransportEquation(
-        convection::Upwind(rho, U, U.x()),                                           // ∇.(ρUu)
-        diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.x()), // - ∇.(μ∇u)
-        source::Gradient<source::SourceSign::Negative>(P, Coord::X),                 // ∂p/∂x
-        source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
+        scheme::convection::Upwind(rho, U, U.x()),             // ∇.(ρUu)
+        scheme::diffusion::NonCorrectedDiffusion(1e-6, U.x()), // - ∇.(μ∇u)
+        scheme::source::Gradient<scheme::source::SourceSign::Negative>(P, Coord::X), // ∂p/∂x
+        scheme::source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
     );
 
     auto vEqn = TransportEquation(
-        convection::Upwind(rho, U, U.y()),
-        diffusion::Diffusion<double, nonortho::OverRelaxedCorrector<>>(1e-6, U.y()),
-        source::Gradient<source::SourceSign::Negative>(P, Coord::Y),
-        source::Laplacian(1e-6, U.y()));
+        scheme::convection::Upwind(rho, U, U.y()),
+        scheme::diffusion::NonCorrectedDiffusion(1e-6, U.y()),
+        scheme::source::Gradient<scheme::source::SourceSign::Negative>(P, Coord::Y),
+        scheme::source::Laplacian(1e-6, U.y()));
 
     auto solver = solver::BiCGSTAB();
 

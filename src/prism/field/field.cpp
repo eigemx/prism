@@ -19,13 +19,13 @@
 
 namespace prism::field {
 namespace detail {
-void inline check_field_name(const std::string& name) {
+void check_field_name(const std::string& name) {
     if (name.empty()) {
         throw std::runtime_error("Cannot create a Field with an empty name.");
     }
 }
 
-void inline check_mesh(const mesh::PMesh& mesh) {
+void check_mesh(const mesh::PMesh& mesh) {
     if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundary_patches().empty()) {
         throw std::runtime_error("Cannot create a field over an empty mesh.");
     }
@@ -54,15 +54,18 @@ auto UniformScalar::value_at_face(const mesh::Face& face) const -> double { // N
     return _value;
 }
 
-Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value)
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* parent)
     : IField(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)) {
+      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)),
+      _parent(parent) {
     spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     register_default_handlers();
 }
 
-Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
-    : IField(std::move(name), mesh), _data(std::make_shared<VectorXd>(std::move(data))) {
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector* parent)
+    : IField(std::move(name), mesh),
+      _data(std::make_shared<VectorXd>(std::move(data))),
+      _parent(parent) {
     if (_data->size() != mesh.n_cells()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
@@ -76,10 +79,15 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data)
     register_default_handlers();
 }
 
-Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data)
+Scalar::Scalar(std::string name,
+               const mesh::PMesh& mesh,
+               VectorXd data,
+               VectorXd face_data,
+               Vector* parent)
     : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
-      _face_data(std::make_shared<VectorXd>(std::move(face_data))) {
+      _face_data(std::make_shared<VectorXd>(std::move(face_data))),
+      _parent(parent) {
     if (_data->size() != mesh.n_cells()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
@@ -163,15 +171,6 @@ auto Scalar::value_at_interior_face(const mesh::Face& face) const -> double {
     return val;
 }
 
-void Scalar::register_default_handlers() {
-    _bh_manager.add_handler<field::boundary::Fixed>();
-    _bh_manager.add_handler<field::boundary::VelocityInlet>();
-    _bh_manager.add_handler<field::boundary::Empty>();
-    _bh_manager.add_handler<field::boundary::Symmetry>();
-    _bh_manager.add_handler<field::boundary::Outlet>();
-    _bh_manager.add_handler<field::boundary::FixedGradient>();
-}
-
 auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.get_bc(name());
@@ -188,66 +187,20 @@ auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
     return handler->get(*this, face);
 }
 
-Vector::Vector(std::string name, const mesh::PMesh& mesh, double value)
-    : IField(std::move(name), mesh),
-      _x(this->name() + "_x", mesh, value),
-      _y(this->name() + "_y", mesh, value),
-      _z(this->name() + "_z", mesh, value) {}
-
-Vector::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
-    : IField(std::move(name), mesh),
-      _x(this->name() + "_x", mesh, data[0]),
-      _y(this->name() + "_y", mesh, data[1]),
-      _z(this->name() + "_z", mesh, data[2]) {}
-
-Vector::Vector(std::string name, const mesh::PMesh& mesh, const std::array<Scalar, 3>& fields)
-    : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
-    // check mesh consistency
-    for (const auto& field : fields) {
-        if (&mesh != &field.mesh()) {
-            throw std::runtime_error(
-                fmt::format("VectorField constructor was given a ScalarField component with name "
-                            "`{}` that is defined over a different mesh",
-                            field.name()));
-        }
+auto Scalar::parent() -> std::optional<Vector> {
+    if (_parent == nullptr) {
+        return std::nullopt;
     }
-
-    // check sub-fields naming consistency
-    if ((_x.name() != (this->name() + "_x")) || (_y.name() != (this->name() + "_y")) ||
-        (_z.name() != (this->name() + "_z"))) {
-        throw std::runtime_error(fmt::format(
-            "All VectorField component names should end with '_x', '_y' or '_z'. VectorField "
-            "constructor for `{}` vector field was given the following ScalarFields names: '{}', "
-            "'{}', '{}",
-            this->name(),
-            _x.name(),
-            _y.name(),
-            _z.name()));
-    }
+    return *_parent;
 }
 
-auto Vector::value_at_cell(std::size_t cell_id) const -> Vector3d {
-    return operator[](cell_id);
-}
-
-auto Vector::value_at_cell(const mesh::Cell& cell) const -> Vector3d {
-    return value_at_cell(cell.id());
-}
-
-auto Vector::value_at_face(std::size_t face_id) const -> Vector3d {
-    return {_x.value_at_face(face_id), _y.value_at_face(face_id), _z.value_at_face(face_id)};
-}
-
-auto Vector::value_at_face(const mesh::Face& face) const -> Vector3d {
-    return value_at_face(face.id());
-}
-
-auto Vector::has_face_data() const -> bool {
-    return _x.has_face_data() && _y.has_face_data() && _z.has_face_data();
-}
-
-auto Vector::operator[](std::size_t i) const -> Vector3d {
-    return {_x.data()[i], _y.data()[i], _z.data()[i]};
+void Scalar::register_default_handlers() {
+    _bh_manager.add_handler<field::boundary::Fixed>();
+    _bh_manager.add_handler<field::boundary::VelocityInlet>();
+    _bh_manager.add_handler<field::boundary::Empty>();
+    _bh_manager.add_handler<field::boundary::Symmetry>();
+    _bh_manager.add_handler<field::boundary::Outlet>();
+    _bh_manager.add_handler<field::boundary::FixedGradient>();
 }
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
@@ -323,11 +276,5 @@ auto Tensor::operator[](std::size_t i) -> Matrix3d& {
 auto Tensor::operator[](std::size_t i) const -> const Matrix3d& {
     return _data[i];
 }
-
-Pressure::Pressure(std::string name, const mesh::PMesh& mesh, double value)
-    : Scalar(std::move(name), mesh, value) {}
-
-Pressure::Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data)
-    : Scalar(std::move(name), mesh, std::move(data)) {}
 
 } // namespace prism::field

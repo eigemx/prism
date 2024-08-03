@@ -7,8 +7,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "prism/mesh/pmesh.h"
-
 namespace prism::boundary {
 
 class IBoundaryHandler {

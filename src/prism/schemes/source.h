@@ -37,17 +37,17 @@ class ConstantScalar : public IExplicitSource {
     void apply() override;
 
   private:
-    const field::Scalar _phi;
+    field::Scalar _phi;
 };
 
 template <SourceSign Sign = SourceSign::Positive>
 class Divergence : public IExplicitSource {
   public:
-    Divergence(const field::Vector& U);
+    Divergence(field::Vector& U);
     void apply() override;
 
   private:
-    const field::Vector _U;
+    field::Vector _U;
 };
 
 // Adds a source for a gradient of a scalar field, in a specific coordinate
@@ -60,7 +60,7 @@ class Gradient : public IExplicitSource {
     void apply() override;
 
   private:
-    const field::Scalar _phi;
+    field::Scalar _phi;
     Coord _coord;
     GradientScheme _grad_scheme;
 };
@@ -74,7 +74,7 @@ class Laplacian : public IExplicitSource {
 
   private:
     double _kappa;
-    const field::Scalar _phi;
+    field::Scalar _phi;
     GradientScheme _grad_scheme;
 };
 
@@ -92,7 +92,7 @@ class Field : public FVScheme<field::Scalar>, public IImplicitSource {
 
     auto inline requires_correction() const -> bool override { return false; }
 
-    const field::Scalar _phi;
+    field::Scalar _phi;
 };
 
 inline IExplicitSource::IExplicitSource(std::size_t n_cells) : FVScheme(n_cells, false) {}
@@ -113,8 +113,7 @@ void inline ConstantScalar<Sign>::apply() {
 }
 
 template <SourceSign Sign>
-Divergence<Sign>::Divergence(const field::Vector& U)
-    : IExplicitSource(U.mesh().n_cells()), _U(U) {}
+Divergence<Sign>::Divergence(field::Vector& U) : IExplicitSource(U.mesh().n_cells()), _U(U) {}
 
 template <SourceSign Sign, typename GradientScheme>
 Gradient<Sign, GradientScheme>::Gradient(field::Scalar& phi, Coord coord)
