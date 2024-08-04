@@ -11,6 +11,7 @@
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/types.h"
+#include "spdlog/spdlog.h"
 
 namespace prism::field {
 
@@ -97,6 +98,7 @@ class Scalar : public IField<double> {
     auto value_at_face(const mesh::Face& face) const -> double override;
 
     auto parent() -> std::optional<Vector>;
+    void set_parent(Vector* parent);
 
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
@@ -140,7 +142,7 @@ class Vector : public IField<Vector3d>, public IVector<ComponentType> {
   public:
     Vector(std::string name, const mesh::PMesh& mesh, double value);
     Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
-    Vector(std::string name, const mesh::PMesh& mesh, const std::array<Scalar, 3>& fields);
+    Vector(std::string name, const mesh::PMesh& mesh, std::array<Scalar, 3>& fields);
 
     auto has_face_data() const -> bool override;
 
@@ -184,43 +186,54 @@ namespace detail {
 template <typename ComponentType>
 Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, double value)
     : IField(std::move(name), mesh),
-      _x(this->name() + "_x", mesh, value),
-      _y(this->name() + "_y", mesh, value),
-      _z(this->name() + "_z", mesh, value) {}
+      _x(this->name() + "_x", mesh, value, this),
+      _y(this->name() + "_y", mesh, value, this),
+      _z(this->name() + "_z", mesh, value, this) {}
 
 template <typename ComponentType>
 Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
     : IField(std::move(name), mesh),
-      _x(this->name() + "_x", mesh, data[0]),
-      _y(this->name() + "_y", mesh, data[1]),
-      _z(this->name() + "_z", mesh, data[2]) {}
+      _x(this->name() + "_x", mesh, data[0], this),
+      _y(this->name() + "_y", mesh, data[1], this),
+      _z(this->name() + "_z", mesh, data[2], this) {}
 
 template <typename ComponentType>
 Vector<ComponentType>::Vector(std::string name,
                               const mesh::PMesh& mesh,
-                              const std::array<Scalar, 3>& fields)
+                              std::array<Scalar, 3>& fields)
     : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
     // check mesh consistency
-    for (const auto& field : fields) {
+    for (auto& field : fields) {
         if (&mesh != &field.mesh()) {
-            throw std::runtime_error(
-                fmt::format("VectorField constructor was given a ScalarField component with name "
-                            "`{}` that is defined over a different mesh",
-                            field.name()));
+            throw std::runtime_error(fmt::format(
+                "field::Vector constructor was given a field::Scalar component with name "
+                "`{}` that is defined over a different mesh",
+                field.name()));
         }
+
+        if (field.parent().has_value()) {
+            spdlog::warn(
+                "field::Vector '{}' constructor was given a sub-field '{}' that already has a "
+                "parent "
+                "field::Vector",
+                this->name(),
+                field.name());
+        }
+        field.set_parent(this);
     }
 
     // check sub-fields naming consistency
     if ((_x.name() != (this->name() + "_x")) || (_y.name() != (this->name() + "_y")) ||
         (_z.name() != (this->name() + "_z"))) {
-        throw std::runtime_error(fmt::format(
-            "All VectorField component names should end with '_x', '_y' or '_z'. VectorField "
-            "constructor for `{}` vector field was given the following ScalarFields names: '{}', "
-            "'{}', '{}",
-            this->name(),
-            _x.name(),
-            _y.name(),
-            _z.name()));
+        throw std::runtime_error(
+            fmt::format("All field::Vector components names should end with '_x', '_y' or '_z'. "
+                        "field::Vector constructor for `{}` vector field was given the following "
+                        "field::Scalar names: '{}', "
+                        "'{}', '{}",
+                        this->name(),
+                        _x.name(),
+                        _y.name(),
+                        _z.name()));
     }
 }
 

@@ -40,9 +40,9 @@ set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})
 include_directories(${VTU11_SOURCE_DIR}/)
 
-# setup vtu11
-set(VTU11_SOURCE_DIR "external/spdlog")
-include_directories(${VTU11_SOURCE_DIR}/include)
+# setup spdlog
+set(SPDLOG_SOURCE_DIR "external/spdlog")
+include_directories(${SPDLOG_SOURCE_DIR}/include)
 
 # set build type to release if not specified
 if(NOT CMAKE_BUILD_TYPE)
