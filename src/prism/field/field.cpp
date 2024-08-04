@@ -194,6 +194,11 @@ auto Scalar::parent() -> std::optional<Vector> {
     return *_parent;
 }
 
+void Scalar::set_parent(Vector* parent) {
+    _parent = parent;
+    // TODO: check parent and component names consistency
+}
+
 void Scalar::register_default_handlers() {
     _bh_manager.add_handler<field::boundary::Fixed>();
     _bh_manager.add_handler<field::boundary::VelocityInlet>();
