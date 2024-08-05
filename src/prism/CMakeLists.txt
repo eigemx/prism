@@ -1,7 +1,9 @@
 add_library(prism
     # core sources
-    field/field.cpp
+    field/ifield.cpp
     field/boundary.cpp
+    field/tensor.cpp
+    field/scalar.cpp
     
     export.cpp
     exceptions.cpp
