@@ -3,7 +3,6 @@
 #include <spdlog/spdlog.h>
 
 #include <cmath>
-#include <cstddef>
 
 #include "convection_boundary.h"
 #include "fvscheme.h"
@@ -156,8 +155,8 @@ void IConvection<G>::apply_interior(const mesh::Face& face) {
     const std::size_t neighbor_id = neighbor.id();
 
     const Vector3d& S_f = mesh::outward_area_vector(face, owner);
-    const Vector3d U_f = _U.value_at_face(face);
-    const double rho_f = _rho.value_at_face(face);
+    const Vector3d U_f = _U.valueAtFace(face);
+    const double rho_f = _rho.valueAtFace(face);
     const double m_dot_f = ops::face_mdot(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);

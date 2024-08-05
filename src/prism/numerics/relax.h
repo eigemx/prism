@@ -2,7 +2,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include "prism/constants.h"
 #include "prism/equation/equation.h"
 
 namespace prism::solver {
@@ -47,7 +46,7 @@ void ImplicitUnderRelaxation<Field>::pre_relax(TransportEquation<Field>& eqn,
 
     auto& A = eqn.matrix();
     auto& b = eqn.rhs();
-    const auto& phi = eqn.field().data();
+    const auto& phi = eqn.field().values();
 
     // Moukallad et. al, 14.2 Under-Relaxation of the Algebraic Equations
     // equation 14.9
@@ -65,8 +64,8 @@ void ExplicitUnderRelaxation<Field>::post_relax(TransportEquation<Field>& eqn,
         return;
     }
 
-    auto& phi = eqn.field().data();
-    const auto& phi_old = eqn.field_prev_iter().data();
+    auto& phi = eqn.field().values();
+    const auto& phi_old = eqn.field_prev_iter().values();
 
     // Moukallad et. al, 14.2.2  Explicit Under-Relaxation
     // equation 14.6

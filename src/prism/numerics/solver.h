@@ -5,8 +5,6 @@
 #include <Eigen/IterativeLinearSolvers>
 
 #include "prism/equation/equation.h"
-#include "prism/field/field.h"
-#include "prism/types.h"
 #include "relax.h"
 
 namespace prism::solver {
@@ -67,7 +65,7 @@ void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
         rx.pre_relax(eqn, lambda);
 
         // calculate the residuals and its norm
-        auto res = (A * phi.data()) - b;
+        auto res = (A * phi.values()) - b;
         auto res_norm = res.norm();
 
         // check for convergence
@@ -77,8 +75,8 @@ void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
             break;
         }
 
-        phi_prev.data() = phi.data();
-        phi.data() = bicg.compute(A).solveWithGuess(b, phi.data());
+        phi_prev.values() = phi.values();
+        phi.values() = bicg.compute(A).solveWithGuess(b, phi.values());
 
         rx.post_relax(eqn, lambda);
 
@@ -107,7 +105,7 @@ void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
         rx.pre_relax(eqn, lambda);
 
         // calculate the residuals and its norm
-        auto res = (A * phi.data()) - b;
+        auto res = (A * phi.values()) - b;
         auto res_norm = res.norm();
 
         // check for convergence
@@ -117,17 +115,17 @@ void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
             break;
         }
 
-        phi_prev.data() = phi.data();
+        phi_prev.values() = phi.values();
 
         // Implementation of Gauss-Seidel
-        for (int j = 0; j < phi.data().size(); j++) {
+        for (int j = 0; j < phi.values().size(); j++) {
             double sum = 0.0;
-            for (int k = 0; k < phi.data().size(); k++) {
+            for (int k = 0; k < phi.values().size(); k++) {
                 if (k != j) {
-                    sum += A.coeff(j, k) * phi.data()(k);
+                    sum += A.coeff(j, k) * phi.values()(k);
                 }
             }
-            phi.data()(j) = (b(j) - sum) / A.coeff(j, j);
+            phi.values()(j) = (b(j) - sum) / A.coeff(j, j);
         }
 
         rx.post_relax(eqn, lambda);

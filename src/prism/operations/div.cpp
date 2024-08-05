@@ -1,7 +1,6 @@
 #include <fmt/format.h>
 
 #include "operations.h"
-#include "prism/exceptions.h"
 #include "prism/field/field.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
@@ -76,7 +75,7 @@ auto face_flux(const mesh::PMesh& mesh,
         return boundary_face_flux(mesh, face, U);
     }
 
-    const Vector3d Uf = U.value_at_face(face);
+    const Vector3d Uf = U.valueAtFace(face);
     auto Sf = mesh::outward_area_vector(face, cell);
     return Uf.dot(Sf);
 }
@@ -87,22 +86,23 @@ auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const f
     // no need to call mesh::outward_area_vector()
     const auto& Sf = face.area_vector();
 
-    if (U.has_face_data()) {
+    if (U.hasFaceValues()) {
         // face values of U are available, no need to manually calculate them
-        const auto& Uf = U.value_at_face(face.id());
+        const auto& Uf = U.valueAtFace(face.id());
         return Uf.dot(Sf);
     }
 
     const auto& boundary_patch = mesh.boundary_patch(face);
     const auto& field_bc = boundary_patch.get_bc(U.name());
 
+    // TODO: add a boundary handler for this
     switch (field_bc.kind()) {
         case mesh::BoundaryConditionKind::Empty: {
             return 0.0;
         }
 
         default: {
-            const auto& Uf = U.value_at_face(face);
+            const auto& Uf = U.valueAtFace(face);
             return Uf.dot(Sf);
         }
     }

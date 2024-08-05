@@ -68,6 +68,7 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
 }
 
 auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
+    // TODO: write a boundary handler for this
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.get_bc(_field.name());
     auto bc_type = boundary_condition.kind();
@@ -78,14 +79,14 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
         }
         case mesh::BoundaryConditionKind::Outlet:
         case mesh::BoundaryConditionKind::Symmetry: {
-            auto phi = _field.value_at_face(face);
+            auto phi = _field.valueAtFace(face);
             return phi * face.area_vector();
         }
 
         case mesh::BoundaryConditionKind::Fixed:
         case mesh::BoundaryConditionKind::VelocityInlet:
         case mesh::BoundaryConditionKind::FixedGradient: {
-            auto phi = _field.value_at_face(face);
+            auto phi = _field.valueAtFace(face);
             return phi * face.area_vector();
         }
 

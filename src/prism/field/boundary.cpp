@@ -15,15 +15,15 @@ auto VelocityInlet::get(const field::Scalar& field, const mesh::Face& face) -> d
 }
 
 auto Empty::get(const field::Scalar& field, const mesh::Face& face) -> double {
-    return field.data()[face.owner()];
+    return field.values()[face.owner()];
 }
 
 auto Symmetry::get(const field::Scalar& field, const mesh::Face& face) -> double {
-    return field.data()[face.owner()];
+    return field.values()[face.owner()];
 }
 
 auto Outlet::get(const field::Scalar& field, const mesh::Face& face) -> double {
-    return field.data()[face.owner()];
+    return field.values()[face.owner()];
 }
 
 auto FixedGradient::get(const field::Scalar& field, const mesh::Face& face) -> double {
@@ -38,6 +38,6 @@ auto FixedGradient::get(const field::Scalar& field, const mesh::Face& face) -> d
     e = e / e.norm();
     grad_at_boundary = grad_at_boundary * d_Cf;
 
-    return grad_at_boundary.dot(e) + field.value_at_cell(owner);
+    return grad_at_boundary.dot(e) + field.valueAtCell(owner);
 }
 } // namespace prism::field::boundary

@@ -2,7 +2,6 @@
 
 #include "gradient.h"
 #include "prism/constants.h"
-#include "prism/mesh/utilities.h"
 #include "prism/types.h"
 
 namespace prism::gradient {
@@ -42,11 +41,11 @@ void LeastSquares::set_pseudo_inv_matrices() {
                 // interior face
                 const auto neighbor = mesh.other_sharing_cell(cell, face);
                 r_CF = neighbor.center() - cell.center();
-                delta_phi = _field.value_at_cell(neighbor) - _field.value_at_cell(cell);
+                delta_phi = _field.valueAtCell(neighbor) - _field.valueAtCell(cell);
             } else {
                 // boundary face
                 r_CF = face.center() - cell.center();
-                delta_phi = _field.value_at_face(face) - _field.value_at_cell(cell);
+                delta_phi = _field.valueAtFace(face) - _field.valueAtCell(cell);
             }
 
             // weight factor defined in equation (9.28)
@@ -81,19 +80,19 @@ auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
         const auto& face = mesh.face(face_id);
 
         double delta_phi = 0.0;
-        auto phi_cell = _field.value_at_cell(cell);
+        auto phi_cell = _field.valueAtCell(cell);
         Vector3d r_CF = {.0, .0, .0};
 
         if (face.is_interior()) {
             // interior face
             const auto neighbor = mesh.other_sharing_cell(cell, face);
             r_CF = neighbor.center() - cell.center();
-            auto nei_phi = _field.value_at_cell(neighbor);
+            auto nei_phi = _field.valueAtCell(neighbor);
             delta_phi = nei_phi - phi_cell;
 
         } else {
             // boundary face
-            auto bface_phi = _field.value_at_face(face);
+            auto bface_phi = _field.valueAtFace(face);
             r_CF = face.center() - cell.center();
             delta_phi = bface_phi - phi_cell;
         }

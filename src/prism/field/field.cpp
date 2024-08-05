@@ -19,13 +19,13 @@
 
 namespace prism::field {
 namespace detail {
-void check_field_name(const std::string& name) {
+void checkFieldName(const std::string& name) {
     if (name.empty()) {
         throw std::runtime_error("Cannot create a Field with an empty name.");
     }
 }
 
-void check_mesh(const mesh::PMesh& mesh) {
+void checkMesh(const mesh::PMesh& mesh) {
     if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundary_patches().empty()) {
         throw std::runtime_error("Cannot create a field over an empty mesh.");
     }
@@ -38,19 +38,19 @@ UniformScalar::UniformScalar(std::string name, const mesh::PMesh& mesh, double v
         "Creating uniform scalar field: '{}' with double value = {}", this->name(), value);
 }
 
-auto UniformScalar::value_at_cell(std::size_t cell_id) const -> double { // NOLINT
+auto UniformScalar::valueAtCell(std::size_t cell_id) const -> double { // NOLINT
     return _value;
 }
 
-auto UniformScalar::value_at_cell(const mesh::Cell& cell) const -> double { // NOLINT
+auto UniformScalar::valueAtCell(const mesh::Cell& cell) const -> double { // NOLINT
     return _value;
 }
 
-auto UniformScalar::value_at_face(std::size_t face_id) const -> double { // NOLINT
+auto UniformScalar::valueAtFace(std::size_t face_id) const -> double { // NOLINT
     return _value;
 }
 
-auto UniformScalar::value_at_face(const mesh::Face& face) const -> double { // NOLINT
+auto UniformScalar::valueAtFace(const mesh::Face& face) const -> double { // NOLINT
     return _value;
 }
 
@@ -59,7 +59,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* 
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)),
       _parent(parent) {
     spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
-    register_default_handlers();
+    addDefaultHandlers();
 }
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector* parent)
@@ -76,7 +76,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector*
     spdlog::debug("Creating scalar field: '{}' with a vector data of size = {}",
                   this->name(),
                   _data->size());
-    register_default_handlers();
+    addDefaultHandlers();
 }
 
 Scalar::Scalar(std::string name,
@@ -109,10 +109,10 @@ Scalar::Scalar(std::string name,
         _data->size(),
         _face_data->size());
 
-    register_default_handlers();
+    addDefaultHandlers();
 }
 
-void Scalar::set_face_values(VectorXd values) {
+void Scalar::setFaceValues(VectorXd values) {
     if (values.size() != mesh().n_faces()) {
         throw std::runtime_error(fmt::format(
             "ScalarField::set_face_values(): cannot set face values for scalar field {}, to a "
@@ -120,7 +120,7 @@ void Scalar::set_face_values(VectorXd values) {
             name()));
     }
 
-    if (has_face_data()) {
+    if (hasFaceValues()) {
         spdlog::debug("Setting new face values to scalar field '{}', discarding old face values.",
                       name());
     }
@@ -128,18 +128,18 @@ void Scalar::set_face_values(VectorXd values) {
     _face_data = std::make_shared<VectorXd>(std::move(values));
 }
 
-auto Scalar::value_at_cell(const mesh::Cell& cell) const -> double {
-    return value_at_cell(cell.id());
+auto Scalar::valueAtCell(const mesh::Cell& cell) const -> double {
+    return valueAtCell(cell.id());
 }
 
-auto Scalar::value_at_cell(std::size_t cell_id) const -> double {
+auto Scalar::valueAtCell(std::size_t cell_id) const -> double {
     assert(_data != nullptr);           // NOLINT
     assert(cell_id < mesh().n_cells()); // NOLINT
     return (*_data)[cell_id];
 }
 
-auto Scalar::value_at_face(std::size_t face_id) const -> double {
-    if (has_face_data()) {
+auto Scalar::valueAtFace(std::size_t face_id) const -> double {
+    if (hasFaceValues()) {
         // Face data were calculataed for us before calling the constructor,
         // just return the value
         return (*_face_data)[face_id];
@@ -149,17 +149,17 @@ auto Scalar::value_at_face(std::size_t face_id) const -> double {
     const auto& face = mesh().face(face_id);
 
     if (face.is_interior()) {
-        return value_at_interior_face(face);
+        return valueAtInteriorFace(face);
     }
 
-    return value_at_boundary_face(face);
+    return valueAtBoundaryFace(face);
 }
 
-auto Scalar::value_at_face(const mesh::Face& face) const -> double {
-    return value_at_face(face.id());
+auto Scalar::valueAtFace(const mesh::Face& face) const -> double {
+    return valueAtFace(face.id());
 }
 
-auto Scalar::value_at_interior_face(const mesh::Face& face) const -> double {
+auto Scalar::valueAtInteriorFace(const mesh::Face& face) const -> double {
     assert(face.is_interior()); // NOLINT
     const auto& owner = mesh().cell(face.owner());
     const auto& neighbor = mesh().cell(face.neighbor().value());
@@ -171,7 +171,7 @@ auto Scalar::value_at_interior_face(const mesh::Face& face) const -> double {
     return val;
 }
 
-auto Scalar::value_at_boundary_face(const mesh::Face& face) const -> double {
+auto Scalar::valueAtBoundaryFace(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.get_bc(name());
 
@@ -194,12 +194,12 @@ auto Scalar::parent() -> std::optional<Vector> {
     return *_parent;
 }
 
-void Scalar::set_parent(Vector* parent) {
+void Scalar::setParent(Vector* parent) {
     _parent = parent;
     // TODO: check parent and component names consistency
 }
 
-void Scalar::register_default_handlers() {
+void Scalar::addDefaultHandlers() {
     _bh_manager.add_handler<field::boundary::Fixed>();
     _bh_manager.add_handler<field::boundary::VelocityInlet>();
     _bh_manager.add_handler<field::boundary::Empty>();
@@ -242,27 +242,27 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> 
     }
 }
 
-auto Tensor::value_at_cell(std::size_t cell_id) const -> Matrix3d {
+auto Tensor::valueAtCell(std::size_t cell_id) const -> Matrix3d {
     assert(cell_id < mesh().n_cells());
     return _data[cell_id];
 }
 
-auto Tensor::value_at_cell(const mesh::Cell& cell) const -> Matrix3d {
+auto Tensor::valueAtCell(const mesh::Cell& cell) const -> Matrix3d {
     return _data[cell.id()];
 }
 
-auto Tensor::value_at_face(std::size_t face_id) const -> Matrix3d {
+auto Tensor::valueAtFace(std::size_t face_id) const -> Matrix3d {
     const mesh::Face& face = this->mesh().face(face_id);
-    return value_at_face(face);
+    return valueAtFace(face);
 }
 
-auto Tensor::value_at_face(const mesh::Face& face) const -> Matrix3d {
+auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
     const auto& mesh = this->mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
 
     if (face.is_boundary()) {
         spdlog::warn(
-            "field::Tensor::value_at_face() was called on a boundary face (face id = {}). "
+            "field::Tensor::valueAtFace() was called on a boundary face (face id = {}). "
             "Returning value of the tensor field at owner cell.",
             face.id());
 
