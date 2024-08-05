@@ -1,8 +1,7 @@
 #pragma once
 
 #include "prism/boundary.h"
-#include "prism/mesh/boundary.h"
-#include "prism/mesh/pmesh.h"
+#include "prism/mesh/face.h"
 
 namespace prism::field {
 class Scalar;

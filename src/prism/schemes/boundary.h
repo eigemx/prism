@@ -1,15 +1,10 @@
 #pragma once
 
-#include <map>
-#include <memory>
-#include <optional>
-#include <stdexcept>
 #include <string>
 
 #include "prism/boundary.h"
 #include "prism/exceptions.h"
-#include "prism/field/field.h"
-#include "prism/mesh/boundary.h"
+#include "prism/mesh/pmesh.h"
 #include "spdlog/spdlog.h"
 
 namespace prism::scheme::boundary {

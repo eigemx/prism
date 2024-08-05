@@ -32,8 +32,9 @@ void BackwardEuler::apply() {
     // TODO: Test this.
     // TODO: implement finalize() to set phi_prev = phi and same for rho.
     matrix().setIdentity();
-    matrix().diagonal() = (_rho.data().array() * _volume_field.array()) / _dt;
-    rhs() = (_rho_prev.data().array() * _volume_field.array() * _phi_prev.data().array()) / _dt;
+    matrix().diagonal() = (_rho.values().array() * _volume_field.array()) / _dt;
+    rhs() =
+        (_rho_prev.values().array() * _volume_field.array() * _phi_prev.values().array()) / _dt;
 }
 
 } // namespace prism::scheme::transient

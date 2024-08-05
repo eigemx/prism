@@ -1,10 +1,7 @@
 #include "rhie_chow.h"
 
-#include <cstddef>
-
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
-#include "prism/mesh/utilities.h"
 #include "prism/types.h"
 
 
@@ -19,8 +16,8 @@ auto correct_grad(const mesh::PMesh& mesh,
     const auto& owner = mesh.cell(face.owner());
     const auto& neighbor = mesh.cell(face.neighbor().value());
 
-    auto P_owner = P.value_at_cell(owner);
-    auto P_neigh = P.value_at_cell(neighbor);
+    auto P_owner = P.valueAtCell(owner);
+    auto P_neigh = P.valueAtCell(neighbor);
 
     auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
@@ -46,8 +43,8 @@ void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pr
 
     for (const auto& face : mesh.interior_faces()) {
         const std::size_t face_id = face.id();
-        const Vector3d& Uf = U.value_at_face(face);
-        const Matrix3d& Df = D.value_at_face(face);
+        const Vector3d& Uf = U.valueAtFace(face);
+        const Matrix3d& Df = D.valueAtFace(face);
         const Vector3d& grad_p_f = p_grad_scheme.gradient_at_face(face);
 
         Vector3d grad_p_f_corr = grad_p_f + correct_grad(mesh, face, P, grad_p_f);
@@ -64,8 +61,8 @@ void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pr
         const auto& owner = mesh.cell(face.owner());
 
         // Equation (15.110)
-        const Vector3d Ub = U.value_at_cell(owner);
-        const Matrix3d& Df = D.value_at_cell(owner);
+        const Vector3d Ub = U.valueAtCell(owner);
+        const Matrix3d& Df = D.valueAtCell(owner);
         const Vector3d grad_p_f = p_grad_scheme.gradient_at_face(face);
         const Vector3d grad_p_C = p_grad_scheme.gradient_at_cell(owner);
 
@@ -76,8 +73,8 @@ void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pr
         w_face_data[face_id] = Ub_corrected.z();
     }
 
-    U.x().set_face_values(u_face_data);
-    U.y().set_face_values(v_face_data);
-    U.z().set_face_values(w_face_data);
+    U.x().setFaceValues(u_face_data);
+    U.y().setFaceValues(v_face_data);
+    U.z().setFaceValues(w_face_data);
 }
 } // namespace prism::ops

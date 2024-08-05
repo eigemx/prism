@@ -23,7 +23,7 @@ auto Fixed::get(const prism::field::Scalar& field, const prism::mesh::Face& face
     double d_Cf_norm = d_Cf.norm();
     prism::Vector3d e = d_Cf / d_Cf_norm;
 
-    double delta_phi = field.value_at_face(face) - field.value_at_cell(owner);
+    double delta_phi = field.valueAtFace(face) - field.valueAtCell(owner);
     return (delta_phi / d_Cf_norm) * e;
 }
 

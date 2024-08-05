@@ -2,6 +2,7 @@
 
 #include "boundary.h"
 #include "prism/constants.h"
+#include "prism/field/field.h"
 
 namespace prism::scheme::diffusion {
 //
@@ -120,7 +121,7 @@ void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
         // get the fixed phi variable associated with the face
-        const double phi_wall = phi.value_at_face(face);
+        const double phi_wall = phi.valueAtFace(face);
 
         const std::size_t cell_id = owner.id();
 
@@ -129,7 +130,7 @@ void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        const Vector3d Sf_prime = kappa.value_at_face(face) * face.area_vector();
+        const Vector3d Sf_prime = kappa.valueAtFace(face) * face.area_vector();
 
         const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
 
@@ -139,7 +140,7 @@ void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
         scheme.rhs(cell_id) += g_diff * phi_wall;
 
         // correct non-orhtogonality
-        const double phi_c = phi.value_at_cell(owner);
+        const double phi_c = phi.valueAtCell(owner);
         auto grad_f = ((phi_wall - phi_c) / (d_Cf_norm + EPSILON)) * e;
         scheme.rhs(owner.id()) += Tf_prime.dot(grad_f);
     }
@@ -169,7 +170,7 @@ void FixedGradient<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply
         const Vector3d wall_grad = boundary_patch.get_vector_bc(phi.name());
 
         const Vector3d& Sf = face.area_vector();
-        Vector3d Sf_prime = kappa.value_at_cell(owner) * Sf;
+        Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
 
         // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2
@@ -190,7 +191,7 @@ void Fixed<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
         // get the fixed phi variable associated with the face
-        const double phi_wall = phi.value_at_face(face);
+        const double phi_wall = phi.valueAtFace(face);
 
         const std::size_t cell_id = owner.id();
 
@@ -199,7 +200,7 @@ void Fixed<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        Vector3d Sf_prime = kappa.value_at_cell(owner) * face.area_vector();
+        Vector3d Sf_prime = kappa.valueAtCell(owner) * face.area_vector();
 
         const double g_diff = Sf_prime.norm() / (d_Cf_norm + EPSILON);
 
@@ -226,7 +227,7 @@ void FixedGradient<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
         const Vector3d wall_grad = boundary_patch.get_vector_bc(phi.name());
 
         const Vector3d& Sf = face.area_vector();
-        Vector3d Sf_prime = kappa.value_at_cell(owner) * Sf;
+        Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
 
         // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2

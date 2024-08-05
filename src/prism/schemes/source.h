@@ -106,10 +106,10 @@ void inline ConstantScalar<Sign>::apply() {
     const auto& vol_field = _phi.mesh().cells_volume_vec();
 
     if (Sign == SourceSign::Positive) {
-        rhs() = _phi.data().array() * vol_field.array();
+        rhs() = _phi.values().array() * vol_field.array();
         return;
     }
-    rhs() = -_phi.data().array() * vol_field.array();
+    rhs() = -_phi.values().array() * vol_field.array();
 }
 
 template <SourceSign Sign>
@@ -122,10 +122,10 @@ Gradient<Sign, GradientScheme>::Gradient(field::Scalar& phi, Coord coord)
 template <SourceSign Sign>
 void inline Divergence<Sign>::apply() {
     if (Sign == SourceSign::Positive) {
-        rhs() = ops::div(_U).data();
+        rhs() = ops::div(_U).values();
         return;
     }
-    rhs() = -ops::div(_U).data();
+    rhs() = -ops::div(_U).values();
 }
 
 template <SourceSign Sign, typename GradientScheme>

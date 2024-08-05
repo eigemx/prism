@@ -16,8 +16,8 @@
 namespace prism::field {
 
 namespace detail {
-void check_field_name(const std::string& name);
-void check_mesh(const mesh::PMesh& mesh);
+void checkFieldName(const std::string& name);
+void checkMesh(const mesh::PMesh& mesh);
 } // namespace detail
 
 template <typename CellValueType>
@@ -33,11 +33,11 @@ class IField {
     auto inline name() const -> const std::string& { return _name; }
     auto inline name() -> std::string& { return _name; }
     auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
-    virtual auto has_face_data() const -> bool { return false; }
-    virtual auto value_at_cell(std::size_t cell_id) const -> CellValueType = 0;
-    virtual auto value_at_cell(const mesh::Cell& cell) const -> CellValueType = 0;
-    virtual auto value_at_face(std::size_t face_id) const -> CellValueType = 0;
-    virtual auto value_at_face(const mesh::Face& face) const -> CellValueType = 0;
+    virtual auto hasFaceValues() const -> bool { return false; }
+    virtual auto valueAtCell(std::size_t cell_id) const -> CellValueType = 0;
+    virtual auto valueAtCell(const mesh::Cell& cell) const -> CellValueType = 0;
+    virtual auto valueAtFace(std::size_t face_id) const -> CellValueType = 0;
+    virtual auto valueAtFace(const mesh::Face& face) const -> CellValueType = 0;
 
     using ValueType = CellValueType;
 
@@ -49,8 +49,8 @@ class IField {
 template <typename CellValueType>
 IField<CellValueType>::IField(std::string name, const mesh::PMesh& mesh)
     : _name(std::move(name)), _mesh(&mesh) {
-    detail::check_field_name(_name);
-    detail::check_mesh(mesh);
+    detail::checkFieldName(_name);
+    detail::checkMesh(mesh);
 }
 
 
@@ -58,10 +58,10 @@ class UniformScalar : public IField<double> {
   public:
     UniformScalar(std::string name, const mesh::PMesh& mesh, double value);
 
-    auto value_at_cell(std::size_t cell_id) const -> double override;
-    auto value_at_cell(const mesh::Cell& cell) const -> double override;
-    auto value_at_face(std::size_t face_id) const -> double override;
-    auto value_at_face(const mesh::Face& face) const -> double override;
+    auto valueAtCell(std::size_t cell_id) const -> double override;
+    auto valueAtCell(const mesh::Cell& cell) const -> double override;
+    auto valueAtFace(std::size_t face_id) const -> double override;
+    auto valueAtFace(const mesh::Face& face) const -> double override;
 
   private:
     double _value {0.0};
@@ -86,19 +86,19 @@ class Scalar : public IField<double> {
            Vector* parent = nullptr);
 
     // TODO: check that _data is not null before returning, and maybe wrap it in an optional type
-    auto inline data() const -> const VectorXd& { return *_data; }
-    auto inline data() -> VectorXd& { return *_data; }
+    auto inline values() const -> const VectorXd& { return *_data; }
+    auto inline values() -> VectorXd& { return *_data; }
 
-    auto inline has_face_data() const -> bool override { return _face_data != nullptr; }
-    void set_face_values(VectorXd values);
+    auto inline hasFaceValues() const -> bool override { return _face_data != nullptr; }
+    void setFaceValues(VectorXd values);
 
-    auto value_at_cell(std::size_t cell_id) const -> double override;
-    auto value_at_cell(const mesh::Cell& cell) const -> double override;
-    auto value_at_face(std::size_t face_id) const -> double override;
-    auto value_at_face(const mesh::Face& face) const -> double override;
+    auto valueAtCell(std::size_t cell_id) const -> double override;
+    auto valueAtCell(const mesh::Cell& cell) const -> double override;
+    auto valueAtFace(std::size_t face_id) const -> double override;
+    auto valueAtFace(const mesh::Face& face) const -> double override;
 
     auto parent() -> std::optional<Vector>;
-    void set_parent(Vector* parent);
+    void setParent(Vector* parent);
 
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
@@ -106,11 +106,11 @@ class Scalar : public IField<double> {
     using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<Scalar,
                                                  boundary::FieldBoundaryHandler<Scalar, double>>;
-    auto bg_manager() -> BoundaryHandlersManager& { return _bh_manager; }
+    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
 
   protected:
-    auto value_at_interior_face(const mesh::Face& face) const -> double;
-    auto value_at_boundary_face(const mesh::Face& face) const -> double;
+    auto valueAtInteriorFace(const mesh::Face& face) const -> double;
+    auto valueAtBoundaryFace(const mesh::Face& face) const -> double;
 
   private:
     BoundaryHandlersManager _bh_manager;
@@ -118,7 +118,7 @@ class Scalar : public IField<double> {
     std::shared_ptr<VectorXd> _face_data = nullptr;
     Vector* _parent = nullptr;
 
-    void register_default_handlers();
+    void addDefaultHandlers();
 };
 
 template <typename ComponentType>
@@ -144,13 +144,13 @@ class Vector : public IField<Vector3d>, public IVector<ComponentType> {
     Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
     Vector(std::string name, const mesh::PMesh& mesh, std::array<Scalar, 3>& fields);
 
-    auto has_face_data() const -> bool override;
+    auto hasFaceValues() const -> bool override;
 
-    auto value_at_cell(std::size_t cell_id) const -> Vector3d override;
-    auto value_at_cell(const mesh::Cell& cell) const -> Vector3d override;
+    auto valueAtCell(std::size_t cell_id) const -> Vector3d override;
+    auto valueAtCell(const mesh::Cell& cell) const -> Vector3d override;
 
-    auto value_at_face(std::size_t face_id) const -> Vector3d override;
-    auto value_at_face(const mesh::Face& face) const -> Vector3d override;
+    auto valueAtFace(std::size_t face_id) const -> Vector3d override;
+    auto valueAtFace(const mesh::Face& face) const -> Vector3d override;
 
     auto inline x() -> ComponentType& override { return _x; }
     auto inline y() -> ComponentType& override { return _y; }
@@ -169,11 +169,11 @@ class Tensor : public IField<Matrix3d> {
     Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data);
     Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data);
 
-    auto value_at_cell(std::size_t cell_id) const -> Matrix3d override;
-    auto value_at_cell(const mesh::Cell& cell) const -> Matrix3d override;
+    auto valueAtCell(std::size_t cell_id) const -> Matrix3d override;
+    auto valueAtCell(const mesh::Cell& cell) const -> Matrix3d override;
 
-    auto value_at_face(std::size_t face_id) const -> Matrix3d override;
-    auto value_at_face(const mesh::Face& face) const -> Matrix3d override;
+    auto valueAtFace(std::size_t face_id) const -> Matrix3d override;
+    auto valueAtFace(const mesh::Face& face) const -> Matrix3d override;
 
     auto operator[](std::size_t i) -> Matrix3d&;
     auto operator[](std::size_t i) const -> const Matrix3d&;
@@ -219,7 +219,7 @@ Vector<ComponentType>::Vector(std::string name,
                 this->name(),
                 field.name());
         }
-        field.set_parent(this);
+        field.setParent(this);
     }
 
     // check sub-fields naming consistency
@@ -238,33 +238,33 @@ Vector<ComponentType>::Vector(std::string name,
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::value_at_cell(std::size_t cell_id) const -> Vector3d {
+auto Vector<ComponentType>::valueAtCell(std::size_t cell_id) const -> Vector3d {
     return operator[](cell_id);
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::value_at_cell(const mesh::Cell& cell) const -> Vector3d {
-    return value_at_cell(cell.id());
+auto Vector<ComponentType>::valueAtCell(const mesh::Cell& cell) const -> Vector3d {
+    return valueAtCell(cell.id());
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::value_at_face(std::size_t face_id) const -> Vector3d {
-    return {_x.value_at_face(face_id), _y.value_at_face(face_id), _z.value_at_face(face_id)};
+auto Vector<ComponentType>::valueAtFace(std::size_t face_id) const -> Vector3d {
+    return {_x.valueAtFace(face_id), _y.valueAtFace(face_id), _z.valueAtFace(face_id)};
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::value_at_face(const mesh::Face& face) const -> Vector3d {
-    return value_at_face(face.id());
+auto Vector<ComponentType>::valueAtFace(const mesh::Face& face) const -> Vector3d {
+    return valueAtFace(face.id());
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::has_face_data() const -> bool {
-    return _x.has_face_data() && _y.has_face_data() && _z.has_face_data();
+auto Vector<ComponentType>::hasFaceValues() const -> bool {
+    return _x.hasFaceValues() && _y.hasFaceValues() && _z.hasFaceValues();
 }
 
 template <typename ComponentType>
 auto Vector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
-    return {_x.data()[i], _y.data()[i], _z.data()[i]};
+    return {_x.values()[i], _y.values()[i], _z.values()[i]};
 }
 } // namespace detail
 

@@ -28,23 +28,7 @@ auto IGradient::gradient_at_face(const mesh::Face& face) -> Vector3d {
         auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
 
         // Equation 9.33 without the correction part, a simple linear interpolation.
-        Vector3d grad = (gc * owner_grad) + ((1. - gc) * neighbor_grad);
-
-        // correct the interpolation
-        /*
-        auto phi_C = _field.value_at_cell(owner_cell.id());
-        auto phi_F = _field.value_at_cell(neighbor_cell.id());
-
-        auto d_CF = neighbor_cell.center() - owner_cell.center();
-        auto d_CF_norm = d_CF.norm();
-        Vector3d e_CF = d_CF / d_CF_norm;
-
-        auto correction = (phi_F - phi_C) / (d_CF_norm + EPSILON);
-        correction -= grad.dot(e_CF);
-
-        return grad + (e_CF * correction);
-        */
-        return grad;
+        return (gc * owner_grad) + ((1. - gc) * neighbor_grad);
     }
 
     // boundary face

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <type_traits>
 
 #include "boundary.h"
 #include "diffusion_boundary.h"
@@ -137,7 +136,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 
     // unit vector in d_CF direction
     const Vector3d e = d_CF / d_CF_norm;
-    const Vector3d Sf_prime = _kappa.value_at_face(face) * face.area_vector();
+    const Vector3d Sf_prime = _kappa.valueAtFace(face) * face.area_vector();
 
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
@@ -211,7 +210,7 @@ void inline NonCorrectedDiffusion<KappaType, Field>::apply_interior(const mesh::
     auto d_CF_norm = d_CF.norm();
 
     const Vector3d& Sf = face.area_vector();
-    Vector3d Sf_prime = _kappa.value_at_face(face) * Sf;
+    Vector3d Sf_prime = _kappa.valueAtFace(face) * Sf;
 
     // geometric diffusion coefficient
     const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
