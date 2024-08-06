@@ -16,7 +16,7 @@ class IImplicitSource : public ISource {};
 class IExplicitSource : public ISource, public FVScheme<field::Scalar> {
   public:
     IExplicitSource(std::size_t n_cells);
-    auto requires_correction() const -> bool final { return false; }
+    auto needsCorrection() const -> bool final { return false; }
 
   private:
     void inline apply_interior(const mesh::Face& face) final {}
@@ -80,9 +80,9 @@ class Laplacian : public IExplicitSource {
 
 // TODO: Test this!
 template <SourceSign Sign = SourceSign::Positive>
-class Field : public FVScheme<field::Scalar>, public IImplicitSource {
+class ImplicitField : public FVScheme<field::Scalar>, public IImplicitSource {
   public:
-    Field(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
+    ImplicitField(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
     void apply() override;
     auto inline field() -> std::optional<field::Scalar> override { return _phi; }
 
@@ -90,7 +90,7 @@ class Field : public FVScheme<field::Scalar>, public IImplicitSource {
     void inline apply_interior(const mesh::Face& face) override {}
     void inline apply_boundary(const mesh::Face& face) override {}
 
-    auto inline requires_correction() const -> bool override { return false; }
+    auto inline needsCorrection() const -> bool override { return false; }
 
     field::Scalar _phi;
 };
@@ -180,7 +180,7 @@ void inline Laplacian<Sign, GradientScheme>::apply() {
 }
 
 template <SourceSign Sign>
-void inline Field<Sign>::apply() {
+void inline ImplicitField<Sign>::apply() {
     matrix().setIdentity();
 
     if (Sign == SourceSign::Positive) {

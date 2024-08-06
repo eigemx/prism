@@ -33,10 +33,10 @@ class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     auto kappa() -> KappaType { return _kappa; }
 
     using Scheme = CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>;
-    using BCManager =
+    using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<Scheme,
                                                  boundary::FVSchemeBoundaryHandler<Scheme>>;
-    auto bc_manager() -> BCManager& { return _bc_manager; }
+    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:
     void apply_interior(const mesh::Face& face) override;
@@ -48,7 +48,7 @@ class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     KappaType _kappa;
     NonOrthoCorrector _corrector;
     GradScheme _grad_scheme;
-    BCManager _bc_manager;
+    BoundaryHandlersManager _bc_manager;
 };
 
 template <typename KappaType = field::UniformScalar, typename Field = field::Scalar>
@@ -58,14 +58,14 @@ class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
 
     void apply() override;
     auto field() -> std::optional<field::Scalar> override { return _phi; }
-    auto requires_correction() const -> bool override { return false; }
+    auto needsCorrection() const -> bool override { return false; }
     auto kappa() -> KappaType { return _kappa; }
 
     using Scheme = NonCorrectedDiffusion<KappaType, Field>;
-    using BCManager =
+    using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<Scheme,
                                                  boundary::FVSchemeBoundaryHandler<Scheme>>;
-    auto bc_manager() -> BCManager& { return _bc_manager; }
+    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:
     void apply_interior(const mesh::Face& face) override;
@@ -74,7 +74,7 @@ class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
 
     Field _phi;
     KappaType _kappa;
-    BCManager _bc_manager;
+    BoundaryHandlersManager _bc_manager;
 };
 
 //
@@ -85,8 +85,8 @@ CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::CorrectedDi
     KappaType kappa,
     Field phi)
     : _phi(phi), FVScheme<Field>(phi.mesh().n_cells()), _kappa(kappa), _grad_scheme(phi) {
-    assert(this->requires_correction() == true &&
-           "CorrectedDiffusion::requires_correction() must return true");
+    assert(this->needsCorrection() == true &&
+           "CorrectedDiffusion::needsCorrection() must return true");
 
     // add default boundary handlers for CorrectedDiffusion
     using Scheme = std::remove_reference_t<decltype(*this)>;
@@ -171,8 +171,8 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 template <typename KappaType, typename Field>
 NonCorrectedDiffusion<KappaType, Field>::NonCorrectedDiffusion(KappaType kappa, field::Scalar phi)
     : _phi(phi), FVScheme<Field>(phi.mesh().n_cells()), _kappa(kappa) {
-    assert(this->requires_correction() == false &&
-           "NonCorrectedDiffusion::requires_correction() must return false");
+    assert(this->needsCorrection() == false &&
+           "NonCorrectedDiffusion::needsCorrection() must return false");
 
     // add default boundary handlers for NonCorrectedDiffusion
     using Scheme = std::remove_reference_t<decltype(*this)>;

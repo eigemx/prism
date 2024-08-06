@@ -82,7 +82,7 @@ void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
 
     for (const auto& patch : mesh.boundary_patches()) {
         const mesh::BoundaryCondition& bc = patch.get_bc(_phi.name());
-        auto handler = scheme.bc_manager().get_handler(bc.kind_string());
+        auto handler = scheme.boundaryHandlersManager().get_handler(bc.kind_string());
 
         if (handler == nullptr) {
             throw error::NonImplementedBoundaryCondition(
