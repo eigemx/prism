@@ -80,13 +80,13 @@ void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
     auto _phi = scheme.field().value();
     const mesh::PMesh& mesh = _phi.mesh();
 
-    for (const auto& patch : mesh.boundary_patches()) {
-        const mesh::BoundaryCondition& bc = patch.get_bc(_phi.name());
-        auto handler = scheme.boundaryHandlersManager().get_handler(bc.kind_string());
+    for (const auto& patch : mesh.boundaryPatches()) {
+        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
+        auto handler = scheme.boundaryHandlersManager().get_handler(bc.kindString());
 
         if (handler == nullptr) {
             throw error::NonImplementedBoundaryCondition(
-                fmt::format("{}::apply_boundary()", scheme_name), patch.name(), bc.kind_string());
+                fmt::format("{}::apply_boundary()", scheme_name), patch.name(), bc.kindString());
         }
 
         spdlog::debug(

@@ -32,7 +32,7 @@ auto UniformScalar::valueAtFace(const mesh::Face& face) const -> double { // NOL
 
 Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* parent)
     : IField(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.n_cells()) * value)),
+      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
       _parent(parent) {
     spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     addDefaultHandlers();
@@ -42,7 +42,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector*
     : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
       _parent(parent) {
-    if (_data->size() != mesh.n_cells()) {
+    if (_data->size() != mesh.nCells()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
@@ -64,14 +64,14 @@ Scalar::Scalar(std::string name,
       _data(std::make_shared<VectorXd>(std::move(data))),
       _face_data(std::make_shared<VectorXd>(std::move(face_data))),
       _parent(parent) {
-    if (_data->size() != mesh.n_cells()) {
+    if (_data->size() != mesh.nCells()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
             this->name()));
     }
 
-    if (_face_data->size() != mesh.n_faces()) {
+    if (_face_data->size() != mesh.nFaces()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
                         "vector that has a different size than mesh's faces count.",
@@ -89,7 +89,7 @@ Scalar::Scalar(std::string name,
 }
 
 void Scalar::setFaceValues(VectorXd values) {
-    if (values.size() != mesh().n_faces()) {
+    if (values.size() != mesh().nFaces()) {
         throw std::runtime_error(fmt::format(
             "ScalarField::set_face_values(): cannot set face values for scalar field {}, to a "
             "face data vector having a different size that field's faces count.",
@@ -149,15 +149,15 @@ auto Scalar::valueAtInteriorFace(const mesh::Face& face) const -> double {
 
 auto Scalar::valueAtBoundaryFace(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
-    const auto& bc = patch.get_bc(name());
+    const auto& bc = patch.getBoundaryCondition(name());
 
-    auto handler = _bh_manager.get_handler(bc.kind_string());
+    auto handler = _bh_manager.get_handler(bc.kindString());
 
     if (handler == nullptr) {
         throw error::NonImplementedBoundaryCondition(
             fmt::format("ScalarField({})::value_at_boundary_face()", name()),
             patch.name(),
-            bc.kind_string());
+            bc.kindString());
     }
 
     return handler->get(*this, face);

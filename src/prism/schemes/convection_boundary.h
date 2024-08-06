@@ -47,10 +47,10 @@ void Fixed<convection::IConvection<G>>::apply(convection::IConvection<G>& scheme
     const auto phi = scheme.field().value();
     const auto& mesh = phi.mesh();
 
-    for (const auto face_id : patch.faces_ids()) {
+    for (const auto face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
-        const double phi_wall = patch.get_scalar_bc(phi.name());
+        const double phi_wall = patch.getScalarBoundaryCondition(phi.name());
 
         const Vector3d& S_f = face.area_vector();
         const Vector3d U_f = scheme.U().valueAtFace(face);
@@ -82,7 +82,7 @@ void Outlet<convection::IConvection<G>>::apply(convection::IConvection<G>& schem
     const auto phi = scheme.field().value();
     const auto& mesh = phi.mesh();
 
-    for (const auto& face_id : patch.faces_ids()) {
+    for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
         const std::size_t cell_id = owner.id();

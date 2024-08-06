@@ -125,7 +125,7 @@ IConvection<G>::IConvection(field::Scalar rho, field::Vector U, field::Scalar ph
       _U(std::move(U)),
       _phi(phi),
       _gradient_scheme(phi),
-      FVScheme(phi.mesh().n_cells()) {
+      FVScheme(phi.mesh().nCells()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
     _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
@@ -138,7 +138,7 @@ template <typename G>
 void IConvection<G>::apply() {
     apply_boundary();
 
-    for (const auto& iface : _phi.mesh().interior_faces()) {
+    for (const auto& iface : _phi.mesh().interiorFaces()) {
         apply_interior(iface);
     }
 

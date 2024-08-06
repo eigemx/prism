@@ -36,6 +36,6 @@ auto VelocityInlet::get(const prism::field::Scalar& field, const prism::mesh::Fa
 auto FixedGradient::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
     -> prism::Vector3d {
     const auto& boundary_patch = field.mesh().boundary_patch(face);
-    return boundary_patch.get_vector_bc(field.name());
+    return boundary_patch.getVectorBoundaryCondition(field.name());
 }
 } // namespace prism::gradient::boundary

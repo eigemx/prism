@@ -1,23 +1,23 @@
 #include "unv.h"
 
 #include <fmt/format.h>
+#include <prism/exceptions.h>
+#include <spdlog/spdlog.h>
+#include <unvpp/unvpp.h>
 
 #include <algorithm>
 #include <cassert>
 #include <memory>
-#include <stdexcept>
 #include <string_view>
 
 #include "boundary.h"
-#include "fmt/core.h"
-#include "prism/exceptions.h"
-#include "spdlog/spdlog.h"
-#include "unvpp/unvpp.h"
+
+
+using VectorOfFaces = std::vector<std::vector<std::size_t>>;
 
 // Vector of 6 quad faces
-template <typename T = std::vector<std::vector<std::size_t>>>
-auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T hfaces;
+auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
+    VectorOfFaces hfaces;
     hfaces.resize(6);
 
     hfaces[0] = {c[1], c[2], c[6], c[5]};
@@ -31,9 +31,8 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> T {
 }
 
 // Vector of 4 triangular faces
-template <typename T = std::vector<std::vector<std::size_t>>>
-auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T tfaces;
+auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
+    VectorOfFaces tfaces;
     tfaces.resize(4);
 
     tfaces[0] = {c[0], c[2], c[1]};
@@ -45,9 +44,8 @@ auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> T {
 }
 
 // Vector of 5 faces (3 quads & 2 triangels)
-template <typename T = std::vector<std::vector<std::size_t>>>
-auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> T {
-    T wfaces;
+auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
+    VectorOfFaces wfaces;
     wfaces.resize(5);
 
     wfaces[0] = {c[0], c[2], c[1]};
@@ -101,7 +99,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
             _faces[face_id].set_boundary_patch_id(boundary_patch_id);
         }
 
-        patch.faces_ids() = faces_ids;
+        patch.facesIds() = faces_ids;
         ++boundary_patch_id;
     }
 

@@ -7,12 +7,12 @@ BackwardEuler::BackwardEuler(field::Scalar& rho, field::Scalar& phi, double dt)
       _dt(dt),
       _phi_prev(phi),
       _rho_prev(_rho),
-      FVScheme(phi.mesh().n_cells()) {
+      FVScheme(phi.mesh().nCells()) {
     if (dt <= 0.0) {
         throw std::runtime_error(
             "BackwardEuler::BackwardEuler() constructor was given a zero or negative time step.");
     }
-    _volume_field.resize(phi.mesh().n_cells());
+    _volume_field.resize(phi.mesh().nCells());
 
     for (const auto& cell : phi.mesh().cells()) {
         _volume_field[cell.id()] = cell.volume();

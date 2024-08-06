@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cmath>
 #include <iterator>
 
@@ -11,6 +10,7 @@
 
 namespace prism::mesh {
 
+// TODO: remove const std::vector& members to std::span
 namespace detail {
 struct FaceIterator {
     using iterator_category = std::input_iterator_tag;
@@ -84,25 +84,25 @@ class PMesh {
     auto inline face(std::size_t face_id) const -> const Face& { return _faces[face_id]; }
     auto inline face(std::size_t face_id) noexcept -> Face& { return _faces[face_id]; }
 
-    auto inline boundary_patches() const noexcept -> const std::vector<BoundaryPatch>& {
+    auto inline boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>& {
         return _boundary_patches;
     }
     auto inline boundary_patch(const Face& face) const noexcept -> const BoundaryPatch& {
         return _boundary_patches[face.boundary_patch_id().value()];
     }
 
-    auto face_boundary_patch(std::size_t face_id) const -> const BoundaryPatch&;
-    auto face_boundary_patch(const Face& face) const -> const BoundaryPatch&;
+    auto faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch&;
+    auto faceBoundaryPatch(const Face& face) const -> const BoundaryPatch&;
 
-    auto n_cells() const noexcept -> std::size_t { return _n_cells; }
-    auto n_faces() const noexcept -> std::size_t { return _n_faces; }
+    auto nCells() const noexcept -> std::size_t { return _n_cells; }
+    auto nFaces() const noexcept -> std::size_t { return _n_faces; }
 
-    auto cells_volume_vec() const noexcept -> const VectorXd& { return _cells_volume; }
+    auto cellsVolumeVector() const noexcept -> const VectorXd& { return _cells_volume; }
 
-    auto other_sharing_cell(const Cell& c, const Face& f) const -> const Cell&;
+    auto otherSharingCell(const Cell& c, const Face& f) const -> const Cell&;
 
-    auto boundary_faces() const -> detail::BoundaryFaces { return {_faces, _boundary_faces_ids}; }
-    auto interior_faces() const -> detail::InteriorFaces { return {_faces, _interior_faces_ids}; }
+    auto boundaryFaces() const -> detail::BoundaryFaces { return {_faces, _boundary_faces_ids}; }
+    auto interiorFaces() const -> detail::InteriorFaces { return {_faces, _interior_faces_ids}; }
 
   private:
     std::vector<Vector3d> _vertices;

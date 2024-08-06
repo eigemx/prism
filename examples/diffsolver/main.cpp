@@ -40,7 +40,7 @@ auto main(int argc, char* argv[]) -> int {
     auto T = field::Scalar("temperature", mesh, 300.0);
 
     // define a source term
-    prism::VectorXd source_field_data = VectorXd::Zero(mesh.n_cells());
+    prism::VectorXd source_field_data = VectorXd::Zero(mesh.nCells());
     for (const auto& cell : mesh.cells()) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {
@@ -53,8 +53,8 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
     auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
-    auto eqn =
-        TransportEquation(scheme::diffusion::CorrectedDiffusion(kappa, T), scheme::source::ConstantScalar(S));
+    auto eqn = TransportEquation(scheme::diffusion::CorrectedDiffusion(kappa, T),
+                                 scheme::source::ConstantScalar(S));
 
     // solve
     auto solver =

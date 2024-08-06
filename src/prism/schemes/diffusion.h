@@ -84,7 +84,7 @@ template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, t
 CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::CorrectedDiffusion(
     KappaType kappa,
     Field phi)
-    : _phi(phi), FVScheme<Field>(phi.mesh().n_cells()), _kappa(kappa), _grad_scheme(phi) {
+    : _phi(phi), FVScheme<Field>(phi.mesh().nCells()), _kappa(kappa), _grad_scheme(phi) {
     assert(this->needsCorrection() == true &&
            "CorrectedDiffusion::needsCorrection() must return true");
 
@@ -110,7 +110,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 
     apply_boundary();
 
-    for (const auto& iface : _phi.mesh().interior_faces()) {
+    for (const auto& iface : _phi.mesh().interiorFaces()) {
         apply_interior(iface);
     }
 
@@ -170,7 +170,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 //
 template <typename KappaType, typename Field>
 NonCorrectedDiffusion<KappaType, Field>::NonCorrectedDiffusion(KappaType kappa, field::Scalar phi)
-    : _phi(phi), FVScheme<Field>(phi.mesh().n_cells()), _kappa(kappa) {
+    : _phi(phi), FVScheme<Field>(phi.mesh().nCells()), _kappa(kappa) {
     assert(this->needsCorrection() == false &&
            "NonCorrectedDiffusion::needsCorrection() must return false");
 
@@ -187,7 +187,7 @@ template <typename KappaType, typename Field>
 void inline NonCorrectedDiffusion<KappaType, Field>::apply() {
     apply_boundary();
 
-    for (const auto& iface : _phi.mesh().interior_faces()) {
+    for (const auto& iface : _phi.mesh().interiorFaces()) {
         apply_interior(iface);
     }
 

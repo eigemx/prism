@@ -14,7 +14,7 @@ void LeastSquares::set_pseudo_inv_matrices() {
     const auto& mesh = _field.mesh();
 
     // resize the pseudo-inverse matrices vector
-    _pinv_matrices.resize(mesh.n_cells());
+    _pinv_matrices.resize(mesh.nCells());
 
     for (const auto& cell : mesh.cells()) {
         // A 3x3 matrix of the left hand side of equation (9.27)
@@ -39,7 +39,7 @@ void LeastSquares::set_pseudo_inv_matrices() {
 
             if (face.is_interior()) {
                 // interior face
-                const auto neighbor = mesh.other_sharing_cell(cell, face);
+                const auto neighbor = mesh.otherSharingCell(cell, face);
                 r_CF = neighbor.center() - cell.center();
                 delta_phi = _field.valueAtCell(neighbor) - _field.valueAtCell(cell);
             } else {
@@ -85,7 +85,7 @@ auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
 
         if (face.is_interior()) {
             // interior face
-            const auto neighbor = mesh.other_sharing_cell(cell, face);
+            const auto neighbor = mesh.otherSharingCell(cell, face);
             r_CF = neighbor.center() - cell.center();
             auto nei_phi = _field.valueAtCell(neighbor);
             delta_phi = nei_phi - phi_cell;

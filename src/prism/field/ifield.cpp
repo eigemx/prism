@@ -1,7 +1,8 @@
 
+#include "ifield.h"
+
 #include <stdexcept>
 
-#include "ifield.h"
 #include "prism/mesh/pmesh.h"
 
 
@@ -14,7 +15,7 @@ void checkFieldName(const std::string& name) {
 }
 
 void checkMesh(const mesh::PMesh& mesh) {
-    if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundary_patches().empty()) {
+    if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundaryPatches().empty()) {
         throw std::runtime_error("Cannot create a field over an empty mesh.");
     }
 }

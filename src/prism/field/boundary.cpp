@@ -6,12 +6,12 @@
 namespace prism::field::boundary {
 auto Fixed::get(const field::Scalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundary_patch(face);
-    return patch.get_scalar_bc(field.name());
+    return patch.getScalarBoundaryCondition(field.name());
 }
 
 auto VelocityInlet::get(const field::Scalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundary_patch(face);
-    return patch.get_scalar_bc(field.name());
+    return patch.getScalarBoundaryCondition(field.name());
 }
 
 auto Empty::get(const field::Scalar& field, const mesh::Face& face) -> double {
@@ -30,7 +30,7 @@ auto FixedGradient::get(const field::Scalar& field, const mesh::Face& face) -> d
     const auto& mesh = field.mesh();
     const auto& patch = mesh.boundary_patch(face);
 
-    Vector3d grad_at_boundary = patch.get_vector_bc(name());
+    Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(name());
     const auto& owner = mesh.cell(face.owner());
 
     Vector3d e = face.center() - owner.center();

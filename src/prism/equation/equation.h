@@ -46,7 +46,7 @@ template <typename Scheme, typename... Schemes>
 TransportEquation<Field>::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field().value()),
       _phi_old(scheme.field().value()),
-      LinearSystem(scheme.field().value().mesh().n_cells()) {
+      LinearSystem(scheme.field().value().mesh().nCells()) {
     // add the first mandatory scheme
     addScheme(std::forward<Scheme>(scheme));
 

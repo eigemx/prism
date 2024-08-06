@@ -36,18 +36,18 @@ auto main(int argc, char* argv[]) -> int {
     // set up a unifform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
     const auto& inlet_patch = std::find_if(
-        mesh.boundary_patches().begin(), mesh.boundary_patches().end(), [](const auto& patch) {
+        mesh.boundaryPatches().begin(), mesh.boundaryPatches().end(), [](const auto& patch) {
             return patch.name() == "inlet";
         });
 
-    if (inlet_patch == mesh.boundary_patches().end()) {
+    if (inlet_patch == mesh.boundaryPatches().end()) {
         fmt::println(
             "Error: No boundary patch with name `inlet` was found, cannot set velocity field.");
         return 1;
     }
 
     // Set a uniform velocity field, with value equal to inlet velocity;
-    Vector3d inlet_velocity = inlet_patch->get_vector_bc("velocity");
+    Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("velocity");
     auto U = field::Vector("velocity", mesh, inlet_velocity);
 
     // A zero field, just to demonstrate how to add arbitray constant source terms
