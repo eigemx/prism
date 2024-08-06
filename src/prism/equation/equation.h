@@ -21,19 +21,16 @@ class TransportEquation : public LinearSystem {
     template <typename Scheme, typename... Schemes>
     TransportEquation(Scheme&& scheme, Schemes&&... schemes);
 
-    void update_coeffs();
-    void zero_out_coeffs();
+    void updateCoeffs();
+    void zeroOutCoeffs();
     auto inline field() const -> const Field& { return _phi; }
     auto inline field() -> Field& { return _phi; }
 
-    auto inline field_prev_iter() const -> const Field& { return _phi_old; }
-    auto inline field_prev_iter() -> Field& { return _phi_old; }
+    auto inline prevIterField() const -> const Field& { return _phi_old; }
+    auto inline prevIterField() -> Field& { return _phi_old; }
 
     template <typename Scheme>
-    void add_scheme(Scheme&& scheme);
-
-    template <typename Scheme>
-    void add_scheme(Scheme& scheme);
+    void addScheme(Scheme&& scheme);
 
   private:
     std::vector<std::shared_ptr<scheme::FVScheme<Field>>> _schemes;
@@ -51,14 +48,14 @@ TransportEquation<Field>::TransportEquation(Scheme&& scheme, Schemes&&... scheme
       _phi_old(scheme.field().value()),
       LinearSystem(scheme.field().value().mesh().n_cells()) {
     // add the first mandatory scheme
-    add_scheme(std::forward<Scheme>(scheme));
+    addScheme(std::forward<Scheme>(scheme));
 
     // add the rest of the schemes, if any
-    (add_scheme(std::forward<Schemes>(schemes)), ...);
+    (addScheme(std::forward<Schemes>(schemes)), ...);
 }
 
 template <typename Field>
-void TransportEquation<Field>::update_coeffs() {
+void TransportEquation<Field>::updateCoeffs() {
     const auto& mesh = _phi.mesh();
 
     // iterate over all equation's finite volume schemes
@@ -73,7 +70,7 @@ void TransportEquation<Field>::update_coeffs() {
 }
 
 template <typename Field>
-void TransportEquation<Field>::zero_out_coeffs() {
+void TransportEquation<Field>::zeroOutCoeffs() {
     for (auto& scheme : _schemes) {
         scheme->matrix().setZero();
         scheme->rhs().setZero();
@@ -86,7 +83,7 @@ void TransportEquation<Field>::zero_out_coeffs() {
 
 template <typename Field>
 template <typename Scheme>
-void TransportEquation<Field>::add_scheme(Scheme&& scheme) {
+void TransportEquation<Field>::addScheme(Scheme&& scheme) {
     if (scheme.requires_correction()) {
         _n_corrected_schemes++;
     }
@@ -94,13 +91,4 @@ void TransportEquation<Field>::add_scheme(Scheme&& scheme) {
     _schemes.emplace_back(std::make_shared<Scheme>(std::forward<Scheme>(scheme)));
 }
 
-template <typename Field>
-template <typename Scheme>
-void TransportEquation<Field>::add_scheme(Scheme& scheme) {
-    if (scheme.requires_correction()) {
-        _n_corrected_schemes++;
-    }
-
-    _schemes.emplace_back(std::make_shared<Scheme>(scheme));
-}
 } // namespace prism

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
+#include <prism/types.h>
 
-#include "types.h"
+#include <vector>
 
 namespace prism {
 // A linear system of equations of the form Ax = b
@@ -10,26 +10,12 @@ class LinearSystem {
   public:
     LinearSystem() = delete;
     LinearSystem(const LinearSystem& other) = default;
-    LinearSystem(LinearSystem&& other) = default;
+    LinearSystem(LinearSystem&& other) noexcept = default;
     auto operator=(const LinearSystem& other) -> LinearSystem& = default;
-    auto operator=(LinearSystem&& other) -> LinearSystem& = default;
+    auto operator=(LinearSystem&& other) noexcept -> LinearSystem& = default;
     virtual ~LinearSystem() = default;
 
-    LinearSystem(std::size_t n_cells, bool need_matrix = true)
-        : _A(n_cells, n_cells), _b(n_cells) {
-        // set the right hand side to zero
-        _b.setZero();
-
-        if (need_matrix) {
-            // assume that the mesh is purely tetrahedral, so each cell has 3 neighbors
-            // then the number of triplets (i, j, v) is 4 * n_cells
-            // this is the minimum number of triplets, but it is not the exact number
-            // In the general case of a polyhedral mesh, this number is not correct
-            // but can be treated as a warm-up for allocations.
-            // TODO: check if this is making any difference, and remove it if not.
-            _triplets.reserve(4 * n_cells);
-        }
-    }
+    LinearSystem(std::size_t n_cells, bool need_matrix = true);
 
     // setters and getters for matrix A in the right hand side of the linear system
     auto inline matrix() const -> const SparseMatrix& { return _A; }
@@ -40,20 +26,10 @@ class LinearSystem {
     // accumulated. inser() does not actually insert directly into matrix A,
     // but actually inserts to a vector of triplets `_triplets` until collect()
     // is called, which does the actual insertion to the matrix.
-    auto inline insert(std::size_t i, std::size_t j, double v) -> void {
-        _triplets.emplace_back(i, j, v);
-    }
+    void insert(std::size_t i, std::size_t j, double v);
 
     // collect() should be called after inserting all the matrix coefficients
-    void inline collect() {
-        if (_triplets.empty()) {
-            throw std::runtime_error(
-                "LinearSystem::collect() was called on an empty "
-                "triplet list. This should not happen.");
-        }
-        _A.setFromTriplets(_triplets.begin(), _triplets.end());
-        _triplets.clear();
-    }
+    void collect();
 
     // getters and setters for vector `b` in the left hand side of the equation
     auto inline rhs() const -> const VectorXd& { return _b; }

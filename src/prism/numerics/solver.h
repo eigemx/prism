@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <Eigen/IterativeLinearSolvers>
 
@@ -55,14 +55,14 @@ void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
     const auto& b = eqn.rhs();
 
     auto& phi = eqn.field();
-    auto& phi_prev = eqn.field_prev_iter();
+    auto& phi_prev = eqn.prevIterField();
 
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     Relaxer rx;
 
     for (std::size_t i = 0; i < n_iter; i++) {
-        eqn.update_coeffs();
-        rx.pre_relax(eqn, lambda);
+        eqn.updateCoeffs();
+        rx.preRelax(eqn, lambda);
 
         // calculate the residuals and its norm
         auto res = (A * phi.values()) - b;
@@ -70,20 +70,20 @@ void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
 
         // check for convergence
         if (res_norm < eps) {
-            fmt::println("Converged after {} iterations", i);
-            fmt::println("Residual: {}", res_norm);
+            spdlog::info("Converged after {} iterations", i);
+            spdlog::info("Residual: {}", res_norm);
             break;
         }
 
         phi_prev.values() = phi.values();
         phi.values() = bicg.compute(A).solveWithGuess(b, phi.values());
 
-        rx.post_relax(eqn, lambda);
+        rx.postRelax(eqn, lambda);
 
-        fmt::println("Iteration: {}, Residual: {}", i, res_norm);
+        spdlog::info("Iteration: {}, Residual: {}", i, res_norm);
 
         // zero out the left & right hand side vector, for the next iteration
-        eqn.zero_out_coeffs();
+        eqn.zeroOutCoeffs();
     }
 }
 
@@ -101,8 +101,8 @@ void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
     Relaxer rx;
 
     for (std::size_t i = 0; i < n_iter; i++) {
-        eqn.update_coeffs();
-        rx.pre_relax(eqn, lambda);
+        eqn.updateCoeffs();
+        rx.preRelax(eqn, lambda);
 
         // calculate the residuals and its norm
         auto res = (A * phi.values()) - b;
@@ -110,8 +110,8 @@ void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
 
         // check for convergence
         if (res_norm < eps) {
-            fmt::println("Converged after {} iterations", i);
-            fmt::println("Residual: {}", res_norm);
+            spdlog::info("Converged after {} iterations", i);
+            spdlog::info("Residual: {}", res_norm);
             break;
         }
 
@@ -128,12 +128,12 @@ void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
             phi.values()(j) = (b(j) - sum) / A.coeff(j, j);
         }
 
-        rx.post_relax(eqn, lambda);
+        rx.postRelax(eqn, lambda);
 
-        fmt::println("Iteration: {}, Residual: {}", i, res_norm);
+        spdlog::info("Iteration: {}, Residual: {}", i, res_norm);
 
         // zero out the left & right hand side vector, for the next iteration
-        eqn.zero_out_coeffs();
+        eqn.zeroOutCoeffs();
     }
 }
 
