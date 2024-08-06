@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
 #include "prism/linear.h"
 #include "prism/schemes/fvscheme.h"
 
@@ -84,7 +84,7 @@ void TransportEquation<Field>::zeroOutCoeffs() {
 template <typename Field>
 template <typename Scheme>
 void TransportEquation<Field>::addScheme(Scheme&& scheme) {
-    if (scheme.requires_correction()) {
+    if (scheme.needsCorrection()) {
         _n_corrected_schemes++;
     }
 

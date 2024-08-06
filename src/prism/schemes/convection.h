@@ -19,9 +19,9 @@ namespace prism::scheme::convection {
 namespace detail {
 // coefficients for the discretized convection equation for a face
 struct CoeffsTriplet {
-    double a_C {}; // cell
-    double a_N {}; // neighbor
-    double b {};   // source
+    double a_C {0.0}; // cell
+    double a_N {0.0}; // neighbor
+    double b {0.0};   // source
 };
 } // namespace detail
 
@@ -37,10 +37,10 @@ class IConvection : public FVScheme<field::Scalar> {
     auto inline U() -> const field::Vector& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
-    using BCManager = prism::boundary::BoundaryHandlersManager<
+    using BoundaryHandlersManager = prism::boundary::BoundaryHandlersManager<
         IConvection<GradScheme>,
         boundary::FVSchemeBoundaryHandler<IConvection<GradScheme>>>;
-    auto bc_manager() -> BCManager& { return _bc_manager; }
+    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   protected:
     auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
@@ -59,7 +59,7 @@ class IConvection : public FVScheme<field::Scalar> {
     field::Vector _U;
     field::Scalar _phi;
     GradScheme _gradient_scheme;
-    BCManager _bc_manager;
+    BoundaryHandlersManager _bc_manager;
 };
 
 // Central difference scheme

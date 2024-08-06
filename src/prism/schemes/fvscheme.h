@@ -17,7 +17,7 @@ class FVScheme : public LinearSystem {
 
     // returns true if the scheme requires correction. The default implementation returns ture.
     // Override this method if the scheme does not require correction.
-    virtual auto requires_correction() const -> bool { return true; }
+    virtual auto needsCorrection() const -> bool { return true; }
 
     // If the scheme contributes to the transport equation main matrix, then this method shall
     // return the transport ScalarField, if not, such as the cases of a constant source term where
