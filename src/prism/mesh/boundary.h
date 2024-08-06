@@ -74,11 +74,7 @@ class BoundaryCondition {
     BoundaryCondition(BoundaryConditionValueKind type,
                       BoundaryConditionValue value,
                       BoundaryConditionKind patch_type,
-                      std::string bc_type_str)
-        : _value_kind(type),
-          _value(std::move(value)),
-          _kind(patch_type),
-          _kind_str(std::move(bc_type_str)) {}
+                      std::string bc_type_str);
 
     auto inline value_kind() const noexcept -> BoundaryConditionValueKind {
         // Should we check if the value is Nil?
@@ -107,9 +103,8 @@ class BoundaryPatch {
   public:
     BoundaryPatch() = delete;
 
-    BoundaryPatch(std::string name, std::map<std::string, BoundaryCondition> field_name_to_bc_map)
-        : _name(std::move(name)), _field_name_to_bc_map(std::move(field_name_to_bc_map)) {}
-
+    BoundaryPatch(std::string name,
+                  std::map<std::string, BoundaryCondition> field_name_to_bc_map);
     auto inline name() const noexcept -> const std::string& { return _name; }
 
     // this method returns the boundary condition for a scalar field given its name
@@ -121,12 +116,15 @@ class BoundaryPatch {
     auto faces_ids() const noexcept -> const std::vector<std::size_t>& { return _faces_ids; }
     auto faces_ids() noexcept -> std::vector<std::size_t>& { return _faces_ids; }
 
+    auto inline isEmpty() const noexcept -> bool { return _is_empty; }
+
   private:
     auto get_scalar_bc_subfield(const std::string& name) const -> double;
 
     std::string _name;
     std::map<std::string, BoundaryCondition> _field_name_to_bc_map;
     std::vector<std::size_t> _faces_ids;
+    bool _is_empty {false};
 };
 
 /** @brief Read boundary file

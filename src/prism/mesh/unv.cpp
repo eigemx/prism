@@ -73,7 +73,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
 
     // convert vertices to prism::Vector3d
     for (const auto& v : _unv_mesh->vertices()) {
-        _vertices.emplace_back(Vector3d(v[0], v[1], v[2]));
+        _vertices.emplace_back(v[0], v[1], v[2]);
     }
 
     _faces_lookup_trie = std::make_unique<FacesLookupTrie>(_unv_mesh->vertices().size());
@@ -89,7 +89,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
 
     _boundary_patches = read_boundary_file(boundary_path, boundary_names);
 
-    fmt::println("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
+    spdlog::debug("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
 
     // for each boundary patch, set the faces that belong to it, and make the patch aware of the
     // ids of the faces it owns

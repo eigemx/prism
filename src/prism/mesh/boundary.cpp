@@ -215,6 +215,33 @@ auto is_component_field(const std::string& name) -> bool {
     return false;
 }
 
+BoundaryCondition::BoundaryCondition(BoundaryConditionValueKind type,
+                                     BoundaryConditionValue value,
+                                     BoundaryConditionKind patch_type,
+                                     std::string bc_type_str)
+    : _value_kind(type),
+      _value(std::move(value)),
+      _kind(patch_type),
+      _kind_str(std::move(bc_type_str)) {}
+
+
+BoundaryPatch::BoundaryPatch(std::string name,
+                             std::map<std::string, BoundaryCondition> field_name_to_bc_map)
+    : _name(std::move(name)), _field_name_to_bc_map(std::move(field_name_to_bc_map)) {
+    if (_field_name_to_bc_map.empty()) {
+        throw std::runtime_error(fmt::format(
+            "BoundaryPatch constructor for patch {} was called with an empty field name to "
+            "boundary condition map",
+            _name));
+    }
+
+    const auto& it = _field_name_to_bc_map.begin();
+    const auto& bc = it->second;
+
+    if (bc.kind_string() == "empty") {
+        _is_empty = true;
+    }
+}
 
 auto BoundaryPatch::get_bc(const std::string& field_name) const -> const BoundaryCondition& {
     // Search for the field name in the boundary patch
