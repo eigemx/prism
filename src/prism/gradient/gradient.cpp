@@ -37,15 +37,15 @@ auto IGradient::gradient_at_face(const mesh::Face& face) -> Vector3d {
 
 auto IGradient::gradient_at_boundary_face(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
-    const auto& boundary_condition = boundary_patch.get_bc(_field.name());
+    const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
 
-    auto handler = _bh_manager.get_handler(boundary_condition.kind_string());
+    auto handler = _bh_manager.get_handler(boundary_condition.kindString());
 
     if (handler == nullptr) {
         throw prism::error::NonImplementedBoundaryCondition(
             "IGradient::gradient_at_boundary_face",
             boundary_patch.name(),
-            boundary_condition.kind_string());
+            boundary_condition.kindString());
     }
 
     return handler->get(_field, face);
@@ -56,8 +56,8 @@ auto IGradient::gradient_field() -> field::Vector {
     auto grad_field_name = fmt::format("grad({})", _field.name());
     const auto& mesh = _field.mesh();
 
-    auto n_cells = mesh.n_cells();
-    auto n_faces = mesh.n_faces();
+    auto n_cells = mesh.nCells();
+    auto n_faces = mesh.nFaces();
 
     VectorXd grad_x = VectorXd::Zero(n_cells);
     VectorXd grad_x_face_data = VectorXd::Zero(n_faces);

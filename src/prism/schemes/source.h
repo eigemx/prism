@@ -82,7 +82,7 @@ class Laplacian : public IExplicitSource {
 template <SourceSign Sign = SourceSign::Positive>
 class ImplicitField : public FVScheme<field::Scalar>, public IImplicitSource {
   public:
-    ImplicitField(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().n_cells()) {}
+    ImplicitField(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().nCells()) {}
     void apply() override;
     auto inline field() -> std::optional<field::Scalar> override { return _phi; }
 
@@ -99,11 +99,11 @@ inline IExplicitSource::IExplicitSource(std::size_t n_cells) : FVScheme(n_cells,
 
 template <SourceSign Sign>
 ConstantScalar<Sign>::ConstantScalar(field::Scalar phi)
-    : _phi(phi), IExplicitSource(phi.mesh().n_cells()) {}
+    : _phi(phi), IExplicitSource(phi.mesh().nCells()) {}
 
 template <SourceSign Sign>
 void inline ConstantScalar<Sign>::apply() {
-    const auto& vol_field = _phi.mesh().cells_volume_vec();
+    const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
     if (Sign == SourceSign::Positive) {
         rhs() = _phi.values().array() * vol_field.array();
@@ -113,11 +113,11 @@ void inline ConstantScalar<Sign>::apply() {
 }
 
 template <SourceSign Sign>
-Divergence<Sign>::Divergence(field::Vector& U) : IExplicitSource(U.mesh().n_cells()), _U(U) {}
+Divergence<Sign>::Divergence(field::Vector& U) : IExplicitSource(U.mesh().nCells()), _U(U) {}
 
 template <SourceSign Sign, typename GradientScheme>
 Gradient<Sign, GradientScheme>::Gradient(field::Scalar& phi, Coord coord)
-    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().n_cells()) {}
+    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {}
 
 template <SourceSign Sign>
 void inline Divergence<Sign>::apply() {
@@ -131,7 +131,7 @@ void inline Divergence<Sign>::apply() {
 template <SourceSign Sign, typename GradientScheme>
 void Gradient<Sign, GradientScheme>::apply() {
     auto grad_field = _grad_scheme.gradient_field();
-    const auto& vol_field = _phi.mesh().cells_volume_vec();
+    const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
     switch (_coord) {
         case Coord::X: {
@@ -162,7 +162,7 @@ void Gradient<Sign, GradientScheme>::apply() {
 
 template <SourceSign Sign, typename GradientScheme>
 Laplacian<Sign, GradientScheme>::Laplacian(double kappa, field::Scalar phi)
-    : IExplicitSource(phi.mesh().n_cells()),
+    : IExplicitSource(phi.mesh().nCells()),
       _kappa(kappa),
       _phi(phi),
       _grad_scheme(GradientScheme(phi)) {}

@@ -37,11 +37,11 @@ void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pr
     VectorXd u_face_data;
     VectorXd v_face_data;
     VectorXd w_face_data;
-    u_face_data.resize(mesh.n_faces());
-    v_face_data.resize(mesh.n_faces());
-    w_face_data.resize(mesh.n_faces());
+    u_face_data.resize(mesh.nFaces());
+    v_face_data.resize(mesh.nFaces());
+    w_face_data.resize(mesh.nFaces());
 
-    for (const auto& face : mesh.interior_faces()) {
+    for (const auto& face : mesh.interiorFaces()) {
         const std::size_t face_id = face.id();
         const Vector3d& Uf = U.valueAtFace(face);
         const Matrix3d& Df = D.valueAtFace(face);
@@ -56,7 +56,7 @@ void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pr
         w_face_data[face_id] = Uf_corrected.z();
     }
 
-    for (const auto& face : mesh.boundary_faces()) {
+    for (const auto& face : mesh.boundaryFaces()) {
         const std::size_t face_id = face.id();
         const auto& owner = mesh.cell(face.owner());
 

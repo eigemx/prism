@@ -2,7 +2,7 @@
 
 #include "boundary.h"
 #include "prism/constants.h"
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
 
 namespace prism::scheme::diffusion {
 //
@@ -117,7 +117,7 @@ void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
     const auto& corrector = scheme.corrector();
     const auto& kappa = scheme.kappa();
 
-    for (const auto& face_id : patch.faces_ids()) {
+    for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
         // get the fixed phi variable associated with the face
@@ -161,13 +161,13 @@ void FixedGradient<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply
     const auto& kappa = scheme.kappa();
     const auto& mesh = phi.mesh();
 
-    for (const auto& face_id : patch.faces_ids()) {
+    for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
 
         // get the fixed gradient (flux) value associated with the face
-        const auto& boundary_patch = mesh.face_boundary_patch(face);
-        const Vector3d wall_grad = boundary_patch.get_vector_bc(phi.name());
+        const auto& boundary_patch = mesh.faceBoundaryPatch(face);
+        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
 
         const Vector3d& Sf = face.area_vector();
         Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
@@ -187,7 +187,7 @@ void Fixed<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
     const auto& mesh = phi.mesh();
     const auto& kappa = scheme.kappa();
 
-    for (const auto& face_id : patch.faces_ids()) {
+    for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
         // get the fixed phi variable associated with the face
@@ -218,13 +218,13 @@ void FixedGradient<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
     const auto& kappa = scheme.kappa();
     const auto& mesh = phi.mesh();
 
-    for (const auto& face_id : patch.faces_ids()) {
+    for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
 
         // get the fixed gradient (flux) value associated with the face
-        const auto& boundary_patch = mesh.face_boundary_patch(face);
-        const Vector3d wall_grad = boundary_patch.get_vector_bc(phi.name());
+        const auto& boundary_patch = mesh.faceBoundaryPatch(face);
+        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
 
         const Vector3d& Sf = face.area_vector();
         Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;

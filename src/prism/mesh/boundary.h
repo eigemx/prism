@@ -1,12 +1,11 @@
 #pragma once
 
-#include <cstddef>
+#include <prism/types.h>
+
 #include <filesystem>
 #include <string>
 #include <variant>
 #include <vector>
-
-#include "prism/types.h"
 
 namespace prism::mesh {
 
@@ -76,14 +75,14 @@ class BoundaryCondition {
                       BoundaryConditionKind patch_type,
                       std::string bc_type_str);
 
-    auto inline value_kind() const noexcept -> BoundaryConditionValueKind {
+    auto inline valueKind() const noexcept -> BoundaryConditionValueKind {
         // Should we check if the value is Nil?
         // this always assumes that value is either scalar or vector.
         return _value_kind;
     }
     auto inline value() const noexcept -> const BoundaryConditionValue& { return _value; }
     auto inline kind() const noexcept -> BoundaryConditionKind { return _kind; }
-    auto inline kind_string() const noexcept -> const std::string& { return _kind_str; }
+    auto inline kindString() const noexcept -> const std::string& { return _kind_str; }
 
   private:
     std::string _kind_str;
@@ -101,25 +100,23 @@ class BoundaryCondition {
  */
 class BoundaryPatch {
   public:
-    BoundaryPatch() = delete;
-
     BoundaryPatch(std::string name,
                   std::map<std::string, BoundaryCondition> field_name_to_bc_map);
     auto inline name() const noexcept -> const std::string& { return _name; }
 
     // this method returns the boundary condition for a scalar field given its name
-    auto get_bc(const std::string& field_name) const -> const BoundaryCondition&;
+    auto getBoundaryCondition(const std::string& field_name) const -> const BoundaryCondition&;
 
-    auto get_scalar_bc(const std::string& field_name) const -> double;
-    auto get_vector_bc(const std::string& field_name) const -> Vector3d;
+    auto getScalarBoundaryCondition(const std::string& field_name) const -> double;
+    auto getVectorBoundaryCondition(const std::string& field_name) const -> Vector3d;
 
-    auto faces_ids() const noexcept -> const std::vector<std::size_t>& { return _faces_ids; }
-    auto faces_ids() noexcept -> std::vector<std::size_t>& { return _faces_ids; }
+    auto facesIds() const noexcept -> const std::vector<std::size_t>& { return _faces_ids; }
+    auto facesIds() noexcept -> std::vector<std::size_t>& { return _faces_ids; }
 
     auto inline isEmpty() const noexcept -> bool { return _is_empty; }
 
   private:
-    auto get_scalar_bc_subfield(const std::string& name) const -> double;
+    auto getScalarBCSubfield(const std::string& name) const -> double;
 
     std::string _name;
     std::map<std::string, BoundaryCondition> _field_name_to_bc_map;

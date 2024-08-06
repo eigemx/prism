@@ -24,7 +24,7 @@ auto div(const field::Vector& U, bool return_face_data) -> field::Scalar {
     const mesh::PMesh& mesh = U.mesh();
 
     VectorXd cell_data;
-    cell_data.resize(mesh.n_cells());
+    cell_data.resize(mesh.nCells());
 
     for (const auto& cell : mesh.cells()) {
         cell_data[cell.id()] = div_cell(mesh, cell, U);
@@ -32,15 +32,15 @@ auto div(const field::Vector& U, bool return_face_data) -> field::Scalar {
 
     if (return_face_data) {
         VectorXd face_data;
-        face_data.resize(mesh.n_faces());
+        face_data.resize(mesh.nFaces());
 
         // We start with calculating the fluxes at boundary faces
-        for (const auto& bface : mesh.boundary_faces()) {
+        for (const auto& bface : mesh.boundaryFaces()) {
             face_data[bface.id()] = boundary_face_flux(mesh, bface, U);
         }
 
         // for interior faces, we take the average of the divergence at the two sharing cells
-        for (const auto& iface : mesh.interior_faces()) {
+        for (const auto& iface : mesh.interiorFaces()) {
             const auto& owner = mesh.cell(iface.owner());
             const auto& neighbor = mesh.cell(iface.neighbor().value());
             auto gc = mesh::geo_weight(owner, neighbor, iface);
@@ -93,7 +93,7 @@ auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const f
     }
 
     const auto& boundary_patch = mesh.boundary_patch(face);
-    const auto& field_bc = boundary_patch.get_bc(U.name());
+    const auto& field_bc = boundary_patch.getBoundaryCondition(U.name());
 
     // TODO: add a boundary handler for this
     switch (field_bc.kind()) {

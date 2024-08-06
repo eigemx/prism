@@ -64,7 +64,7 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
 
         field_name_to_bc_map.insert({field_name, field_bc});
 
-        if (field_bc.value_kind() == BoundaryConditionValueKind::Vector) {
+        if (field_bc.valueKind() == BoundaryConditionValueKind::Vector) {
             // to make it easier to access the x, y, z boundary conditions for a vector field
             auto vec_value = std::get<Vector3d>(field_bc.value());
             field_name_to_bc_map.insert({field_name + "_x",
@@ -72,21 +72,21 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
                                              BoundaryConditionValueKind::Scalar,
                                              vec_value.x(),
                                              field_bc.kind(),
-                                             field_bc.kind_string(),
+                                             field_bc.kindString(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_y",
                                          BoundaryCondition {
                                              BoundaryConditionValueKind::Scalar,
                                              vec_value.y(),
                                              field_bc.kind(),
-                                             field_bc.kind_string(),
+                                             field_bc.kindString(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_z",
                                          BoundaryCondition {
                                              BoundaryConditionValueKind::Scalar,
                                              vec_value.z(),
                                              field_bc.kind(),
-                                             field_bc.kind_string(),
+                                             field_bc.kindString(),
                                          }});
         }
     }
@@ -238,12 +238,13 @@ BoundaryPatch::BoundaryPatch(std::string name,
     const auto& it = _field_name_to_bc_map.begin();
     const auto& bc = it->second;
 
-    if (bc.kind_string() == "empty") {
+    if (bc.kindString() == "empty") {
         _is_empty = true;
     }
 }
 
-auto BoundaryPatch::get_bc(const std::string& field_name) const -> const BoundaryCondition& {
+auto BoundaryPatch::getBoundaryCondition(const std::string& field_name) const
+    -> const BoundaryCondition& {
     // Search for the field name in the boundary patch
     auto it = _field_name_to_bc_map.find(field_name);
 
@@ -267,13 +268,13 @@ auto BoundaryPatch::get_bc(const std::string& field_name) const -> const Boundar
 }
 
 
-auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double {
+auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) const -> double {
     // in some cases we're dealing with a ScalarField that is a component of a parent VectorField,
     // such as when dealing with the x-component ScalarField of a velocity VectorField U.
     // in this case we won't find the boundary condition value for U_x as a single scalar BC,
     // but we can get it from the first component of the vector BC value of U.
     if (is_component_field(field_name)) {
-        return get_scalar_bc_subfield(field_name);
+        return getScalarBCSubfield(field_name);
     }
 
     // Search for the field name in the boundary patch
@@ -288,7 +289,7 @@ auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double
                         field_name));
     }
 
-    if (it->second.value_kind() != BoundaryConditionValueKind::Scalar) {
+    if (it->second.valueKind() != BoundaryConditionValueKind::Scalar) {
         // field is not a scalar
         throw std::runtime_error(
             fmt::format("BoundaryPatch::get_scalar_bc(): "
@@ -301,7 +302,7 @@ auto BoundaryPatch::get_scalar_bc(const std::string& field_name) const -> double
 }
 
 
-auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector3d {
+auto BoundaryPatch::getVectorBoundaryCondition(const std::string& field_name) const -> Vector3d {
     // Search for the field name in the boundary patch
     auto it = _field_name_to_bc_map.find(field_name);
 
@@ -314,7 +315,7 @@ auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector
                         field_name));
     }
 
-    if (it->second.value_kind() != BoundaryConditionValueKind::Vector) {
+    if (it->second.valueKind() != BoundaryConditionValueKind::Vector) {
         // field is not a vector
         throw std::runtime_error(
             fmt::format("BoundaryPatch::get_vector_bc(): "
@@ -326,8 +327,8 @@ auto BoundaryPatch::get_vector_bc(const std::string& field_name) const -> Vector
     return std::get<Vector3d>(it->second.value());
 }
 
-auto BoundaryPatch::get_scalar_bc_subfield(const std::string& name) const -> double {
-    const auto& vec_value = get_vector_bc(name.substr(0, name.size() - 2));
+auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double {
+    const auto& vec_value = getVectorBoundaryCondition(name.substr(0, name.size() - 2));
 
     switch (name.back()) {
         case 'x':

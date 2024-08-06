@@ -21,7 +21,7 @@ GreenGauss::GreenGauss(const field::Scalar& field) : _field(field), IGradient(fi
     // to make the cell gradient vector _cell_gradients available if the user desires to call
     // gradient_at_face() which requires a first run of gradient calculations, to perform
     // correction for faces with skewness.
-    const std::size_t n_cells = _field.mesh().n_cells();
+    const std::size_t n_cells = _field.mesh().nCells();
 
 
     _cell_gradients.reserve(n_cells);
@@ -51,7 +51,7 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
         // This is an internal face
         // Area normal vector, poitning out of the cell
         auto Sf = mesh::outward_area_vector(face, cell);
-        const auto& nei = _field.mesh().other_sharing_cell(cell, face);
+        const auto& nei = _field.mesh().otherSharingCell(cell, face);
         auto face_phi = 0.5 * (_field[cell.id()] + _field[nei.id()]);
 
         if (correct_skewness) {
@@ -70,7 +70,7 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
 auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
     // TODO: write a boundary handler for this
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
-    const auto& boundary_condition = boundary_patch.get_bc(_field.name());
+    const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
     auto bc_type = boundary_condition.kind();
 
     switch (bc_type) {
@@ -94,7 +94,7 @@ auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
             throw error::NonImplementedBoundaryCondition(
                 "GreenGauss::green_gauss_face_integral()",
                 boundary_patch.name(),
-                boundary_condition.kind_string());
+                boundary_condition.kindString());
     }
 }
 } // namespace prism::gradient
