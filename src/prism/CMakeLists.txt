@@ -1,5 +1,6 @@
 add_library(prism
-    # core sources
+    linear.cpp
+    
     field/ifield.cpp
     field/boundary.cpp
     field/tensor.cpp

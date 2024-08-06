@@ -9,37 +9,37 @@ namespace prism::solver {
 template <typename Field>
 class IRelaxer {
   public:
-    // pre_relax() is called before solving the equation (suitable for implicit schemes)
-    virtual void pre_relax(TransportEquation<Field>& eqn, double lambda) const = 0;
+    // preRelax() is called before solving the equation (suitable for implicit schemes)
+    virtual void preRelax(TransportEquation<Field>& eqn, double lambda) const = 0;
 
-    // post_relax() is called after solving the equation (suitable for explicit schemes)
-    virtual void post_relax(TransportEquation<Field>& eqn, double lambda) const = 0;
+    // postRelax() is called after solving the equation (suitable for explicit schemes)
+    virtual void postRelax(TransportEquation<Field>& eqn, double lambda) const = 0;
 };
 
 template <typename Field>
 class ImplicitUnderRelaxation : public IRelaxer<Field> {
   public:
-    void pre_relax(TransportEquation<Field>& eqn, double lambda) const override;
+    void preRelax(TransportEquation<Field>& eqn, double lambda) const override;
 
     // no post_relax() is needed for implicit under-relaxation
-    void inline post_relax(TransportEquation<Field>& eqn, double lambda) const override {}
+    void inline postRelax(TransportEquation<Field>& eqn, double lambda) const override {}
 };
 
 template <typename Field>
 class ExplicitUnderRelaxation : public IRelaxer<Field> {
   public:
     // no pre_relax() is needed for explicit under-relaxation
-    void inline pre_relax(TransportEquation<Field>& eqn, double lambda) const override {}
+    void inline preRelax(TransportEquation<Field>& eqn, double lambda) const override {}
 
-    void post_relax(TransportEquation<Field>& eqn, double lambda) const override;
+    void postRelax(TransportEquation<Field>& eqn, double lambda) const override;
 };
 
 template <typename Field>
-void ImplicitUnderRelaxation<Field>::pre_relax(TransportEquation<Field>& eqn,
-                                               double lambda) const {
+void ImplicitUnderRelaxation<Field>::preRelax(TransportEquation<Field>& eqn,
+                                              double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
         spdlog::debug(
-            "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
+            "ImplicitUnderRelaxation::preRelax(): relaxation factor is"
             " either less than 0.0 or equals 1.0, skipping relaxation...");
         return;
     }
@@ -55,11 +55,11 @@ void ImplicitUnderRelaxation<Field>::pre_relax(TransportEquation<Field>& eqn,
 }
 
 template <typename Field>
-void ExplicitUnderRelaxation<Field>::post_relax(TransportEquation<Field>& eqn,
-                                                double lambda) const {
+void ExplicitUnderRelaxation<Field>::postRelax(TransportEquation<Field>& eqn,
+                                               double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
         spdlog::debug(
-            "ImplicitUnderRelaxation::pre_relax(): relaxation factor is"
+            "ImplicitUnderRelaxation::preRelax(): relaxation factor is"
             " either less than 0.0 or equals 1.0, skipping relaxation...");
         return;
     }
