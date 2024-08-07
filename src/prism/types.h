@@ -2,7 +2,6 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <cstddef> // std::size_t
 
 namespace prism {
 
