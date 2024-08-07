@@ -63,7 +63,7 @@ auto main(int argc, char* argv[]) -> int {
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 
-    auto gradT_x = gradient::LeastSquares(T).gradient_field().x();
+    auto gradT_x = gradient::LeastSquares(T).gradField().x();
     prism::export_field_vtu(gradT_x, "gradT_x_ls.vtu");
 
     return 0;

@@ -6,10 +6,10 @@
 
 namespace prism::gradient {
 LeastSquares::LeastSquares(const field::Scalar& field) : _field(field), IGradient(field) {
-    set_pseudo_inv_matrices();
+    setPseudoInvMatrices();
 }
 
-void LeastSquares::set_pseudo_inv_matrices() {
+void LeastSquares::setPseudoInvMatrices() {
     // This function is based on section 9.3 'Least-Square Gradient'
     const auto& mesh = _field.mesh();
 
@@ -70,7 +70,7 @@ void LeastSquares::set_pseudo_inv_matrices() {
     }
 }
 
-auto LeastSquares::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
+auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     const auto& mesh = _field.mesh();
 
     // right hand side of equation (9.27)

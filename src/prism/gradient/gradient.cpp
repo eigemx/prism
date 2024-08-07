@@ -14,16 +14,16 @@ IGradient::IGradient(const field::Scalar& field) : _field(field) { // NOLINT
     _bh_manager.add_handler<boundary::VelocityInlet>();
 }
 
-auto IGradient::gradient_at_face(const mesh::Face& face) -> Vector3d {
+auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
     if (face.is_interior()) {
         // interior face
         const auto& mesh = _field.mesh();
         const auto& owner_cell = mesh.cell(face.owner());
-        auto owner_grad = gradient_at_cell(owner_cell);
+        auto owner_grad = gradAtCell(owner_cell);
 
         const auto& neighbor_cell = mesh.cell(face.neighbor().value());
-        auto neighbor_grad = gradient_at_cell(neighbor_cell);
+        auto neighbor_grad = gradAtCell(neighbor_cell);
 
         auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
 
@@ -32,10 +32,10 @@ auto IGradient::gradient_at_face(const mesh::Face& face) -> Vector3d {
     }
 
     // boundary face
-    return gradient_at_boundary_face(face);
+    return gradAtBoundaryFace(face);
 }
 
-auto IGradient::gradient_at_boundary_face(const mesh::Face& face) -> Vector3d {
+auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
 
@@ -51,7 +51,7 @@ auto IGradient::gradient_at_boundary_face(const mesh::Face& face) -> Vector3d {
     return handler->get(_field, face);
 }
 
-auto IGradient::gradient_field() -> field::Vector {
+auto IGradient::gradField() -> field::Vector {
     // TODO: This function is VERY expensive
     auto grad_field_name = fmt::format("grad({})", _field.name());
     const auto& mesh = _field.mesh();
@@ -69,14 +69,14 @@ auto IGradient::gradient_field() -> field::Vector {
     VectorXd grad_z_face_data = VectorXd::Zero(n_faces);
 
     for (std::size_t i = 0; i < n_cells; ++i) {
-        const auto& cell_grad = gradient_at_cell(mesh.cell(i));
+        const auto& cell_grad = gradAtCell(mesh.cell(i));
         grad_x[i] = cell_grad[0];
         grad_y[i] = cell_grad[1];
         grad_z[i] = cell_grad[2];
     }
 
     for (std::size_t j = 0; j < n_faces; ++j) {
-        const auto& face_grad = gradient_at_face(mesh.face(j));
+        const auto& face_grad = gradAtFace(mesh.face(j));
         grad_x_face_data[j] = face_grad[0];
         grad_y_face_data[j] = face_grad[1];
         grad_z_face_data[j] = face_grad[2];

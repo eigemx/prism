@@ -216,9 +216,9 @@ auto SecondOrderUpwind<G>::interpolate(double m_dot,
                                        const mesh::Cell& neighbor,
                                        const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
-    const Vector3d cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
-    const Vector3d neighbor_grad_phi = this->grad_scheme().gradient_at_cell(neighbor);
+    const Vector3d face_grad_phi = this->grad_scheme().gradAtFace(face);
+    const Vector3d cell_grad_phi = this->grad_scheme().gradAtCell(cell);
+    const Vector3d neighbor_grad_phi = this->grad_scheme().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
     // auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
@@ -244,9 +244,9 @@ auto QUICK<G>::interpolate(double m_dot,
                            const mesh::Cell& neighbor,
                            const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
-    const Vector3d cell_grad_phi = this->grad_scheme().gradient_at_cell(cell);
-    const Vector3d neighbor_grad_phi = this->grad_scheme().gradient_at_cell(neighbor);
+    const Vector3d face_grad_phi = this->grad_scheme().gradAtFace(face);
+    const Vector3d cell_grad_phi = this->grad_scheme().gradAtCell(cell);
+    const Vector3d neighbor_grad_phi = this->grad_scheme().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
     auto correction = 0.5 * d_Cf.dot(cell_grad_phi + face_grad_phi);
