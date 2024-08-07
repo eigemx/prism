@@ -7,9 +7,9 @@
 
 namespace prism::gradient {
 
-auto GreenGauss::skewness_correction(const mesh::Face& face,
-                                     const mesh::Cell& cell,
-                                     const mesh::Cell& nei) const -> double {
+auto GreenGauss::correctSkewness(const mesh::Face& face,
+                                 const mesh::Cell& cell,
+                                 const mesh::Cell& nei) const -> double {
     auto grad_sum = _cell_gradients[cell.id()] + _cell_gradients[nei.id()];
     auto vec = face.center() - (0.5 * (cell.center() + nei.center()));
 
@@ -27,15 +27,15 @@ GreenGauss::GreenGauss(const field::Scalar& field) : _field(field), IGradient(fi
     _cell_gradients.reserve(n_cells);
     for (const auto& cell : _field.mesh().cells()) {
         // caclulate the gradient without skewness correction
-        _cell_gradients.emplace_back(_gradient_at_cell(cell, false));
+        _cell_gradients.emplace_back(gradAtCell_(cell, false));
     }
 }
 
-auto GreenGauss::gradient_at_cell(const mesh::Cell& cell) -> Vector3d {
-    return _gradient_at_cell(cell, true);
+auto GreenGauss::gradAtCell(const mesh::Cell& cell) -> Vector3d {
+    return gradAtCell_(cell, true);
 }
 
-auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness) -> Vector3d {
+auto GreenGauss::gradAtCell_(const mesh::Cell& cell, bool correct_skewness) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = _field.mesh();
 
@@ -44,7 +44,7 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
 
         // This is a boundary face
         if (face.is_boundary()) {
-            grad += green_gauss_face_integral(face);
+            grad += boundaryFaceIntegral(face);
             continue;
         }
 
@@ -55,7 +55,7 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
         auto face_phi = 0.5 * (_field[cell.id()] + _field[nei.id()]);
 
         if (correct_skewness) {
-            face_phi += skewness_correction(face, cell, nei);
+            face_phi += correctSkewness(face, cell, nei);
         }
         grad += Sf * face_phi;
     }
@@ -67,34 +67,16 @@ auto GreenGauss::_gradient_at_cell(const mesh::Cell& cell, bool correct_skewness
     return grad;
 }
 
-auto GreenGauss::green_gauss_face_integral(const mesh::Face& face) -> Vector3d {
-    // TODO: write a boundary handler for this
+auto GreenGauss::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d {
+    // returns the Green-Gauss face integral at boundary face `face`
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
-    auto bc_type = boundary_condition.kind();
 
-    switch (bc_type) {
-        case mesh::BoundaryConditionKind::Empty: {
-            return Vector3d {0., 0., 0.};
-        }
-        case mesh::BoundaryConditionKind::Outlet:
-        case mesh::BoundaryConditionKind::Symmetry: {
-            auto phi = _field.valueAtFace(face);
-            return phi * face.area_vector();
-        }
-
-        case mesh::BoundaryConditionKind::Fixed:
-        case mesh::BoundaryConditionKind::VelocityInlet:
-        case mesh::BoundaryConditionKind::FixedGradient: {
-            auto phi = _field.valueAtFace(face);
-            return phi * face.area_vector();
-        }
-
-        default:
-            throw error::NonImplementedBoundaryCondition(
-                "GreenGauss::green_gauss_face_integral()",
-                boundary_patch.name(),
-                boundary_condition.kindString());
+    if (boundary_patch.isEmpty()) {
+        return {0.0, 0.0, 0.0};
     }
+
+    auto phi = _field.valueAtFace(face);
+    return phi * face.area_vector();
 }
 } // namespace prism::gradient

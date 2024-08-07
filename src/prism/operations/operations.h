@@ -1,6 +1,6 @@
 #pragma once
 
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
 
 namespace prism::ops {
 

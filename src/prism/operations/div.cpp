@@ -93,20 +93,14 @@ auto boundary_face_flux(const mesh::PMesh& mesh, const mesh::Face& face, const f
     }
 
     const auto& boundary_patch = mesh.boundary_patch(face);
-    const auto& field_bc = boundary_patch.getBoundaryCondition(U.name());
 
-    // TODO: add a boundary handler for this
-    switch (field_bc.kind()) {
-        case mesh::BoundaryConditionKind::Empty: {
-            return 0.0;
-        }
-
-        default: {
-            const auto& Uf = U.valueAtFace(face);
-            return Uf.dot(Sf);
-        }
+    if (boundary_patch.isEmpty()) {
+        return 0.0;
     }
-    return 0.0;
+
+    const auto& field_bc = boundary_patch.getBoundaryCondition(U.name());
+    const auto& Uf = U.valueAtFace(face);
+    return Uf.dot(Sf);
 }
 
 } // namespace prism::ops

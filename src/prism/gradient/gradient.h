@@ -26,16 +26,16 @@ class IGradient {
     auto operator=(IGradient&&) -> IGradient& = delete;
     virtual ~IGradient() = default;
 
-    virtual auto gradient_at_cell(const mesh::Cell& c) -> Vector3d = 0;
-    virtual auto gradient_at_face(const mesh::Face& f) -> Vector3d;
-    virtual auto gradient_field() -> field::Vector;
+    virtual auto gradAtCell(const mesh::Cell& c) -> Vector3d = 0;
+    virtual auto gradAtFace(const mesh::Face& f) -> Vector3d;
+    virtual auto gradField() -> field::Vector;
 
     using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<IGradient, boundary::GradSchemeBoundaryHandler>;
-    auto bh_manager() -> BoundaryHandlersManager& { return _bh_manager; }
+    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
 
   protected:
-    virtual auto gradient_at_boundary_face(const mesh::Face& f) -> Vector3d;
+    virtual auto gradAtBoundaryFace(const mesh::Face& f) -> Vector3d;
 
   private:
     field::Scalar _field;
@@ -45,14 +45,14 @@ class IGradient {
 class GreenGauss : public IGradient {
   public:
     GreenGauss(const field::Scalar& field);
-    auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
-    auto skewness_correction(const mesh::Face& face,
-                             const mesh::Cell& cell,
-                             const mesh::Cell& nei) const -> double;
-    auto _gradient_at_cell(const mesh::Cell& cell, bool correct_skewness = true) -> Vector3d;
-    auto green_gauss_face_integral(const mesh::Face& f) -> Vector3d;
+    auto correctSkewness(const mesh::Face& face,
+                         const mesh::Cell& cell,
+                         const mesh::Cell& nei) const -> double;
+    auto gradAtCell_(const mesh::Cell& cell, bool correct_skewness = true) -> Vector3d;
+    auto boundaryFaceIntegral(const mesh::Face& f) -> Vector3d;
 
     field::Scalar _field;
     std::vector<Vector3d> _cell_gradients;
@@ -61,11 +61,10 @@ class GreenGauss : public IGradient {
 class LeastSquares : public IGradient {
   public:
     LeastSquares(const field::Scalar& field);
-    auto gradient_at_cell(const mesh::Cell& cell) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
-    void set_pseudo_inv_matrices();
-    auto boundary_face_phi(const mesh::Face& face) -> std::optional<double>;
+    void setPseudoInvMatrices();
 
     field::Scalar _field;
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices

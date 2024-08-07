@@ -63,8 +63,8 @@ void rhie_chow_correct(field::Vector& U, const field::Tensor& D, const field::Pr
         // Equation (15.110)
         const Vector3d Ub = U.valueAtCell(owner);
         const Matrix3d& Df = D.valueAtCell(owner);
-        const Vector3d grad_p_f = p_grad_scheme.gradient_at_face(face);
-        const Vector3d grad_p_C = p_grad_scheme.gradient_at_cell(owner);
+        const Vector3d grad_p_f = p_grad_scheme.gradAtFace(face);
+        const Vector3d grad_p_C = p_grad_scheme.gradAtCell(owner);
 
         // Equation (15.111)
         Vector3d Ub_corrected = Ub - (Df * (grad_p_f - grad_p_C));
