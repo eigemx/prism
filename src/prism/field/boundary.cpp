@@ -1,7 +1,9 @@
 #include "boundary.h"
 
-#include "field.h"
+#include <spdlog/spdlog.h>
+
 #include "prism/mesh/face.h"
+#include "scalar.h"
 
 namespace prism::field::boundary {
 auto Fixed::get(const field::Scalar& field, const mesh::Face& face) -> double {
@@ -15,6 +17,8 @@ auto VelocityInlet::get(const field::Scalar& field, const mesh::Face& face) -> d
 }
 
 auto Empty::get(const field::Scalar& field, const mesh::Face& face) -> double {
+    // TODO: Empty faces field value should not contribute to the solution, we need to avoid
+    // having an "Empty" handler for fields.
     return field.values()[face.owner()];
 }
 

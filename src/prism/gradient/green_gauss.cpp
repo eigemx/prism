@@ -2,7 +2,6 @@
 #include <cstddef>
 
 #include "gradient.h"
-#include "prism/exceptions.h"
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
@@ -16,7 +15,7 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
     return 0.5 * grad_sum.dot(vec);
 }
 
-GreenGauss::GreenGauss(const field::Scalar& field) : _field(field), IGradient(field) {
+GreenGauss::GreenGauss(field::Scalar field) : _field(field), IGradient(field) {
     // We need to perform a first run for calculating gradient at cells,
     // to make the cell gradient vector _cell_gradients available if the user desires to call
     // gradient_at_face() which requires a first run of gradient calculations, to perform

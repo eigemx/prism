@@ -7,9 +7,9 @@
 
 #include "ifield.h"
 #include "scalar.h"
+#include "units.h"
 
 namespace prism::field {
-template <typename ComponentType>
 class IVector {
   public:
     IVector() = default;
@@ -18,19 +18,15 @@ class IVector {
     auto operator=(const IVector&) -> IVector& = default;
     auto operator=(IVector&&) noexcept -> IVector& = default;
     virtual ~IVector() = default;
-
-    virtual auto x() -> ComponentType& = 0;
-    virtual auto y() -> ComponentType& = 0;
-    virtual auto z() -> ComponentType& = 0;
 };
 
 namespace detail {
 template <typename ComponentType>
-class Vector : public IField<Vector3d>, public IVector<ComponentType> {
+class Vector : public IField<Vector3d>, public IVector, public units::Measurable {
   public:
     Vector(std::string name, const mesh::PMesh& mesh, double value);
     Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
-    Vector(std::string name, const mesh::PMesh& mesh, std::array<Scalar, 3>& fields);
+    Vector(std::string name, const mesh::PMesh& mesh, std::array<ComponentType, 3>& fields);
 
     auto hasFaceValues() const -> bool override;
 
@@ -40,9 +36,9 @@ class Vector : public IField<Vector3d>, public IVector<ComponentType> {
     auto valueAtFace(std::size_t face_id) const -> Vector3d override;
     auto valueAtFace(const mesh::Face& face) const -> Vector3d override;
 
-    auto inline x() -> ComponentType& override { return _x; }
-    auto inline y() -> ComponentType& override { return _y; }
-    auto inline z() -> ComponentType& override { return _z; }
+    auto inline x() -> ComponentType& { return _x; }
+    auto inline y() -> ComponentType& { return _y; }
+    auto inline z() -> ComponentType& { return _z; }
 
     auto operator[](std::size_t i) const -> Vector3d;
 
@@ -51,36 +47,38 @@ class Vector : public IField<Vector3d>, public IVector<ComponentType> {
 };
 } // namespace detail
 
+using Vector = detail::Vector<Scalar>;
+
 namespace detail {
 template <typename ComponentType>
 Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, double value)
     : IField(std::move(name), mesh),
-      _x(this->name() + "_x", mesh, value, this),
-      _y(this->name() + "_y", mesh, value, this),
-      _z(this->name() + "_z", mesh, value, this) {}
+      _x(this->name() + "_x", mesh, value, Coord::X, static_cast<IVector*>(this)),
+      _y(this->name() + "_y", mesh, value, Coord::Y, static_cast<IVector*>(this)),
+      _z(this->name() + "_z", mesh, value, Coord::Z, static_cast<IVector*>(this)) {}
 
 template <typename ComponentType>
 Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
     : IField(std::move(name), mesh),
-      _x(this->name() + "_x", mesh, data[0], this),
-      _y(this->name() + "_y", mesh, data[1], this),
-      _z(this->name() + "_z", mesh, data[2], this) {}
+      _x(this->name() + "_x", mesh, data[0], Coord::X, static_cast<IVector*>(this)),
+      _y(this->name() + "_y", mesh, data[1], Coord::Y, static_cast<IVector*>(this)),
+      _z(this->name() + "_z", mesh, data[2], Coord::Z, static_cast<IVector*>(this)) {}
 
 template <typename ComponentType>
 Vector<ComponentType>::Vector(std::string name,
                               const mesh::PMesh& mesh,
-                              std::array<Scalar, 3>& fields)
+                              std::array<ComponentType, 3>& fields)
     : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
     // check mesh consistency
     for (auto& field : fields) {
         if (&mesh != &field.mesh()) {
-            throw std::runtime_error(fmt::format(
-                "field::Vector constructor was given a field::Scalar component with name "
-                "`{}` that is defined over a different mesh",
-                field.name()));
+            throw std::runtime_error(
+                fmt::format("field::Vector constructor was given a sub-field component with name "
+                            "`{}` that is defined over a different mesh",
+                            field.name()));
         }
 
-        if (field.parent().has_value()) {
+        if (field.parent()) {
             spdlog::warn(
                 "field::Vector '{}' constructor was given a sub-field '{}' that already has a "
                 "parent "

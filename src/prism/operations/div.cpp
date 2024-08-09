@@ -1,7 +1,7 @@
 #include <fmt/format.h>
 
 #include "operations.h"
-#include "prism/field/field.h"
+#include "prism/field/vector.h"
 #include "prism/mesh/boundary.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"

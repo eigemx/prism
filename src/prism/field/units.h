@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace prism {
+namespace prism::field::units {
 struct SystemOfUnits {
   public:
     void inline setTime(int8_t power) noexcept { _time = power; }
@@ -34,7 +34,7 @@ struct SystemOfUnits {
 class Measurable {
   public:
     Measurable() = default;
-    Measurable(Measurable&) = default;
+    Measurable(const Measurable&) noexcept = default;
     Measurable(Measurable&&) noexcept = default;
     auto operator=(const Measurable&) -> Measurable& = default;
     auto operator=(Measurable&&) noexcept -> Measurable& = default;
@@ -46,4 +46,12 @@ class Measurable {
   private:
     SystemOfUnits _units;
 };
-} // namespace prism
+
+class VelocityUnit : public Measurable {
+  public:
+    VelocityUnit() {
+        units().setLength(1);
+        units().setTime(-1);
+    }
+};
+} // namespace prism::field::units

@@ -2,11 +2,11 @@
 
 #include <fmt/core.h>
 
-#include <optional>
 #include <vector>
 
 #include "prism/boundary.h"
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
+#include "prism/field/vector.h"
 #include "prism/gradient/boundary.h"
 #include "prism/mesh/face.h"
 #include "prism/types.h"
@@ -19,12 +19,13 @@ namespace prism::gradient {
 class IGradient {
   public:
     IGradient() = delete;
-    IGradient(const field::Scalar& field);
     IGradient(const IGradient&) = default;
     IGradient(IGradient&&) = default;
-    auto operator=(const IGradient&) -> IGradient& = delete;
-    auto operator=(IGradient&&) -> IGradient& = delete;
+    auto operator=(const IGradient&) -> IGradient& = default;
+    auto operator=(IGradient&&) -> IGradient& = default;
     virtual ~IGradient() = default;
+
+    IGradient(field::Scalar field);
 
     virtual auto gradAtCell(const mesh::Cell& c) -> Vector3d = 0;
     virtual auto gradAtFace(const mesh::Face& f) -> Vector3d;
@@ -44,7 +45,7 @@ class IGradient {
 
 class GreenGauss : public IGradient {
   public:
-    GreenGauss(const field::Scalar& field);
+    GreenGauss(field::Scalar field);
     auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
@@ -60,7 +61,7 @@ class GreenGauss : public IGradient {
 
 class LeastSquares : public IGradient {
   public:
-    LeastSquares(const field::Scalar& field);
+    LeastSquares(field::Scalar field);
     auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
 
   private:
