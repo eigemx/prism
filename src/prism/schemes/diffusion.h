@@ -9,28 +9,37 @@
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
-#include "prism/mesh/pmesh.h"
 #include "prism/nonortho/nonortho.h"
 #include "prism/types.h"
 
 namespace prism::scheme::diffusion {
 
-// Abstract base for diffusion schemes
-class IDiffusion {};
+template <typename Kappa, typename Field>
+class IDiffusion : public FVScheme<Field> {
+  public:
+    IDiffusion(Kappa kappa, Field phi);
+    auto field() -> std::optional<Field> override { return _phi; }
+    auto kappa() -> Kappa { return _kappa; }
+
+    using FieldType = Field;
+    using KappaType = Kappa;
+
+  private:
+    Field _phi;
+    Kappa _kappa;
+};
 
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
           typename GradScheme = gradient::LeastSquares,
           typename Field = field::Scalar>
-class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
+class CorrectedDiffusion : public IDiffusion<KappaType, Field>,
+                           public gradient::GradientProvider<GradScheme> {
   public:
     CorrectedDiffusion(KappaType kappa, Field phi);
 
     void apply() override;
-    auto field() -> std::optional<Field> override { return _phi; }
     auto corrector() -> NonOrthoCorrector { return _corrector; }
-    auto grad_scheme() -> GradScheme& { return _grad_scheme; }
-    auto kappa() -> KappaType { return _kappa; }
 
     using Scheme = CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>;
     using BoundaryHandlersManager =
@@ -44,22 +53,17 @@ class CorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     void apply_boundary(const mesh::Face& face) override {}
     void apply_boundary();
 
-    Field _phi;
-    KappaType _kappa;
     NonOrthoCorrector _corrector;
-    GradScheme _grad_scheme;
     BoundaryHandlersManager _bc_manager;
 };
 
 template <typename KappaType = field::UniformScalar, typename Field = field::Scalar>
-class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
+class NonCorrectedDiffusion : public IDiffusion<KappaType, Field> {
   public:
     NonCorrectedDiffusion(KappaType kappa, field::Scalar phi);
 
     void apply() override;
-    auto field() -> std::optional<field::Scalar> override { return _phi; }
     auto needsCorrection() const -> bool override { return false; }
-    auto kappa() -> KappaType { return _kappa; }
 
     using Scheme = NonCorrectedDiffusion<KappaType, Field>;
     using BoundaryHandlersManager =
@@ -72,10 +76,12 @@ class NonCorrectedDiffusion : public IDiffusion, public FVScheme<Field> {
     void apply_boundary(const mesh::Face& face) override {}
     void apply_boundary();
 
-    Field _phi;
-    KappaType _kappa;
     BoundaryHandlersManager _bc_manager;
 };
+
+template <typename KappaType, typename Field>
+IDiffusion<KappaType, Field>::IDiffusion(KappaType kappa, Field phi)
+    : _kappa(kappa), _phi(phi), FVScheme<Field>(phi.mesh().nCells()) {}
 
 //
 // CorrectedDiffusion implementation
@@ -84,7 +90,7 @@ template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, t
 CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::CorrectedDiffusion(
     KappaType kappa,
     Field phi)
-    : _phi(phi), FVScheme<Field>(phi.mesh().nCells()), _kappa(kappa), _grad_scheme(phi) {
+    : IDiffusion<KappaType, Field>(kappa, phi), gradient::GradientProvider<GradScheme>(phi) {
     assert(this->needsCorrection() == true &&
            "CorrectedDiffusion::needsCorrection() must return true");
 
@@ -110,7 +116,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 
     apply_boundary();
 
-    for (const auto& iface : _phi.mesh().interiorFaces()) {
+    for (const auto& iface : this->field().value().mesh().interiorFaces()) {
         apply_interior(iface);
     }
 
@@ -127,8 +133,10 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
 void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::apply_interior(
     const mesh::Face& face) {
-    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
-    const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
+    assert(this->field().has_value());
+    const auto& mesh = this->field().value().mesh();
+    const mesh::Cell& owner = mesh.cell(face.owner());
+    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
     const Vector3d d_CF = neighbor.center() - owner.center();
@@ -136,7 +144,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 
     // unit vector in d_CF direction
     const Vector3d e = d_CF / d_CF_norm;
-    const Vector3d Sf_prime = _kappa.valueAtFace(face) * face.area_vector();
+    const Vector3d Sf_prime = this->kappa().valueAtFace(face) * face.area_vector();
 
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
@@ -157,7 +165,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
-    const Vector3d grad_f = _grad_scheme.gradAtFace(face);
+    const Vector3d grad_f = this->gradScheme().gradAtFace(face);
 
     // update right hand side
     this->rhs(owner_id) += Tf_prime.dot(grad_f);
@@ -170,7 +178,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 //
 template <typename KappaType, typename Field>
 NonCorrectedDiffusion<KappaType, Field>::NonCorrectedDiffusion(KappaType kappa, field::Scalar phi)
-    : _phi(phi), FVScheme<Field>(phi.mesh().nCells()), _kappa(kappa) {
+    : IDiffusion<KappaType, Field>(kappa, phi) {
     assert(this->needsCorrection() == false &&
            "NonCorrectedDiffusion::needsCorrection() must return false");
 
@@ -187,7 +195,7 @@ template <typename KappaType, typename Field>
 void inline NonCorrectedDiffusion<KappaType, Field>::apply() {
     apply_boundary();
 
-    for (const auto& iface : _phi.mesh().interiorFaces()) {
+    for (const auto& iface : this->field().value().mesh().interiorFaces()) {
         apply_interior(iface);
     }
 
@@ -202,15 +210,17 @@ void inline NonCorrectedDiffusion<KappaType, Field>::apply_boundary() {
 
 template <typename KappaType, typename Field>
 void inline NonCorrectedDiffusion<KappaType, Field>::apply_interior(const mesh::Face& face) {
-    const mesh::Cell& owner = _phi.mesh().cell(face.owner());
-    const mesh::Cell& neighbor = _phi.mesh().cell(face.neighbor().value());
+    assert(this->field().has_value());
+    const auto& mesh = this->field().value().mesh();
+    const mesh::Cell& owner = mesh.cell(face.owner());
+    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
     auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
 
     const Vector3d& Sf = face.area_vector();
-    Vector3d Sf_prime = _kappa.valueAtFace(face) * Sf;
+    Vector3d Sf_prime = this->kappa().valueAtFace(face) * Sf;
 
     // geometric diffusion coefficient
     const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);

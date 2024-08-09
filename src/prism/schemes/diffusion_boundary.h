@@ -5,10 +5,6 @@
 #include "prism/field/scalar.h"
 
 namespace prism::scheme::diffusion {
-//
-// forward declarations
-//
-class IDiffusion;
 
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
 class CorrectedDiffusion;

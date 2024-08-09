@@ -33,12 +33,8 @@ class TransportEquation : public LinearSystem {
     auto inline prevIterField() const -> const Field& { return _phi_old; }
     auto inline prevIterField() -> Field& { return _phi_old; }
 
-    auto convectionScheme() -> std::shared_ptr<scheme::convection::IConvection> {
-        return std::dynamic_pointer_cast<scheme::convection::IConvection>(_conv_scheme);
-    }
-    auto diffusionScheme() -> std::shared_ptr<scheme::diffusion::IDiffusion> {
-        return std::dynamic_pointer_cast<scheme::diffusion::IDiffusion>(_diff_scheme);
-    }
+    auto convectionScheme() -> std::shared_ptr<scheme::FVScheme<Field>> { return _conv_scheme; }
+    auto diffusionScheme() -> std::shared_ptr<scheme::FVScheme<Field>> { return _diff_scheme; }
 
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
@@ -49,7 +45,9 @@ class TransportEquation : public LinearSystem {
     void addScheme(Convection&& convection);
 
     template <typename Diffusion>
-    requires std::derived_from<Diffusion, scheme::diffusion::IDiffusion>
+    requires std::derived_from<Diffusion,
+                               scheme::diffusion::IDiffusion<typename Diffusion::KappaType,
+                                                             typename Diffusion::FieldType>>
     void addScheme(Diffusion&& diffusion);
 
     std::vector<std::shared_ptr<scheme::FVScheme<Field>>> _schemes;
@@ -136,7 +134,9 @@ void TransportEquation<Field>::addScheme(Convection&& convection) {
 
 template <typename Field>
 template <typename Diffusion>
-requires std::derived_from<Diffusion, scheme::diffusion::IDiffusion>
+requires std::derived_from<
+    Diffusion,
+    scheme::diffusion::IDiffusion<typename Diffusion::KappaType, typename Diffusion::FieldType>>
 void TransportEquation<Field>::addScheme(Diffusion&& diffusion) {
     if (diffusion.needsCorrection()) {
         _n_corrected_schemes++;
