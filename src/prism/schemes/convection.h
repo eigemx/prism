@@ -27,7 +27,6 @@ struct CoeffsTriplet {
 } // namespace detail
 
 // Finite volume scheme for the discretization of the convection term
-template <typename GradScheme = gradient::LeastSquares>
 class IConvection : public FVScheme<field::Scalar> {
   public:
     IConvection(field::Scalar rho, field::Velocity U, field::Scalar phi);
@@ -38,15 +37,11 @@ class IConvection : public FVScheme<field::Scalar> {
     auto inline U() -> const field::Velocity& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
-    using GradSchemeType = GradScheme;
-
-    using BoundaryHandlersManager = prism::boundary::BoundaryHandlersManager<
-        IConvection<GradScheme>,
-        boundary::FVSchemeBoundaryHandler<IConvection<GradScheme>>>;
+    using BoundaryHandlersManager =
+        prism::boundary::BoundaryHandlersManager<IConvection,
+                                                 boundary::FVSchemeBoundaryHandler<IConvection>>;
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
-  protected:
-    auto inline grad_scheme() -> GradScheme& { return _gradient_scheme; }
 
   private:
     virtual auto interpolate(double m_dot,
@@ -61,16 +56,15 @@ class IConvection : public FVScheme<field::Scalar> {
     field::Scalar _rho;
     field::Velocity _U;
     field::Scalar _phi;
-    GradScheme _gradient_scheme;
     BoundaryHandlersManager _bc_manager;
 };
 
 // Central difference scheme
 template <typename G = gradient::LeastSquares>
-class CentralDifference : public IConvection<G> {
+class CentralDifference : public IConvection, public gradient::GradientProvider<G> {
   public:
     CentralDifference(field::Scalar& rho, field::Velocity& U, field::Scalar& phi)
-        : IConvection<G>(rho, U, phi) {}
+        : IConvection(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -82,10 +76,10 @@ class CentralDifference : public IConvection<G> {
 
 // Upwind scheme
 template <typename G = gradient::LeastSquares>
-class Upwind : public IConvection<G> {
+class Upwind : public IConvection, public gradient::GradientProvider<G> {
   public:
     Upwind(field::Scalar rho, field::Velocity U, field::Scalar phi)
-        : IConvection<G>(rho, U, phi) {}
+        : IConvection(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -97,10 +91,10 @@ class Upwind : public IConvection<G> {
 
 // Second order upwind scheme
 template <typename G = gradient::LeastSquares>
-class SecondOrderUpwind : public IConvection<G> {
+class SecondOrderUpwind : public IConvection, public gradient::GradientProvider<G> {
   public:
     SecondOrderUpwind(field::Scalar rho, field::Velocity U, field::Scalar phi)
-        : IConvection<G>(rho, U, phi) {}
+        : IConvection(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -112,10 +106,10 @@ class SecondOrderUpwind : public IConvection<G> {
 
 // QUICK scheme
 template <typename G = gradient::LeastSquares>
-class QUICK : public IConvection<G> {
+class QUICK : public IConvection, public gradient::GradientProvider<G> {
   public:
     QUICK(field::Scalar rho, field::Velocity U, field::Scalar phi)
-        : IConvection<G>(rho, U, phi) {}
+        : IConvection(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -123,64 +117,6 @@ class QUICK : public IConvection<G> {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
-
-template <typename G>
-IConvection<G>::IConvection(field::Scalar rho, field::Velocity U, field::Scalar phi)
-    : _rho(std::move(rho)),
-      _U(std::move(U)),
-      _phi(phi),
-      _gradient_scheme(phi),
-      FVScheme(phi.mesh().nCells()) {
-    // add default boundary handlers for IConvection based types
-    using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
-}
-
-template <typename G>
-void IConvection<G>::apply() {
-    apply_boundary();
-
-    for (const auto& iface : _phi.mesh().interiorFaces()) {
-        apply_interior(iface);
-    }
-
-    collect();
-}
-
-template <typename G>
-void IConvection<G>::apply_interior(const mesh::Face& face) {
-    const auto& mesh = _phi.mesh();
-    const mesh::Cell& owner = mesh.cell(face.owner());
-    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
-
-    const std::size_t owner_id = owner.id();
-    const std::size_t neighbor_id = neighbor.id();
-
-    const Vector3d& S_f = mesh::outward_area_vector(face, owner);
-    const Vector3d U_f = _U.valueAtFace(face);
-    const double rho_f = _rho.valueAtFace(face);
-    const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
-
-    auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
-    auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
-
-    insert(owner_id, owner_id, a_C);
-    insert(owner_id, neighbor_id, a_N);
-
-    insert(neighbor_id, neighbor_id, x_C);
-    insert(neighbor_id, owner_id, x_N);
-
-    rhs(owner_id) += b;
-    rhs(neighbor_id) += s;
-}
-
-template <typename G>
-void IConvection<G>::apply_boundary() {
-    boundary::detail::apply_boundary("IConvection", *this);
-}
 
 template <typename G>
 auto CentralDifference<G>::interpolate(double m_dot,
