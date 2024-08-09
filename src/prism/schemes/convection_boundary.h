@@ -58,7 +58,7 @@ void Fixed<convection::IConvection<G>>::apply(convection::IConvection<G>& scheme
         // TODO: check if this is correct
         // TODO: warn user if mass flow rate is not entering the patch (negative flow rate)
         const double rho_f = scheme.rho().valueAtCell(owner);
-        const double m_dot_f = ops::face_mdot(rho_f, U_f, S_f);
+        const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
 
         // TODO: this assumes an upwind based scheme, this is wrong for central schemes
         // and should be generalized to work for all schemes.
@@ -93,7 +93,7 @@ void Outlet<convection::IConvection<G>>::apply(convection::IConvection<G>& schem
         // use owner cell velocity as the velocity at the outlet face centroid
         const Vector3d U_f = scheme.U().valueAtFace(face);
         const double rho_f = scheme.rho().valueAtCell(owner);
-        const double m_dot_f = ops::face_mdot(rho_f, U_f, S_f);
+        const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
 
         if (m_dot_f < 0.0) {
             _n_reverse_flow_faces++;
