@@ -2,6 +2,7 @@
 
 #include "boundary.h"
 #include "ifield.h"
+#include "units.h"
 
 namespace prism::field {
 
@@ -18,28 +19,51 @@ class UniformScalar : public IField<double> {
     double _value {0.0};
 };
 
-namespace detail {
-template <typename ComponentType>
-class Vector;
-}
+class IVector;
 
-class Scalar;
-using Vector = detail::Vector<Scalar>;
-
-class Scalar : public IField<double> {
+class Scalar : public IField<double>, public IComponent, public units::Measurable {
   public:
-    Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* parent = nullptr);
-    Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector* parent = nullptr);
+    // Uniform double value constructors
+    Scalar(std::string name, const mesh::PMesh& mesh, double value, IVector* parent = nullptr);
+    Scalar(std::string name,
+           const mesh::PMesh& mesh,
+           double value,
+           Coord coord,
+           IVector* parent = nullptr);
+
+    // VectorXd cell values constructors
+    Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, IVector* parent = nullptr);
+    Scalar(std::string name,
+           const mesh::PMesh& mesh,
+           VectorXd data,
+           Coord coord,
+           IVector* parent = nullptr);
+
+    // VectorXd cell & face values constructors
     Scalar(std::string name,
            const mesh::PMesh& mesh,
            VectorXd data,
            VectorXd face_data,
-           Vector* parent = nullptr);
+           IVector* parent = nullptr);
+    Scalar(std::string name,
+           const mesh::PMesh& mesh,
+           VectorXd data,
+           VectorXd face_data,
+           Coord coord,
+           IVector* parent = nullptr);
+
+    Scalar() = delete;
+    Scalar(const Scalar&) = default;
+    Scalar(Scalar&&) = default;
+    auto operator=(const Scalar&) -> Scalar& = default;
+    auto operator=(Scalar&&) -> Scalar& = default;
+    ~Scalar() override = default;
 
     // TODO: check that _data is not null before returning, and maybe wrap it in an optional type
     auto inline values() const -> const VectorXd& { return *_data; }
     auto inline values() -> VectorXd& { return *_data; }
 
+    auto inline coord() const noexcept -> std::optional<Coord> override { return _coord; }
     auto inline hasFaceValues() const -> bool override { return _face_data != nullptr; }
     void setFaceValues(VectorXd values);
 
@@ -48,8 +72,8 @@ class Scalar : public IField<double> {
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
-    auto parent() -> std::optional<Vector>;
-    void setParent(Vector* parent);
+    auto parent() -> IVector*;
+    void setParent(IVector* parent);
 
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
@@ -64,11 +88,12 @@ class Scalar : public IField<double> {
     auto valueAtBoundaryFace(const mesh::Face& face) const -> double;
 
   private:
+    void addDefaultHandlers();
+
     BoundaryHandlersManager _bh_manager;
     std::shared_ptr<VectorXd> _data = nullptr;
     std::shared_ptr<VectorXd> _face_data = nullptr;
-    Vector* _parent = nullptr;
-
-    void addDefaultHandlers();
+    IVector* _parent = nullptr;
+    std::optional<Coord> _coord = std::nullopt;
 };
 } // namespace prism::field

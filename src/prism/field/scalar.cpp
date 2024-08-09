@@ -6,6 +6,20 @@
 #include "prism/mesh/utilities.h"
 #include "vector.h"
 
+auto inline coordToStr(prism::Coord coord) -> std::string {
+    switch (coord) {
+        case prism::Coord::X: {
+            return "x";
+        }
+        case prism::Coord::Y: {
+            return "y";
+        }
+        case prism::Coord::Z: {
+            return "z";
+        }
+    }
+}
+
 namespace prism::field {
 
 UniformScalar::UniformScalar(std::string name, const mesh::PMesh& mesh, double value)
@@ -30,7 +44,7 @@ auto UniformScalar::valueAtFace(const mesh::Face& face) const -> double { // NOL
     return _value;
 }
 
-Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* parent)
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value, IVector* parent)
     : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
       _parent(parent) {
@@ -38,7 +52,23 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, double value, Vector* 
     addDefaultHandlers();
 }
 
-Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector* parent)
+Scalar::Scalar(std::string name,
+               const mesh::PMesh& mesh,
+               double value,
+               Coord coord,
+               IVector* parent)
+    : IField(std::move(name), mesh),
+      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
+      _coord(coord),
+      _parent(parent) {
+    spdlog::debug("Creating scalar field: '{}' (as {}-coordinate) with double value = {}",
+                  this->name(),
+                  coordToStr(coord),
+                  value);
+    addDefaultHandlers();
+}
+
+Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, IVector* parent)
     : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
       _parent(parent) {
@@ -49,7 +79,7 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector*
             this->name()));
     }
 
-    spdlog::debug("Creating scalar field: '{}' with a vector data of size = {}",
+    spdlog::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
                   this->name(),
                   _data->size());
     addDefaultHandlers();
@@ -58,8 +88,32 @@ Scalar::Scalar(std::string name, const mesh::PMesh& mesh, VectorXd data, Vector*
 Scalar::Scalar(std::string name,
                const mesh::PMesh& mesh,
                VectorXd data,
+               Coord coord,
+               IVector* parent)
+    : IField(std::move(name), mesh),
+      _data(std::make_shared<VectorXd>(std::move(data))),
+      _coord(coord),
+      _parent(parent) {
+    if (_data->size() != mesh.nCells()) {
+        throw std::runtime_error(fmt::format(
+            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
+            "different size than mesh's cell count.",
+            this->name()));
+    }
+
+    spdlog::debug(
+        "Creating scalar field: '{}' (as {}-coordinate) with a cell vector data of size = {}",
+        this->name(),
+        coordToStr(coord),
+        _data->size());
+    addDefaultHandlers();
+}
+
+Scalar::Scalar(std::string name,
+               const mesh::PMesh& mesh,
+               VectorXd data,
                VectorXd face_data,
-               Vector* parent)
+               IVector* parent)
     : IField(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
       _face_data(std::make_shared<VectorXd>(std::move(face_data))),
@@ -82,6 +136,43 @@ Scalar::Scalar(std::string name,
         "Creating scalar field: '{}' with a cell data vector of size = {} and face data vector "
         "of size = {}",
         this->name(),
+        _data->size(),
+        _face_data->size());
+
+    addDefaultHandlers();
+}
+
+Scalar::Scalar(std::string name,
+               const mesh::PMesh& mesh,
+               VectorXd data,
+               VectorXd face_data,
+               Coord coord,
+               IVector* parent)
+    : IField(std::move(name), mesh),
+      _data(std::make_shared<VectorXd>(std::move(data))),
+      _face_data(std::make_shared<VectorXd>(std::move(face_data))),
+      _coord(coord),
+      _parent(parent) {
+    if (_data->size() != mesh.nCells()) {
+        throw std::runtime_error(fmt::format(
+            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
+            "different size than mesh's cell count.",
+            this->name()));
+    }
+
+    if (_face_data->size() != mesh.nFaces()) {
+        throw std::runtime_error(
+            fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
+                        "vector that has a different size than mesh's faces count.",
+                        this->name()));
+    }
+
+    spdlog::debug(
+        "Creating scalar field: '{}' (as {}-coordinate) with a cell data vector of size = {} and "
+        "face data vector "
+        "of size = {}",
+        this->name(),
+        coordToStr(coord),
         _data->size(),
         _face_data->size());
 
@@ -163,14 +254,11 @@ auto Scalar::valueAtBoundaryFace(const mesh::Face& face) const -> double {
     return handler->get(*this, face);
 }
 
-auto Scalar::parent() -> std::optional<Vector> {
-    if (_parent == nullptr) {
-        return std::nullopt;
-    }
-    return *_parent;
+auto Scalar::parent() -> IVector* {
+    return _parent;
 }
 
-void Scalar::setParent(Vector* parent) {
+void Scalar::setParent(IVector* parent) {
     _parent = parent;
     // TODO: check parent and component names consistency
 }

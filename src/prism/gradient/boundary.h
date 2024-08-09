@@ -1,7 +1,7 @@
 #include <string>
 
 #include "prism/boundary.h"
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
 #include "prism/mesh/face.h"
 #include "prism/types.h"
 

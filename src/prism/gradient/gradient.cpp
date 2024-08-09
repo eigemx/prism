@@ -4,7 +4,7 @@
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
-IGradient::IGradient(const field::Scalar& field) : _field(field) { // NOLINT
+IGradient::IGradient(field::Scalar field) : _field(field) { // NOLINT
     _bh_manager.add_handler<boundary::Fixed>();
     _bh_manager.add_handler<boundary::FixedGradient>();
     _bh_manager.add_handler<boundary::Empty>();

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "prism/field/field.h"
 #include "prism/field/pressure.h"
+#include "prism/field/tensor.h"
+#include "prism/field/vector.h"
 #include "prism/gradient/gradient.h"
 
 namespace prism::ops {
