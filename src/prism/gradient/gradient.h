@@ -71,4 +71,15 @@ class LeastSquares : public IGradient {
     std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
+template <typename G = LeastSquares>
+class GradientProvider {
+  public:
+    GradientProvider(field::Scalar field) : _gradient_scheme(field) {}
+    using GradSchemeType = G;
+    auto gradScheme() -> GradSchemeType& { return _gradient_scheme; }
+
+  private:
+    GradSchemeType _gradient_scheme;
+};
+
 } // namespace prism::gradient

@@ -33,12 +33,11 @@ class TransportEquation : public LinearSystem {
     auto inline prevIterField() const -> const Field& { return _phi_old; }
     auto inline prevIterField() -> Field& { return _phi_old; }
 
-    template <typename G>
-    auto convectionScheme() -> std::shared_ptr<scheme::convection::IConvection<G>> {
-        return _conv_scheme;
+    auto convectionScheme() -> std::shared_ptr<scheme::convection::IConvection> {
+        return std::dynamic_pointer_cast<scheme::convection::IConvection>(_conv_scheme);
     }
     auto diffusionScheme() -> std::shared_ptr<scheme::diffusion::IDiffusion> {
-        return _diff_scheme;
+        return std::dynamic_pointer_cast<scheme::diffusion::IDiffusion>(_diff_scheme);
     }
 
     template <typename Scheme>
@@ -46,9 +45,7 @@ class TransportEquation : public LinearSystem {
 
   private:
     template <typename Convection>
-    requires std::derived_from<
-        Convection,
-        scheme::convection::IConvection<typename Convection::GradSchemeType>>
+    requires std::derived_from<Convection, scheme::convection::IConvection>
     void addScheme(Convection&& convection);
 
     template <typename Diffusion>
@@ -126,8 +123,7 @@ void TransportEquation<Field>::addScheme(Scheme&& scheme) {
 
 template <typename Field>
 template <typename Convection>
-requires std::derived_from<Convection,
-                           scheme::convection::IConvection<typename Convection::GradSchemeType>>
+requires std::derived_from<Convection, scheme::convection::IConvection>
 void TransportEquation<Field>::addScheme(Convection&& convection) {
     if (convection.needsCorrection()) {
         _n_corrected_schemes++;
