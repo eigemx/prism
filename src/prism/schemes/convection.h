@@ -4,15 +4,13 @@
 
 #include <cmath>
 
+#include "boundary.h"
 #include "convection_boundary.h"
 #include "fvscheme.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
-#include "prism/mesh/pmesh.h"
-#include "prism/mesh/utilities.h"
-#include "prism/schemes/boundary.h"
 #include "prism/types.h"
 
 namespace prism::scheme::convection {
@@ -20,9 +18,9 @@ namespace prism::scheme::convection {
 namespace detail {
 // coefficients for the discretized convection equation for a face
 struct CoeffsTriplet {
-    double a_C {0.0}; // cell
-    double a_N {0.0}; // neighbor
-    double b {0.0};   // source
+    double ownerCoeff {0.0};    // cell
+    double neighborCoeff {0.0}; // neighbor
+    double rhs {0.0};           // source
 };
 } // namespace detail
 
