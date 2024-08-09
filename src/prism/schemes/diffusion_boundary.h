@@ -107,6 +107,8 @@ class FixedGradient<diffusion::NonCorrectedDiffusion<K, field::Scalar>>
     auto inline name() const -> std::string override { return "fixed-gradient"; }
 };
 
+// TODO: boundary handlers for CorrectedDiffusion and NonCorrectedDiffusion should be the same,
+// right?
 template <typename K, typename N, typename G>
 void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
     diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
