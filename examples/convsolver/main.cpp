@@ -48,7 +48,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // Set a uniform velocity field, with value equal to inlet velocity;
     Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("velocity");
-    auto U = field::Vector("velocity", mesh, inlet_velocity);
+    auto U = field::Velocity("velocity", mesh, inlet_velocity);
 
     // A zero field, just to demonstrate how to add arbitray constant source terms
     auto useLessField = field::Scalar("zero", mesh, 0.0);

@@ -31,6 +31,5 @@ add_library(prism
     schemes/backward_euler.cpp
 
     # operations
-    operations/div.cpp
     operations/rhie_chow.cpp
 )

@@ -6,7 +6,8 @@
 
 #include "convection_boundary.h"
 #include "fvscheme.h"
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
+#include "prism/field/velocity.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/pmesh.h"
@@ -29,12 +30,12 @@ struct CoeffsTriplet {
 template <typename GradScheme = gradient::LeastSquares>
 class IConvection : public FVScheme<field::Scalar> {
   public:
-    IConvection(field::Scalar rho, field::Vector U, field::Scalar phi);
+    IConvection(field::Scalar rho, field::Velocity U, field::Scalar phi);
 
     void apply() override;
 
     auto inline field() -> std::optional<field::Scalar> override { return _phi; }
-    auto inline U() -> const field::Vector& { return _U; }
+    auto inline U() -> const field::Velocity& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
     using BoundaryHandlersManager = prism::boundary::BoundaryHandlersManager<
@@ -56,7 +57,7 @@ class IConvection : public FVScheme<field::Scalar> {
     void apply_boundary();
 
     field::Scalar _rho;
-    field::Vector _U;
+    field::Velocity _U;
     field::Scalar _phi;
     GradScheme _gradient_scheme;
     BoundaryHandlersManager _bc_manager;
@@ -66,7 +67,7 @@ class IConvection : public FVScheme<field::Scalar> {
 template <typename G = gradient::LeastSquares>
 class CentralDifference : public IConvection<G> {
   public:
-    CentralDifference(field::Scalar& rho, field::Vector& U, field::Scalar& phi)
+    CentralDifference(field::Scalar& rho, field::Velocity& U, field::Scalar& phi)
         : IConvection<G>(rho, U, phi) {}
 
   private:
@@ -81,7 +82,8 @@ class CentralDifference : public IConvection<G> {
 template <typename G = gradient::LeastSquares>
 class Upwind : public IConvection<G> {
   public:
-    Upwind(field::Scalar rho, field::Vector U, field::Scalar phi) : IConvection<G>(rho, U, phi) {}
+    Upwind(field::Scalar rho, field::Velocity U, field::Scalar phi)
+        : IConvection<G>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -95,7 +97,7 @@ class Upwind : public IConvection<G> {
 template <typename G = gradient::LeastSquares>
 class SecondOrderUpwind : public IConvection<G> {
   public:
-    SecondOrderUpwind(field::Scalar rho, field::Vector U, field::Scalar phi)
+    SecondOrderUpwind(field::Scalar rho, field::Velocity U, field::Scalar phi)
         : IConvection<G>(rho, U, phi) {}
 
   private:
@@ -110,7 +112,8 @@ class SecondOrderUpwind : public IConvection<G> {
 template <typename G = gradient::LeastSquares>
 class QUICK : public IConvection<G> {
   public:
-    QUICK(field::Scalar rho, field::Vector U, field::Scalar phi) : IConvection<G>(rho, U, phi) {}
+    QUICK(field::Scalar rho, field::Velocity U, field::Scalar phi)
+        : IConvection<G>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -120,7 +123,7 @@ class QUICK : public IConvection<G> {
 };
 
 template <typename G>
-IConvection<G>::IConvection(field::Scalar rho, field::Vector U, field::Scalar phi)
+IConvection<G>::IConvection(field::Scalar rho, field::Velocity U, field::Scalar phi)
     : _rho(std::move(rho)),
       _U(std::move(U)),
       _phi(phi),
@@ -157,7 +160,7 @@ void IConvection<G>::apply_interior(const mesh::Face& face) {
     const Vector3d& S_f = mesh::outward_area_vector(face, owner);
     const Vector3d U_f = _U.valueAtFace(face);
     const double rho_f = _rho.valueAtFace(face);
-    const double m_dot_f = ops::face_mdot(rho_f, U_f, S_f);
+    const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
