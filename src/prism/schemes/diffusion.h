@@ -5,7 +5,7 @@
 #include "boundary.h"
 #include "diffusion_boundary.h"
 #include "fvscheme.h"
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"

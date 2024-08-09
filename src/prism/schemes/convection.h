@@ -38,6 +38,8 @@ class IConvection : public FVScheme<field::Scalar> {
     auto inline U() -> const field::Velocity& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
+    using GradSchemeType = GradScheme;
+
     using BoundaryHandlersManager = prism::boundary::BoundaryHandlersManager<
         IConvection<GradScheme>,
         boundary::FVSchemeBoundaryHandler<IConvection<GradScheme>>>;
