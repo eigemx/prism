@@ -129,10 +129,11 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
       FVScheme<Field>(phi.mesh().nCells()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
 template <typename Field>
@@ -175,7 +176,7 @@ void IConvection<Field>::apply_interior(const mesh::Face& face) {
 
 template <typename Field>
 void IConvection<Field>::apply_boundary() {
-    boundary::detail::apply_boundary("IConvection", *this);
+    boundary::detail::applyBoundary("IConvection", *this);
 }
 
 template <typename F, typename G>
@@ -299,6 +300,13 @@ void Fixed<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme
         scheme.insert(cell_id, cell_id, std::max(m_dot_f, 0.0));
         scheme.rhs(cell_id) += std::max(-m_dot_f * phi_wall, 0.0);
     }
+}
+
+template <typename F>
+void NoSlip<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme,
+                                               const mesh::BoundaryPatch& patch) {
+    Fixed<convection::IConvection<F>> fixed;
+    return fixed.apply(scheme, patch);
 }
 
 template <typename F>

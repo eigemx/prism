@@ -72,6 +72,7 @@ void NoSlip<MomentumEquation>::apply(MomentumEquation& eqn, const mesh::Boundary
     for (std::size_t face_id : patch.facesIds()) {
         const auto& face = mesh.face(face_id);
         const auto& owner = mesh.cell(face.owner());
+        const auto owner_id = owner.id();
 
         // we need to calculate the normal distance from the centroid of the boundary element to
         // the face (wall patch)
@@ -84,8 +85,8 @@ void NoSlip<MomentumEquation>::apply(MomentumEquation& eqn, const mesh::Boundary
 
         double g = mu.valueAtFace(face) * face.area() / d_normal;
         auto [ac, b] = contribution(field.coord().value(), Uc, Ub, n);
-        sys.insert(owner.id(), owner.id(), g * ac);
-        sys.rhs(owner.id()) = g * b;
+        sys.insert(owner_id, owner_id, g * ac);
+        sys.rhs(owner_id) += g * b;
     }
 
     sys.collect();

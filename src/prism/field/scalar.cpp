@@ -182,7 +182,7 @@ Scalar::Scalar(std::string name,
 void Scalar::setFaceValues(VectorXd values) {
     if (values.size() != mesh().nFaces()) {
         throw std::runtime_error(fmt::format(
-            "ScalarField::set_face_values(): cannot set face values for scalar field {}, to a "
+            "ScalarField::setFaceValues(): cannot set face values for scalar field {}, to a "
             "face data vector having a different size that field's faces count.",
             name()));
     }
@@ -242,11 +242,11 @@ auto Scalar::valueAtBoundaryFace(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.getBoundaryCondition(name());
 
-    auto handler = _bh_manager.get_handler(bc.kindString());
+    auto handler = _bh_manager.getHandler(bc.kindString());
 
     if (handler == nullptr) {
         throw error::NonImplementedBoundaryCondition(
-            fmt::format("ScalarField({})::value_at_boundary_face()", name()),
+            fmt::format("ScalarField({})::valueAtBoundaryFace()", name()),
             patch.name(),
             bc.kindString());
     }
@@ -264,11 +264,12 @@ void Scalar::setParent(IVector* parent) {
 }
 
 void Scalar::addDefaultHandlers() {
-    _bh_manager.add_handler<field::boundary::Fixed>();
-    _bh_manager.add_handler<field::boundary::VelocityInlet>();
-    _bh_manager.add_handler<field::boundary::Empty>();
-    _bh_manager.add_handler<field::boundary::Symmetry>();
-    _bh_manager.add_handler<field::boundary::Outlet>();
-    _bh_manager.add_handler<field::boundary::FixedGradient>();
+    _bh_manager.addHandler<field::boundary::Fixed>();
+    _bh_manager.addHandler<field::boundary::VelocityInlet>();
+    _bh_manager.addHandler<field::boundary::Empty>();
+    _bh_manager.addHandler<field::boundary::Symmetry>();
+    _bh_manager.addHandler<field::boundary::Outlet>();
+    _bh_manager.addHandler<field::boundary::FixedGradient>();
+    _bh_manager.addHandler<field::boundary::NoSlip>();
 }
 } // namespace prism::field

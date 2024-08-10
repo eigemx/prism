@@ -27,6 +27,12 @@ auto Fixed::get(const prism::field::Scalar& field, const prism::mesh::Face& face
     return (delta_phi / d_Cf_norm) * e;
 }
 
+auto NoSlip::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
+    -> prism::Vector3d {
+    Fixed fixed;
+    return fixed.get(field, face);
+}
+
 auto VelocityInlet::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
     -> prism::Vector3d {
     Fixed fixed;

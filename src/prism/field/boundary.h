@@ -22,6 +22,12 @@ class Fixed : public FieldBoundaryHandler<field::Scalar, double> {
     auto get(const field::Scalar& field, const mesh::Face& face) -> double override;
 };
 
+class NoSlip : public FieldBoundaryHandler<field::Scalar, double> {
+  public:
+    auto name() const -> std::string override { return "no-slip"; }
+    auto get(const field::Scalar& field, const mesh::Face& face) -> double override;
+};
+
 class VelocityInlet : public FieldBoundaryHandler<field::Scalar, double> {
   public:
     auto name() const -> std::string override { return "velocity-inlet"; }
