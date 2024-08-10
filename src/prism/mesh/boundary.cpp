@@ -8,51 +8,25 @@
 
 #include <stdexcept>
 #include <string_view>
-#include <unordered_map>
 
 // TODO: We're using name.substr(0, name.size() - 2) many times to get the parent field name
 // it's better to wrap this in a little inline function
 
 namespace prism::mesh {
 // Parsing boundary file functions
-auto inline boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionKind;
-auto inline parse_boundary_patch(const toml::table& table, const std::string& patch_name)
+auto inline parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch;
+auto inline parseNestedBoundaryConditions(const toml::table& table, const std::string& patch_name)
     -> BoundaryPatch;
-auto inline parse_nested_boundary_conditions(const toml::table& table,
-                                             const std::string& patch_name) -> BoundaryPatch;
-auto inline parse_field_boundary_condition(const toml::table& table,
-                                           const std::string& patch_name,
-                                           const std::string& field_name) -> BoundaryCondition;
-auto is_component_field(const std::string& name) -> bool;
+auto inline parseFieldBoundaryCondition(const toml::table& table,
+                                        const std::string& patch_name,
+                                        const std::string& field_name) -> BoundaryCondition;
+auto isComponentField(const std::string& name) -> bool;
 
-auto boundary_type_str_to_enum(std::string_view type) -> BoundaryConditionKind {
-    const auto static bc_type_map = std::unordered_map<std::string_view, BoundaryConditionKind> {
-        {"fixed", BoundaryConditionKind::Fixed},
-        // TODO: Should this ve velocityInlet?
-        {"inlet", BoundaryConditionKind::VelocityInlet},
-        {"outlet", BoundaryConditionKind::Outlet},
-        {"gradient", BoundaryConditionKind::FixedGradient},
-        {"symmetry", BoundaryConditionKind::Symmetry},
-        {"empty", BoundaryConditionKind::Empty},
-        // TODO: Implement remaining boundary condition kinds
-    };
-
-    auto it = bc_type_map.find(type);
-
-    if (it == bc_type_map.end()) {
-        spdlog::warn("Boundary conditions file contains an unknown boundary patch type {}", type);
-        return BoundaryConditionKind::Unknown;
-    }
-
-    return it->second;
+auto parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch {
+    return parseNestedBoundaryConditions(table, patch_name);
 }
 
-auto parse_boundary_patch(const toml::table& table, const std::string& patch_name)
-    -> BoundaryPatch {
-    return parse_nested_boundary_conditions(table, patch_name);
-}
-
-auto parse_nested_boundary_conditions(const toml::table& table, const std::string& patch_name)
+auto parseNestedBoundaryConditions(const toml::table& table, const std::string& patch_name)
     -> BoundaryPatch {
     // for each sub-table, get its type and data
     std::map<std::string, BoundaryCondition> field_name_to_bc_map;
@@ -60,7 +34,7 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
 
     for (const auto& [field_name_key, field_table] : patch_table) {
         const auto& field_name = std::string(field_name_key.str());
-        auto field_bc = parse_field_boundary_condition(table, patch_name, field_name);
+        auto field_bc = parseFieldBoundaryCondition(table, patch_name, field_name);
 
         field_name_to_bc_map.insert({field_name, field_bc});
 
@@ -71,21 +45,18 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
                                          BoundaryCondition {
                                              BoundaryConditionValueKind::Scalar,
                                              vec_value.x(),
-                                             field_bc.kind(),
                                              field_bc.kindString(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_y",
                                          BoundaryCondition {
                                              BoundaryConditionValueKind::Scalar,
                                              vec_value.y(),
-                                             field_bc.kind(),
                                              field_bc.kindString(),
                                          }});
             field_name_to_bc_map.insert({field_name + "_z",
                                          BoundaryCondition {
                                              BoundaryConditionValueKind::Scalar,
                                              vec_value.z(),
-                                             field_bc.kind(),
                                              field_bc.kindString(),
                                          }});
         }
@@ -94,9 +65,9 @@ auto parse_nested_boundary_conditions(const toml::table& table, const std::strin
     return BoundaryPatch {patch_name, field_name_to_bc_map};
 }
 
-auto parse_field_boundary_condition(const toml::table& table,
-                                    const std::string& patch_name,
-                                    const std::string& field_name) -> BoundaryCondition {
+auto parseFieldBoundaryCondition(const toml::table& table,
+                                 const std::string& patch_name,
+                                 const std::string& field_name) -> BoundaryCondition {
     const auto& field_table = *(table[patch_name][field_name].as_table());
 
     if (!field_table.contains("type")) {
@@ -108,14 +79,11 @@ auto parse_field_boundary_condition(const toml::table& table,
     }
 
     auto bc_type_str = field_table["type"].value<std::string_view>().value();
-    auto bc_type = boundary_type_str_to_enum(bc_type_str);
 
 
     if (!field_table.contains("value")) {
-        return BoundaryCondition {BoundaryConditionValueKind::Nil,
-                                  BoundaryConditionValue {},
-                                  bc_type,
-                                  std::string(bc_type_str)};
+        return BoundaryCondition {
+            BoundaryConditionValueKind::Nil, BoundaryConditionValue {}, std::string(bc_type_str)};
     }
 
     auto bc_value = field_table["value"];
@@ -123,7 +91,7 @@ auto parse_field_boundary_condition(const toml::table& table,
     if (bc_value.is_number() || bc_value.is_floating_point()) {
         double value = bc_value.value<double>().value();
         return BoundaryCondition {
-            BoundaryConditionValueKind::Scalar, value, bc_type, std::string(bc_type_str)};
+            BoundaryConditionValueKind::Scalar, value, std::string(bc_type_str)};
     }
 
     if (bc_value.is_array()) {
@@ -143,7 +111,6 @@ auto parse_field_boundary_condition(const toml::table& table,
                     array->at(1).value<double>().value(),
                     array->at(2).value<double>().value(),
                 },
-                bc_type,
                 std::string(bc_type_str)};
     }
 
@@ -194,14 +161,14 @@ auto read_boundary_file(const std::filesystem::path& path,
                             path.string()));
         }
 
-        boundary_patches.emplace_back(parse_boundary_patch(doc, std::string(bname)));
+        boundary_patches.emplace_back(parsePatch(doc, std::string(bname)));
     }
 
     return boundary_patches;
 }
 
 
-auto is_component_field(const std::string& name) -> bool {
+auto isComponentField(const std::string& name) -> bool {
     if (name.size() < 2) {
         return false;
     }
@@ -217,12 +184,8 @@ auto is_component_field(const std::string& name) -> bool {
 
 BoundaryCondition::BoundaryCondition(BoundaryConditionValueKind type,
                                      BoundaryConditionValue value,
-                                     BoundaryConditionKind patch_type,
                                      std::string bc_type_str)
-    : _value_kind(type),
-      _value(std::move(value)),
-      _kind(patch_type),
-      _kind_str(std::move(bc_type_str)) {}
+    : _value_kind(type), _value(std::move(value)), _kind_str(std::move(bc_type_str)) {}
 
 
 BoundaryPatch::BoundaryPatch(std::string name,
@@ -250,7 +213,7 @@ auto BoundaryPatch::getBoundaryCondition(const std::string& field_name) const
 
     if (it == _field_name_to_bc_map.end()) {
         // search for the parent field, if exists
-        if (is_component_field(field_name)) {
+        if (isComponentField(field_name)) {
             it = _field_name_to_bc_map.find(field_name.substr(0, field_name.size() - 2));
         }
     }
@@ -273,7 +236,7 @@ auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) co
     // such as when dealing with the x-component ScalarField of a velocity VectorField U.
     // in this case we won't find the boundary condition value for U_x as a single scalar BC,
     // but we can get it from the first component of the vector BC value of U.
-    if (is_component_field(field_name)) {
+    if (isComponentField(field_name)) {
         return getScalarBCSubfield(field_name);
     }
 

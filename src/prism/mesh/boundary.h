@@ -9,36 +9,6 @@
 
 namespace prism::mesh {
 
-/** @brief Enum class for boundary condition types
- *
- * This enum class defines the types of boundary conditions that can be applied to a boundary
- * patch. Each boundary patch can have at most one boundary condition type per field. For example,
- * a boundary patch called 'outlet' can have a fixed value boundary condition for the pressure
- * field and a fixed gradient boundary condition for the velocity field.
- *
- * This can be defined in boundary.txt file as:
- *
- * [outlet]
- * [outlet.pressure]
- * type = "fixed"
- * value = 0.0
- * [outlet.velocity]
- * type = "gradient"
- * value = 0.0
- *
- */
-enum class BoundaryConditionKind {
-    Fixed,
-    VelocityInlet,
-    Outlet,
-    Symmetry,
-    Empty,
-    FixedGradient,
-    SlipWall,
-    NonSlipWall,
-    Unknown, // for error handling
-};
-
 /** @brief Enum class for boundary condition value types
  *
  * Each boundary condition can have a scalar or a vector value or Nil.
@@ -72,7 +42,6 @@ class BoundaryCondition {
   public:
     BoundaryCondition(BoundaryConditionValueKind type,
                       BoundaryConditionValue value,
-                      BoundaryConditionKind patch_type,
                       std::string bc_type_str);
 
     auto inline valueKind() const noexcept -> BoundaryConditionValueKind {
@@ -81,14 +50,12 @@ class BoundaryCondition {
         return _value_kind;
     }
     auto inline value() const noexcept -> const BoundaryConditionValue& { return _value; }
-    auto inline kind() const noexcept -> BoundaryConditionKind { return _kind; }
     auto inline kindString() const noexcept -> const std::string& { return _kind_str; }
 
   private:
     std::string _kind_str;
     BoundaryConditionValueKind _value_kind;
     BoundaryConditionValue _value;
-    BoundaryConditionKind _kind;
 };
 
 /** @brief Boundary patch class
