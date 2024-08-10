@@ -17,6 +17,8 @@
 
 namespace prism::scheme::convection {
 
+// TODO: density should be a template parameter with a default value for field::UniformScalar
+
 namespace detail {
 // coefficients for the discretized convection equation for a face
 struct CoeffsTriplet {

@@ -21,12 +21,12 @@ class IVector {
 };
 
 namespace detail {
-template <typename ComponentType>
+template <typename Component>
 class Vector : public IField<Vector3d>, public IVector, public units::Measurable {
   public:
     Vector(std::string name, const mesh::PMesh& mesh, double value);
     Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
-    Vector(std::string name, const mesh::PMesh& mesh, std::array<ComponentType, 3>& fields);
+    Vector(std::string name, const mesh::PMesh& mesh, std::array<Component, 3>& fields);
 
     auto hasFaceValues() const -> bool override;
 
@@ -36,14 +36,16 @@ class Vector : public IField<Vector3d>, public IVector, public units::Measurable
     auto valueAtFace(std::size_t face_id) const -> Vector3d override;
     auto valueAtFace(const mesh::Face& face) const -> Vector3d override;
 
-    auto inline x() -> ComponentType& { return _x; }
-    auto inline y() -> ComponentType& { return _y; }
-    auto inline z() -> ComponentType& { return _z; }
+    auto inline x() -> Component& { return _x; }
+    auto inline y() -> Component& { return _y; }
+    auto inline z() -> Component& { return _z; }
 
     auto operator[](std::size_t i) const -> Vector3d;
 
+    using ComponentType = Component;
+
   private:
-    ComponentType _x, _y, _z;
+    Component _x, _y, _z;
 };
 } // namespace detail
 

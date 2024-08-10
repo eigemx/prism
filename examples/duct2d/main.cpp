@@ -85,9 +85,9 @@ auto main(int argc, char* argv[]) -> int {
         auto P_prime = field::Scalar("pressure", mesh, 0.0);
         auto pEqn = TransportEquation(
             scheme::diffusion::CorrectedDiffusion(D, P_prime),
-            scheme::source::Divergence<scheme::source::SourceSign::Negative>(U));
+            scheme::source::Divergence<scheme::source::SourceSign::Negative, field::Velocity>(U));
 
-        pEqn.update_coeffs();
+        pEqn.updateCoeffs();
         spdlog::info("Solving pressure correction equation");
         solver.solve(pEqn, 10, 1e-5, 1);
 
