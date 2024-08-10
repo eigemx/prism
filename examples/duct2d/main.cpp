@@ -1,21 +1,8 @@
-#include "fmt/core.h"
-#include "prism/constants.h"
-#include "prism/equation.h"
-#include "prism/field.h"
-#include "prism/field/field.h"
-#include "prism/gradient/gradient.h"
-#include "prism/mesh/unv.h"
-#include "prism/mesh/utilities.h"
-#include "prism/nonortho/nonortho.h"
-#include "prism/numerics/relax.h"
-#include "prism/numerics/solver.h"
-#include "prism/operations/rhie_chow.h"
-#include "prism/schemes/convection.h"
-#include "prism/schemes/diffusion.h"
-#include "prism/schemes/source.h"
-#include "prism/types.h"
-#include "spdlog/common.h"
-#include "spdlog/spdlog.h"
+#include <fmt/core.h>
+#include <prism/prism.h>
+#include <spdlog/spdlog.h>
+
+#include <filesystem>
 
 
 auto main(int argc, char* argv[]) -> int {
@@ -34,28 +21,30 @@ auto main(int argc, char* argv[]) -> int {
     fmt::print("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
+    auto mu = field::UniformScalar("viscosity", mesh, 1e-6);
     auto rho = field::Scalar("density", mesh, 1.18);
-    auto U = field::Vector("velocity", mesh, {0.05, 0.05, 0.0});
-    auto P = field::Scalar("pressure", mesh, 1.0);
+    auto U = field::Velocity("velocity", mesh, {0.05, 0.05, 0.0});
+    auto P = field::Pressure("pressure", mesh, 1.0);
 
     auto uEqn = TransportEquation(
-        scheme::convection::Upwind(rho, U, U.x()),             // ∇.(ρUu)
-        scheme::diffusion::NonCorrectedDiffusion(1e-6, U.x()), // - ∇.(μ∇u)
+        scheme::convection::Upwind(rho, U, U.x()),           // ∇.(ρUu)
+        scheme::diffusion::NonCorrectedDiffusion(mu, U.x()), // - ∇.(μ∇u)
         scheme::source::Gradient<scheme::source::SourceSign::Negative>(P, Coord::X), // ∂p/∂x
-        scheme::source::Laplacian(1e-6, U.x()) // - ∇.(μ∇u^T)
+        scheme::source::Laplacian(mu, U.x()) // - ∇.(μ∇u^T)
     );
 
     auto vEqn = TransportEquation(
         scheme::convection::Upwind(rho, U, U.y()),
         scheme::diffusion::NonCorrectedDiffusion(1e-6, U.y()),
         scheme::source::Gradient<scheme::source::SourceSign::Negative>(P, Coord::Y),
-        scheme::source::Laplacian(1e-6, U.y()));
+        scheme::source::Laplacian(mu, U.y()));
 
-    auto solver = solver::BiCGSTAB();
+    auto solver =
+        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
 
     for (auto i = 0; i < 2; ++i) {
-        uEqn.update_coeffs();
-        vEqn.update_coeffs();
+        uEqn.updateCoeffs();
+        vEqn.updateCoeffs();
 
         // calculate coefficients for the pressure equation
         const auto vol_vec = mesh::cells_volume_vec(mesh);
@@ -63,12 +52,12 @@ auto main(int argc, char* argv[]) -> int {
         const auto& vEqn_diag = vEqn.matrix().diagonal();
 
         auto D_data = std::vector<prism::Matrix3d>();
-        D_data.reserve(mesh.n_cells());
+        D_data.reserve(mesh.nCells());
 
         auto Du = vol_vec.array() / (uEqn_diag.array() + prism::EPSILON);
         auto Dv = vol_vec.array() / (vEqn_diag.array() + prism::EPSILON);
 
-        for (std::size_t i = 0; i < mesh.n_cells(); ++i) {
+        for (std::size_t i = 0; i < mesh.nCells(); ++i) {
             // clang-format off
             Matrix3d Di;
             Di << Du[i], 0,     0,
@@ -87,7 +76,7 @@ auto main(int argc, char* argv[]) -> int {
         solver.solve(uEqn, 2, 1e-3, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
-        ops::rhie_chow_correct(U, D, P);
+        ops::correctRhieChow(U, D, P);
 
         // pressure equation
         // Few things missing to implement:
@@ -95,8 +84,8 @@ auto main(int argc, char* argv[]) -> int {
         // 2) ∇.(ρU) not ∇.U
         auto P_prime = field::Scalar("pressure", mesh, 0.0);
         auto pEqn = TransportEquation(
-            diffusion::Diffusion<field::Tensor, nonortho::OverRelaxedCorrector<>>(D, P_prime),
-            source::Divergence<source::SourceSign::Negative>(U));
+            scheme::diffusion::CorrectedDiffusion(D, P_prime),
+            scheme::source::Divergence<scheme::source::SourceSign::Negative>(U));
 
         pEqn.update_coeffs();
         spdlog::info("Solving pressure correction equation");
@@ -105,11 +94,11 @@ auto main(int argc, char* argv[]) -> int {
         // update velocity fields
         auto p_grad = gradient::LeastSquares(P_prime);
         for (const auto& cell : mesh.cells()) {
-            auto correction = -D.value_at_cell(cell) * p_grad.gradient_at_cell(cell);
+            auto correction = -D.valueAtCell(cell) * p_grad.gradAtCell(cell);
             U.x()[cell.id()] += correction[0];
             U.y()[cell.id()] += correction[1];
         }
 
-        P.data() = P.data().array() + (0.85 * P_prime.data().array());
+        P.values() = P.values().array() + (0.85 * P_prime.values().array());
     }
 }

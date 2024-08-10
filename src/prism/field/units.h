@@ -54,4 +54,16 @@ class VelocityUnit : public Measurable {
         units().setTime(-1);
     }
 };
+
+class PressureUnit : public Measurable {
+  public:
+    PressureUnit() {
+        units().setMass(1);
+        units().setLength(1);
+        units().setTime(-2);
+    }
+};
+
+using Pascal = PressureUnit;
+
 } // namespace prism::field::units

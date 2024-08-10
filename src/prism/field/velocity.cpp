@@ -6,14 +6,14 @@ VelocityComponent::VelocityComponent(std::string name,
                                      double value,
                                      Coord coord,
                                      IVector* parent)
-    : Scalar(std::move(name), mesh, value, parent), _coord(coord) {}
+    : Scalar(std::move(name), mesh, value, coord, parent) {}
 
 VelocityComponent::VelocityComponent(std::string name,
                                      const mesh::PMesh& mesh,
                                      VectorXd data,
                                      Coord coord,
                                      IVector* parent)
-    : Scalar(std::move(name), mesh, std::move(data), parent), _coord(coord) {}
+    : Scalar(std::move(name), mesh, std::move(data), coord, parent) {}
 
 VelocityComponent::VelocityComponent(std::string name,
                                      const mesh::PMesh& mesh,
@@ -21,8 +21,7 @@ VelocityComponent::VelocityComponent(std::string name,
                                      VectorXd face_data,
                                      Coord coord,
                                      IVector* parent)
-    : Scalar(std::move(name), mesh, std::move(data), std::move(face_data), parent),
-      _coord(coord) {}
+    : Scalar(std::move(name), mesh, std::move(data), std::move(face_data), coord, parent) {}
 
 Velocity::Velocity(std::string name, const mesh::PMesh& mesh, double value)
     : Vector(std::move(name), mesh, value) {}

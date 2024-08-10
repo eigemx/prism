@@ -1,15 +1,17 @@
 #pragma once
 
 #include "constants.h"
-#include "equation/equation.h"
+#include "equation/transport.h"
 #include "export.h"
 #include "field/field.h"
 #include "gradient/gradient.h"
 #include "mesh/pmesh.h"
 #include "mesh/reorder.h"
 #include "mesh/unv.h"
+#include "numerics/relax.h"
 #include "numerics/solver.h"
 #include "operations/operations.h"
+#include "operations/rhie_chow.h"
 #include "schemes/convection.h"
 #include "schemes/diffusion.h"
 #include "schemes/fvscheme.h"

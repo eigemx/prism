@@ -1,16 +1,10 @@
+#include <fmt/core.h>
 #include <prism/prism.h>
+#include <spdlog/common.h>
+#include <spdlog/spdlog.h>
 
 #include <string>
 #include <vector>
-
-#include "fmt/core.h"
-#include "prism/field/field.h"
-#include "prism/gradient/gradient.h"
-#include "prism/nonortho/nonortho.h"
-#include "prism/schemes/diffusion.h"
-#include "prism/schemes/source.h"
-#include "spdlog/common.h"
-#include "spdlog/spdlog.h"
 
 
 auto main(int argc, char* argv[]) -> int {

@@ -4,8 +4,7 @@
 
 #include <Eigen/IterativeLinearSolvers>
 
-#include "prism/equation/equation.h"
-#include "relax.h"
+#include "prism/equation/transport.h"
 
 namespace prism::solver {
 

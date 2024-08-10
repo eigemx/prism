@@ -10,7 +10,7 @@
 namespace prism::ops {
 
 template <typename Vector, typename GradScheme = gradient::LeastSquares>
-void rhie_chow_correct(Vector& U, const field::Tensor& D, const field::Pressure& P);
+void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P);
 
 namespace detail {
 auto correctGrad(const mesh::PMesh& mesh,
@@ -20,7 +20,7 @@ auto correctGrad(const mesh::PMesh& mesh,
 }
 
 template <typename Vector, typename GradScheme>
-void rhie_chow_correct(Vector& U, const field::Tensor& D, const field::Pressure& P) {
+void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P) {
     const auto& mesh = U.mesh();
     GradScheme p_grad_scheme(P);
 

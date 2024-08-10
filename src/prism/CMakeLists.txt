@@ -6,6 +6,7 @@ add_library(prism
     field/tensor.cpp
     field/scalar.cpp
     field/velocity.cpp
+    field/pressure.cpp
     
     export.cpp
     exceptions.cpp
