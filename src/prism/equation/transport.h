@@ -41,7 +41,7 @@ class TransportEquation : public LinearSystem {
 
   private:
     template <typename Convection>
-    requires std::derived_from<Convection, scheme::convection::IConvection>
+    requires std::derived_from<Convection, scheme::convection::IConvection<Field>>
     void addScheme(Convection&& convection);
 
     template <typename Diffusion>
@@ -121,7 +121,7 @@ void TransportEquation<Field>::addScheme(Scheme&& scheme) {
 
 template <typename Field>
 template <typename Convection>
-requires std::derived_from<Convection, scheme::convection::IConvection>
+requires std::derived_from<Convection, scheme::convection::IConvection<Field>>
 void TransportEquation<Field>::addScheme(Convection&& convection) {
     if (convection.needsCorrection()) {
         _n_corrected_schemes++;
