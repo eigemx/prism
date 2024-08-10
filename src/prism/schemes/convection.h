@@ -11,6 +11,8 @@
 #include "prism/field/velocity.h"
 #include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
+#include "prism/mesh/utilities.h"
+#include "prism/operations/operations.h"
 #include "prism/types.h"
 
 namespace prism::scheme::convection {
@@ -25,13 +27,14 @@ struct CoeffsTriplet {
 } // namespace detail
 
 // Finite volume scheme for the discretization of the convection term
-class IConvection : public FVScheme<field::Scalar> {
+template <typename Field>
+class IConvection : public FVScheme<Field> {
   public:
-    IConvection(field::Scalar rho, field::Velocity U, field::Scalar phi);
+    IConvection(field::Scalar rho, field::Velocity U, Field phi);
 
     void apply() override;
 
-    auto inline field() -> std::optional<field::Scalar> override { return _phi; }
+    auto inline field() -> std::optional<Field> override { return _phi; }
     auto inline U() -> const field::Velocity& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
@@ -53,16 +56,16 @@ class IConvection : public FVScheme<field::Scalar> {
 
     field::Scalar _rho;
     field::Velocity _U;
-    field::Scalar _phi;
+    Field _phi;
     BoundaryHandlersManager _bc_manager;
 };
 
 // Central difference scheme
-template <typename G = gradient::LeastSquares>
-class CentralDifference : public IConvection, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares>
+class CentralDifference : public IConvection<F>, public gradient::GradientProvider<G> {
   public:
-    CentralDifference(field::Scalar& rho, field::Velocity& U, field::Scalar& phi)
-        : IConvection(rho, U, phi) {}
+    CentralDifference(field::Scalar rho, field::Velocity U, F phi)
+        : IConvection<F>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -73,11 +76,11 @@ class CentralDifference : public IConvection, public gradient::GradientProvider<
 
 
 // Upwind scheme
-template <typename G = gradient::LeastSquares>
-class Upwind : public IConvection, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares>
+class Upwind : public IConvection<F>, public gradient::GradientProvider<G> {
   public:
-    Upwind(field::Scalar rho, field::Velocity U, field::Scalar phi)
-        : IConvection(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+    Upwind(field::Scalar rho, field::Velocity U, F phi)
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -88,11 +91,11 @@ class Upwind : public IConvection, public gradient::GradientProvider<G> {
 
 
 // Second order upwind scheme
-template <typename G = gradient::LeastSquares>
-class SecondOrderUpwind : public IConvection, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares>
+class SecondOrderUpwind : public IConvection<F>, public gradient::GradientProvider<G> {
   public:
-    SecondOrderUpwind(field::Scalar rho, field::Velocity U, field::Scalar phi)
-        : IConvection(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+    SecondOrderUpwind(field::Scalar rho, field::Velocity U, F phi)
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -103,11 +106,11 @@ class SecondOrderUpwind : public IConvection, public gradient::GradientProvider<
 
 
 // QUICK scheme
-template <typename G = gradient::LeastSquares>
-class QUICK : public IConvection, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares>
+class QUICK : public IConvection<F>, public gradient::GradientProvider<G> {
   public:
-    QUICK(field::Scalar rho, field::Velocity U, field::Scalar phi)
-        : IConvection(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+    QUICK(field::Scalar rho, field::Velocity U, F phi)
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -116,11 +119,68 @@ class QUICK : public IConvection, public gradient::GradientProvider<G> {
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
 
-template <typename G>
-auto CentralDifference<G>::interpolate(double m_dot,
-                                       const mesh::Cell& cell,
-                                       const mesh::Cell& neighbor,
-                                       const mesh::Face& face) -> detail::CoeffsTriplet {
+template <typename Field>
+IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
+    : _rho(std::move(rho)),
+      _U(std::move(U)),
+      _phi(std::move(phi)),
+      FVScheme<Field>(phi.mesh().nCells()) {
+    // add default boundary handlers for IConvection based types
+    using Scheme = std::remove_reference_t<decltype(*this)>;
+    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
+}
+
+template <typename Field>
+void IConvection<Field>::apply() {
+    apply_boundary();
+
+    for (const auto& iface : _phi.mesh().interiorFaces()) {
+        apply_interior(iface);
+    }
+
+    this->collect();
+}
+
+template <typename Field>
+void IConvection<Field>::apply_interior(const mesh::Face& face) {
+    const auto& mesh = _phi.mesh();
+    const mesh::Cell& owner = mesh.cell(face.owner());
+    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
+
+    const std::size_t owner_id = owner.id();
+    const std::size_t neighbor_id = neighbor.id();
+
+    const Vector3d& S_f = mesh::outward_area_vector(face, owner);
+    const Vector3d U_f = _U.valueAtFace(face);
+    const double rho_f = _rho.valueAtFace(face);
+    const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
+
+    auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
+    auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
+
+    this->insert(owner_id, owner_id, a_C);
+    this->insert(owner_id, neighbor_id, a_N);
+
+    this->insert(neighbor_id, neighbor_id, x_C);
+    this->insert(neighbor_id, owner_id, x_N);
+
+    this->rhs(owner_id) += b;
+    this->rhs(neighbor_id) += s;
+}
+
+template <typename Field>
+void IConvection<Field>::apply_boundary() {
+    boundary::detail::apply_boundary("IConvection", *this);
+}
+
+template <typename F, typename G>
+auto CentralDifference<F, G>::interpolate(double m_dot,
+                                          const mesh::Cell& cell,
+                                          const mesh::Cell& neighbor,
+                                          const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
     const Vector3d d_Cf = face.center() - cell.center();
@@ -135,11 +195,11 @@ auto CentralDifference<G>::interpolate(double m_dot,
     return {a_C, a_N, b};
 }
 
-template <typename G>
-auto Upwind<G>::interpolate(double m_dot,
-                            const mesh::Cell& cell,     // NOLINT
-                            const mesh::Cell& neighbor, // NOLINT
-                            const mesh::Face& face)     // NOLINT
+template <typename F, typename G>
+auto Upwind<F, G>::interpolate(double m_dot,
+                               const mesh::Cell& cell,     // NOLINT
+                               const mesh::Cell& neighbor, // NOLINT
+                               const mesh::Face& face)     // NOLINT
     -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const double a_C = std::max(m_dot, 0.0);
@@ -149,11 +209,11 @@ auto Upwind<G>::interpolate(double m_dot,
     return {a_C, a_N, 0.0};
 }
 
-template <typename G>
-auto SecondOrderUpwind<G>::interpolate(double m_dot,
-                                       const mesh::Cell& cell,
-                                       const mesh::Cell& neighbor,
-                                       const mesh::Face& face) -> detail::CoeffsTriplet {
+template <typename F, typename G>
+auto SecondOrderUpwind<F, G>::interpolate(double m_dot,
+                                          const mesh::Cell& cell,
+                                          const mesh::Cell& neighbor,
+                                          const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->grad_scheme().gradAtFace(face);
     const Vector3d cell_grad_phi = this->grad_scheme().gradAtCell(cell);
@@ -177,11 +237,11 @@ auto SecondOrderUpwind<G>::interpolate(double m_dot,
     return {a_C, a_N, b1 + b2};
 }
 
-template <typename G>
-auto QUICK<G>::interpolate(double m_dot,
-                           const mesh::Cell& cell,
-                           const mesh::Cell& neighbor,
-                           const mesh::Face& face) -> detail::CoeffsTriplet {
+template <typename F, typename G>
+auto QUICK<F, G>::interpolate(double m_dot,
+                              const mesh::Cell& cell,
+                              const mesh::Cell& neighbor,
+                              const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->grad_scheme().gradAtFace(face);
     const Vector3d cell_grad_phi = this->grad_scheme().gradAtCell(cell);
@@ -202,6 +262,79 @@ auto QUICK<G>::interpolate(double m_dot,
 
     return {a_C, a_N, b1 + b2};
 }
-
-
 } // namespace prism::scheme::convection
+
+namespace prism::scheme::boundary {
+template <typename F>
+void Fixed<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme,
+                                              const mesh::BoundaryPatch& patch) {
+    assert(scheme.field().has_value());
+
+    const auto phi = scheme.field().value();
+    const auto& mesh = phi.mesh();
+
+    for (const auto face_id : patch.facesIds()) {
+        const mesh::Face& face = mesh.face(face_id);
+        const mesh::Cell& owner = mesh.cell(face.owner());
+        const double phi_wall = patch.getScalarBoundaryCondition(phi.name());
+
+        const Vector3d& S_f = face.area_vector();
+        const Vector3d U_f = scheme.U().valueAtFace(face);
+
+        // TODO: check if this is correct
+        // TODO: warn user if mass flow rate is not entering the patch (negative flow rate)
+        const double rho_f = scheme.rho().valueAtCell(owner);
+        const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
+
+        // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+        // and should be generalized to work for all schemes.
+
+        // in case owner cell is an upstream cell
+        // TODO: face value should be the same regardless of the upstream cell mass flow rate, so,
+        // applying the right hand side should not depend on a std::max() call and should be
+        // definite.
+        const std::size_t cell_id = owner.id();
+        scheme.insert(cell_id, cell_id, std::max(m_dot_f, 0.0));
+        scheme.rhs(cell_id) += std::max(-m_dot_f * phi_wall, 0.0);
+    }
+}
+
+template <typename F>
+void Outlet<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme,
+                                               const mesh::BoundaryPatch& patch) {
+    assert(scheme.field().has_value());
+    _n_reverse_flow_faces = 0;
+
+    const auto phi = scheme.field().value();
+    const auto& mesh = phi.mesh();
+
+    for (const auto& face_id : patch.facesIds()) {
+        const mesh::Face& face = mesh.face(face_id);
+        const mesh::Cell& owner = mesh.cell(face.owner());
+        const std::size_t cell_id = owner.id();
+
+        // face area vector
+        const Vector3d& S_f = face.area_vector();
+
+        // use owner cell velocity as the velocity at the outlet face centroid
+        const Vector3d U_f = scheme.U().valueAtFace(face);
+        const double rho_f = scheme.rho().valueAtCell(owner);
+        const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
+
+        if (m_dot_f < 0.0) {
+            _n_reverse_flow_faces++;
+        }
+        // TODO: this assumes an upwind based scheme, this is wrong for central schemes
+        // and should be generalized to work for all schemes.
+
+        // Because this is an outlet, owner `cell` is an upstream cell
+        scheme.insert(cell_id, cell_id, m_dot_f);
+    }
+
+    if (_n_reverse_flow_faces > 0) {
+        spdlog::warn("Reverse flow detected in {} faces in outlet flow patch '{}'",
+                     _n_reverse_flow_faces,
+                     patch.name());
+    }
+}
+} // namespace prism::scheme::boundary

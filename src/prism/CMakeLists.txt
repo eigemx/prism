@@ -28,9 +28,6 @@ add_library(prism
     gradient/gradient.cpp
     gradient/boundary.cpp
 
-    schemes/convection.cpp
-    schemes/convection_boundary.cpp
-
     # schemes
     schemes/backward_euler.cpp
 

@@ -5,30 +5,33 @@
 
 namespace prism::scheme::convection {
 // forward declarations
+template <typename Field>
 class IConvection;
 
 } // namespace prism::scheme::convection
 
 namespace prism::scheme::boundary {
-template <>
-class Fixed<convection::IConvection> : public FVSchemeBoundaryHandler<convection::IConvection> {
+template <typename F>
+class Fixed<convection::IConvection<F>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<F>> {
   public:
-    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override;
+    void apply(convection::IConvection<F>& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed"; }
 };
 
-template <>
-class Symmetry<convection::IConvection>
-    : public FVSchemeBoundaryHandler<convection::IConvection> {
+template <typename F>
+class Symmetry<convection::IConvection<F>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<F>> {
   public:
-    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override {}
+    void apply(convection::IConvection<F>& scheme, const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "symmetry"; }
 };
 
-template <>
-class Outlet<convection::IConvection> : public FVSchemeBoundaryHandler<convection::IConvection> {
+template <typename F>
+class Outlet<convection::IConvection<F>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<F>> {
   public:
-    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override;
+    void apply(convection::IConvection<F>& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "outlet"; }
 
   private:
