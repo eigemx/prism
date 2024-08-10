@@ -39,6 +39,8 @@ class TransportEquation : public LinearSystem {
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
 
+    using FieldType = Field;
+
   private:
     template <typename Convection>
     requires std::derived_from<Convection, scheme::convection::IConvection<Field>>
@@ -59,7 +61,6 @@ class TransportEquation : public LinearSystem {
 
     std::size_t _n_corrected_schemes {0};
 };
-
 
 template <typename Field>
 template <typename Scheme, typename... Schemes>
