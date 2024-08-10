@@ -4,7 +4,7 @@
 
 namespace prism::field {
 
-class Pressure : public Scalar {
+class Pressure : public Scalar, public units::Pascal {
   public:
     Pressure(std::string name, const mesh::PMesh& mesh, double value);
     Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data);

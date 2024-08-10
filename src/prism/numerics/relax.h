@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "prism/equation/equation.h"
+#include "prism/equation/transport.h"
 
 namespace prism::solver {
 

@@ -29,11 +29,6 @@ class VelocityComponent : public Scalar, public units::VelocityUnit {
                       VectorXd face_data,
                       Coord coord,
                       IVector* parent = nullptr);
-
-    auto coord() const noexcept -> std::optional<Coord> override { return _coord; }
-
-  private:
-    Coord _coord;
 };
 
 class Velocity : public detail::Vector<VelocityComponent>, public units::VelocityUnit {
