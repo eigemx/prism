@@ -1,7 +1,7 @@
 #pragma once
 
 #include "fvscheme.h"
-#include "prism/field/field.h"
+#include "prism/field/scalar.h"
 #include "prism/gradient/gradient.h"
 #include "prism/operations/operations.h"
 
@@ -12,7 +12,12 @@ namespace prism::scheme::source {
 enum class SourceSign { Positive, Negative };
 
 class ISource {};
+
 class IImplicitSource : public ISource {};
+
+// We inherit from FVScheme with field::Scalar as template specialization because for explicit
+// sources the type of the field won't matter, because we are not contributing to the matrix of
+// coefficients for the linear system of the conserved equation.
 class IExplicitSource : public ISource, public FVScheme<field::Scalar> {
   public:
     IExplicitSource(std::size_t n_cells);
@@ -40,41 +45,44 @@ class ConstantScalar : public IExplicitSource {
     field::Scalar _phi;
 };
 
-template <SourceSign Sign = SourceSign::Positive>
+template <SourceSign Sign = SourceSign::Positive, typename Vector = field::Vector>
 class Divergence : public IExplicitSource {
   public:
-    Divergence(field::Vector& U);
+    Divergence(Vector U);
     void apply() override;
 
   private:
-    field::Vector _U;
+    Vector _U;
 };
 
 // Adds a source for a gradient of a scalar field, in a specific coordinate
 // for example the gradient of the pressure in the x-direction: ∂p/∂x
 template <SourceSign Sign = SourceSign::Positive,
+          typename Field = field::Scalar,
           typename GradientScheme = gradient::LeastSquares>
 class Gradient : public IExplicitSource {
   public:
-    Gradient(field::Scalar& phi, Coord coord);
+    Gradient(Field phi, Coord coord);
     void apply() override;
 
   private:
-    field::Scalar _phi;
+    Field _phi;
     Coord _coord;
     GradientScheme _grad_scheme;
 };
 
 template <SourceSign Sign = SourceSign::Positive,
+          typename Kappa = field::UniformScalar,
+          typename Field = field::Scalar,
           typename GradientScheme = gradient::LeastSquares>
 class Laplacian : public IExplicitSource {
   public:
-    Laplacian(double kappa, field::Scalar phi);
+    Laplacian(Kappa kappa, Field phi);
     void apply() override;
 
   private:
-    double _kappa;
-    field::Scalar _phi;
+    Kappa _kappa;
+    Field _phi;
     GradientScheme _grad_scheme;
 };
 
@@ -112,15 +120,12 @@ void inline ConstantScalar<Sign>::apply() {
     rhs() = -_phi.values().array() * vol_field.array();
 }
 
-template <SourceSign Sign>
-Divergence<Sign>::Divergence(field::Vector& U) : IExplicitSource(U.mesh().nCells()), _U(U) {}
+template <SourceSign Sign, typename Vector>
+Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh().nCells()), _U(U) {}
 
-template <SourceSign Sign, typename GradientScheme>
-Gradient<Sign, GradientScheme>::Gradient(field::Scalar& phi, Coord coord)
-    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {}
 
-template <SourceSign Sign>
-void inline Divergence<Sign>::apply() {
+template <SourceSign Sign, typename Vector>
+void inline Divergence<Sign, Vector>::apply() {
     if (Sign == SourceSign::Positive) {
         rhs() = ops::div(_U).values();
         return;
@@ -128,8 +133,12 @@ void inline Divergence<Sign>::apply() {
     rhs() = -ops::div(_U).values();
 }
 
-template <SourceSign Sign, typename GradientScheme>
-void Gradient<Sign, GradientScheme>::apply() {
+template <SourceSign Sign, typename Field, typename GradientScheme>
+Gradient<Sign, Field, GradientScheme>::Gradient(Field phi, Coord coord)
+    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {}
+
+template <SourceSign Sign, typename Field, typename GradientScheme>
+void Gradient<Sign, Field, GradientScheme>::apply() {
     auto grad_field = _grad_scheme.gradient_field();
     const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
@@ -160,15 +169,15 @@ void Gradient<Sign, GradientScheme>::apply() {
     }
 }
 
-template <SourceSign Sign, typename GradientScheme>
-Laplacian<Sign, GradientScheme>::Laplacian(double kappa, field::Scalar phi)
+template <SourceSign Sign, typename Kappa, typename Field, typename GradientScheme>
+Laplacian<Sign, Kappa, Field, GradientScheme>::Laplacian(Kappa kappa, Field phi)
     : IExplicitSource(phi.mesh().nCells()),
       _kappa(kappa),
       _phi(phi),
       _grad_scheme(GradientScheme(phi)) {}
 
-template <SourceSign Sign, typename GradientScheme>
-void inline Laplacian<Sign, GradientScheme>::apply() {
+template <SourceSign Sign, typename Kappa, typename Field, typename GradientScheme>
+void inline Laplacian<Sign, Kappa, Field, GradientScheme>::apply() {
     auto grad_phi = _grad_scheme.gradient_field();
     auto div = ops::div(grad_phi);
 

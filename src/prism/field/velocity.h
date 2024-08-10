@@ -36,6 +36,8 @@ class Velocity : public detail::Vector<VelocityComponent>, public units::Velocit
     Velocity(std::string name, const mesh::PMesh& mesh, double value);
     Velocity(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
     Velocity(std::string name, const mesh::PMesh& mesh, std::array<VelocityComponent, 3>& fields);
+
+    using ComponentType = VelocityComponent;
 };
 
 } // namespace prism::field
