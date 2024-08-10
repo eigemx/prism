@@ -96,11 +96,12 @@ CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::CorrectedDi
 
     // add default boundary handlers for CorrectedDiffusion
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
@@ -127,7 +128,7 @@ void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>:
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
 void inline CorrectedDiffusion<KappaType, NonOrthoCorrector, GradScheme, Field>::
     apply_boundary() {
-    boundary::detail::apply_boundary("CorrectedDiffusion", *this);
+    boundary::detail::applyBoundary("CorrectedDiffusion", *this);
 }
 
 template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
@@ -184,11 +185,12 @@ NonCorrectedDiffusion<KappaType, Field>::NonCorrectedDiffusion(KappaType kappa, 
 
     // add default boundary handlers for NonCorrectedDiffusion
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template add_handler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Symmetry<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template add_handler<scheme::boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Fixed<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
 template <typename KappaType, typename Field>
@@ -205,7 +207,7 @@ void inline NonCorrectedDiffusion<KappaType, Field>::apply() {
 
 template <typename KappaType, typename Field>
 void inline NonCorrectedDiffusion<KappaType, Field>::apply_boundary() {
-    boundary::detail::apply_boundary("NonCorrectedDiffusion", *this);
+    boundary::detail::applyBoundary("NonCorrectedDiffusion", *this);
 }
 
 template <typename KappaType, typename Field>

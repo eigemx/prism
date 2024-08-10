@@ -22,16 +22,16 @@ class IBoundaryHandler {
 template <typename Scheme, typename BaseHandler>
 class BoundaryHandlersManager {
   public:
-    auto get_handler(const std::string& bc) const -> std::shared_ptr<BaseHandler>;
+    auto getHandler(const std::string& bc) const -> std::shared_ptr<BaseHandler>;
 
     template <typename Handler>
-    void add_handler();
+    void addHandler();
 
-    void remove_handler(const std::string& bc);
+    void removeHandler(const std::string& bc);
 
   private:
     using InstanceCreatorPtr = std::shared_ptr<IBoundaryHandler> (*)();
-    void add_handler(const std::string& bc, InstanceCreatorPtr creator);
+    void addHandler(const std::string& bc, InstanceCreatorPtr creator);
     std::map<std::string, InstanceCreatorPtr> _bc_map;
 };
 
@@ -41,7 +41,7 @@ auto create_handler_instance() -> std::shared_ptr<IBoundaryHandler> {
 }
 
 template <typename Scheme, typename BaseHandler>
-auto BoundaryHandlersManager<Scheme, BaseHandler>::get_handler(const std::string& bc) const
+auto BoundaryHandlersManager<Scheme, BaseHandler>::getHandler(const std::string& bc) const
     -> std::shared_ptr<BaseHandler> {
     if (!_bc_map.contains(bc)) {
         return nullptr;
@@ -58,11 +58,11 @@ auto BoundaryHandlersManager<Scheme, BaseHandler>::get_handler(const std::string
 }
 
 template <typename Scheme, typename BaseHandler>
-void BoundaryHandlersManager<Scheme, BaseHandler>::add_handler(const std::string& bc,
-                                                               InstanceCreatorPtr creator) {
+void BoundaryHandlersManager<Scheme, BaseHandler>::addHandler(const std::string& bc,
+                                                              InstanceCreatorPtr creator) {
     if (creator == nullptr) {
         throw std::runtime_error(
-            "BoundaryHandlersManager::add_handler() was given a pointer to boundary handler "
+            "BoundaryHandlersManager::addHandler() was given a pointer to boundary handler "
             "instance creator function that is null.");
     }
     _bc_map.insert({bc, creator});
@@ -70,20 +70,20 @@ void BoundaryHandlersManager<Scheme, BaseHandler>::add_handler(const std::string
 
 template <typename Scheme, typename BaseHandler>
 template <typename DerivedHandler>
-void BoundaryHandlersManager<Scheme, BaseHandler>::add_handler() {
+void BoundaryHandlersManager<Scheme, BaseHandler>::addHandler() {
     DerivedHandler temp;
-    add_handler(temp.name(), &boundary::create_handler_instance<DerivedHandler>);
+    addHandler(temp.name(), &boundary::create_handler_instance<DerivedHandler>);
 }
 
 template <typename Scheme, typename BaseHandler>
-void BoundaryHandlersManager<Scheme, BaseHandler>::remove_handler(const std::string& bc) {
+void BoundaryHandlersManager<Scheme, BaseHandler>::removeHandler(const std::string& bc) {
     const auto it = _bc_map.find(bc);
     if (it != _bc_map.end()) {
         _bc_map.erase(it);
         return;
     }
     throw std::runtime_error(
-        fmt::format("BoundaryHandlersManager::remove_hander() was given a non-existent boundary "
+        fmt::format("BoundaryHandlersManager::removeHandler() was given a non-existent boundary "
                     "handler name ({})",
                     bc));
 }

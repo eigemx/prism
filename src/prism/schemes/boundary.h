@@ -31,6 +31,13 @@ class Fixed : public FVSchemeBoundaryHandler<Scheme> {
 };
 
 template <typename Scheme>
+class NoSlip : public FVSchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override = 0;
+    auto inline name() const -> std::string override { return "no-slip"; }
+};
+
+template <typename Scheme>
 class VelocityInlet : public FVSchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override = 0;
@@ -58,23 +65,9 @@ class FixedGradient : public FVSchemeBoundaryHandler<Scheme> {
     auto inline name() const -> std::string override { return "fixed-gradient"; }
 };
 
-template <typename Scheme>
-class SlipWall : public FVSchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override = 0;
-    auto inline name() const -> std::string override { return "slip-wall"; }
-};
-
-template <typename Scheme>
-class NonSlipWall : public FVSchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override = 0;
-    auto inline name() const -> std::string override { return "nonslip-wall"; }
-};
-
 namespace detail {
 template <typename Scheme>
-void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
+void applyBoundary(const std::string& scheme_name, Scheme& scheme) {
     assert(_scheme.field().has_value());
 
     auto _phi = scheme.field().value();
@@ -82,7 +75,7 @@ void apply_boundary(const std::string& scheme_name, Scheme& scheme) {
 
     for (const auto& patch : mesh.boundaryPatches()) {
         const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
-        auto handler = scheme.boundaryHandlersManager().get_handler(bc.kindString());
+        auto handler = scheme.boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler == nullptr) {
             throw error::NonImplementedBoundaryCondition(

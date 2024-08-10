@@ -54,6 +54,15 @@ class Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
     auto inline name() const -> std::string override { return "fixed"; }
 };
 
+template <typename K, typename N, typename G>
+class NoSlip<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
+    : public FVSchemeBoundaryHandler<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> {
+  public:
+    void apply(diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
+               const mesh::BoundaryPatch& patch) override;
+    auto inline name() const -> std::string override { return "no-slip"; }
+};
+
 // general Von Neumann boundary condition, or fixed gradient boundary condition.
 template <typename K, typename N, typename G>
 class FixedGradient<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>
@@ -103,6 +112,15 @@ class FixedGradient<diffusion::NonCorrectedDiffusion<K, field::Scalar>>
     auto inline name() const -> std::string override { return "fixed-gradient"; }
 };
 
+template <typename K>
+class NoSlip<diffusion::NonCorrectedDiffusion<K, field::Scalar>>
+    : public FVSchemeBoundaryHandler<diffusion::NonCorrectedDiffusion<K, field::Scalar>> {
+  public:
+    void apply(diffusion::NonCorrectedDiffusion<K, field::Scalar>& scheme,
+               const mesh::BoundaryPatch& patch) override;
+    auto inline name() const -> std::string override { return "no-slip"; }
+};
+
 // TODO: boundary handlers for CorrectedDiffusion and NonCorrectedDiffusion should be the same,
 // right?
 template <typename K, typename N, typename G>
@@ -142,6 +160,14 @@ void Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
         auto grad_f = ((phi_wall - phi_c) / (d_Cf_norm + EPSILON)) * e;
         scheme.rhs(owner.id()) += Tf_prime.dot(grad_f);
     }
+}
+
+template <typename K, typename N, typename G>
+void NoSlip<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>>::apply(
+    diffusion::CorrectedDiffusion<K, N, G, field::Scalar>& scheme,
+    const mesh::BoundaryPatch& patch) {
+    Fixed<diffusion::CorrectedDiffusion<K, N, G, field::Scalar>> fixed;
+    return fixed.apply(scheme, patch);
 }
 
 template <typename K, typename N, typename G>
@@ -205,6 +231,14 @@ void Fixed<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
         scheme.insert(cell_id, cell_id, g_diff);
         scheme.rhs(cell_id) += g_diff * phi_wall;
     }
+}
+
+template <typename K>
+void NoSlip<diffusion::NonCorrectedDiffusion<K, field::Scalar>>::apply(
+    diffusion::NonCorrectedDiffusion<K, field::Scalar>& scheme,
+    const mesh::BoundaryPatch& patch) {
+    Fixed<diffusion::NonCorrectedDiffusion<K, field::Scalar>> fixed;
+    return fixed.apply(scheme, patch);
 }
 
 template <typename K>

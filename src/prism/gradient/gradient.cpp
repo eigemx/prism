@@ -5,13 +5,13 @@
 
 namespace prism::gradient {
 IGradient::IGradient(field::Scalar field) : _field(field) { // NOLINT
-    _bh_manager.add_handler<boundary::Fixed>();
-    _bh_manager.add_handler<boundary::FixedGradient>();
-    _bh_manager.add_handler<boundary::Empty>();
-    _bh_manager.add_handler<boundary::FixedGradient>();
-    _bh_manager.add_handler<boundary::Outlet>();
-    _bh_manager.add_handler<boundary::Symmetry>();
-    _bh_manager.add_handler<boundary::VelocityInlet>();
+    _bh_manager.addHandler<boundary::Fixed>();
+    _bh_manager.addHandler<boundary::FixedGradient>();
+    _bh_manager.addHandler<boundary::Empty>();
+    _bh_manager.addHandler<boundary::FixedGradient>();
+    _bh_manager.addHandler<boundary::Outlet>();
+    _bh_manager.addHandler<boundary::Symmetry>();
+    _bh_manager.addHandler<boundary::VelocityInlet>();
 }
 
 auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
@@ -39,7 +39,7 @@ auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
 
-    auto handler = _bh_manager.get_handler(boundary_condition.kindString());
+    auto handler = _bh_manager.getHandler(boundary_condition.kindString());
 
     if (handler == nullptr) {
         throw prism::error::NonImplementedBoundaryCondition(

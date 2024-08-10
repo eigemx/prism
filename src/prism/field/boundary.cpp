@@ -11,6 +11,11 @@ auto Fixed::get(const field::Scalar& field, const mesh::Face& face) -> double {
     return patch.getScalarBoundaryCondition(field.name());
 }
 
+auto NoSlip::get(const field::Scalar& field, const mesh::Face& face) -> double {
+    Fixed fixed;
+    return fixed.get(field, face);
+}
+
 auto VelocityInlet::get(const field::Scalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundary_patch(face);
     return patch.getScalarBoundaryCondition(field.name());

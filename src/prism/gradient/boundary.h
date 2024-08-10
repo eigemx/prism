@@ -41,6 +41,13 @@ class Fixed : public GradSchemeBoundaryHandler {
         -> prism::Vector3d override;
 };
 
+class NoSlip : public GradSchemeBoundaryHandler {
+  public:
+    auto name() const -> std::string override { return "no-slip"; }
+    auto get(const prism::field::Scalar& field, const prism::mesh::Face& face)
+        -> prism::Vector3d override;
+};
+
 class VelocityInlet : public GradSchemeBoundaryHandler {
   public:
     auto name() const -> std::string override { return "velocity-inlet"; }

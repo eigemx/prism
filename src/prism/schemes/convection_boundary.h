@@ -20,6 +20,15 @@ class Fixed<convection::IConvection<F>>
 };
 
 template <typename F>
+class NoSlip<convection::IConvection<F>>
+    : public FVSchemeBoundaryHandler<convection::IConvection<F>> {
+  public:
+    void apply(convection::IConvection<F>& scheme, const mesh::BoundaryPatch& patch) override;
+    auto inline name() const -> std::string override { return "no-slip"; }
+};
+
+
+template <typename F>
 class Symmetry<convection::IConvection<F>>
     : public FVSchemeBoundaryHandler<convection::IConvection<F>> {
   public:
