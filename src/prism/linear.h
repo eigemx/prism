@@ -5,17 +5,33 @@
 #include <vector>
 
 namespace prism {
-// A linear system of equations of the form Ax = b
-class LinearSystem {
-  public:
-    LinearSystem() = delete;
-    LinearSystem(const LinearSystem& other) = default;
-    LinearSystem(LinearSystem&& other) noexcept = default;
-    auto operator=(const LinearSystem& other) -> LinearSystem& = default;
-    auto operator=(LinearSystem&& other) noexcept -> LinearSystem& = default;
-    virtual ~LinearSystem() = default;
 
-    LinearSystem(std::size_t n_cells, bool need_matrix = true);
+class RHSProvider {
+  public:
+    RHSProvider() = delete;
+    RHSProvider(const RHSProvider& other) = default;
+    RHSProvider(RHSProvider&& other) noexcept = default;
+    auto operator=(const RHSProvider& other) -> RHSProvider& = default;
+    auto operator=(RHSProvider&& other) noexcept -> RHSProvider& = default;
+    virtual ~RHSProvider() = default;
+
+    RHSProvider(std::size_t n_cells);
+
+    // getters and setters for vector `b` in the left hand side of the equation
+    auto inline rhs() const -> const VectorXd& { return _b; }
+    auto inline rhs() -> VectorXd& { return _b; }
+
+    // getters and setters for the ith-row in the rhs vector.
+    auto inline rhs(std::size_t i) const -> double { return _b[i]; }
+    auto inline rhs(std::size_t i) -> double& { return _b[i]; }
+
+  private:
+    VectorXd _b;
+};
+// A linear system of equations of the form Ax = b
+class LinearSystem : public RHSProvider {
+  public:
+    LinearSystem(std::size_t n_cells);
 
     // setters and getters for matrix A in the right hand side of the linear system
     auto inline matrix() const -> const SparseMatrix& { return _A; }
@@ -31,17 +47,8 @@ class LinearSystem {
     // collect() should be called after inserting all the matrix coefficients
     void collect();
 
-    // getters and setters for vector `b` in the left hand side of the equation
-    auto inline rhs() const -> const VectorXd& { return _b; }
-    auto inline rhs() -> VectorXd& { return _b; }
-
-    // getters and setters for the ith-row in the rhs vector.
-    auto inline rhs(std::size_t i) const -> double { return _b[i]; }
-    auto inline rhs(std::size_t i) -> double& { return _b[i]; }
-
   private:
     SparseMatrix _A;
-    VectorXd _b;
     std::vector<Eigen::Triplet<double>> _triplets;
 };
 

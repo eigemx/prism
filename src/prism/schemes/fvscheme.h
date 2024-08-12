@@ -6,14 +6,14 @@
 namespace prism::scheme {
 
 // Base type for all finite volume schemes
-class FVScheme {
+class IScheme {
   public:
-    FVScheme() = default;
-    FVScheme(const FVScheme&) = default;
-    FVScheme(FVScheme&&) = default;
-    auto operator=(const FVScheme&) -> FVScheme& = default;
-    auto operator=(FVScheme&&) -> FVScheme& = default;
-    virtual ~FVScheme() = default;
+    IScheme() = default;
+    IScheme(const IScheme&) = default;
+    IScheme(IScheme&&) = default;
+    auto operator=(const IScheme&) -> IScheme& = default;
+    auto operator=(IScheme&&) -> IScheme& = default;
+    virtual ~IScheme() = default;
 
     // apply the discretization scheme
     virtual void apply() = 0;
@@ -25,21 +25,17 @@ class FVScheme {
 
 // Base type for FVSchemes that requires contribution to only the right hand side of the
 // discretized linear system.
-class PartialScheme : public FVScheme, public LinearSystem {
+class IPartialScheme : public IScheme, public RHSProvider {
   public:
-    PartialScheme(std::size_t n_cells) : LinearSystem(n_cells, false) {}
-
-  private:
-    VectorXd _rhs;
+    IPartialScheme(std::size_t n_cells) : RHSProvider(n_cells) {}
 };
 
 // Base type for FVSchemes that requires contribution to both sides of the discretized linear
 // system
 template <typename Field>
-class FullScheme : public FVScheme, public LinearSystem {
+class IFullScheme : public IScheme, public LinearSystem {
   public:
-    FullScheme(std::size_t n_cells, bool need_matrix = true)
-        : LinearSystem(n_cells, need_matrix) {}
+    IFullScheme(std::size_t n_cells) : LinearSystem(n_cells) {}
 
     // returns the conserved transport field
     virtual auto field() -> Field = 0;

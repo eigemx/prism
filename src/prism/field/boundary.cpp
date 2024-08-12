@@ -39,7 +39,7 @@ auto FixedGradient::get(const field::Scalar& field, const mesh::Face& face) -> d
     const auto& mesh = field.mesh();
     const auto& patch = mesh.boundary_patch(face);
 
-    Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(name());
+    Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(field.name());
     const auto& owner = mesh.cell(face.owner());
 
     Vector3d e = face.center() - owner.center();

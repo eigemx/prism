@@ -36,8 +36,8 @@ class TransportEquation : public LinearSystem {
     auto inline prevIterField() const -> const Field& { return _phi_old; }
     auto inline prevIterField() -> Field& { return _phi_old; }
 
-    auto convectionScheme() -> SharedPtr<scheme::FullScheme<Field>> { return _conv_scheme; }
-    auto diffusionScheme() -> SharedPtr<scheme::FullScheme<Field>> { return _diff_scheme; }
+    auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>> { return _conv_scheme; }
+    auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>> { return _diff_scheme; }
 
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
@@ -64,12 +64,12 @@ class TransportEquation : public LinearSystem {
     requires std::derived_from<Source, scheme::source::IExplicitSource>
     void addScheme(Source&& source);
 
-    std::vector<SharedPtr<scheme::FullScheme<Field>>> _schemes;
+    std::vector<SharedPtr<scheme::IFullScheme<Field>>> _schemes;
     std::vector<SharedPtr<scheme::source::IExplicitSource>> _sources;
     Field _phi;     // Conserved field of the equation
     Field _phi_old; // Previous iteration value of the field
-    SharedPtr<scheme::FullScheme<Field>> _conv_scheme = nullptr;
-    SharedPtr<scheme::FullScheme<Field>> _diff_scheme = nullptr;
+    SharedPtr<scheme::IFullScheme<Field>> _conv_scheme = nullptr;
+    SharedPtr<scheme::IFullScheme<Field>> _diff_scheme = nullptr;
     std::size_t _n_corrected_schemes {0};
     BoundaryHandlersManager _bh_manager;
 };
@@ -112,9 +112,6 @@ void TransportEquation<Field>::updateCoeffs() {
     for (auto& scheme : _sources) {
         // apply the scheme
         scheme->apply();
-
-        // update quation's universal coefficient matrix and RHS vector
-        matrix() += scheme->matrix();
         rhs() += scheme->rhs();
     }
 
