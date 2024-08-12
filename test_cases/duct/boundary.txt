@@ -22,7 +22,7 @@ value = 500
 type = 'no-slip'
 value = [0.0, 0.0, 0.0]
 [heatedWall.pressure]
-type = 'gradient'
+type = 'fixed-gradient'
 value = [0.0, 0.0, 0.0]
 
 [inlet]
@@ -33,17 +33,17 @@ value = 300
 type = 'no-slip'
 value = [0.0, 1.0, 0.0]
 [inlet.pressure]
-type = 'gradient'
+type = 'fixed-gradient'
 value = [0.0, 0.0, 0.0]
 
 [insulatedWall]
 [insulatedWall.temperature]
 type = 'symmetry'
 [insulatedWall.velocity]
-type = 'fixed'
-value = [0.0, 1.0, 0.0]
+type = 'no-slip'
+value = [0.0, 0.0, 0.0]
 [insulatedWall.pressure]
-type = 'gradient'
+type = 'fixed-gradient'
 value = [0.0, 0.0, 0.0]
 
 [outlet]

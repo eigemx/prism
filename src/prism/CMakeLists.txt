@@ -1,6 +1,7 @@
 add_library(prism
     linear.cpp
     
+    equation/noslip.cpp
     field/ifield.cpp
     field/boundary.cpp
     field/tensor.cpp
@@ -27,9 +28,6 @@ add_library(prism
     gradient/least_squares.cpp
     gradient/gradient.cpp
     gradient/boundary.cpp
-
-    # schemes
-    schemes/backward_euler.cpp
 
     # operations
     operations/rhie_chow.cpp

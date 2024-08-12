@@ -18,7 +18,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
-    fmt::print("Loading mesh file `{}`...", unv_file_name);
+    fmt::println("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto mu = field::UniformScalar("viscosity", mesh, 1e-6);
@@ -26,21 +26,31 @@ auto main(int argc, char* argv[]) -> int {
     auto U = field::Velocity("velocity", mesh, {0.05, 0.05, 0.0});
     auto P = field::Pressure("pressure", mesh, 1.0);
 
-    auto uEqn = TransportEquation(
-        scheme::convection::Upwind(rho, U, U.x()),           // ∇.(ρUu)
-        scheme::diffusion::NonCorrectedDiffusion(mu, U.x()), // - ∇.(μ∇u)
-        scheme::source::Gradient<scheme::source::SourceSign::Negative>(P, Coord::X), // ∂p/∂x
-        scheme::source::Laplacian(mu, U.x()) // - ∇.(μ∇u^T)
+    auto uEqn = MomentumEquation(
+        scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
+        scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(
+            mu, U.x()) //, // - ∇.(μ∇u)
+        // scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
+        // P, Coord::X) // ∂p/∂x
     );
 
-    auto vEqn = TransportEquation(
-        scheme::convection::Upwind(rho, U, U.y()),
-        scheme::diffusion::NonCorrectedDiffusion(1e-6, U.y()),
-        scheme::source::Gradient<scheme::source::SourceSign::Negative>(P, Coord::Y),
-        scheme::source::Laplacian(mu, U.y()));
+    auto vEqn = MomentumEquation(
+        scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.y()),
+        scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(mu,
+                                                                                        U.y()) //,
+        // scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
+        // P, Coord::Y)
+    );
 
-    auto solver =
-        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    uEqn.boundaryHandlersManager().addHandler<boundary::NoSlip<MomentumEquation>>();
+    vEqn.boundaryHandlersManager().addHandler<boundary::NoSlip<MomentumEquation>>();
+
+
+    auto solver = solver::BiCGSTAB<field::VelocityComponent,
+                                   solver::ImplicitUnderRelaxation<field::VelocityComponent>>();
+
+    auto p_solver =
+        solver::BiCGSTAB<field::Pressure, solver::ImplicitUnderRelaxation<field::Pressure>>();
 
     for (auto i = 0; i < 2; ++i) {
         uEqn.updateCoeffs();
@@ -82,14 +92,17 @@ auto main(int argc, char* argv[]) -> int {
         // Few things missing to implement:
         // 1) it's actually ρD not just D
         // 2) ∇.(ρU) not ∇.U
-        auto P_prime = field::Scalar("pressure", mesh, 0.0);
-        auto pEqn = TransportEquation(
-            scheme::diffusion::CorrectedDiffusion(D, P_prime),
-            scheme::source::Divergence<scheme::source::SourceSign::Negative, field::Velocity>(U));
+        auto P_prime = field::Pressure("pressure", mesh, 0.0);
+        auto pEqn = TransportEquation<field::Pressure>(
+            scheme::diffusion::NonCorrected<field::Tensor, field::Pressure>(D,
+                                                                            P_prime) //,
+            // scheme::source::Divergence<scheme::source::SourceSign::Negative,
+            // field::Velocity>(U)
+        );
 
         pEqn.updateCoeffs();
         spdlog::info("Solving pressure correction equation");
-        solver.solve(pEqn, 10, 1e-5, 1);
+        p_solver.solve(pEqn, 10, 1e-5, 1);
 
         // update velocity fields
         auto p_grad = gradient::LeastSquares(P_prime);

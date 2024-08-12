@@ -27,7 +27,6 @@ class NoSlip<convection::IConvection<F>>
     auto inline name() const -> std::string override { return "no-slip"; }
 };
 
-
 template <typename F>
 class Symmetry<convection::IConvection<F>>
     : public FVSchemeBoundaryHandler<convection::IConvection<F>> {

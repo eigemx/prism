@@ -7,6 +7,7 @@
 #include "boundary.h"
 #include "convection_boundary.h"
 #include "fvscheme.h"
+#include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
 #include "prism/gradient/gradient.h"
@@ -30,13 +31,14 @@ struct CoeffsTriplet {
 
 // Finite volume scheme for the discretization of the convection term
 template <typename Field>
-class IConvection : public FVScheme<Field> {
+class IConvection : public FullScheme<Field> {
   public:
     IConvection(field::Scalar rho, field::Velocity U, Field phi);
 
     void apply() override;
+    auto needsCorrection() const noexcept -> bool override { return true; }
 
-    auto inline field() -> std::optional<Field> override { return _phi; }
+    auto inline field() -> Field override { return _phi; }
     auto inline U() -> const field::Velocity& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
 
@@ -126,7 +128,7 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
     : _rho(std::move(rho)),
       _U(std::move(U)),
       _phi(std::move(phi)),
-      FVScheme<Field>(phi.mesh().nCells()) {
+      FullScheme<Field>(phi.mesh().nCells()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
     _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
@@ -176,7 +178,7 @@ void IConvection<Field>::apply_interior(const mesh::Face& face) {
 
 template <typename Field>
 void IConvection<Field>::apply_boundary() {
-    boundary::detail::applyBoundary("IConvection", *this);
+    prism::boundary::detail::applyBoundary("prism::scheme::convection::IConvection", *this);
 }
 
 template <typename F, typename G>
@@ -271,9 +273,7 @@ namespace prism::scheme::boundary {
 template <typename F>
 void Fixed<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme,
                                               const mesh::BoundaryPatch& patch) {
-    assert(scheme.field().has_value());
-
-    const auto phi = scheme.field().value();
+    const auto phi = scheme.field();
     const auto& mesh = phi.mesh();
 
     for (const auto face_id : patch.facesIds()) {
@@ -312,10 +312,9 @@ void NoSlip<convection::IConvection<F>>::apply(convection::IConvection<F>& schem
 template <typename F>
 void Outlet<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme,
                                                const mesh::BoundaryPatch& patch) {
-    assert(scheme.field().has_value());
     _n_reverse_flow_faces = 0;
 
-    const auto phi = scheme.field().value();
+    const auto phi = scheme.field();
     const auto& mesh = phi.mesh();
 
     for (const auto& face_id : patch.facesIds()) {
