@@ -2,12 +2,13 @@
 
 #include "boundary.h"
 #include "prism/field/velocity.h"
+#include "prism/types.h"
 #include "transport.h"
 
 namespace prism::boundary {
 
 template <typename Field, typename To>
-auto castScheme(const std::shared_ptr<scheme::FVScheme<Field>>& ptr) -> std::shared_ptr<To> {
+auto castScheme(const SharedPtr<scheme::FVScheme>& ptr) -> SharedPtr<To> {
     return std::dynamic_pointer_cast<To>(ptr);
 }
 

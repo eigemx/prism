@@ -7,6 +7,10 @@
 #include <stdexcept>
 #include <string>
 
+#include "prism/exceptions.h"
+#include "prism/mesh/pmesh.h"
+#include "spdlog/spdlog.h"
+
 namespace prism::boundary {
 
 class IBoundaryHandler {
@@ -87,5 +91,64 @@ void BoundaryHandlersManager<Applier, BaseHandler>::removeHandler(const std::str
                     "handler name ({})",
                     bc));
 }
+
+namespace detail {
+
+template <typename Applier>
+void applyBoundary(const std::string& scheme_name, Applier& scheme) {
+    assert(scheme.field().has_value());
+
+    auto _phi = scheme.field();
+    const mesh::PMesh& mesh = _phi.mesh();
+
+    for (const auto& patch : mesh.boundaryPatches()) {
+        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
+        auto handler = scheme.boundaryHandlersManager().getHandler(bc.kindString());
+
+        if (handler == nullptr) {
+            throw error::NonImplementedBoundaryCondition(
+                fmt::format("{}::applyBoundary()", scheme_name), patch.name(), bc.kindString());
+        }
+
+        spdlog::debug(
+            "{}::applyBoundary(): applying boundary condition type '{}' on "
+            "patch '{}'.",
+            scheme_name,
+            handler->name(),
+            patch.name());
+
+        handler->apply(scheme, patch);
+    }
+}
+
+template <typename Applier>
+void applyBoundaryEquation(const std::string& scheme_name, Applier& applier) {
+    auto _phi = applier.field();
+    const mesh::PMesh& mesh = _phi.mesh();
+
+    for (const auto& patch : mesh.boundaryPatches()) {
+        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
+        auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
+
+        if (handler == nullptr) {
+            spdlog::debug(
+                "{}::applyBoundaryIfExists: no equation boundary handler defined for patch {}, "
+                "ignoring...",
+                scheme_name,
+                patch.name());
+            continue;
+        }
+
+        spdlog::debug(
+            "{}::apply_boundary(): applying boundary condition type '{}' on "
+            "patch '{}'.",
+            scheme_name,
+            handler->name(),
+            patch.name());
+
+        handler->apply(applier, patch);
+    }
+}
+} // namespace detail
 
 } // namespace prism::boundary

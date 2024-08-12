@@ -18,14 +18,9 @@ class IImplicitSource : public ISource {};
 // We inherit from FVScheme with field::Scalar as template specialization because for explicit
 // sources the type of the field won't matter, because we are not contributing to the matrix of
 // coefficients for the linear system of the conserved equation.
-class IExplicitSource : public ISource, public FVScheme<field::Scalar> {
+class IExplicitSource : public ISource, public PartialScheme {
   public:
-    IExplicitSource(std::size_t n_cells);
-    auto needsCorrection() const -> bool final { return false; }
-
-  private:
-    void inline apply_interior(const mesh::Face& face) final {}
-    void inline apply_boundary(const mesh::Face& face) final {}
+    IExplicitSource(std::size_t n_cells) : PartialScheme(n_cells) {}
 };
 
 // Discretized constant source/sink term (like gravity), takes a scalar field
@@ -40,6 +35,7 @@ class ConstantScalar : public IExplicitSource {
   public:
     ConstantScalar(field::Scalar phi);
     void apply() override;
+    auto needsCorrection() const noexcept -> bool override { return false; }
 
   private:
     field::Scalar _phi;
@@ -49,7 +45,9 @@ template <SourceSign Sign = SourceSign::Positive, typename Vector = field::Vecto
 class Divergence : public IExplicitSource {
   public:
     Divergence(Vector U);
+
     void apply() override;
+    auto needsCorrection() const noexcept -> bool override { return true; }
 
   private:
     Vector _U;
@@ -64,6 +62,8 @@ class Gradient : public IExplicitSource {
   public:
     Gradient(Field phi, Coord coord);
     void apply() override;
+    auto needsCorrection() const noexcept -> bool override { return true; }
+
 
   private:
     Field _phi;
@@ -87,12 +87,12 @@ class Laplacian : public IExplicitSource {
 };
 
 // TODO: Test this!
-template <SourceSign Sign = SourceSign::Positive>
-class ImplicitField : public FVScheme<field::Scalar>, public IImplicitSource {
+template <SourceSign Sign, field::ScalarBased Field>
+class ImplicitField : public FullScheme<Field>, public IImplicitSource {
   public:
-    ImplicitField(field::Scalar& phi) : _phi(phi), FVScheme(phi.mesh().nCells()) {}
+    ImplicitField(Field& phi) : _phi(phi), FullScheme<Field>(phi.mesh().nCells()) {}
     void apply() override;
-    auto inline field() -> std::optional<field::Scalar> override { return _phi; }
+    auto inline field() -> Field override { return _phi; }
 
   private:
     void inline apply_interior(const mesh::Face& face) override {}
@@ -102,8 +102,6 @@ class ImplicitField : public FVScheme<field::Scalar>, public IImplicitSource {
 
     field::Scalar _phi;
 };
-
-inline IExplicitSource::IExplicitSource(std::size_t n_cells) : FVScheme(n_cells, false) {}
 
 template <SourceSign Sign>
 ConstantScalar<Sign>::ConstantScalar(field::Scalar phi)
@@ -139,21 +137,21 @@ Gradient<Sign, Field, GradientScheme>::Gradient(Field phi, Coord coord)
 
 template <SourceSign Sign, typename Field, typename GradientScheme>
 void Gradient<Sign, Field, GradientScheme>::apply() {
-    auto grad_field = _grad_scheme.gradient_field();
+    auto grad_field = _grad_scheme.gradField();
     const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
     switch (_coord) {
         case Coord::X: {
-            rhs() = grad_field.x().data().array() * vol_field.array();
+            rhs() = grad_field.x().values().array() * vol_field.array();
             break;
         }
         case Coord::Y: {
-            rhs() = grad_field.y().data().array() * vol_field.array();
+            rhs() = grad_field.y().values().array() * vol_field.array();
             break;
         }
 
         case Coord::Z: {
-            rhs() = grad_field.z().data().array() * vol_field.array();
+            rhs() = grad_field.z().values().array() * vol_field.array();
             break;
         }
 
@@ -178,22 +176,22 @@ Laplacian<Sign, Kappa, Field, GradientScheme>::Laplacian(Kappa kappa, Field phi)
 
 template <SourceSign Sign, typename Kappa, typename Field, typename GradientScheme>
 void inline Laplacian<Sign, Kappa, Field, GradientScheme>::apply() {
-    auto grad_phi = _grad_scheme.gradient_field();
+    auto grad_phi = _grad_scheme.gradField();
     auto div = ops::div(grad_phi);
 
     if (Sign == SourceSign::Positive) {
-        rhs() = div.data();
+        rhs() = div.values();
         return;
     }
-    rhs() = -div.data();
+    rhs() = -div.values();
 }
 
-template <SourceSign Sign>
-void inline ImplicitField<Sign>::apply() {
-    matrix().setIdentity();
+template <SourceSign Sign, field::ScalarBased Field>
+void inline ImplicitField<Sign, Field>::apply() {
+    this->matrix().setIdentity();
 
     if (Sign == SourceSign::Positive) {
-        matrix() *= -1;
+        this->matrix() *= -1;
         return;
     }
 }

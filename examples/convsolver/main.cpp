@@ -58,8 +58,8 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = TransportEquation(
-        scheme::convection::Upwind(rho, U, T),              // ∇.(ρUT)
-        scheme::diffusion::NonCorrectedDiffusion(kappa, T), // - ∇.(κ ∇T)
+        scheme::convection::Upwind(rho, U, T),       // ∇.(ρUT)
+        scheme::diffusion::Corrected(kappa, T),      // - ∇.(κ ∇T)
         scheme::source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 

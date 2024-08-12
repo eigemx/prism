@@ -35,9 +35,9 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
         const std::size_t face_id = face.id();
         const Vector3d& Uf = U.valueAtFace(face);
         const Matrix3d& Df = D.valueAtFace(face);
-        const Vector3d& grad_p_f = p_grad_scheme.gradient_at_face(face);
+        const Vector3d& grad_p_f = p_grad_scheme.gradAtFace(face);
 
-        Vector3d grad_p_f_corr = grad_p_f + correct_grad(mesh, face, P, grad_p_f);
+        Vector3d grad_p_f_corr = grad_p_f + detail::correctGrad(mesh, face, P, grad_p_f);
 
         // Equation 15.60
         Vector3d Uf_corrected = Uf - (Df * (grad_p_f_corr - grad_p_f));

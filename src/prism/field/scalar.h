@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 #include "boundary.h"
 #include "ifield.h"
 #include "units.h"
@@ -96,4 +98,8 @@ class Scalar : public IField<double>, public IComponent, public units::Measurabl
     IVector* _parent = nullptr;
     std::optional<Coord> _coord = std::nullopt;
 };
+
+template <typename T>
+concept ScalarBased = std::is_base_of_v<Scalar, T>;
+
 } // namespace prism::field

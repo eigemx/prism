@@ -47,7 +47,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
     auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
-    auto eqn = TransportEquation(scheme::diffusion::CorrectedDiffusion(kappa, T),
+    auto eqn = TransportEquation(scheme::diffusion::Corrected(kappa, T),
                                  scheme::source::ConstantScalar(S));
 
     // solve

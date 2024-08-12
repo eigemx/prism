@@ -3,10 +3,13 @@
 #include <concepts>
 #include <memory>
 
+#include "boundary.h"
+#include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/linear.h"
 #include "prism/schemes/convection.h"
 #include "prism/schemes/diffusion.h"
+#include "prism/schemes/source.h"
 
 namespace prism {
 
@@ -33,13 +36,18 @@ class TransportEquation : public LinearSystem {
     auto inline prevIterField() const -> const Field& { return _phi_old; }
     auto inline prevIterField() -> Field& { return _phi_old; }
 
-    auto convectionScheme() -> std::shared_ptr<scheme::FVScheme<Field>> { return _conv_scheme; }
-    auto diffusionScheme() -> std::shared_ptr<scheme::FVScheme<Field>> { return _diff_scheme; }
+    auto convectionScheme() -> SharedPtr<scheme::FullScheme<Field>> { return _conv_scheme; }
+    auto diffusionScheme() -> SharedPtr<scheme::FullScheme<Field>> { return _diff_scheme; }
 
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
 
     using FieldType = Field;
+    using BoundaryHandlersManager = boundary::BoundaryHandlersManager<
+        TransportEquation<Field>,
+        boundary::IEquationBoundaryHandler<TransportEquation<Field>>>;
+
+    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
 
   private:
     template <typename Convection>
@@ -52,22 +60,26 @@ class TransportEquation : public LinearSystem {
                                                              typename Diffusion::FieldType>>
     void addScheme(Diffusion&& diffusion);
 
-    std::vector<std::shared_ptr<scheme::FVScheme<Field>>> _schemes;
+    template <typename Source>
+    requires std::derived_from<Source, scheme::source::IExplicitSource>
+    void addScheme(Source&& source);
+
+    std::vector<SharedPtr<scheme::FullScheme<Field>>> _schemes;
+    std::vector<SharedPtr<scheme::source::IExplicitSource>> _sources;
     Field _phi;     // Conserved field of the equation
     Field _phi_old; // Previous iteration value of the field
-
-    std::shared_ptr<scheme::FVScheme<Field>> _conv_scheme = nullptr;
-    std::shared_ptr<scheme::FVScheme<Field>> _diff_scheme = nullptr;
-
+    SharedPtr<scheme::FullScheme<Field>> _conv_scheme = nullptr;
+    SharedPtr<scheme::FullScheme<Field>> _diff_scheme = nullptr;
     std::size_t _n_corrected_schemes {0};
+    BoundaryHandlersManager _bh_manager;
 };
 
 template <typename Field>
 template <typename Scheme, typename... Schemes>
 TransportEquation<Field>::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
-    : _phi(scheme.field().value()),
-      _phi_old(scheme.field().value()),
-      LinearSystem(scheme.field().value().mesh().nCells()) {
+    : _phi(scheme.field()),
+      _phi_old(scheme.field()),
+      LinearSystem(scheme.field().mesh().nCells()) {
     // add the first mandatory scheme
     addScheme(std::forward<Scheme>(scheme));
 
@@ -96,6 +108,17 @@ void TransportEquation<Field>::updateCoeffs() {
         matrix() += scheme->matrix();
         rhs() += scheme->rhs();
     }
+
+    for (auto& scheme : _sources) {
+        // apply the scheme
+        scheme->apply();
+
+        // update quation's universal coefficient matrix and RHS vector
+        matrix() += scheme->matrix();
+        rhs() += scheme->rhs();
+    }
+
+    boundary::detail::applyBoundaryEquation("TransportEquation", *this);
 }
 
 template <typename Field>
@@ -146,6 +169,18 @@ void TransportEquation<Field>::addScheme(Diffusion&& diffusion) {
     auto diff_scheme = std::make_shared<Diffusion>(std::forward<Diffusion>(diffusion));
     _diff_scheme = diff_scheme;
     _schemes.emplace_back(diff_scheme);
+}
+
+template <typename Field>
+template <typename Source>
+requires std::derived_from<Source, scheme::source::IExplicitSource>
+void TransportEquation<Field>::addScheme(Source&& source) {
+    if (source.needsCorrection()) {
+        _n_corrected_schemes++;
+    }
+
+    auto src_scheme = std::make_shared<Source>(std::forward<Source>(source));
+    _sources.emplace_back(src_scheme);
 }
 
 } // namespace prism
