@@ -18,9 +18,9 @@ class IImplicitSource : public ISource {};
 // We inherit from FVScheme with field::Scalar as template specialization because for explicit
 // sources the type of the field won't matter, because we are not contributing to the matrix of
 // coefficients for the linear system of the conserved equation.
-class IExplicitSource : public ISource, public PartialScheme {
+class IExplicitSource : public ISource, public IPartialScheme {
   public:
-    IExplicitSource(std::size_t n_cells) : PartialScheme(n_cells) {}
+    IExplicitSource(std::size_t n_cells) : IPartialScheme(n_cells) {}
 };
 
 // Discretized constant source/sink term (like gravity), takes a scalar field
@@ -88,9 +88,9 @@ class Laplacian : public IExplicitSource {
 
 // TODO: Test this!
 template <SourceSign Sign, field::ScalarBased Field>
-class ImplicitField : public FullScheme<Field>, public IImplicitSource {
+class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:
-    ImplicitField(Field& phi) : _phi(phi), FullScheme<Field>(phi.mesh().nCells()) {}
+    ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh().nCells()) {}
     void apply() override;
     auto inline field() -> Field override { return _phi; }
 

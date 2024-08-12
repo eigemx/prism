@@ -30,7 +30,7 @@ value = [0.0, 0.0, 0.0]
 type = 'fixed'
 value = 300
 [inlet.velocity]
-type = 'no-slip'
+type = 'inlet'
 value = [0.0, 1.0, 0.0]
 [inlet.pressure]
 type = 'fixed-gradient'

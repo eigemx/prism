@@ -16,7 +16,7 @@
 namespace prism::scheme::diffusion {
 
 template <typename Kappa, typename Field>
-class IDiffusion : public FullScheme<Field> {
+class IDiffusion : public IFullScheme<Field> {
   public:
     IDiffusion(Kappa kappa, Field phi);
     auto field() -> Field override { return _phi; }
@@ -87,7 +87,7 @@ class NonCorrected : public INonCorrected, public IDiffusion<KappaType, Field> {
 
 template <typename KappaType, typename Field>
 IDiffusion<KappaType, Field>::IDiffusion(KappaType kappa, Field phi)
-    : _kappa(kappa), _phi(phi), FullScheme<Field>(phi.mesh().nCells()) {}
+    : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh().nCells()) {}
 
 //
 // Corrected implementation

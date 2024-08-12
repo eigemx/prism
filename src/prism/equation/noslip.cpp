@@ -8,7 +8,7 @@
 namespace prism::boundary {
 
 template <typename Field, typename To>
-auto castScheme(const SharedPtr<scheme::FVScheme>& ptr) -> SharedPtr<To> {
+auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
     return std::dynamic_pointer_cast<To>(ptr);
 }
 
@@ -68,7 +68,7 @@ void NoSlip<MomentumEquation>::apply(MomentumEquation& eqn, const mesh::Boundary
     auto diff_scheme = castScheme<F, Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
-    LinearSystem sys(mesh.nCells(), true);
+    LinearSystem sys(mesh.nCells());
 
     for (std::size_t face_id : patch.facesIds()) {
         const auto& face = mesh.face(face_id);
