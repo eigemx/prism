@@ -5,7 +5,7 @@
 #include "prism/types.h"
 #include "transport.h"
 
-namespace prism::boundary {
+namespace prism::eqn::boundary {
 
 template <typename Field, typename To>
 auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
@@ -55,7 +55,7 @@ auto contribution(Coord coord, const Vector3d& Uc, const Vector3d& Ub, const Vec
     }
 }
 
-void NoSlip<MomentumEquation>::apply(MomentumEquation& eqn, const mesh::BoundaryPatch& patch) {
+void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     field::VelocityComponent field = eqn.field();
     const auto& mesh = eqn.field().mesh();
 
@@ -96,4 +96,4 @@ void NoSlip<MomentumEquation>::apply(MomentumEquation& eqn, const mesh::Boundary
     eqn.rhs() += sys.rhs();
 }
 
-} // namespace prism::boundary
+} // namespace prism::eqn::boundary

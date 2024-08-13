@@ -18,7 +18,7 @@ struct IterationStepData {
 template <typename Field>
 class ISolver {
   public:
-    virtual void solve(TransportEquation<Field>& eq,
+    virtual void solve(eqn::Transport<Field>& eq,
                        std::size_t n_iter,
                        double eps,
                        double lambda) = 0;
@@ -28,7 +28,7 @@ class ISolver {
 template <typename Field, typename Relaxer>
 class BiCGSTAB : public ISolver<Field> {
   public:
-    void solve(TransportEquation<Field>& eq,
+    void solve(eqn::Transport<Field>& eq,
                std::size_t n_iter = 1000, // number of iterations
                double eps = 1e-4,         // convergence criteria
                double lambda = 1.0        // under-relaxation factor
@@ -38,7 +38,7 @@ class BiCGSTAB : public ISolver<Field> {
 template <typename Field, typename Relaxer>
 class GaussSeidel : public ISolver<Field> {
   public:
-    void solve(TransportEquation<Field>& eq,
+    void solve(eqn::Transport<Field>& eq,
                std::size_t n_iter = 1000, // number of iterations
                double eps = 1e-4,         // convergence criteria
                double lambda = 1.0        // under-relaxation factor
@@ -46,7 +46,7 @@ class GaussSeidel : public ISolver<Field> {
 };
 
 template <typename Field, typename Relaxer>
-void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
+void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
                                      std::size_t n_iter,
                                      double eps,
                                      double lambda) {
@@ -87,7 +87,7 @@ void BiCGSTAB<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
 }
 
 template <typename Field, typename Relaxer>
-void GaussSeidel<Field, Relaxer>::solve(TransportEquation<Field>& eqn,
+void GaussSeidel<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
                                         std::size_t n_iter,
                                         double eps,
                                         double lambda) {

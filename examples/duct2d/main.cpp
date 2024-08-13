@@ -26,7 +26,7 @@ auto main(int argc, char* argv[]) -> int {
     auto U = field::Velocity("velocity", mesh, {0.05, 0.05, 0.0});
     auto P = field::Pressure("pressure", mesh, 1.0);
 
-    auto uEqn = MomentumEquation(
+    auto uEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(
             mu, U.x()) //, // - ∇.(μ∇u)
@@ -34,7 +34,7 @@ auto main(int argc, char* argv[]) -> int {
         // P, Coord::X) // ∂p/∂x
     );
 
-    auto vEqn = MomentumEquation(
+    auto vEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.y()),
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(mu,
                                                                                         U.y()) //,
@@ -42,8 +42,8 @@ auto main(int argc, char* argv[]) -> int {
         // P, Coord::Y)
     );
 
-    uEqn.boundaryHandlersManager().addHandler<boundary::NoSlip<MomentumEquation>>();
-    vEqn.boundaryHandlersManager().addHandler<boundary::NoSlip<MomentumEquation>>();
+    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
 
     auto solver = solver::BiCGSTAB<field::VelocityComponent,
@@ -79,10 +79,10 @@ auto main(int argc, char* argv[]) -> int {
 
         auto D = prism::field::Tensor("D", mesh, D_data);
 
-        spdlog::info("Solving y-momentum equation");
+        spdlog::info("Solving y-eqn::Momentum equation");
         solver.solve(vEqn, 2, 1e-3, 0.9);
 
-        spdlog::info("Solving x-momentum equation");
+        spdlog::info("Solving x-eqn::Momentum equation");
         solver.solve(uEqn, 2, 1e-3, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
@@ -93,7 +93,7 @@ auto main(int argc, char* argv[]) -> int {
         // 1) it's actually ρD not just D
         // 2) ∇.(ρU) not ∇.U
         auto P_prime = field::Pressure("pressure", mesh, 0.0);
-        auto pEqn = TransportEquation<field::Pressure>(
+        auto pEqn = eqn::Transport<field::Pressure>(
             scheme::diffusion::NonCorrected<field::Tensor, field::Pressure>(D,
                                                                             P_prime) //,
             // scheme::source::Divergence<scheme::source::SourceSign::Negative,
@@ -114,4 +114,6 @@ auto main(int argc, char* argv[]) -> int {
 
         P.values() = P.values().array() + (0.85 * P_prime.values().array());
     }
+
+    prism::export_field_vtu(uEqn.field(), "solution.vtu");
 }

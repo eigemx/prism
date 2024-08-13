@@ -266,7 +266,7 @@ void Scalar::setParent(IVector* parent) {
 
 void Scalar::addDefaultHandlers() {
     _bh_manager.addHandler<field::boundary::Fixed>();
-    _bh_manager.addHandler<field::boundary::Inlet>();
+    _bh_manager.addHandler<field::boundary::VelocityInlet>();
     _bh_manager.addHandler<field::boundary::Empty>();
     _bh_manager.addHandler<field::boundary::Symmetry>();
     _bh_manager.addHandler<field::boundary::Outlet>();

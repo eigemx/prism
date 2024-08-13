@@ -8,7 +8,6 @@ IGradient::IGradient(field::Scalar field) : _field(field) { // NOLINT
     _bh_manager.addHandler<boundary::Fixed>();
     _bh_manager.addHandler<boundary::FixedGradient>();
     _bh_manager.addHandler<boundary::Empty>();
-    _bh_manager.addHandler<boundary::FixedGradient>();
     _bh_manager.addHandler<boundary::Outlet>();
     _bh_manager.addHandler<boundary::Symmetry>();
     _bh_manager.addHandler<boundary::VelocityInlet>();
@@ -43,7 +42,7 @@ auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
 
     if (handler == nullptr) {
         throw prism::error::NonImplementedBoundaryCondition(
-            "IGradient::gradient_at_boundary_face",
+            "prism::gradient::IGradient::gradAtBoundaryFace",
             boundary_patch.name(),
             boundary_condition.kindString());
     }
