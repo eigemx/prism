@@ -5,20 +5,20 @@
 #include "prism/boundary.h"
 #include "prism/mesh/boundary.h"
 
-namespace prism {
+namespace prism::eqn {
 
 // forward declaration
 template <typename Field>
-class TransportEquation;
+class Transport;
 
-using MomentumEquation = TransportEquation<field::VelocityComponent>;
+using Momentum = Transport<field::VelocityComponent>;
 
-} // namespace prism
+} // namespace prism::eqn
 
-namespace prism::boundary {
+namespace prism::eqn::boundary {
 
 template <typename Equation>
-class IEquationBoundaryHandler : public IBoundaryHandler {
+class IEquationBoundaryHandler : public prism::boundary::IBoundaryHandler {
   public:
     virtual auto name() const noexcept -> std::string = 0;
     virtual void apply(Equation& eqn, const mesh::BoundaryPatch& patch) = 0;
@@ -32,11 +32,11 @@ class NoSlip : public IEquationBoundaryHandler<Equation> {
 };
 
 template <>
-class NoSlip<MomentumEquation> : public IEquationBoundaryHandler<MomentumEquation> {
+class NoSlip<Momentum> : public IEquationBoundaryHandler<Momentum> {
   public:
     auto name() const noexcept -> std::string override { return "no-slip"; }
-    void apply(MomentumEquation& eqn, const mesh::BoundaryPatch& patch) override;
+    void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
 };
 
 
-} // namespace prism::boundary
+} // namespace prism::eqn::boundary

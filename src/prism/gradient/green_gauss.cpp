@@ -15,7 +15,7 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
     return 0.5 * grad_sum.dot(vec);
 }
 
-GreenGauss::GreenGauss(field::Scalar field) : _field(field), IGradient(field) {
+GreenGauss::GreenGauss(field::Scalar field) : _field(field), IGradient(field) { // NOLINT
     // We need to perform a first run for calculating gradient at cells,
     // to make the cell gradient vector _cell_gradients available if the user desires to call
     // gradient_at_face() which requires a first run of gradient calculations, to perform

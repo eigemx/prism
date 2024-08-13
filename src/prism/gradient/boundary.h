@@ -57,7 +57,7 @@ class VelocityInlet : public GradSchemeBoundaryHandler {
 
 class FixedGradient : public GradSchemeBoundaryHandler {
   public:
-    auto name() const -> std::string override { return "fixed=gradient"; }
+    auto name() const -> std::string override { return "fixed-gradient"; }
     auto get(const prism::field::Scalar& field, const prism::mesh::Face& face)
         -> prism::Vector3d override;
 };

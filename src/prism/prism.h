@@ -14,6 +14,6 @@
 #include "operations/rhie_chow.h"
 #include "schemes/convection.h"
 #include "schemes/diffusion.h"
-#include "schemes/fvscheme.h"
+#include "schemes/scheme.h"
 #include "schemes/source.h"
 #include "types.h"

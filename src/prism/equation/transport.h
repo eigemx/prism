@@ -11,21 +11,21 @@
 #include "prism/schemes/diffusion.h"
 #include "prism/schemes/source.h"
 
-namespace prism {
+namespace prism::eqn {
 
-// TODO: Make TransportEquation check consistincey of the  conserved transport ScalarField meaning
+// TODO: Make Transport check consistincey of the  conserved transport ScalarField meaning
 // that a transport equation shall have only one transport field.
 
 // TODO: Schemes that require no correction shall be updated only once.
-// TODO: TransportEquation should have at most one convection scheme and at most one diffusion
+// TODO: Transport should have at most one convection scheme and at most one diffusion
 // scheme
-// TODO: TransportEquation should give read/write access to user for all its schemes
+// TODO: Transport should give read/write access to user for all its schemes
 
 template <typename Field = field::Scalar>
-class TransportEquation : public LinearSystem {
+class Transport : public LinearSystem {
   public:
     template <typename Scheme, typename... Schemes>
-    TransportEquation(Scheme&& scheme, Schemes&&... schemes);
+    Transport(Scheme&& scheme, Schemes&&... schemes);
 
     void updateCoeffs();
     void zeroOutCoeffs();
@@ -43,9 +43,9 @@ class TransportEquation : public LinearSystem {
     void addScheme(Scheme&& scheme);
 
     using FieldType = Field;
-    using BoundaryHandlersManager = boundary::BoundaryHandlersManager<
-        TransportEquation<Field>,
-        boundary::IEquationBoundaryHandler<TransportEquation<Field>>>;
+    using BoundaryHandlersManager = prism::boundary::BoundaryHandlersManager<
+        Transport<Field>,
+        boundary::IEquationBoundaryHandler<Transport<Field>>>;
 
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
 
@@ -76,7 +76,7 @@ class TransportEquation : public LinearSystem {
 
 template <typename Field>
 template <typename Scheme, typename... Schemes>
-TransportEquation<Field>::TransportEquation(Scheme&& scheme, Schemes&&... schemes)
+Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()),
       _phi_old(scheme.field()),
       LinearSystem(scheme.field().mesh().nCells()) {
@@ -87,16 +87,16 @@ TransportEquation<Field>::TransportEquation(Scheme&& scheme, Schemes&&... scheme
     (addScheme(std::forward<Schemes>(schemes)), ...);
 
     if (_diff_scheme) {
-        spdlog::debug("TransportEquation::addScheme() found a diffusion scheme.");
+        spdlog::debug("Transport::addScheme() found a diffusion scheme.");
     }
 
     if (_conv_scheme) {
-        spdlog::debug("TransportEquation::addScheme() found a convection scheme.");
+        spdlog::debug("Transport::addScheme() found a convection scheme.");
     }
 }
 
 template <typename Field>
-void TransportEquation<Field>::updateCoeffs() {
+void Transport<Field>::updateCoeffs() {
     const auto& mesh = _phi.mesh();
 
     // iterate over all equation's finite volume schemes
@@ -115,11 +115,11 @@ void TransportEquation<Field>::updateCoeffs() {
         rhs() += scheme->rhs();
     }
 
-    boundary::detail::applyBoundaryEquation("TransportEquation", *this);
+    prism::boundary::detail::applyBoundaryEquation("Transport", *this);
 }
 
 template <typename Field>
-void TransportEquation<Field>::zeroOutCoeffs() {
+void Transport<Field>::zeroOutCoeffs() {
     for (auto& scheme : _schemes) {
         scheme->matrix().setZero();
         scheme->rhs().setZero();
@@ -132,7 +132,7 @@ void TransportEquation<Field>::zeroOutCoeffs() {
 
 template <typename Field>
 template <typename Scheme>
-void TransportEquation<Field>::addScheme(Scheme&& scheme) {
+void Transport<Field>::addScheme(Scheme&& scheme) {
     if (scheme.needsCorrection()) {
         _n_corrected_schemes++;
     }
@@ -143,7 +143,7 @@ void TransportEquation<Field>::addScheme(Scheme&& scheme) {
 template <typename Field>
 template <typename Convection>
 requires std::derived_from<Convection, scheme::convection::IConvection<Field>>
-void TransportEquation<Field>::addScheme(Convection&& convection) {
+void Transport<Field>::addScheme(Convection&& convection) {
     if (convection.needsCorrection()) {
         _n_corrected_schemes++;
     }
@@ -158,7 +158,7 @@ template <typename Diffusion>
 requires std::derived_from<
     Diffusion,
     scheme::diffusion::IDiffusion<typename Diffusion::KappaType, typename Diffusion::FieldType>>
-void TransportEquation<Field>::addScheme(Diffusion&& diffusion) {
+void Transport<Field>::addScheme(Diffusion&& diffusion) {
     if (diffusion.needsCorrection()) {
         _n_corrected_schemes++;
     }
@@ -171,7 +171,7 @@ void TransportEquation<Field>::addScheme(Diffusion&& diffusion) {
 template <typename Field>
 template <typename Source>
 requires std::derived_from<Source, scheme::source::IExplicitSource>
-void TransportEquation<Field>::addScheme(Source&& source) {
+void Transport<Field>::addScheme(Source&& source) {
     if (source.needsCorrection()) {
         _n_corrected_schemes++;
     }
@@ -180,4 +180,4 @@ void TransportEquation<Field>::addScheme(Source&& source) {
     _sources.emplace_back(src_scheme);
 }
 
-} // namespace prism
+} // namespace prism::eqn

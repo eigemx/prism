@@ -6,7 +6,7 @@
 
 #include "boundary.h"
 #include "convection_boundary.h"
-#include "fvscheme.h"
+#include "scheme.h"
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"

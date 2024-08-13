@@ -1,9 +1,9 @@
 #pragma once
 
-#include "fvscheme.h"
 #include "prism/field/scalar.h"
 #include "prism/gradient/gradient.h"
 #include "prism/operations/operations.h"
+#include "scheme.h"
 
 
 namespace prism::scheme::source {
