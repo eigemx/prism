@@ -16,7 +16,8 @@ namespace prism::gradient {
 
 // Base class for gradient schemes for explicity calculating the cell gradient of a scalar field.
 // All gradient schemes should inherit from this class and define gradient() function.
-class IGradient {
+class IGradient
+    : public prism::boundary::BHManagersProvider<IGradient, boundary::GradSchemeBoundaryHandler> {
   public:
     IGradient() = delete;
     IGradient(const IGradient&) = default;
@@ -31,16 +32,11 @@ class IGradient {
     virtual auto gradAtFace(const mesh::Face& f) -> Vector3d;
     virtual auto gradField() -> field::Vector;
 
-    using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<IGradient, boundary::GradSchemeBoundaryHandler>;
-    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
-
   protected:
     virtual auto gradAtBoundaryFace(const mesh::Face& f) -> Vector3d;
 
   private:
     field::Scalar _field;
-    BoundaryHandlersManager _bh_manager;
 };
 
 class GreenGauss : public IGradient {
