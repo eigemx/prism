@@ -115,7 +115,7 @@ void Transport<Field>::updateCoeffs() {
         rhs() += scheme->rhs();
     }
 
-    prism::boundary::detail::applyBoundaryEquation("Transport", *this);
+    prism::boundary::detail::applyBoundaryIfExists("prism::eqn::Transport", *this);
 }
 
 template <typename Field>

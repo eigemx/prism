@@ -1,6 +1,6 @@
 #pragma once
 
-#include <type_traits>
+#include <concepts>
 
 #include "boundary.h"
 #include "ifield.h"
@@ -8,7 +8,9 @@
 
 namespace prism::field {
 
-class UniformScalar : public IField<double> {
+class IScalar {};
+
+class UniformScalar : public IField<double>, public IScalar {
   public:
     UniformScalar(std::string name, const mesh::PMesh& mesh, double value);
 
@@ -23,7 +25,12 @@ class UniformScalar : public IField<double> {
 
 class IVector;
 
-class Scalar : public IField<double>, public IComponent, public units::Measurable {
+class Scalar
+    : public IField<double>,
+      public IScalar,
+      public IComponent,
+      public units::Measurable,
+      public prism::boundary::BHManagersProvider<Scalar, boundary::FieldBoundaryHandler<Scalar>> {
   public:
     // Uniform double value constructors
     Scalar(std::string name, const mesh::PMesh& mesh, double value, IVector* parent = nullptr);
@@ -80,11 +87,6 @@ class Scalar : public IField<double>, public IComponent, public units::Measurabl
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
 
-    using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<Scalar,
-                                                 boundary::FieldBoundaryHandler<Scalar, double>>;
-    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
-
   protected:
     auto valueAtInteriorFace(const mesh::Face& face) const -> double;
     auto valueAtBoundaryFace(const mesh::Face& face) const -> double;
@@ -92,7 +94,6 @@ class Scalar : public IField<double>, public IComponent, public units::Measurabl
   private:
     void addDefaultHandlers();
 
-    BoundaryHandlersManager _bh_manager;
     std::shared_ptr<VectorXd> _data = nullptr;
     std::shared_ptr<VectorXd> _face_data = nullptr;
     IVector* _parent = nullptr;
@@ -100,6 +101,6 @@ class Scalar : public IField<double>, public IComponent, public units::Measurabl
 };
 
 template <typename T>
-concept ScalarBased = std::is_base_of_v<Scalar, T>;
+concept ScalarBased = std::derived_from<T, IScalar>;
 
 } // namespace prism::field

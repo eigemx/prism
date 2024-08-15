@@ -39,6 +39,19 @@ class BoundaryHandlersManager {
     std::map<std::string, InstanceCreatorPtr> _bc_map;
 };
 
+template <typename Applier, typename BaseHandler>
+class BHManagersProvider {
+  public:
+    using ManagerType = BoundaryHandlersManager<Applier, BaseHandler>;
+    virtual auto boundaryHandlersManager() const noexcept -> const ManagerType& {
+        return _bh_manager;
+    }
+    virtual auto boundaryHandlersManager() -> ManagerType& { return _bh_manager; }
+
+  private:
+    ManagerType _bh_manager;
+};
+
 template <typename T>
 auto createHandlerInstance() -> std::shared_ptr<IBoundaryHandler> {
     return std::make_shared<T>();
@@ -95,34 +108,37 @@ void BoundaryHandlersManager<Applier, BaseHandler>::removeHandler(const std::str
 namespace detail {
 
 template <typename Applier>
-void applyBoundary(const std::string& scheme_name, Applier& scheme) {
+void applyBoundary(const std::string& applier_name, Applier& applier) {
     assert(scheme.field().has_value());
 
-    auto _phi = scheme.field();
+    auto _phi = applier.field();
     const mesh::PMesh& mesh = _phi.mesh();
 
     for (const auto& patch : mesh.boundaryPatches()) {
         const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
-        auto handler = scheme.boundaryHandlersManager().getHandler(bc.kindString());
+        auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler == nullptr) {
             throw error::NonImplementedBoundaryCondition(
-                fmt::format("{}::applyBoundary()", scheme_name), patch.name(), bc.kindString());
+                fmt::format("prism::boundary::detail::applyBoundary() applied by {}",
+                            applier_name),
+                patch.name(),
+                bc.kindString());
         }
 
         spdlog::debug(
-            "{}::applyBoundary(): applying boundary condition type '{}' on "
-            "patch '{}'.",
-            scheme_name,
+            "prism::boundary::detail::applyBoundary(): applying boundary condition type {} on "
+            "patch {} applied by {}.",
             handler->name(),
-            patch.name());
+            patch.name(),
+            applier_name);
 
-        handler->apply(scheme, patch);
+        handler->apply(applier, patch);
     }
 }
 
 template <typename Applier>
-void applyBoundaryEquation(const std::string& scheme_name, Applier& applier) {
+void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
     auto _phi = applier.field();
     const mesh::PMesh& mesh = _phi.mesh();
 
@@ -132,19 +148,21 @@ void applyBoundaryEquation(const std::string& scheme_name, Applier& applier) {
 
         if (handler == nullptr) {
             spdlog::debug(
-                "{}::applyBoundaryIfExists: no equation boundary handler defined for patch {}, "
+                "prism::boundary::detail::applyBoundaryIfExists(): no equation boundary handler "
+                "defined for patch {}, applied by {}, "
                 "ignoring...",
-                scheme_name,
-                patch.name());
+                patch.name(),
+                applier_name);
             continue;
         }
 
         spdlog::debug(
-            "{}::apply_boundary(): applying boundary condition type '{}' on "
-            "patch '{}'.",
-            scheme_name,
+            "prism::boundary::detail::applyBoundaryIfExists(): applying boundary condition type "
+            "{} on "
+            "patch {}, applied by {}'.",
             handler->name(),
-            patch.name());
+            patch.name(),
+            applier_name);
 
         handler->apply(applier, patch);
     }

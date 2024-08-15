@@ -1,16 +1,19 @@
 #include "gradient.h"
 
+#include <spdlog/spdlog.h>
+
 #include "prism/exceptions.h"
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
 IGradient::IGradient(field::Scalar field) : _field(field) { // NOLINT
-    _bh_manager.addHandler<boundary::Fixed>();
-    _bh_manager.addHandler<boundary::FixedGradient>();
-    _bh_manager.addHandler<boundary::Empty>();
-    _bh_manager.addHandler<boundary::Outlet>();
-    _bh_manager.addHandler<boundary::Symmetry>();
-    _bh_manager.addHandler<boundary::VelocityInlet>();
+    spdlog::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
+    this->boundaryHandlersManager().addHandler<boundary::Fixed>();
+    this->boundaryHandlersManager().addHandler<boundary::FixedGradient>();
+    this->boundaryHandlersManager().addHandler<boundary::Empty>();
+    this->boundaryHandlersManager().addHandler<boundary::Outlet>();
+    this->boundaryHandlersManager().addHandler<boundary::Symmetry>();
+    this->boundaryHandlersManager().addHandler<boundary::VelocityInlet>();
 }
 
 auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
@@ -38,7 +41,7 @@ auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
 
-    auto handler = _bh_manager.getHandler(boundary_condition.kindString());
+    auto handler = this->boundaryHandlersManager().getHandler(boundary_condition.kindString());
 
     if (handler == nullptr) {
         throw prism::error::NonImplementedBoundaryCondition(

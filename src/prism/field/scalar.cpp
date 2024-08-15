@@ -243,7 +243,7 @@ auto Scalar::valueAtBoundaryFace(const mesh::Face& face) const -> double {
     const auto& patch = mesh().boundary_patch(face);
     const auto& bc = patch.getBoundaryCondition(name());
 
-    auto handler = _bh_manager.getHandler(bc.kindString());
+    auto handler = this->boundaryHandlersManager().getHandler(bc.kindString());
 
     if (handler == nullptr) {
         throw error::NonImplementedBoundaryCondition(
@@ -265,12 +265,12 @@ void Scalar::setParent(IVector* parent) {
 }
 
 void Scalar::addDefaultHandlers() {
-    _bh_manager.addHandler<field::boundary::Fixed>();
-    _bh_manager.addHandler<field::boundary::VelocityInlet>();
-    _bh_manager.addHandler<field::boundary::Empty>();
-    _bh_manager.addHandler<field::boundary::Symmetry>();
-    _bh_manager.addHandler<field::boundary::Outlet>();
-    _bh_manager.addHandler<field::boundary::FixedGradient>();
-    _bh_manager.addHandler<field::boundary::NoSlip>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Fixed>();
+    this->boundaryHandlersManager().addHandler<field::boundary::VelocityInlet>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Empty>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Symmetry>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Outlet>();
+    this->boundaryHandlersManager().addHandler<field::boundary::FixedGradient>();
+    this->boundaryHandlersManager().addHandler<field::boundary::NoSlip>();
 }
 } // namespace prism::field

@@ -6,7 +6,6 @@
 
 #include "boundary.h"
 #include "convection_boundary.h"
-#include "scheme.h"
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
@@ -15,6 +14,7 @@
 #include "prism/mesh/utilities.h"
 #include "prism/operations/operations.h"
 #include "prism/types.h"
+#include "scheme.h"
 
 namespace prism::scheme::convection {
 
@@ -31,7 +31,10 @@ struct CoeffsTriplet {
 
 // Finite volume scheme for the discretization of the convection term
 template <typename Field>
-class IConvection : public IFullScheme<Field> {
+class IConvection : public IFullScheme<Field>,
+                    public prism::boundary::BHManagersProvider<
+                        IConvection<Field>,
+                        boundary::FVSchemeBoundaryHandler<IConvection<Field>>> {
   public:
     IConvection(field::Scalar rho, field::Velocity U, Field phi);
 
@@ -41,11 +44,6 @@ class IConvection : public IFullScheme<Field> {
     auto inline field() -> Field override { return _phi; }
     auto inline U() -> const field::Velocity& { return _U; }
     auto inline rho() -> const field::Scalar& { return _rho; }
-
-    using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<IConvection,
-                                                 boundary::FVSchemeBoundaryHandler<IConvection>>;
-    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
 
   private:
@@ -61,7 +59,6 @@ class IConvection : public IFullScheme<Field> {
     field::Scalar _rho;
     field::Velocity _U;
     Field _phi;
-    BoundaryHandlersManager _bc_manager;
 };
 
 // Central difference scheme
@@ -131,11 +128,11 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
       IFullScheme<Field>(phi.mesh().nCells()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<scheme::boundary::Empty<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<scheme::boundary::Fixed<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<scheme::boundary::Outlet<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<scheme::boundary::Symmetry<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
 template <typename Field>
