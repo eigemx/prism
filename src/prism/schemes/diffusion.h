@@ -37,11 +37,11 @@ class INonCorrected {};
 // BHManagerProvider without type clutter
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
-          typename GradScheme = gradient::LeastSquares,
-          typename Field = field::Scalar>
+          typename Field = field::Scalar,
+          typename GradScheme = gradient::LeastSquares<Field>>
 class Corrected : public ICorrected,
                   public IDiffusion<KappaType, Field>,
-                  public gradient::GradientProvider<GradScheme> {
+                  public gradient::GradientProvider<Field, GradScheme> {
   public:
     Corrected(KappaType kappa, Field phi);
 
@@ -49,7 +49,7 @@ class Corrected : public ICorrected,
     auto corrector() -> NonOrthoCorrector { return _corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
 
-    using Scheme = Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>;
+    using Scheme = Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>;
     using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<boundary::ISchemeBoundaryHandler<Scheme>>;
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
@@ -92,9 +92,10 @@ IDiffusion<KappaType, Field>::IDiffusion(KappaType kappa, Field phi)
 //
 // Corrected implementation
 //
-template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
-Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>::Corrected(KappaType kappa, Field phi)
-    : IDiffusion<KappaType, Field>(kappa, phi), gradient::GradientProvider<GradScheme>(phi) {
+template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
+Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::Corrected(KappaType kappa, Field phi)
+    : IDiffusion<KappaType, Field>(kappa, phi),
+      gradient::GradientProvider<Field, GradScheme>(phi) {
     assert(this->needsCorrection() == true &&
            "prism::scheme::diffusion::Corrected::needsCorrection() must return true");
 
@@ -108,8 +109,8 @@ Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>::Corrected(KappaType 
     _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
-template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
-void inline Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>::apply() {
+template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
+void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply() {
     /** @brief Applies discretized diffusion equation to the mesh.
      * The discretized equation is applied per face basis, using apply_interior() and
      * apply_boundary() functions.
@@ -129,13 +130,13 @@ void inline Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>::apply() 
     this->collect();
 }
 
-template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
-void inline Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>::apply_boundary() {
+template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
+void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply_boundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::Corrected", *this);
 }
 
-template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
-void inline Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>::apply_interior(
+template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
+void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply_interior(
     const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());

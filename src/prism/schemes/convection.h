@@ -19,6 +19,7 @@
 namespace prism::scheme::convection {
 
 // TODO: density should be a template parameter with a default value for field::UniformScalar
+// TODO: we should have only one field::Vector allowed in IConvection schemes (rho * V) or just V
 
 namespace detail {
 // coefficients for the discretized convection equation for a face
@@ -61,11 +62,11 @@ class IConvection : public IFullScheme<Field>,
 };
 
 // Central difference scheme
-template <typename F, typename G = gradient::LeastSquares>
-class CentralDifference : public IConvection<F>, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares<F>>
+class CentralDifference : public IConvection<F>, public gradient::GradientProvider<F, G> {
   public:
     CentralDifference(field::Scalar rho, field::Velocity U, F phi)
-        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<F, G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -76,11 +77,10 @@ class CentralDifference : public IConvection<F>, public gradient::GradientProvid
 
 
 // Upwind scheme
-template <typename F, typename G = gradient::LeastSquares>
-class Upwind : public IConvection<F>, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares<F>>
+class Upwind : public IConvection<F> {
   public:
-    Upwind(field::Scalar rho, field::Velocity U, F phi)
-        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+    Upwind(field::Scalar rho, field::Velocity U, F phi) : IConvection<F>(rho, U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -91,11 +91,11 @@ class Upwind : public IConvection<F>, public gradient::GradientProvider<G> {
 
 
 // Second order upwind scheme
-template <typename F, typename G = gradient::LeastSquares>
-class SecondOrderUpwind : public IConvection<F>, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares<F>>
+class SecondOrderUpwind : public IConvection<F>, public gradient::GradientProvider<F, G> {
   public:
     SecondOrderUpwind(field::Scalar rho, field::Velocity U, F phi)
-        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<F, G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -106,11 +106,11 @@ class SecondOrderUpwind : public IConvection<F>, public gradient::GradientProvid
 
 
 // QUICK scheme
-template <typename F, typename G = gradient::LeastSquares>
-class QUICK : public IConvection<F>, public gradient::GradientProvider<G> {
+template <typename F, typename G = gradient::LeastSquares<F>>
+class QUICK : public IConvection<F>, public gradient::GradientProvider<F, G> {
   public:
     QUICK(field::Scalar rho, field::Velocity U, F phi)
-        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<F, G>(phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -183,7 +183,7 @@ auto CentralDifference<F, G>::interpolate(double m_dot,
                                           const mesh::Cell& neighbor,
                                           const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->grad_scheme().gradient_at_face(face);
+    const Vector3d face_grad_phi = this->gradScheme().gradAtFace(face);
     const Vector3d d_Cf = face.center() - cell.center();
     const double a_C = std::max(m_dot, 0.0);
     double b = -std::max(m_dot, 0.0) * d_Cf.dot(face_grad_phi);
@@ -216,9 +216,9 @@ auto SecondOrderUpwind<F, G>::interpolate(double m_dot,
                                           const mesh::Cell& neighbor,
                                           const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->grad_scheme().gradAtFace(face);
-    const Vector3d cell_grad_phi = this->grad_scheme().gradAtCell(cell);
-    const Vector3d neighbor_grad_phi = this->grad_scheme().gradAtCell(neighbor);
+    const Vector3d face_grad_phi = this->gradScheme().gradAtFace(face);
+    const Vector3d cell_grad_phi = this->gradScheme().gradAtCell(cell);
+    const Vector3d neighbor_grad_phi = this->gradScheme().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
     // auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
@@ -244,9 +244,9 @@ auto QUICK<F, G>::interpolate(double m_dot,
                               const mesh::Cell& neighbor,
                               const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->grad_scheme().gradAtFace(face);
-    const Vector3d cell_grad_phi = this->grad_scheme().gradAtCell(cell);
-    const Vector3d neighbor_grad_phi = this->grad_scheme().gradAtCell(neighbor);
+    const Vector3d face_grad_phi = this->gradScheme().gradAtFace(face);
+    const Vector3d cell_grad_phi = this->gradScheme().gradAtCell(cell);
+    const Vector3d neighbor_grad_phi = this->gradScheme().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
     auto correction = 0.5 * d_Cf.dot(cell_grad_phi + face_grad_phi);

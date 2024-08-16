@@ -57,7 +57,7 @@ class Divergence : public IExplicitSource {
 // for example the gradient of the pressure in the x-direction: ∂p/∂x
 template <SourceSign Sign = SourceSign::Positive,
           typename Field = field::Scalar,
-          typename GradientScheme = gradient::LeastSquares>
+          typename GradientScheme = gradient::LeastSquares<Field>>
 class Gradient : public IExplicitSource {
   public:
     Gradient(Field phi, Coord coord);
@@ -74,7 +74,7 @@ class Gradient : public IExplicitSource {
 template <SourceSign Sign = SourceSign::Positive,
           typename Kappa = field::UniformScalar,
           typename Field = field::Scalar,
-          typename GradientScheme = gradient::LeastSquares>
+          typename GradientScheme = gradient::LeastSquares<Field>>
 class Laplacian : public IExplicitSource {
   public:
     Laplacian(Kappa kappa, Field phi);

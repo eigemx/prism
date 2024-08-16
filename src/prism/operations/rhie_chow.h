@@ -9,7 +9,7 @@
 
 namespace prism::ops {
 
-template <typename Vector, typename GradScheme = gradient::LeastSquares>
+template <typename Vector, typename GradScheme = gradient::LeastSquares<field::Pressure>>
 void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P);
 
 namespace detail {
