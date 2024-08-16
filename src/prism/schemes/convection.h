@@ -65,7 +65,7 @@ template <typename F, typename G = gradient::LeastSquares>
 class CentralDifference : public IConvection<F>, public gradient::GradientProvider<G> {
   public:
     CentralDifference(field::Scalar rho, field::Velocity U, F phi)
-        : IConvection<F>(rho, U, phi) {}
+        : IConvection<F>(rho, U, phi), gradient::GradientProvider<G>(phi) {}
 
   private:
     auto interpolate(double m_dot,

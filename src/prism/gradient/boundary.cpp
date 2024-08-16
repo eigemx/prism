@@ -1,22 +1,22 @@
 #include "boundary.h"
 
 namespace prism::gradient::boundary {
-auto Empty::get(const prism::field::Scalar& field, const prism::mesh::Face& face) // NOLINT
+auto Empty::get(const prism::field::IScalar& field, const prism::mesh::Face& face) // NOLINT
     -> prism::Vector3d {
     return {0.0, 0.0, 0.0};
 }
 
-auto Symmetry::get(const prism::field::Scalar& field, const prism::mesh::Face& face) // NOLINT
+auto Symmetry::get(const prism::field::IScalar& field, const prism::mesh::Face& face) // NOLINT
     -> prism::Vector3d {
     return {0.0, 0.0, 0.0};
 }
 
-auto Outlet::get(const prism::field::Scalar& field, const prism::mesh::Face& face) // NOLINT
+auto Outlet::get(const prism::field::IScalar& field, const prism::mesh::Face& face) // NOLINT
     -> prism::Vector3d {
     return {0.0, 0.0, 0.0};
 }
 
-auto Fixed::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
+auto Fixed::get(const prism::field::IScalar& field, const prism::mesh::Face& face)
     -> prism::Vector3d {
     const auto& owner = field.mesh().cell(face.owner());
     prism::Vector3d d_Cf = face.center() - owner.center();
@@ -27,19 +27,19 @@ auto Fixed::get(const prism::field::Scalar& field, const prism::mesh::Face& face
     return (delta_phi / d_Cf_norm) * e;
 }
 
-auto NoSlip::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
+auto NoSlip::get(const prism::field::IScalar& field, const prism::mesh::Face& face)
     -> prism::Vector3d {
     Fixed fixed;
     return fixed.get(field, face);
 }
 
-auto VelocityInlet::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
+auto VelocityInlet::get(const prism::field::IScalar& field, const prism::mesh::Face& face)
     -> prism::Vector3d {
     Fixed fixed;
     return fixed.get(field, face);
 }
 
-auto FixedGradient::get(const prism::field::Scalar& field, const prism::mesh::Face& face)
+auto FixedGradient::get(const prism::field::IScalar& field, const prism::mesh::Face& face)
     -> prism::Vector3d {
     const auto& boundary_patch = field.mesh().boundary_patch(face);
     return boundary_patch.getVectorBoundaryCondition(field.name());
