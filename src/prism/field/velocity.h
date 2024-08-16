@@ -9,27 +9,16 @@
 #include "vector.h"
 
 namespace prism::field {
-class Velocity;
 
-class VelocityComponent : public Scalar, public units::VelocityUnit {
+class VelocityCompBHManagerSetter {
   public:
-    VelocityComponent(std::string name,
-                      const mesh::PMesh& mesh,
-                      double value,
-                      Coord coord,
-                      IVector* parent = nullptr);
-    VelocityComponent(std::string name,
-                      const mesh::PMesh& mesh,
-                      VectorXd data,
-                      Coord coord,
-                      IVector* parent = nullptr);
-    VelocityComponent(std::string name,
-                      const mesh::PMesh& mesh,
-                      VectorXd data,
-                      VectorXd face_data,
-                      Coord coord,
-                      IVector* parent = nullptr);
+    using IScalarBHManager =
+        prism::boundary::BoundaryHandlersManager<boundary::IScalarBoundaryHandler>;
+
+    static void set(IScalarBHManager& manager);
 };
+
+using VelocityComponent = GeneralScalar<units::VelocityUnit, VelocityCompBHManagerSetter>;
 
 class Velocity : public detail::Vector<VelocityComponent>, public units::VelocityUnit {
   public:

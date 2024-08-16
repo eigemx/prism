@@ -1,66 +1,103 @@
 #pragma once
 
+#include "ifield.h"
 #include "prism/boundary.h"
 #include "prism/mesh/face.h"
 
-
 namespace prism::field::boundary {
-
-template <typename Field>
-class FieldBoundaryHandler : public prism::boundary::IBoundaryHandler {
+class IScalarBoundaryHandler : public prism::boundary::IBoundaryHandler {
   public:
     virtual auto name() const -> std::string = 0;
-    virtual auto get(const Field& field, const mesh::Face& face) -> double = 0;
+    virtual auto get(const IScalar& field, const mesh::Face& face) -> double = 0;
 };
 
-template <typename Field>
-class Fixed : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class Fixed : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "fixed"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-
-template <typename Field>
-class NoSlip : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class NoSlip : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "no-slip"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-template <typename Field>
-class VelocityInlet : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class VelocityInlet : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "velocity-inlet"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-template <typename Field>
-class Empty : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class Empty : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "empty"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-template <typename Field>
-class Symmetry : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class Symmetry : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "symmetry"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-template <typename Field>
-class Outlet : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class Outlet : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "outlet"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-template <typename Field>
-class FixedGradient : public FieldBoundaryHandler<Field> {
+template <ScalarBased Field>
+class FixedGradient : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "fixed-gradient"; }
-    auto get(const Field& field, const mesh::Face& face) -> double override;
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
+
+template <ScalarBased Field>
+auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    const auto& patch = field.mesh().boundary_patch(face);
+    return patch.getScalarBoundaryCondition(field.name());
+}
+
+template <ScalarBased Field>
+auto Empty<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    // TODO: Empty faces field value should not contribute to the solution, we need to avoid
+    // having an "Empty" handler for fields.
+    return field.valueAtCell(face.owner());
+}
+
+template <ScalarBased Field>
+auto Symmetry<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    return field.valueAtCell(face.owner());
+}
+
+template <ScalarBased Field>
+auto Outlet<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    Symmetry<Field> symm;
+    return symm.get(field, face);
+}
+
+template <ScalarBased Field>
+auto FixedGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    const auto& mesh = field.mesh();
+    const auto& patch = mesh.boundary_patch(face);
+
+    Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(field.name());
+    const auto& owner = mesh.cell(face.owner());
+
+    Vector3d e = face.center() - owner.center();
+    double d_Cf = e.norm();
+    e = e / e.norm();
+    grad_at_boundary = grad_at_boundary * d_Cf;
+
+    return grad_at_boundary.dot(e) + field.valueAtCell(owner);
+}
 
 } // namespace prism::field::boundary

@@ -8,49 +8,49 @@
 namespace prism::field::boundary {
 
 template <>
-class Fixed<Scalar> : public FieldBoundaryHandler<Scalar> {
+class Fixed<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "fixed"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;
 };
 
 template <>
-class NoSlip<Scalar> : public FieldBoundaryHandler<Scalar> {
+class NoSlip<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "no-slip"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;
 };
 
 template <>
-class VelocityInlet<Scalar> : public FieldBoundaryHandler<Scalar> {
+class VelocityInlet<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "velocity-inlet"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;
 };
 
 template <>
-class Empty<Scalar> : public FieldBoundaryHandler<Scalar> {
+class Empty<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "empty"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;
 };
 
 template <>
-class Symmetry<Scalar> : public FieldBoundaryHandler<Scalar> {
+class Symmetry<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "symmetry"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;
 };
 
 template <>
-class Outlet<Scalar> : public FieldBoundaryHandler<Scalar> {
+class Outlet<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "outlet"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;
 };
 
 template <>
-class FixedGradient<Scalar> : public FieldBoundaryHandler<Scalar> {
+class FixedGradient<Scalar> : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "fixed-gradient"; }
     auto get(const Scalar& field, const mesh::Face& face) -> double override;

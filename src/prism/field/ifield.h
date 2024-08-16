@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 #include <string>
 
@@ -44,11 +45,40 @@ class IField {
     std::string _name;
 };
 
+using IScalar = IField<double>;
+
+template <typename T>
+concept ScalarBased = std::derived_from<T, IScalar>;
+
+class IVector {
+  public:
+    IVector() = default;
+    IVector(IVector&) = default;
+    IVector(IVector&&) noexcept = default;
+    auto operator=(const IVector&) -> IVector& = default;
+    auto operator=(IVector&&) noexcept -> IVector& = default;
+    virtual ~IVector() = default;
+};
+
 template <typename CellValueType>
 IField<CellValueType>::IField(std::string name, const mesh::PMesh& mesh)
     : _name(std::move(name)), _mesh(&mesh) {
     detail::checkFieldName(_name);
     detail::checkMesh(mesh);
+}
+
+auto inline coordToStr(prism::Coord coord) -> std::string {
+    switch (coord) {
+        case prism::Coord::X: {
+            return "x";
+        }
+        case prism::Coord::Y: {
+            return "y";
+        }
+        case prism::Coord::Z: {
+            return "z";
+        }
+    }
 }
 
 } // namespace prism::field
