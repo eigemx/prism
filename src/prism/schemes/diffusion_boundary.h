@@ -36,7 +36,7 @@ namespace prism::scheme::boundary {
 // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph, and
 // paragraph 8.6.8.2 - Chapter 8 in same reference.
 template <scheme::diffusion::ICorrectedBased Scheme>
-class Symmetry<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class Symmetry<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "symmetry"; }
@@ -45,7 +45,7 @@ class Symmetry<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
 // We treat outlet boundary condition in diffusion scheme same as symmetry (zero gradient of the
 // conserved scalar field)
 template <scheme::diffusion::ICorrectedBased Scheme>
-class Outlet<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class Outlet<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "outlet"; }
@@ -54,14 +54,14 @@ class Outlet<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
 // Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion with a conserved
 // general scalar field (for example: velocity component or temperature).
 template <scheme::diffusion::ICorrectedBased Scheme>
-class Fixed<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed"; }
 };
 
 template <scheme::diffusion::ICorrectedBased Scheme>
-class NoSlip<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "no-slip"; }
@@ -69,7 +69,7 @@ class NoSlip<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
 
 // general Von Neumann boundary condition, or fixed gradient boundary condition.
 template <scheme::diffusion::ICorrectedBased Scheme>
-class FixedGradient<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed-gradient"; }
@@ -79,35 +79,35 @@ class FixedGradient<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
 // diffusion::NonCorrected default boundary handlers
 //
 template <scheme::diffusion::INonCorrectedBased Scheme>
-class Fixed<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed"; }
 };
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
-class Symmetry<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class Symmetry<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "symmetry"; }
 };
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
-class Outlet<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class Outlet<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
     auto inline name() const -> std::string override { return "outlet"; }
 };
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
-class FixedGradient<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed-gradient"; }
 };
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
-class NoSlip<Scheme> : public FVSchemeBoundaryHandler<Scheme> {
+class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "no-slip"; }

@@ -4,6 +4,7 @@
 
 #include "prism/exceptions.h"
 #include "prism/mesh/utilities.h"
+#include "scalar_boundary.h"
 #include "vector.h"
 
 auto inline coordToStr(prism::Coord coord) -> std::string {
@@ -265,12 +266,12 @@ void Scalar::setParent(IVector* parent) {
 }
 
 void Scalar::addDefaultHandlers() {
-    this->boundaryHandlersManager().addHandler<field::boundary::Fixed>();
-    this->boundaryHandlersManager().addHandler<field::boundary::VelocityInlet>();
-    this->boundaryHandlersManager().addHandler<field::boundary::Empty>();
-    this->boundaryHandlersManager().addHandler<field::boundary::Symmetry>();
-    this->boundaryHandlersManager().addHandler<field::boundary::Outlet>();
-    this->boundaryHandlersManager().addHandler<field::boundary::FixedGradient>();
-    this->boundaryHandlersManager().addHandler<field::boundary::NoSlip>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Fixed<Scalar>>();
+    this->boundaryHandlersManager().addHandler<field::boundary::VelocityInlet<Scalar>>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Empty<Scalar>>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Symmetry<Scalar>>();
+    this->boundaryHandlersManager().addHandler<field::boundary::Outlet<Scalar>>();
+    this->boundaryHandlersManager().addHandler<field::boundary::FixedGradient<Scalar>>();
+    this->boundaryHandlersManager().addHandler<field::boundary::NoSlip<Scalar>>();
 }
 } // namespace prism::field
