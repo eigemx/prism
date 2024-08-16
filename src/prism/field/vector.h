@@ -10,15 +10,6 @@
 #include "units.h"
 
 namespace prism::field {
-class IVector {
-  public:
-    IVector() = default;
-    IVector(IVector&) = default;
-    IVector(IVector&&) noexcept = default;
-    auto operator=(const IVector&) -> IVector& = default;
-    auto operator=(IVector&&) noexcept -> IVector& = default;
-    virtual ~IVector() = default;
-};
 
 namespace detail {
 template <typename Component>

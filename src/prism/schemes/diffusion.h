@@ -33,6 +33,8 @@ class IDiffusion : public IFullScheme<Field> {
 class ICorrected {};
 class INonCorrected {};
 
+// TODO: Simplify the BoundaryHandlerManager declaration mess and find a way to use
+// BHManagerProvider without type clutter
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
           typename GradScheme = gradient::LeastSquares,
