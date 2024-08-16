@@ -1,41 +1,39 @@
-#include "boundary.h"
+#include "scalar_boundary.h"
 
 #include <spdlog/spdlog.h>
 
-#include "prism/mesh/face.h"
-#include "scalar.h"
 
 namespace prism::field::boundary {
-auto Fixed::get(const field::Scalar& field, const mesh::Face& face) -> double {
+auto Fixed<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundary_patch(face);
     return patch.getScalarBoundaryCondition(field.name());
 }
 
-auto NoSlip::get(const field::Scalar& field, const mesh::Face& face) -> double {
-    Fixed fixed;
+auto NoSlip<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
+    Fixed<Scalar> fixed;
     return fixed.get(field, face);
 }
 
-auto VelocityInlet::get(const field::Scalar& field, const mesh::Face& face) -> double {
+auto VelocityInlet<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundary_patch(face);
     return patch.getScalarBoundaryCondition(field.name());
 }
 
-auto Empty::get(const field::Scalar& field, const mesh::Face& face) -> double {
+auto Empty<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
     // TODO: Empty faces field value should not contribute to the solution, we need to avoid
     // having an "Empty" handler for fields.
     return field.values()[face.owner()];
 }
 
-auto Symmetry::get(const field::Scalar& field, const mesh::Face& face) -> double {
+auto Symmetry<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
     return field.values()[face.owner()];
 }
 
-auto Outlet::get(const field::Scalar& field, const mesh::Face& face) -> double {
+auto Outlet<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
     return field.values()[face.owner()];
 }
 
-auto FixedGradient::get(const field::Scalar& field, const mesh::Face& face) -> double {
+auto FixedGradient<Scalar>::get(const Scalar& field, const mesh::Face& face) -> double {
     const auto& mesh = field.mesh();
     const auto& patch = mesh.boundary_patch(face);
 

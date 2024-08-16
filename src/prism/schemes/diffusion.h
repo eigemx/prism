@@ -49,8 +49,7 @@ class Corrected : public ICorrected,
 
     using Scheme = Corrected<KappaType, NonOrthoCorrector, GradScheme, Field>;
     using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<Scheme,
-                                                 boundary::FVSchemeBoundaryHandler<Scheme>>;
+        prism::boundary::BoundaryHandlersManager<boundary::ISchemeBoundaryHandler<Scheme>>;
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:
@@ -73,8 +72,7 @@ class NonCorrected : public INonCorrected, public IDiffusion<KappaType, Field> {
 
     using Scheme = NonCorrected<KappaType, Field>;
     using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<Scheme,
-                                                 boundary::FVSchemeBoundaryHandler<Scheme>>;
+        prism::boundary::BoundaryHandlersManager<boundary::ISchemeBoundaryHandler<Scheme>>;
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:

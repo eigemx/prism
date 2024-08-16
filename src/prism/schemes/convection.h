@@ -33,8 +33,7 @@ struct CoeffsTriplet {
 template <typename Field>
 class IConvection : public IFullScheme<Field>,
                     public prism::boundary::BHManagersProvider<
-                        IConvection<Field>,
-                        boundary::FVSchemeBoundaryHandler<IConvection<Field>>> {
+                        boundary::ISchemeBoundaryHandler<IConvection<Field>>> {
   public:
     IConvection(field::Scalar rho, field::Velocity U, Field phi);
 

@@ -24,7 +24,6 @@ namespace prism::eqn {
 template <typename Field = field::Scalar>
 class Transport : public LinearSystem,
                   public prism::boundary::BHManagersProvider<
-                      Transport<Field>,
                       eqn::boundary::IEquationBoundaryHandler<Transport<Field>>> {
   public:
     template <typename Scheme, typename... Schemes>

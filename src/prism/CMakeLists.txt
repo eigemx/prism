@@ -2,10 +2,11 @@ add_library(prism
     linear.cpp
     
     equation/noslip.cpp
+
     field/ifield.cpp
-    field/boundary.cpp
     field/tensor.cpp
     field/scalar.cpp
+    field/scalar_boundary.cpp
     field/velocity.cpp
     field/pressure.cpp
     
