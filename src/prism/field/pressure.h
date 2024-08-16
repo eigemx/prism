@@ -4,11 +4,14 @@
 
 namespace prism::field {
 
-class Pressure : public Scalar, public units::Pascal {
+class PressureBHManagerSetter {
   public:
-    Pressure(std::string name, const mesh::PMesh& mesh, double value);
-    Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data);
-    Pressure(std::string name, const mesh::PMesh& mesh, VectorXd data, VectorXd face_data);
+    using IScalarBHManager =
+        prism::boundary::BoundaryHandlersManager<boundary::IScalarBoundaryHandler>;
+
+    static void set(IScalarBHManager& manager);
 };
+
+using Pressure = GeneralScalar<units::Pascal, PressureBHManagerSetter>;
 
 } // namespace prism::field

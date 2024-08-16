@@ -17,7 +17,7 @@ namespace prism::gradient {
 // Base class for gradient schemes for explicity calculating the cell gradient of a scalar field.
 // All gradient schemes should inherit from this class and define gradient() function.
 class IGradient
-    : public prism::boundary::BHManagersProvider<boundary::GradSchemeBoundaryHandler> {
+    : public prism::boundary::BHManagersProvider<boundary::IGradSchemeBoundaryHandler> {
   public:
     IGradient() = delete;
     IGradient(const IGradient&) = default;
