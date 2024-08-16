@@ -25,9 +25,6 @@ add_library(prism
     nonortho/nonortho.cpp
 
     # gradient
-    gradient/green_gauss.cpp
-    gradient/least_squares.cpp
-    gradient/gradient.cpp
     gradient/boundary.cpp
 
     # operations
