@@ -6,7 +6,7 @@
 
 
 namespace prism {
-void export_field_vtu(const field::Scalar& field, const std::string& file_name) {
+void export_field_vtu(const field::IScalar& field, const std::string& file_name) {
     const auto& pmesh = field.mesh();
 
     std::vector<double> points;
@@ -66,7 +66,7 @@ void export_field_vtu(const field::Scalar& field, const std::string& file_name) 
 
     // Fill the data cell data
     for (std::size_t i = 0; i < pmesh.cells().size(); ++i) {
-        cellData[i] = field[i];
+        cellData[i] = field.valueAtCell(i);
     }
 
     // Create tuples with (name, association, number of components) for each data set
