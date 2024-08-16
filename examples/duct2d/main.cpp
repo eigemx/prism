@@ -29,18 +29,17 @@ auto main(int argc, char* argv[]) -> int {
     auto uEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(
-            mu, U.x()) //, // - ∇.(μ∇u)
-        // scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
-        // P, Coord::X) // ∂p/∂x
+            mu, U.x()), //, // - ∇.(μ∇u)
+        scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
+            P, Coord::X) // ∂p/∂x
     );
 
     auto vEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.y()),
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(mu,
-                                                                                        U.y()) //,
-        // scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
-        // P, Coord::Y)
-    );
+                                                                                        U.y()),
+        scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
+            P, Coord::Y));
 
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
