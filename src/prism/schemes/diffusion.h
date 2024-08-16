@@ -214,7 +214,6 @@ void inline NonCorrected<KappaType, Field>::apply_boundary() {
 
 template <typename KappaType, typename Field>
 void inline NonCorrected<KappaType, Field>::apply_interior(const mesh::Face& face) {
-    assert(this->field().has_value());
     const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());

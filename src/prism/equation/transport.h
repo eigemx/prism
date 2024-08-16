@@ -22,7 +22,10 @@ namespace prism::eqn {
 // TODO: Transport should give read/write access to user for all its schemes
 
 template <typename Field = field::Scalar>
-class Transport : public LinearSystem {
+class Transport : public LinearSystem,
+                  public prism::boundary::BHManagersProvider<
+                      Transport<Field>,
+                      eqn::boundary::IEquationBoundaryHandler<Transport<Field>>> {
   public:
     template <typename Scheme, typename... Schemes>
     Transport(Scheme&& scheme, Schemes&&... schemes);
@@ -43,11 +46,6 @@ class Transport : public LinearSystem {
     void addScheme(Scheme&& scheme);
 
     using FieldType = Field;
-    using BoundaryHandlersManager = prism::boundary::BoundaryHandlersManager<
-        Transport<Field>,
-        boundary::IEquationBoundaryHandler<Transport<Field>>>;
-
-    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bh_manager; }
 
   private:
     template <typename Convection>
@@ -71,7 +69,6 @@ class Transport : public LinearSystem {
     SharedPtr<scheme::IFullScheme<Field>> _conv_scheme = nullptr;
     SharedPtr<scheme::IFullScheme<Field>> _diff_scheme = nullptr;
     std::size_t _n_corrected_schemes {0};
-    BoundaryHandlersManager _bh_manager;
 };
 
 template <typename Field>
