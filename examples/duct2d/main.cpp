@@ -93,11 +93,8 @@ auto main(int argc, char* argv[]) -> int {
         // 2) ∇.(ρU) not ∇.U
         auto P_prime = field::Pressure("pressure", mesh, 0.0);
         auto pEqn = eqn::Transport<field::Pressure>(
-            scheme::diffusion::NonCorrected<field::Tensor, field::Pressure>(D,
-                                                                            P_prime) //,
-            // scheme::source::Divergence<scheme::source::SourceSign::Negative,
-            // field::Velocity>(U)
-        );
+            scheme::diffusion::NonCorrected<field::Tensor, field::Pressure>(D, P_prime),
+            scheme::source::Divergence<scheme::source::SourceSign::Negative, field::Velocity>(U));
 
         pEqn.updateCoeffs();
         spdlog::info("Solving pressure correction equation");

@@ -11,13 +11,12 @@
 
 namespace prism::field {
 
-namespace detail {
 template <typename Component>
-class Vector : public IField<Vector3d>, public IVector, public units::Measurable {
+class GeneralVector : public IField<Vector3d>, public IVector, public units::Measurable {
   public:
-    Vector(std::string name, const mesh::PMesh& mesh, double value);
-    Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
-    Vector(std::string name, const mesh::PMesh& mesh, std::array<Component, 3>& fields);
+    GeneralVector(std::string name, const mesh::PMesh& mesh, double value);
+    GeneralVector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
+    GeneralVector(std::string name, const mesh::PMesh& mesh, std::array<Component, 3>& fields);
 
     auto hasFaceValues() const -> bool override;
 
@@ -38,29 +37,31 @@ class Vector : public IField<Vector3d>, public IVector, public units::Measurable
   private:
     Component _x, _y, _z;
 };
-} // namespace detail
 
-using Vector = detail::Vector<Scalar>;
+using Vector = GeneralVector<Scalar>;
 
-namespace detail {
 template <typename ComponentType>
-Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, double value)
+GeneralVector<ComponentType>::GeneralVector(std::string name,
+                                            const mesh::PMesh& mesh,
+                                            double value)
     : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, value, Coord::X, static_cast<IVector*>(this)),
       _y(this->name() + "_y", mesh, value, Coord::Y, static_cast<IVector*>(this)),
       _z(this->name() + "_z", mesh, value, Coord::Z, static_cast<IVector*>(this)) {}
 
 template <typename ComponentType>
-Vector<ComponentType>::Vector(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
+GeneralVector<ComponentType>::GeneralVector(std::string name,
+                                            const mesh::PMesh& mesh,
+                                            const Vector3d& data)
     : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, data[0], Coord::X, static_cast<IVector*>(this)),
       _y(this->name() + "_y", mesh, data[1], Coord::Y, static_cast<IVector*>(this)),
       _z(this->name() + "_z", mesh, data[2], Coord::Z, static_cast<IVector*>(this)) {}
 
 template <typename ComponentType>
-Vector<ComponentType>::Vector(std::string name,
-                              const mesh::PMesh& mesh,
-                              std::array<ComponentType, 3>& fields)
+GeneralVector<ComponentType>::GeneralVector(std::string name,
+                                            const mesh::PMesh& mesh,
+                                            std::array<ComponentType, 3>& fields)
     : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
     // check mesh consistency
     for (auto& field : fields) {
@@ -98,34 +99,33 @@ Vector<ComponentType>::Vector(std::string name,
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::valueAtCell(std::size_t cell_id) const -> Vector3d {
+auto GeneralVector<ComponentType>::valueAtCell(std::size_t cell_id) const -> Vector3d {
     return operator[](cell_id);
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::valueAtCell(const mesh::Cell& cell) const -> Vector3d {
+auto GeneralVector<ComponentType>::valueAtCell(const mesh::Cell& cell) const -> Vector3d {
     return valueAtCell(cell.id());
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::valueAtFace(std::size_t face_id) const -> Vector3d {
+auto GeneralVector<ComponentType>::valueAtFace(std::size_t face_id) const -> Vector3d {
     return {_x.valueAtFace(face_id), _y.valueAtFace(face_id), _z.valueAtFace(face_id)};
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::valueAtFace(const mesh::Face& face) const -> Vector3d {
+auto GeneralVector<ComponentType>::valueAtFace(const mesh::Face& face) const -> Vector3d {
     return valueAtFace(face.id());
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::hasFaceValues() const -> bool {
+auto GeneralVector<ComponentType>::hasFaceValues() const -> bool {
     return _x.hasFaceValues() && _y.hasFaceValues() && _z.hasFaceValues();
 }
 
 template <typename ComponentType>
-auto Vector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
+auto GeneralVector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
     return {_x.values()[i], _y.values()[i], _z.values()[i]};
 }
-} // namespace detail
 
 } // namespace prism::field

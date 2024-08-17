@@ -30,15 +30,15 @@ class IExplicitSource : public ISource, public IPartialScheme {
 
 // TODO: ConstantScalar constructor should accept just a scalar value, and we should do the
 // remaining housekeeping with creating the needed ScalarField
-template <SourceSign Sign = SourceSign::Positive>
+template <SourceSign Sign = SourceSign::Positive, field::IScalarBased Field = field::Scalar>
 class ConstantScalar : public IExplicitSource {
   public:
-    ConstantScalar(field::Scalar phi);
+    ConstantScalar(Field phi);
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return false; }
 
   private:
-    field::Scalar _phi;
+    Field _phi;
 };
 
 template <SourceSign Sign = SourceSign::Positive, typename Vector = field::Vector>
@@ -87,7 +87,7 @@ class Laplacian : public IExplicitSource {
 };
 
 // TODO: Test this!
-template <SourceSign Sign, field::ScalarBased Field>
+template <SourceSign Sign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:
     ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh().nCells()) {}
@@ -103,12 +103,12 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
     field::Scalar _phi;
 };
 
-template <SourceSign Sign>
-ConstantScalar<Sign>::ConstantScalar(field::Scalar phi)
+template <SourceSign Sign, field::IScalarBased Field>
+ConstantScalar<Sign, Field>::ConstantScalar(Field phi)
     : _phi(phi), IExplicitSource(phi.mesh().nCells()) {}
 
-template <SourceSign Sign>
-void inline ConstantScalar<Sign>::apply() {
+template <SourceSign Sign, field::IScalarBased Field>
+void inline ConstantScalar<Sign, Field>::apply() {
     const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
     if (Sign == SourceSign::Positive) {
@@ -186,7 +186,7 @@ void inline Laplacian<Sign, Kappa, Field, GradientScheme>::apply() {
     rhs() = -div.values();
 }
 
-template <SourceSign Sign, field::ScalarBased Field>
+template <SourceSign Sign, field::IScalarBased Field>
 void inline ImplicitField<Sign, Field>::apply() {
     this->matrix().setIdentity();
 

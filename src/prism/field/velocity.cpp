@@ -4,15 +4,15 @@
 
 namespace prism::field {
 Velocity::Velocity(std::string name, const mesh::PMesh& mesh, double value)
-    : Vector(std::move(name), mesh, value) {}
+    : GeneralVector(std::move(name), mesh, value) {}
 
 Velocity::Velocity(std::string name, const mesh::PMesh& mesh, const Vector3d& data)
-    : Vector(std::move(name), mesh, data) {}
+    : GeneralVector(std::move(name), mesh, data) {}
 
 Velocity::Velocity(std::string name,
                    const mesh::PMesh& mesh,
                    std::array<VelocityComponent, 3>& fields)
-    : Vector(std::move(name), mesh, fields) {}
+    : GeneralVector(std::move(name), mesh, fields) {}
 
 void VelocityCompBHManagerSetter::set(IScalarBHManager& manager) {
     spdlog::debug(
