@@ -339,7 +339,7 @@ void UnvToPMeshConverter::process_groups() {
 }
 
 void UnvToPMeshConverter::process_group(const unvpp::Group& group) {
-    assert(group.elements_ids().size > 0 &&
+    assert(group.elements_ids().size() > 0 &&
            "UnvToPMeshConverter::process_group() cannot handle an empty group");
     std::vector<std::size_t> group_faces;
     group_faces.reserve(group.elements_ids().size());

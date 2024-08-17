@@ -117,7 +117,6 @@ class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
 // right?
 template <scheme::diffusion::ICorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    assert(scheme.field().has_value());
     const auto phi = scheme.field();
     const auto& mesh = phi.mesh();
     const auto& corrector = scheme.corrector();
@@ -190,7 +189,6 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    assert(scheme.field().has_value());
     const auto phi = scheme.field();
     const auto& mesh = phi.mesh();
     const auto& kappa = scheme.kappa();
