@@ -7,6 +7,7 @@
 #include <variant>
 #include <vector>
 
+// TODO: shouldn't this be prism::mesh::boundary ?
 namespace prism::mesh {
 
 /** @brief Enum class for boundary condition value types
@@ -99,8 +100,8 @@ class BoundaryPatch {
  * @param boundary_names Vector of expected boundary names to read from the file
  * @return std::vector<BoundaryPatch> Vector of boundary patches
  */
-auto read_boundary_file(const std::filesystem::path& path,
-                        const std::vector<std::string_view>& boundary_names)
+auto readBoundaryFile(const std::filesystem::path& path,
+                      const std::vector<std::string_view>& boundary_names)
     -> std::vector<BoundaryPatch>;
 
 } // namespace prism::mesh

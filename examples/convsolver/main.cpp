@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <filesystem>
 
+#include "prism/export.h"
+#include "prism/field/scalar.h"
+#include "prism/field/velocity.h"
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
     spdlog::set_level(spdlog::level::level_enum::debug);

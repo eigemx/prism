@@ -15,8 +15,8 @@
 namespace prism::mesh {
 // Parsing boundary file functions
 auto inline parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch;
-auto inline parseNestedBoundaryConditions(const toml::table& table, const std::string& patch_name)
-    -> BoundaryPatch;
+auto inline parseNestedBoundaryConditions(const toml::table& table,
+                                          const std::string& patch_name) -> BoundaryPatch;
 auto inline parseFieldBoundaryCondition(const toml::table& table,
                                         const std::string& patch_name,
                                         const std::string& field_name) -> BoundaryCondition;
@@ -26,8 +26,8 @@ auto parsePatch(const toml::table& table, const std::string& patch_name) -> Boun
     return parseNestedBoundaryConditions(table, patch_name);
 }
 
-auto parseNestedBoundaryConditions(const toml::table& table, const std::string& patch_name)
-    -> BoundaryPatch {
+auto parseNestedBoundaryConditions(const toml::table& table,
+                                   const std::string& patch_name) -> BoundaryPatch {
     // for each sub-table, get its type and data
     std::map<std::string, BoundaryCondition> field_name_to_bc_map;
     const auto& patch_table = *(table[patch_name].as_table());
@@ -71,11 +71,11 @@ auto parseFieldBoundaryCondition(const toml::table& table,
     const auto& field_table = *(table[patch_name][field_name].as_table());
 
     if (!field_table.contains("type")) {
-        throw std::runtime_error(
-            fmt::format("mesh/boundary.cpp::parse_field_boundary_condition(): "
-                        "Boundary patch '{}' field '{}' does not have a type or value.",
-                        patch_name,
-                        field_name));
+        throw std::runtime_error(fmt::format(
+            "prism::mesh:parseFieldBoundaryCondition(): Boundary patch `{}` field `{}` does "
+            "not have a type or value.",
+            patch_name,
+            field_name));
     }
 
     auto bc_type_str = field_table["type"].value<std::string_view>().value();
@@ -98,11 +98,11 @@ auto parseFieldBoundaryCondition(const toml::table& table,
         const auto& array = bc_value.as_array();
 
         if (array->size() != 3) {
-            throw std::runtime_error(
-                fmt::format("mesh/boundary.cpp::parse_field_boundary_condition(): "
-                            "Array value for field '{}' for patch '{}' is not a 3D vector",
-                            field_name,
-                            patch_name));
+            throw std::runtime_error(fmt::format(
+                "prism::mesh:parseFieldBoundaryCondition(): Array value for field `{}` for "
+                "patch `{}` is not a 3D vector",
+                field_name,
+                patch_name));
         }
 
         return {BoundaryConditionValueKind::Vector,
@@ -114,16 +114,16 @@ auto parseFieldBoundaryCondition(const toml::table& table,
                 std::string(bc_type_str)};
     }
 
-    throw std::runtime_error(
-        fmt::format("mesh/boundary.cpp::parse_field_boundary_condition(): "
-                    "Boundary patch '{}' field '{}' has an invalid type or value.",
-                    patch_name,
-                    field_name));
+    throw std::runtime_error(fmt::format(
+        "prism::mesh::parseFieldBoundaryCondition(): Boundary patch `{}` field `{}` has an "
+        "invalid type or value.",
+        patch_name,
+        field_name));
 }
 
 
-auto read_boundary_file(const std::filesystem::path& path,
-                        const std::vector<std::string_view>& boundary_names)
+auto readBoundaryFile(const std::filesystem::path& path,
+                      const std::vector<std::string_view>& boundary_names)
     -> std::vector<BoundaryPatch> {
     std::vector<BoundaryPatch> boundary_patches;
     boundary_patches.reserve(boundary_names.size());
@@ -132,8 +132,9 @@ auto read_boundary_file(const std::filesystem::path& path,
 
     // throw if file doesn't exist
     if (!fstream) {
-        throw std::runtime_error(
-            fmt::format("Failed to open boundary conditions file '{}'", path.string()));
+        throw std::runtime_error(fmt::format(
+            "prism::mesh::readBoundaryFile(): Failed to open boundary conditions file `{}`",
+            path.string()));
     }
 
     toml::table doc;
@@ -144,7 +145,8 @@ auto read_boundary_file(const std::filesystem::path& path,
     } catch (const toml::parse_error& e) {
         // file cannot be parsed
         throw std::runtime_error(
-            fmt::format("Failed to parse boundary condition file: '{}', complete error: {}",
+            fmt::format("prism::mesh::readBoundaryFile(): Failed to parse boundary condition "
+                        "file: `{}`, complete error: {}",
                         path.string(),
                         e.what()));
     }
@@ -155,8 +157,8 @@ auto read_boundary_file(const std::filesystem::path& path,
 
         if (!table) {
             throw std::runtime_error(
-                fmt::format("Couldn't find definition for boundary patch '{}' in boundary "
-                            "conditions file '{}'",
+                fmt::format("prism::mesh::readBoundaryFile(): Couldn't find definition for "
+                            "boundary patch '{}' in boundary conditions file `{}`",
                             bname,
                             path.string()));
         }
@@ -221,8 +223,8 @@ auto BoundaryPatch::getBoundaryCondition(const std::string& field_name) const
     if (it == _field_name_to_bc_map.end()) {
         // field not found
         throw std::runtime_error(
-            fmt::format("mesh/boundary.cpp::BoundaryPatch::get_bc(): "
-                        "Boundary patch '{}' does not have a field named '{}'",
+            fmt::format("prism::mesh::BoundaryPatch::getBoundaryCondition(): "
+                        "Boundary patch `{}` does not have a field named `{}`",
                         _name,
                         field_name));
     }
@@ -246,7 +248,7 @@ auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) co
     if (it == _field_name_to_bc_map.end()) {
         // field not found
         throw std::runtime_error(
-            fmt::format("BoundaryPatch::get_scalar_bc(): "
+            fmt::format("prism::mesh::BoundaryPatch::getScalarBoundaryCondition(): "
                         "Boundary patch '{}' does not have a field named '{}'",
                         _name,
                         field_name));
@@ -255,7 +257,7 @@ auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) co
     if (it->second.valueKind() != BoundaryConditionValueKind::Scalar) {
         // field is not a scalar
         throw std::runtime_error(
-            fmt::format("BoundaryPatch::get_scalar_bc(): "
+            fmt::format("prism::mesh::BoundaryPatch::getScalarBoundaryCondition(): "
                         "Boundary patch '{}' field '{}' is not a scalar",
                         _name,
                         field_name));
@@ -272,7 +274,7 @@ auto BoundaryPatch::getVectorBoundaryCondition(const std::string& field_name) co
     if (it == _field_name_to_bc_map.end()) {
         // field not found
         throw std::runtime_error(
-            fmt::format("BoundaryPatch::get_vector_bc(): "
+            fmt::format("prism::mesh::BoundaryPatch::getVectorBoundaryCondition(): "
                         "Boundary patch '{}' does not have a field named '{}'",
                         _name,
                         field_name));
@@ -281,7 +283,7 @@ auto BoundaryPatch::getVectorBoundaryCondition(const std::string& field_name) co
     if (it->second.valueKind() != BoundaryConditionValueKind::Vector) {
         // field is not a vector
         throw std::runtime_error(
-            fmt::format("BoundaryPatch::get_vector_bc(): "
+            fmt::format("prism::mesh::BoundaryPatch::getVectorBoundaryCondition(): "
                         "Boundary patch '{}' field '{}' is not a vector",
                         _name,
                         field_name));
@@ -302,8 +304,8 @@ auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double
             return vec_value[2];
         default: {
             throw std::runtime_error(
-                "BoundaryPatch::get_scalar_bc_subfield was given a field with a name that does "
-                "not in with a valid Cartesian componenet.");
+                "prism::mesh::BoundaryPatch::getScalarBCSubfield was given a field with a name "
+                "that does not in with a valid Cartesian componenet.");
         }
     }
 
