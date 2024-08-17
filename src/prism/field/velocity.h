@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <optional>
 #include <string>
 
 #include "scalar.h"
@@ -20,7 +19,7 @@ class VelocityCompBHManagerSetter {
 
 using VelocityComponent = GeneralScalar<units::VelocityUnit, VelocityCompBHManagerSetter>;
 
-class Velocity : public detail::Vector<VelocityComponent>, public units::VelocityUnit {
+class Velocity : public GeneralVector<VelocityComponent>, public units::VelocityUnit {
   public:
     Velocity(std::string name, const mesh::PMesh& mesh, double value);
     Velocity(std::string name, const mesh::PMesh& mesh, const Vector3d& data);

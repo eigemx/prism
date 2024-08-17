@@ -1,8 +1,7 @@
 #pragma once
 
-#include <prism/field/velocity.h>
-
 #include "prism/boundary.h"
+#include "prism/field/velocity.h"
 #include "prism/mesh/boundary.h"
 
 namespace prism::eqn {

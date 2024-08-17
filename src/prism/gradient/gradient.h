@@ -20,7 +20,7 @@ namespace prism::gradient {
 
 // Base class for gradient schemes for explicity calculating the cell gradient of a scalar field.
 // All gradient schemes should inherit from this class and define gradient() function.
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 class IGradient
     : public prism::boundary::BHManagersProvider<boundary::IGradSchemeBoundaryHandler> {
   public:
@@ -45,7 +45,7 @@ class IGradient
     Field _field;
 };
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 class GreenGauss : public IGradient<Field> {
   public:
     GreenGauss(Field field);
@@ -61,7 +61,7 @@ class GreenGauss : public IGradient<Field> {
     std::vector<Vector3d> _cell_gradients;
 };
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 class LeastSquares : public IGradient<Field> {
   public:
     LeastSquares(Field field);
@@ -74,7 +74,7 @@ class LeastSquares : public IGradient<Field> {
 };
 
 
-template <field::ScalarBased Field, typename G>
+template <field::IScalarBased Field, typename G>
 class GradientProvider {
   public:
     GradientProvider(Field field) : _gradient_scheme(field) {}
@@ -85,7 +85,7 @@ class GradientProvider {
     GradSchemeType _gradient_scheme;
 };
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 IGradient<Field>::IGradient(Field field) : _field(field) { // NOLINT
     spdlog::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
     this->boundaryHandlersManager().template addHandler<boundary::Fixed>();
@@ -96,7 +96,7 @@ IGradient<Field>::IGradient(Field field) : _field(field) { // NOLINT
     this->boundaryHandlersManager().template addHandler<boundary::VelocityInlet>();
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto IGradient<Field>::gradAtFace(const mesh::Face& face) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
     if (face.is_interior()) {
@@ -118,7 +118,7 @@ auto IGradient<Field>::gradAtFace(const mesh::Face& face) -> Vector3d {
     return gradAtBoundaryFace(face);
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto IGradient<Field>::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
     const auto& boundary_patch = _field.mesh().boundary_patch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
@@ -135,7 +135,7 @@ auto IGradient<Field>::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
     return handler->get(_field, face);
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto IGradient<Field>::gradField() -> field::Vector {
     // TODO: This function is VERY expensive
     auto grad_field_name = fmt::format("grad({})", _field.name());
@@ -179,7 +179,7 @@ auto IGradient<Field>::gradField() -> field::Vector {
     return {grad_field_name, mesh, components_fields};
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto GreenGauss<Field>::correctSkewness(const mesh::Face& face,
                                         const mesh::Cell& cell,
                                         const mesh::Cell& nei) const -> double {
@@ -189,7 +189,7 @@ auto GreenGauss<Field>::correctSkewness(const mesh::Face& face,
     return 0.5 * grad_sum.dot(vec);
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 GreenGauss<Field>::GreenGauss(Field field) : IGradient<Field>(field) { // NOLINT
     // We need to perform a first run for calculating gradient at cells,
     // to make the cell gradient vector _cell_gradients available if the user desires to call
@@ -205,12 +205,12 @@ GreenGauss<Field>::GreenGauss(Field field) : IGradient<Field>(field) { // NOLINT
     }
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto GreenGauss<Field>::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     return gradAtCell_(cell, true);
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto GreenGauss<Field>::gradAtCell_(const mesh::Cell& cell, bool correct_skewness) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = this->field().mesh();
@@ -243,7 +243,7 @@ auto GreenGauss<Field>::gradAtCell_(const mesh::Cell& cell, bool correct_skewnes
     return grad;
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto GreenGauss<Field>::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d {
     // returns the Green-Gauss face integral at boundary face `face`
     const auto& boundary_patch = this->field().mesh().boundary_patch(face);
@@ -257,12 +257,12 @@ auto GreenGauss<Field>::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d
     return phi * face.area_vector();
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 LeastSquares<Field>::LeastSquares(Field field) : IGradient<Field>(field) {
     setPseudoInvMatrices();
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 void LeastSquares<Field>::setPseudoInvMatrices() {
     // This function is based on section 9.3 'Least-Square Gradient'
     const auto& mesh = this->field().mesh();
@@ -324,7 +324,7 @@ void LeastSquares<Field>::setPseudoInvMatrices() {
     }
 }
 
-template <field::ScalarBased Field>
+template <field::IScalarBased Field>
 auto LeastSquares<Field>::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     const auto& mesh = this->field().mesh();
 

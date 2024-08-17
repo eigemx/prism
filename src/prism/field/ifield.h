@@ -48,7 +48,7 @@ class IField {
 using IScalar = IField<double>;
 
 template <typename T>
-concept ScalarBased = std::derived_from<T, IScalar>;
+concept IScalarBased = std::derived_from<T, IScalar>;
 
 class IVector {
   public:
