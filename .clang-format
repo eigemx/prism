@@ -10,7 +10,6 @@ AlignTrailingComments: true
 SpacesBeforeTrailingComments: 1
 SpaceBeforeCpp11BracedList: true
 SortIncludes: true
-AccessModifierOffset: -4
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 2
 FixNamespaceComments: true

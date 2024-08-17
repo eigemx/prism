@@ -1,8 +1,9 @@
 #include "pmesh.h"
 
-#include <cassert>
+#include <spdlog/spdlog.h>
 
-#include "spdlog/spdlog.h"
+#include <cassert>
+#include <stdexcept>
 
 namespace prism::mesh {
 
@@ -77,11 +78,11 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
       _n_cells(_cells.size()),
       _n_faces(_faces.size()) {
     // TODO: Check if inputs constitutes a valid mesh.
-    spdlog::debug("PMesh object created with {} cells, {} faces and {} vertices.",
+    spdlog::debug("prism::mesh::PMesh() object created with {} cells, {} faces and {} vertices.",
                   _n_cells,
                   _n_faces,
                   _vertices.size());
-    spdlog::debug("PMesh object has {} internal faces and {} boundary faces. ",
+    spdlog::debug("prism::mesh::PMesh() object has {} internal faces and {} boundary faces. ",
                   _interior_faces_ids.size(),
                   _boundary_faces_ids.size());
 
@@ -94,22 +95,29 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
 // TODO: face_boundary_patch() methods don't check if face is boundary or not this is to avoid
 // branching in the code, but it might be better to check think this over
 auto PMesh::faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch& {
-    assert(
-        face_id < _faces.size() &&
-        "PMesh::face_boundary_patch() was called on a face with an index larger than mesh faces "
-        "count");
+    assert(face_id < _faces.size() &&
+           "prism::mesh::PMesh::faceBoundaryPatch() was called on a face with an index larger "
+           "than mesh faces "
+           "count");
     return faceBoundaryPatch(_faces[face_id]);
 }
 
 auto PMesh::faceBoundaryPatch(const Face& face) const -> const BoundaryPatch& {
-    assert(face.is_boundary() && "PMesh::face_boundary_patch() was called on an interior face");
+    assert(face.is_boundary() &&
+           "prism::mesh::PMesh::faceBoundaryPatch() was called on an interior face");
     return _boundary_patches[face.boundary_patch_id().value()];
 }
 
 auto PMesh::otherSharingCell(const Cell& c, const Face& f) const -> const Cell& {
-    assert(f.is_interior() && "PMesh::other_sharing_cell() called on a boundary face!");
+    assert(f.is_interior() && "prism::mesh::Mesh::otherSharingCell() called on a boundary face!");
     auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
     return _cells[n_id];
+}
+
+PMeshPtr::PMeshPtr(const PMesh* ptr) : _ptr(ptr) {
+    if (ptr == nullptr) {
+        throw std::runtime_error("prism::mesh::PMeshPtr() was given a null pointer");
+    }
 }
 
 
