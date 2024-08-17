@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iterator>
+#include <memory>
 
 #include "boundary.h"
 #include "cell.h"
@@ -114,6 +115,14 @@ class PMesh {
     std::size_t _n_cells {0};
     std::size_t _n_faces {0};
     VectorXd _cells_volume;
+};
+
+class PMeshPtr {
+  public:
+    PMeshPtr(const PMesh* ptr);
+
+  private:
+    const PMesh* _ptr;
 };
 
 class ToPMeshConverter {
