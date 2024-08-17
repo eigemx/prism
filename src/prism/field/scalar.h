@@ -113,7 +113,6 @@ class ScalarBHManagerSetter {
 using Scalar = GeneralScalar<units::Measurable, ScalarBHManagerSetter>;
 
 template <typename Units, typename BHManagerSetter>
-
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const mesh::PMesh& mesh,
                                                      double value,
@@ -126,7 +125,6 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 }
 
 template <typename Units, typename BHManagerSetter>
-
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const mesh::PMesh& mesh,
                                                      double value,
@@ -144,7 +142,6 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 }
 
 template <typename Units, typename BHManagerSetter>
-
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const mesh::PMesh& mesh,
                                                      VectorXd data,
@@ -166,7 +163,6 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 }
 
 template <typename Units, typename BHManagerSetter>
-
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const mesh::PMesh& mesh,
                                                      VectorXd data,
@@ -192,7 +188,6 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 }
 
 template <typename Units, typename BHManagerSetter>
-
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const mesh::PMesh& mesh,
                                                      VectorXd data,
@@ -227,7 +222,6 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 }
 
 template <typename Units, typename BHManagerSetter>
-
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const mesh::PMesh& mesh,
                                                      VectorXd data,
@@ -266,7 +260,6 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 }
 
 template <typename Units, typename BHManagerSetter>
-
 void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     if (values.size() != mesh().nFaces()) {
         throw std::runtime_error(
@@ -286,21 +279,18 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(const mesh::Cell& cell) const -> double {
     return valueAtCell(cell.id());
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) const -> double {
     assert(_data != nullptr);           // NOLINT
-    assert(cell_id < mesh().n_cells()); // NOLINT
+    assert(cell_id < mesh().nCells()); // NOLINT
     return (*_data)[cell_id];
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) const -> double {
     if (hasFaceValues()) {
         // Face data were calculataed for us before calling the constructor,
@@ -319,13 +309,11 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) con
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(const mesh::Face& face) const -> double {
     return valueAtFace(face.id());
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::valueAtInteriorFace(const mesh::Face& face) const
     -> double {
     assert(face.is_interior()); // NOLINT
@@ -340,7 +328,6 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtInteriorFace(const mesh::Face
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face& face) const
     -> double {
     const auto& patch = mesh().boundary_patch(face);
@@ -361,13 +348,11 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face
 }
 
 template <typename Units, typename BHManagerSetter>
-
 auto GeneralScalar<Units, BHManagerSetter>::parent() -> IVector* {
     return _parent;
 }
 
 template <typename Units, typename BHManagerSetter>
-
 void GeneralScalar<Units, BHManagerSetter>::setParent(IVector* parent) {
     _parent = parent;
     // TODO: check parent and component names consistency
