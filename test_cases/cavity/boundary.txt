@@ -1,0 +1,40 @@
+[top]
+[top.velocity]
+type = "no-slip"
+value = [0.1, 0, 0]
+[top.pressure]
+type = "no-slip"
+
+[bottom]
+[bottom.velocity]
+type = "no-slip"
+value = [0, 0, 0]
+[bottom.pressure]
+type = "zero-gradient"
+
+[front]
+[front.velocity]
+type = "empty"
+[front.pressure]
+type = "empty"
+
+[back]
+[back.velocity]
+type = "empty"
+[back.pressure]
+type = "empty"
+
+[left]
+[left.velocity]
+type = "no-slip"
+value = [0, 0, 0]
+[left.pressure]
+type = "zero-gradient"
+
+[right]
+[right.velocity]
+type = "no-slip"
+value = [0, 0, 0]
+[right.pressure]
+type = "zero-gradient"
+

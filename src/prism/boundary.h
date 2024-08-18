@@ -31,6 +31,9 @@ class BoundaryHandlersManager {
     template <typename Handler>
     void addHandler();
 
+    template <typename Handler, typename... Args>
+    void addHandler(Args&&... args);
+
     void removeHandler(const std::string& bc);
 
   private:
@@ -92,6 +95,12 @@ void BoundaryHandlersManager<BaseHandler>::addHandler() {
     addHandler(temp.name(), &boundary::createHandlerInstance<DerivedHandler>);
 }
 
+template <typename BaseHandler>
+template <typename DerivedHandler, typename... Args>
+void BoundaryHandlersManager<BaseHandler>::addHandler(Args&&... args) {
+    DerivedHandler temp(std::forward<Args>(args)...);
+    addHandler(temp.name(), &boundary::createHandlerInstance<DerivedHandler>);
+}
 template <typename BaseHandler>
 void BoundaryHandlersManager<BaseHandler>::removeHandler(const std::string& bc) {
     const auto it = _bc_map.find(bc);

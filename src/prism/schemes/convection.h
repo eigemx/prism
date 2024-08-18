@@ -131,6 +131,7 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
     this->boundaryHandlersManager().template addHandler<scheme::boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<scheme::boundary::Outlet<Scheme>>();
     this->boundaryHandlersManager().template addHandler<scheme::boundary::Symmetry<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<scheme::boundary::ZeroGradient<Scheme>>();
     this->boundaryHandlersManager().template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 

@@ -44,6 +44,14 @@ class Symmetry<convection::IConvection<F>>
 };
 
 template <typename F>
+class ZeroGradient<convection::IConvection<F>>
+    : public ISchemeBoundaryHandler<convection::IConvection<F>> {
+  public:
+    void apply(convection::IConvection<F>& scheme, const mesh::BoundaryPatch& patch) override {}
+    auto inline name() const -> std::string override { return "zero-gradient"; }
+};
+
+template <typename F>
 class Outlet<convection::IConvection<F>>
     : public ISchemeBoundaryHandler<convection::IConvection<F>> {
   public:
