@@ -67,5 +67,4 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
     U.y().setFaceValues(v_face_data);
     U.z().setFaceValues(w_face_data);
 }
-
 } // namespace prism::ops
