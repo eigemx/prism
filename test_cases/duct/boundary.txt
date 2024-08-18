@@ -38,7 +38,7 @@ value = [0.0, 0.0, 0.0]
 
 [insulatedWall]
 [insulatedWall.temperature]
-type = 'symmetry'
+type = 'zero-gradient'
 [insulatedWall.velocity]
 type = 'no-slip'
 value = [0.0, 0.0, 0.0]

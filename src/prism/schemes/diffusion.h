@@ -106,6 +106,7 @@ Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::Corrected(KappaType 
     _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
     _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
     _bc_manager.template addHandler<scheme::boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::ZeroGradient<Scheme>>();
     _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
@@ -193,6 +194,7 @@ NonCorrected<KappaType, Field>::NonCorrected(KappaType kappa, Field phi)
     _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
     _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
     _bc_manager.template addHandler<scheme::boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<scheme::boundary::ZeroGradient<Scheme>>();
     _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 

@@ -61,6 +61,13 @@ class FixedGradient : public IScalarBoundaryHandler {
 };
 
 template <IScalarBased Field>
+class ZeroGradient : public IScalarBoundaryHandler {
+  public:
+    auto name() const -> std::string override { return "zero-gradient"; }
+    auto get(const IScalar& field, const mesh::Face& face) -> double override;
+};
+
+template <IScalarBased Field>
 auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundary_patch(face);
     return patch.getScalarBoundaryCondition(field.name());
@@ -90,6 +97,22 @@ auto FixedGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> 
     const auto& patch = mesh.boundary_patch(face);
 
     Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(field.name());
+    const auto& owner = mesh.cell(face.owner());
+
+    Vector3d e = face.center() - owner.center();
+    double d_Cf = e.norm();
+    e = e / e.norm();
+    grad_at_boundary = grad_at_boundary * d_Cf;
+
+    return grad_at_boundary.dot(e) + field.valueAtCell(owner);
+}
+
+template <IScalarBased Field>
+auto ZeroGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    const auto& mesh = field.mesh();
+    const auto& patch = mesh.boundary_patch(face);
+
+    Vector3d grad_at_boundary = Vector3d {0.0, 0.0, 0.0};
     const auto& owner = mesh.cell(face.owner());
 
     Vector3d e = face.center() - owner.center();

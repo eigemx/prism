@@ -93,6 +93,7 @@ IGradient<Field>::IGradient(Field field) : _field(field) { // NOLINT
     this->boundaryHandlersManager().template addHandler<boundary::Empty>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient>();
     this->boundaryHandlersManager().template addHandler<boundary::VelocityInlet>();
 }
 

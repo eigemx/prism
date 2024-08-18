@@ -63,4 +63,11 @@ class FixedGradient : public ISchemeBoundaryHandler<Scheme> {
     auto inline name() const -> std::string override { return "fixed-gradient"; }
 };
 
+template <typename Scheme>
+class ZeroGradient : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override = 0;
+    auto inline name() const -> std::string override { return "zero-gradient"; }
+};
+
 } // namespace prism::scheme::boundary

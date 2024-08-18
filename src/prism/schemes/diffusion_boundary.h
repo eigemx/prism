@@ -2,7 +2,6 @@
 
 #include "boundary.h"
 #include "prism/constants.h"
-#include "prism/field/scalar.h"
 
 namespace prism::scheme::diffusion {
 
@@ -21,7 +20,6 @@ class Corrected;
 
 template <typename KappaType, typename Field>
 class NonCorrected;
-
 
 } // namespace prism::scheme::diffusion
 
@@ -75,6 +73,13 @@ class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
     auto inline name() const -> std::string override { return "fixed-gradient"; }
 };
 
+template <scheme::diffusion::ICorrectedBased Scheme>
+class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
+    auto inline name() const -> std::string override { return "zero-gradient"; }
+};
+
 //
 // diffusion::NonCorrected default boundary handlers
 //
@@ -104,6 +109,13 @@ class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed-gradient"; }
+};
+
+template <scheme::diffusion::INonCorrectedBased Scheme>
+class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
+    auto inline name() const -> std::string override { return "zero-gradient"; }
 };
 
 template <scheme::diffusion::INonCorrectedBased Scheme>

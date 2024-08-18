@@ -369,11 +369,10 @@ void inline ScalarBHManagerSetter::set(IScalarBHManager& manager) {
         "scalar "
         "field instance");
     manager.addHandler<field::boundary::Fixed<Scalar>>();
-    // manager.addHandler<field::boundary::VelocityInlet<Scalar>>();
     manager.addHandler<field::boundary::Empty<Scalar>>();
     manager.addHandler<field::boundary::Symmetry<Scalar>>();
     manager.addHandler<field::boundary::Outlet<Scalar>>();
     manager.addHandler<field::boundary::FixedGradient<Scalar>>();
-    // this->boundaryHandlersManager().addHandler<field::boundary::NoSlip<Scalar>>();
+    manager.addHandler<field::boundary::ZeroGradient<Scalar>>();
 }
 } // namespace prism::field
