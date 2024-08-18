@@ -24,24 +24,24 @@ class Face {
     }
 
     auto inline owner() const -> std::size_t { return _owner.value(); }
-    void inline set_owner(std::size_t owner_id) noexcept { _owner = owner_id; }
+    void inline setOwner(std::size_t owner_id) noexcept { _owner = owner_id; }
 
     // This function is added mainly for debugging purposes,
     // because each face must have an owner, so this will return false if something is wrong
-    auto inline has_owner() const -> bool { return _owner.has_value(); }
-    auto inline is_owned_by(const std::size_t& cell_id) const -> bool {
+    auto inline hasOwner() const -> bool { return _owner.has_value(); }
+    auto inline isOwnedBy(const std::size_t& cell_id) const -> bool {
         return _owner.value() == cell_id;
     }
 
     auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
-    auto inline is_interior() const -> bool { return _neighbor.has_value(); }
-    auto inline set_neighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
-    auto inline is_boundary() const -> bool { return !is_interior(); }
+    auto inline isInterior() const -> bool { return _neighbor.has_value(); }
+    auto inline setNeighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
+    auto inline isBoundary() const -> bool { return !isInterior(); }
 
-    auto inline boundary_patch_id() const -> const std::optional<std::size_t>& {
+    auto inline boundaryPatchId() const -> const std::optional<std::size_t>& {
         return _boundary_patch_id;
     }
-    void inline set_boundary_patch_id(std::size_t boundary_patch_id) noexcept {
+    void inline setBoundaryPatchId(std::size_t boundary_patch_id) noexcept {
         _boundary_patch_id = boundary_patch_id;
     }
 

@@ -29,12 +29,12 @@ void export_field_vtu(const field::IScalar& field, const std::string& file_name)
     for (const auto& cell : pmesh.cells()) {
         // add the vertices to the connectivity vector
         connectivity.insert(
-            connectivity.end(), cell.vertices_ids().begin(), cell.vertices_ids().end());
+            connectivity.end(), cell.verticesIds().begin(), cell.verticesIds().end());
 
         // add the offset
         offsets.push_back(connectivity.size());
 
-        switch (cell.vertices_ids().size()) {
+        switch (cell.verticesIds().size()) {
             // hexahedron
             case 8:
                 types.push_back(12);

@@ -18,8 +18,8 @@ namespace prism::mesh {
  * @param cell Cell that the face belongs to.
  * @return Vector3d Area vector of the face.
  */
-auto inline outward_area_vector(const Face& face, const Cell& cell) -> Vector3d {
-    bool is_neighbor = !face.is_owned_by(cell.id());
+auto inline outwardAreaVector(const Face& face, const Cell& cell) -> Vector3d {
+    bool is_neighbor = !face.isOwnedBy(cell.id());
     return face.area_vector() * std::pow(-1., static_cast<int>(is_neighbor));
 }
 
@@ -31,14 +31,14 @@ auto inline outward_area_vector(const Face& face, const Cell& cell) -> Vector3d 
  * @param f Face that is shared by the two cells.
  * @return double Geometric weighting factor between the two cells.
  */
-auto inline geo_weight(const Cell& c, const Cell& n, const Face& f) -> double {
+auto inline geometricWeight(const Cell& c, const Cell& n, const Face& f) -> double {
     auto gc = (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
-    assert(gc > 0 && "geo_weight() returned a negative weight factor");
-    assert(gc <= 1.0 && "geo_weight() returned a weight factor higher than 1.0");
+    assert(gc > 0 && "geometricWeight() returned a negative weight factor");
+    assert(gc <= 1.0 && "geometricWeight() returned a weight factor higher than 1.0");
     return gc;
 }
 
-auto inline cells_volume_vec(const mesh::PMesh& mesh) -> VectorXd {
+auto inline cellsVolumeVector(const mesh::PMesh& mesh) -> VectorXd {
     VectorXd vec;
     vec.resize(mesh.nCells());
 

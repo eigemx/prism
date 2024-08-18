@@ -76,8 +76,8 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
 
     _faces_lookup_trie = std::make_unique<FacesLookupTrie>(_unv_mesh->vertices().size());
 
-    process_cells();
-    process_groups();
+    processCells();
+    processGroup();
 
     std::vector<std::string_view> boundary_names;
 
@@ -96,7 +96,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
         const auto& faces_ids = _boundary_name_to_faces_map[patch.name()];
 
         for (auto face_id : faces_ids) {
-            _faces[face_id].set_boundary_patch_id(boundary_patch_id);
+            _faces[face_id].setBoundaryPatchId(boundary_patch_id);
         }
 
         patch.facesIds() = faces_ids;
@@ -118,7 +118,7 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
             std::move(_interior_faces)};
 }
 
-void UnvToPMeshConverter::process_cells() {
+void UnvToPMeshConverter::processCells() {
     std::size_t unv_element_counter {0};
 
     for (const auto& element : _unv_mesh->elements().value()) {
@@ -130,7 +130,7 @@ void UnvToPMeshConverter::process_cells() {
             // boundary faces
             case unvpp::ElementType::Quad:
             case unvpp::ElementType::Triangle: {
-                auto boundary_face_id = process_boundary_face(element);
+                auto boundary_face_id = processBoundaryFace(element);
 
                 // we will need UNV id of this boundary face later when we process groups
                 _unv_id_to_bface_index_map[unv_element_counter] =
@@ -144,7 +144,7 @@ void UnvToPMeshConverter::process_cells() {
             case unvpp::ElementType::Hex:
             case unvpp::ElementType::Tetra:
             case unvpp::ElementType::Wedge:
-                process_cell(element);
+                processCell(element);
                 break;
 
             // We shouldn't reach this, because we should've exhausted all possible element types
@@ -165,7 +165,7 @@ void UnvToPMeshConverter::process_cells() {
     }
 }
 
-void UnvToPMeshConverter::process_cell(const unvpp::Element& element) {
+void UnvToPMeshConverter::processCell(const unvpp::Element& element) {
     // keep track of face ids inside the current cell
     std::vector<std::size_t> cell_faces_ids;
 
@@ -174,7 +174,7 @@ void UnvToPMeshConverter::process_cell(const unvpp::Element& element) {
             // reserve 6 faces
             cell_faces_ids.reserve(6);
             for (auto& face_vertices_ids : hex_cell_faces(element.vertices_ids())) {
-                auto face_id = process_face(face_vertices_ids);
+                auto face_id = processFace(face_vertices_ids);
                 cell_faces_ids.push_back(face_id);
             }
             break;
@@ -184,7 +184,7 @@ void UnvToPMeshConverter::process_cell(const unvpp::Element& element) {
             // reserve 4 faces
             cell_faces_ids.reserve(4);
             for (auto& face_vertices_ids : tetra_cell_faces(element.vertices_ids())) {
-                auto face_id = process_face(face_vertices_ids);
+                auto face_id = processFace(face_vertices_ids);
                 cell_faces_ids.push_back(face_id);
             }
             break;
@@ -194,7 +194,7 @@ void UnvToPMeshConverter::process_cell(const unvpp::Element& element) {
             // reserve 5 faces
             cell_faces_ids.reserve(5);
             for (auto& face_vertices_ids : wedge_cell_faces(element.vertices_ids())) {
-                auto face_id = process_face(face_vertices_ids);
+                auto face_id = processFace(face_vertices_ids);
                 cell_faces_ids.push_back(face_id);
             }
             break;
@@ -209,29 +209,29 @@ void UnvToPMeshConverter::process_cell(const unvpp::Element& element) {
     _cell_id_counter++;
 }
 
-auto UnvToPMeshConverter::process_face(std::vector<std::size_t>& face_vertices_ids)
+auto UnvToPMeshConverter::processFace(std::vector<std::size_t>& face_vertices_ids)
     -> std::size_t {
     // sort the face indices to be used in face lookup trie
     auto sorted_face_vertices_ids = face_vertices_ids;
     std::sort(sorted_face_vertices_ids.begin(), sorted_face_vertices_ids.end());
 
     // lookup the current face, to check if it has been processed before
-    auto face_id_opt {face_index(sorted_face_vertices_ids)};
+    auto face_id_opt {faceIndex(sorted_face_vertices_ids)};
 
     if (face_id_opt.has_value()) {
         // face exists
         auto face_id {face_id_opt.value()};
         auto& face {_faces[face_id]};
 
-        if (face.has_owner()) {
+        if (face.hasOwner()) {
             // face has been visited before and is owned
             // we update its neighbor and return
-            face.set_neighbor(_cell_id_counter);
+            face.setNeighbor(_cell_id_counter);
         } else {
             // face is not owned but has been processed, then it's a boundary face
             // it has been seen already by process_boundary_face()
             // we set the current cell as its owner and return
-            face.set_owner(_cell_id_counter);
+            face.setOwner(_cell_id_counter);
             _boundary_faces.push_back(face_id);
         }
         return face_id;
@@ -250,7 +250,7 @@ auto UnvToPMeshConverter::process_face(std::vector<std::size_t>& face_vertices_i
 
     auto new_face {Face(face_vertices, std::move(face_vertices_ids))};
 
-    new_face.set_owner(_cell_id_counter);
+    new_face.setOwner(_cell_id_counter);
     new_face.id() = face_id;
 
     _faces.emplace_back(std::move(new_face));
@@ -261,7 +261,7 @@ auto UnvToPMeshConverter::process_face(std::vector<std::size_t>& face_vertices_i
     return face_id;
 }
 
-auto UnvToPMeshConverter::process_boundary_face(const unvpp::Element& boundary_face)
+auto UnvToPMeshConverter::processBoundaryFace(const unvpp::Element& boundary_face)
     -> std::size_t {
     // sort the face indices to be used as a std::map key for searching
     auto sorted_face_vertices = boundary_face.vertices_ids();
@@ -287,7 +287,7 @@ auto UnvToPMeshConverter::process_boundary_face(const unvpp::Element& boundary_f
     return face_id;
 }
 
-auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertices) const
+auto UnvToPMeshConverter::faceIndex(const std::vector<std::size_t>& face_vertices) const
     -> std::optional<std::size_t> {
     auto res = _faces_lookup_trie->find(face_vertices);
     if (res.has_value()) {
@@ -296,7 +296,7 @@ auto UnvToPMeshConverter::face_index(const std::vector<std::size_t>& face_vertic
     return std::nullopt;
 }
 
-void UnvToPMeshConverter::process_groups() {
+void UnvToPMeshConverter::processGroup() {
     if (!_unv_mesh->groups()) {
         throw error::InvalidMesh(
             "UnvToPMeshConverter::process_groups(): Input UNV mesh has no groups (boundary "
@@ -332,13 +332,13 @@ void UnvToPMeshConverter::process_groups() {
         }
 
         // process the group
-        process_group(group);
+        processGroup(group);
     }
 
-    check_boundary_faces();
+    checkBoundaryFaces();
 }
 
-void UnvToPMeshConverter::process_group(const unvpp::Group& group) {
+void UnvToPMeshConverter::processGroup(const unvpp::Group& group) {
     assert(group.elements_ids().size() > 0 &&
            "UnvToPMeshConverter::process_group() cannot handle an empty group");
     std::vector<std::size_t> group_faces;
@@ -355,7 +355,7 @@ void UnvToPMeshConverter::process_group(const unvpp::Group& group) {
     _boundary_name_to_faces_map.insert({group.name(), std::move(group_faces)});
 }
 
-void UnvToPMeshConverter::check_boundary_faces() {
+void UnvToPMeshConverter::checkBoundaryFaces() {
     std::size_t undefined_boundary_faces_count = 0;
 
     for (const auto& [unv_id, face_data] : _unv_id_to_bface_index_map) {

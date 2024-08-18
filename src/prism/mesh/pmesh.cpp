@@ -103,13 +103,13 @@ auto PMesh::faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch&
 }
 
 auto PMesh::faceBoundaryPatch(const Face& face) const -> const BoundaryPatch& {
-    assert(face.is_boundary() &&
+    assert(face.isBoundary() &&
            "prism::mesh::PMesh::faceBoundaryPatch() was called on an interior face");
-    return _boundary_patches[face.boundary_patch_id().value()];
+    return _boundary_patches[face.boundaryPatchId().value()];
 }
 
 auto PMesh::otherSharingCell(const Cell& c, const Face& f) const -> const Cell& {
-    assert(f.is_interior() && "prism::mesh::Mesh::otherSharingCell() called on a boundary face!");
+    assert(f.isInterior() && "prism::mesh::Mesh::otherSharingCell() called on a boundary face!");
     auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
     return _cells[n_id];
 }

@@ -5,8 +5,6 @@
 #include <exception>
 #include <string>
 
-#include "fmt/core.h"
-
 namespace prism::error {
 class NonImplementedBoundaryCondition : public std::exception {
   public:

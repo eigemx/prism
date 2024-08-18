@@ -285,7 +285,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(const mesh::Cell& cell) 
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) const -> double {
-    assert(_data != nullptr);           // NOLINT
+    assert(_data != nullptr);          // NOLINT
     assert(cell_id < mesh().nCells()); // NOLINT
     return (*_data)[cell_id];
 }
@@ -301,7 +301,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) con
     // We need to interpolate the value of the field at the face
     const auto& face = mesh().face(face_id);
 
-    if (face.is_interior()) {
+    if (face.isInterior()) {
         return valueAtInteriorFace(face);
     }
 
@@ -316,11 +316,11 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(const mesh::Face& face) 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtInteriorFace(const mesh::Face& face) const
     -> double {
-    assert(face.is_interior()); // NOLINT
+    assert(face.isInterior()); // NOLINT
     const auto& owner = mesh().cell(face.owner());
     const auto& neighbor = mesh().cell(face.neighbor().value());
 
-    const auto gc = mesh::geo_weight(owner, neighbor, face);
+    const auto gc = mesh::geometricWeight(owner, neighbor, face);
     double val = gc * (*_data)[owner.id()];
     val += (1 - gc) * (*_data)[neighbor.id()];
 

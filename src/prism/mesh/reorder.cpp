@@ -14,10 +14,10 @@ CuthillMckee::CuthillMckee(PMesh& mesh) noexcept : _mesh(mesh) {
         auto cell_id = cell.id();
         auto node = Node(cell_id, 0);
 
-        for (const auto& face_id : cell.faces_ids()) {
+        for (const auto& face_id : cell.facesIds()) {
             const auto& face = mesh.faces()[face_id];
 
-            if (face.is_boundary()) {
+            if (face.isBoundary()) {
                 continue;
             }
 
@@ -124,10 +124,10 @@ void CuthillMckee::reorder(bool reverse) {
 
     // update face owners and neighbors
     for (auto& face : _mesh.faces()) {
-        face.set_owner(old_to_new[face.owner()]);
+        face.setOwner(old_to_new[face.owner()]);
 
-        if (face.is_interior()) {
-            face.set_neighbor(old_to_new[face.neighbor().value()]);
+        if (face.isInterior()) {
+            face.setNeighbor(old_to_new[face.neighbor().value()]);
         }
     }
 }

@@ -56,7 +56,7 @@ auto main(int argc, char* argv[]) -> int {
         vEqn.updateCoeffs();
 
         // calculate coefficients for the pressure equation
-        const auto vol_vec = mesh::cells_volume_vec(mesh);
+        const auto vol_vec = mesh::cellsVolumeVector(mesh);
         const auto& uEqn_diag = uEqn.matrix().diagonal();
         const auto& vEqn_diag = vEqn.matrix().diagonal();
 
