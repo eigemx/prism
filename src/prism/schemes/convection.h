@@ -154,7 +154,7 @@ void IConvection<Field>::apply_interior(const mesh::Face& face) {
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
 
-    const Vector3d& S_f = mesh::outward_area_vector(face, owner);
+    const Vector3d& S_f = mesh::outwardAreaVector(face, owner);
     const Vector3d U_f = _U.valueAtFace(face);
     const double rho_f = _rho.valueAtFace(face);
     const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);

@@ -57,7 +57,7 @@ auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
     const auto& mesh = this->mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
 
-    if (face.is_boundary()) {
+    if (face.isBoundary()) {
         spdlog::warn(
             "field::Tensor::valueAtFace() was called on a boundary face (face id = {}). "
             "Returning value of the tensor field at owner cell.",
@@ -66,7 +66,7 @@ auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
         return _data[owner.id()];
     }
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
-    const double gc = mesh::geo_weight(owner, neighbor, face);
+    const double gc = mesh::geometricWeight(owner, neighbor, face);
 
     return (gc * _data[owner.id()]) + ((1 - gc) * _data[neighbor.id()]);
 }

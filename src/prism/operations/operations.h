@@ -42,8 +42,9 @@ auto fluxAtFace(const mesh::PMesh& mesh,
                 const Vector& U) -> double;
 
 template <typename Vector>
-auto fluxAtBoundaryFace(const mesh::PMesh& mesh, const mesh::Face& face, const Vector& U)
-    -> double;
+auto fluxAtBoundaryFace(const mesh::PMesh& mesh,
+                        const mesh::Face& face,
+                        const Vector& U) -> double;
 } // namespace detail
 
 template <typename Vector>
@@ -71,7 +72,7 @@ auto div(const Vector& U, bool return_face_data) -> field::Scalar {
         for (const auto& iface : mesh.interiorFaces()) {
             const auto& owner = mesh.cell(iface.owner());
             const auto& neighbor = mesh.cell(iface.neighbor().value());
-            auto gc = mesh::geo_weight(owner, neighbor, iface);
+            auto gc = mesh::geometricWeight(owner, neighbor, iface);
 
             auto div_f = gc * cell_data[owner.id()];
             div_f += (1 - gc) * cell_data[neighbor.id()];
@@ -89,7 +90,7 @@ template <typename Vector>
 auto divAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double {
     double sum = 0.0;
 
-    for (auto face_id : cell.faces_ids()) {
+    for (auto face_id : cell.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         sum += fluxAtFace(mesh, cell, face, U);
     }
@@ -102,18 +103,19 @@ auto fluxAtFace(const mesh::PMesh& mesh,
                 const mesh::Cell& cell,
                 const mesh::Face& face,
                 const Vector& U) -> double {
-    if (face.is_boundary()) {
+    if (face.isBoundary()) {
         return fluxAtBoundaryFace(mesh, face, U);
     }
 
     const Vector3d Uf = U.valueAtFace(face);
-    auto Sf = mesh::outward_area_vector(face, cell);
+    auto Sf = mesh::outwardAreaVector(face, cell);
     return Uf.dot(Sf);
 }
 
 template <typename Vector>
-auto fluxAtBoundaryFace(const mesh::PMesh& mesh, const mesh::Face& face, const Vector& U)
-    -> double {
+auto fluxAtBoundaryFace(const mesh::PMesh& mesh,
+                        const mesh::Face& face,
+                        const Vector& U) -> double {
     // this is a boundary face, where normal is always pointing outside of the cell
     // no need to call mesh::outward_area_vector()
     const auto& Sf = face.area_vector();

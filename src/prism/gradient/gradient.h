@@ -99,7 +99,7 @@ IGradient<Field>::IGradient(Field field) : _field(field) { // NOLINT
 template <field::IScalarBased Field>
 auto IGradient<Field>::gradAtFace(const mesh::Face& face) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
-    if (face.is_interior()) {
+    if (face.isInterior()) {
         // interior face
         const auto& mesh = _field.mesh();
         const auto& owner_cell = mesh.cell(face.owner());
@@ -108,7 +108,7 @@ auto IGradient<Field>::gradAtFace(const mesh::Face& face) -> Vector3d {
         const auto& neighbor_cell = mesh.cell(face.neighbor().value());
         auto neighbor_grad = gradAtCell(neighbor_cell);
 
-        auto gc = mesh::geo_weight(owner_cell, neighbor_cell, face);
+        auto gc = mesh::geometricWeight(owner_cell, neighbor_cell, face);
 
         // Equation 9.33 without the correction part, a simple linear interpolation.
         return (gc * owner_grad) + ((1. - gc) * neighbor_grad);
@@ -215,7 +215,7 @@ auto GreenGauss<Field>::gradAtCell_(const mesh::Cell& cell, bool correct_skewnes
     Vector3d grad {0., 0., 0.};
     const auto& mesh = this->field().mesh();
 
-    for (auto face_id : cell.faces_ids()) {
+    for (auto face_id : cell.facesIds()) {
         const auto& face = mesh.face(face_id);
 
         // This is a boundary face
@@ -226,7 +226,7 @@ auto GreenGauss<Field>::gradAtCell_(const mesh::Cell& cell, bool correct_skewnes
 
         // This is an internal face
         // Area normal vector, poitning out of the cell
-        auto Sf = mesh::outward_area_vector(face, cell);
+        auto Sf = mesh::outwardAreaVector(face, cell);
         const auto& nei = this->field().mesh().otherSharingCell(cell, face);
         auto face_phi = 0.5 * (this->field()[cell.id()] + this->field()[nei.id()]);
 
@@ -276,7 +276,7 @@ void LeastSquares<Field>::setPseudoInvMatrices() {
         // and push the pseudo-inverse [(D * D^T)^{-1} * D^T] to _pinv_matrix vector
         Matrix3d d_matrix = Matrix3d::Zero();
 
-        for (auto face_id : cell.faces_ids()) {
+        for (auto face_id : cell.facesIds()) {
             const auto& face = mesh.face(face_id);
 
             // This will hold the distance vector from neighbor cell center to k-th cell
@@ -291,7 +291,7 @@ void LeastSquares<Field>::setPseudoInvMatrices() {
 
             Matrix3d d_matrix_k = Matrix3d::Zero();
 
-            if (face.is_interior()) {
+            if (face.isInterior()) {
                 // interior face
                 const auto neighbor = mesh.otherSharingCell(cell, face);
                 r_CF = neighbor.center() - cell.center();
@@ -331,14 +331,14 @@ auto LeastSquares<Field>::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     // right hand side of equation (9.27)
     Vector3d b {0.0, 0.0, 0.0};
 
-    for (auto face_id : cell.faces_ids()) {
+    for (auto face_id : cell.facesIds()) {
         const auto& face = mesh.face(face_id);
 
         double delta_phi = 0.0;
         auto phi_cell = this->field().valueAtCell(cell);
         Vector3d r_CF = {.0, .0, .0};
 
-        if (face.is_interior()) {
+        if (face.isInterior()) {
             // interior face
             const auto neighbor = mesh.otherSharingCell(cell, face);
             r_CF = neighbor.center() - cell.center();

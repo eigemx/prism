@@ -89,7 +89,7 @@ class PMesh {
         return _boundary_patches;
     }
     auto inline boundary_patch(const Face& face) const noexcept -> const BoundaryPatch& {
-        return _boundary_patches[face.boundary_patch_id().value()];
+        return _boundary_patches[face.boundaryPatchId().value()];
     }
 
     auto faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch&;

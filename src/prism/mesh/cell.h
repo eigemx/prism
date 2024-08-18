@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "../types.h"
 #include "face.h"
+#include "prism/types.h"
 
 namespace prism::mesh {
 class Cell {
@@ -18,11 +18,11 @@ class Cell {
     auto inline id() const noexcept -> std::size_t { return _id; }
     auto inline id() noexcept -> std::size_t& { return _id; }
 
-    auto inline faces_ids() const noexcept -> const std::vector<std::size_t>& {
+    auto inline facesIds() const noexcept -> const std::vector<std::size_t>& {
         return _faces_ids;
     }
 
-    auto inline vertices_ids() const noexcept -> const std::vector<std::size_t>& {
+    auto inline verticesIds() const noexcept -> const std::vector<std::size_t>& {
         return _vertices_ids;
     }
 

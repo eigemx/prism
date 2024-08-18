@@ -12,8 +12,6 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using SparseMatrix = Eigen::SparseMatrix<double>;
 
-enum class Compressibility { Compressible, Incompressible };
-
 enum class Coord { X, Y, Z };
 
 template <typename T>

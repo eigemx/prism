@@ -30,10 +30,11 @@ class CuthillMckee {
       private:
         std::size_t _id {};
         std::size_t _degree {};
-        std::vector<std::size_t> _neighbors {};
+        std::vector<std::size_t> _neighbors;
     };
 
 
+    // TODO: use PMeshPtr instead of PMesh&
     PMesh& _mesh;
     std::vector<Node> _nodes;
 };

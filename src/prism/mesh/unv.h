@@ -40,23 +40,23 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     using PatchNameToFacesIdsMap = std::map<std::string, std::vector<std::size_t>>;
 
     // cells
-    void process_cells();
-    void process_cell(const unvpp::Element& element);
+    void processCells();
+    void processCell(const unvpp::Element& element);
 
     // faces
-    auto process_face(std::vector<std::size_t>& face_vertices) -> std::size_t;
-    auto process_boundary_face(const unvpp::Element& boundary_face) -> std::size_t;
+    auto processFace(std::vector<std::size_t>& face_vertices) -> std::size_t;
+    auto processBoundaryFace(const unvpp::Element& boundary_face) -> std::size_t;
 
     // groups
-    void process_groups();
-    void process_group(const unvpp::Group& group);
-    void check_boundary_faces();
+    void processGroup();
+    void processGroup(const unvpp::Group& group);
+    void checkBoundaryFaces();
 
-    auto face_index(const std::vector<std::size_t>& face_vertices) const
+    auto faceIndex(const std::vector<std::size_t>& face_vertices) const
         -> std::optional<std::size_t>;
 
     // fields
-    std::unique_ptr<unvpp::Mesh> _unv_mesh = {nullptr};
+    std::unique_ptr<unvpp::Mesh> _unv_mesh {nullptr};
     PatchNameToFacesIdsMap _boundary_name_to_faces_map;
     UnvIndexToBFaceDataMap _unv_id_to_bface_index_map;
     std::unique_ptr<FacesLookupTrie> _faces_lookup_trie;
