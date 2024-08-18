@@ -1,9 +1,9 @@
 #pragma once
 
-#include "boundary.h"
 #include "ifield.h"
 #include "prism/exceptions.h"
 #include "prism/mesh/utilities.h"
+#include "scalar_boundary.h"
 #include "units.h"
 
 namespace prism::field {

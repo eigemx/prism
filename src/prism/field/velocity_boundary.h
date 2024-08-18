@@ -1,6 +1,6 @@
 #pragma once
 
-#include "boundary.h"
+#include "scalar_boundary.h"
 #include "velocity.h"
 
 namespace prism::field::boundary {
