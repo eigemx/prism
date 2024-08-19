@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 #include <toml++/toml.h>
 
+#include <filesystem>
 #include <stdexcept>
 #include <string_view>
 
@@ -13,21 +14,14 @@
 // it's better to wrap this in a little inline function
 
 namespace prism::mesh {
-// Parsing boundary file functions
+
+auto inline isComponentField(const std::string& name) -> bool;
 auto inline parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch;
-auto inline parseNestedBoundaryConditions(const toml::table& table,
-                                          const std::string& patch_name) -> BoundaryPatch;
 auto inline parseFieldBoundaryCondition(const toml::table& table,
                                         const std::string& patch_name,
                                         const std::string& field_name) -> BoundaryCondition;
-auto isComponentField(const std::string& name) -> bool;
 
 auto parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch {
-    return parseNestedBoundaryConditions(table, patch_name);
-}
-
-auto parseNestedBoundaryConditions(const toml::table& table,
-                                   const std::string& patch_name) -> BoundaryPatch {
     // for each sub-table, get its type and data
     std::map<std::string, BoundaryCondition> field_name_to_bc_map;
     const auto& patch_table = *(table[patch_name].as_table());
@@ -80,7 +74,6 @@ auto parseFieldBoundaryCondition(const toml::table& table,
 
     auto bc_type_str = field_table["type"].value<std::string_view>().value();
 
-
     if (!field_table.contains("value")) {
         return BoundaryCondition {
             BoundaryConditionValueKind::Nil, BoundaryConditionValue {}, std::string(bc_type_str)};
@@ -123,14 +116,13 @@ auto parseFieldBoundaryCondition(const toml::table& table,
 
 
 auto readBoundaryFile(const std::filesystem::path& path,
-                      const std::vector<std::string_view>& boundary_names)
+                      const std::vector<std::string_view>& boundary_patches_names)
     -> std::vector<BoundaryPatch> {
     std::vector<BoundaryPatch> boundary_patches;
-    boundary_patches.reserve(boundary_names.size());
+    boundary_patches.reserve(boundary_patches_names.size());
 
     auto fstream {std::ifstream {path}};
 
-    // throw if file doesn't exist
     if (!fstream) {
         throw std::runtime_error(fmt::format(
             "prism::mesh::readBoundaryFile(): Failed to open boundary conditions file `{}`",
@@ -146,13 +138,22 @@ auto readBoundaryFile(const std::filesystem::path& path,
         // file cannot be parsed
         throw std::runtime_error(
             fmt::format("prism::mesh::readBoundaryFile(): Failed to parse boundary condition "
-                        "file: `{}`, complete error: {}",
+                        "file: `{}`, complete error: `{}`",
                         path.string(),
                         e.what()));
     }
 
-    // for each defined boundary, get its relevant BoundaryData object
-    for (const auto& bname : boundary_names) {
+    // read fields table
+    auto fields_table {doc["fields"]};
+    if (!fields_table) {
+        throw std::runtime_error(
+            fmt::format("prism::mesh::readBoundaryFile(): Couldn't find definition for "
+                        "fields in boundary conditions file `{}`",
+                        path.string()));
+    }
+
+    // for each patch, get its BoundaryData object
+    for (const auto& bname : boundary_patches_names) {
         auto table {doc[bname.data()]};
 
         if (!table) {

@@ -101,7 +101,9 @@ class BoundaryPatch {
  * @return std::vector<BoundaryPatch> Vector of boundary patches
  */
 auto readBoundaryFile(const std::filesystem::path& path,
-                      const std::vector<std::string_view>& boundary_names)
+                      const std::vector<std::string_view>& boundary_patches_names)
     -> std::vector<BoundaryPatch>;
+
+auto readBoundaryFile(const std::filesystem::path& path) -> std::vector<BoundaryPatch>;
 
 } // namespace prism::mesh

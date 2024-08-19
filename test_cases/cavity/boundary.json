@@ -1,0 +1,36 @@
+{
+    "fields": {
+        "U": {
+            "type": "velocity",
+            "gradScheme": "greenGauss"
+        },
+        "P": {
+            "type": "pressure",
+            "gradScheme": "leastSquares"
+        }
+    },
+
+    "patches": {
+        "top": {
+            "U": {
+                "type": "no-slip",
+                "value" : [0.1, 0, 0]
+            },
+            "P": {
+                "type": "no-slip"
+            }
+        },
+        "left|right|bottom": {
+            "U": {
+                "type": "no-slip",
+                "value": [0, 0, 0]
+            }
+        },
+        "front|back": {
+            "U": {
+                "type": "empty"
+            }
+        }
+    }
+
+}

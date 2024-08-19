@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 
 project(
     prism
     LANGUAGES CXX
     VERSION 0.0.1
-    DESCRIPTION "A Finite Volume Based CFD Framework"
+    DESCRIPTION "A C++ CFD library based on finite volume method"
 )
 
 set(CMAKE_CXX_STANDARD 20)
@@ -17,42 +17,26 @@ else()
     set(PRISM_MAIN_PROJECT OFF)
 endif()
 
-# setup eigen
-set(EIGEN_SOURCE_DIR "external/eigen")
-include_directories(${EIGEN_SOURCE_DIR})
-
-# setup fmt
-set(FMT_SOURCE_DIR "external/fmt")
-add_subdirectory(${FMT_SOURCE_DIR})
-include_directories(${FMT_SOURCE_DIR}/include)
+find_package(Eigen3 CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(Catch2 CONFIG REQUIRED)
 
 # setup unvpp
 set(UNVPP_SOURCE_DIR "external/unvpp")
 add_subdirectory(${UNVPP_SOURCE_DIR})
 include_directories(${UNVPP_SOURCE_DIR}/include)
 
-# setup toml++
-set(TOMLPP_SOURCE_DIR "external/tomlplusplus")
-include_directories(${TOMLPP_SOURCE_DIR}/include)
-
 # setup vtu11
 set(VTU11_SOURCE_DIR "external/vtu11")
 add_subdirectory(${VTU11_SOURCE_DIR})
 include_directories(${VTU11_SOURCE_DIR}/)
 
-# setup spdlog
-set(SPDLOG_SOURCE_DIR "external/spdlog")
-include_directories(${SPDLOG_SOURCE_DIR}/include)
 
 # set build type to release if not specified
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# set SHOW_DEBUG_INFO to OFF by default
-if(NOT DEFINED PRISM_SHOW_DEBUG_INFO)
-    set(PRISM_SHOW_DEBUG_INFO OFF)
-    message(STATUS "SHOW_DEBUG_INFO is not set, all debug info will be hidden.")
 endif()
 
 # set PRISM_BUILD_EXAMPLES to ON by default
@@ -90,7 +74,7 @@ endif()
 
 add_subdirectory(src/prism)
 target_include_directories(prism PUBLIC src/)
-
+target_link_libraries(prism PRIVATE Eigen3::Eigen fmt::fmt-header-only nlohmann_json::nlohmann_json spdlog::spdlog)
 
 if (PRISM_BUILD_EXAMPLES)
     add_subdirectory(examples)
