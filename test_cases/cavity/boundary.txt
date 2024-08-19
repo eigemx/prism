@@ -1,40 +1,58 @@
-[top]
-[top.velocity]
+# Fields
+[fields]
+names = 1
+
+[fields.U]
+type = velocity
+gradScheme = greenGauss
+
+[fields.P]
+type = pressure
+gradScheme = leastSquares
+
+[fields.T]
+type = scalar
+gradScheme = greenGauss
+units = [0, 0, 0, 0, 1, 0, 0]
+
+# Boundary conditions
+[boundary]
+[boundary.top]
+[boundary.top.U]
 type = "no-slip"
 value = [0.1, 0, 0]
-[top.pressure]
+[boundary.top.P]
 type = "no-slip"
 
-[bottom]
-[bottom.velocity]
-type = "no-slip"
-value = [0, 0, 0]
-[bottom.pressure]
-type = "zero-gradient"
-
-[front]
-[front.velocity]
-type = "empty"
-[front.pressure]
-type = "empty"
-
-[back]
-[back.velocity]
-type = "empty"
-[back.pressure]
-type = "empty"
-
-[left]
-[left.velocity]
+[boundary.bottom]
+[boundary.bottom.U]
 type = "no-slip"
 value = [0, 0, 0]
-[left.pressure]
+[boundary.bottom.P]
 type = "zero-gradient"
 
-[right]
-[right.velocity]
+[boundary.front]
+[boundary.front.U]
+type = "empty"
+[boundary.front.P]
+type = "empty"
+
+[boundary.back]
+[boundary.back.U]
+type = "empty"
+[boundary.back.P]
+type = "empty"
+
+[boundary.left]
+[boundary.left.U]
 type = "no-slip"
 value = [0, 0, 0]
-[right.pressure]
+[boundary.left.P]
 type = "zero-gradient"
 
+[boundary.right]
+[boundary.right.U]
+type = "no-slip"
+value = [0, 0, 0]
+[boundary.right.P]
+type = "zero-gradient"

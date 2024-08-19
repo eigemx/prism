@@ -1,26 +1,12 @@
-[submodule "external/eigen"]
-	path = external/eigen
-	url = https://gitlab.com/libeigen/eigen.git
-	branch = master
-
-[submodule "external/fmt"]
-	path = external/fmt
-	url = https://github.com/fmtlib/fmt.git
-	branch = master
-
 [submodule "external/unvpp"]
 	path = external/unvpp
 	url = https://github.com/eigemx/unvpp.git
 	branch = main
 
-[submodule "external/tomlplusplus"]
-	path = external/tomlplusplus
-	url = https://github.com/marzer/tomlplusplus
-
 [submodule "external/vtu11"]
 	path = external/vtu11
 	url = https://github.com/phmkopp/vtu11
 
-[submodule "external/spdlog"]
-	path = external/spdlog
-	url = https://github.com/gabime/spdlog
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git

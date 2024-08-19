@@ -1,6 +1,7 @@
 build/
 .vscode/
 .cache/
+vcpkg_installed/
 commands.txt
 *.vtu
 *.py

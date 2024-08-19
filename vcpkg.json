@@ -1,0 +1,11 @@
+{
+    "name": "prism",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "fmt",
+        "spdlog",
+        "nlohmann-json",
+        "eigen3",
+        "catch2"
+    ]
+}
