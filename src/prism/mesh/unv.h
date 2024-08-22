@@ -66,6 +66,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     std::vector<std::size_t> _boundary_faces;
     std::vector<std::size_t> _interior_faces;
     std::vector<BoundaryPatch> _boundary_patches;
+    std::vector<FieldInfo> _field_infos;
     std::size_t _cell_id_counter {0};
     std::size_t _face_id_counter {0};
 };

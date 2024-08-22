@@ -85,7 +85,9 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
         boundary_names.push_back(name);
     }
 
-    _boundary_patches = MeshBoundary(boundary_path).patches();
+    MeshBoundary mesh_boundary(boundary_path);
+    _boundary_patches = mesh_boundary.patches();
+    _field_infos = mesh_boundary.fields();
 
     spdlog::debug("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
 
@@ -114,6 +116,7 @@ auto UnvToPMeshConverter::to_pmesh() -> PMesh {
             std::move(_cells),
             std::move(_faces),
             std::move(_boundary_patches),
+            std::move(_field_infos),
             std::move(_boundary_faces),
             std::move(_interior_faces)};
 }

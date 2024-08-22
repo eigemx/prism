@@ -71,6 +71,7 @@ class PMesh {
           std::vector<Cell> cells,
           std::vector<Face> faces,
           std::vector<BoundaryPatch> boundary_patches,
+          std::vector<FieldInfo> field_infos,
           std::vector<std::size_t> boundary_faces_ids,
           std::vector<std::size_t> interior_faces_ids) noexcept;
 
@@ -107,6 +108,8 @@ class PMesh {
     auto boundaryFaces() const -> detail::BoundaryFaces { return {_faces, _boundary_faces_ids}; }
     auto interiorFaces() const -> detail::InteriorFaces { return {_faces, _interior_faces_ids}; }
 
+    auto fieldsInfo() const noexcept -> const std::vector<FieldInfo>& { return _field_infos; }
+
   private:
     std::vector<Vector3d> _vertices;
     std::vector<Cell> _cells;
@@ -114,6 +117,7 @@ class PMesh {
     std::vector<std::size_t> _boundary_faces_ids;
     std::vector<std::size_t> _interior_faces_ids;
     std::vector<BoundaryPatch> _boundary_patches;
+    std::vector<FieldInfo> _field_infos;
     std::size_t _n_cells {0};
     std::size_t _n_faces {0};
     VectorXd _cells_volume;
