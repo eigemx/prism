@@ -39,11 +39,42 @@ using BoundaryConditionValue = std::variant<double, Vector3d>;
  * gradient scheme. After parsing "fields.json" file, we get a vector of FieldInfo objects.
  *
  */
-struct FieldInfo {
-    std::string name;
-    std::string type;
-    std::optional<std::string> gradScheme;
-    std::optional<std::vector<double>> units;
+class FieldInfo {
+  public:
+    FieldInfo(std::string name, std::string type)
+        : _name(std::move(name)), _type(std::move(type)) {}
+
+    FieldInfo(std::string name, std::string type, std::string grad_scheme)
+        : _name(std::move(name)), _type(std::move(type)), _grad_scheme(std::move(grad_scheme)) {}
+
+    FieldInfo(std::string name,
+              std::string type,
+              std::string grad_scheme,
+              std::vector<double> units)
+        : _name(std::move(name)),
+          _type(std::move(type)),
+          _grad_scheme(std::move(grad_scheme)),
+          _units(std::move(units)) {}
+
+    FieldInfo(std::string name,
+              std::string type,
+              std::optional<std::string> grad_scheme,
+              std::optional<std::vector<double>> units)
+        : _name(std::move(name)),
+          _type(std::move(type)),
+          _grad_scheme(std::move(grad_scheme)),
+          _units(std::move(units)) {}
+
+    auto name() const noexcept -> const std::string& { return _name; }
+    auto type() const noexcept -> const std::string& { return _type; }
+    auto gradScheme() const noexcept -> const std::optional<std::string>& { return _grad_scheme; }
+    auto units() const noexcept -> const std::optional<std::vector<double>>& { return _units; }
+
+  private:
+    std::string _name;
+    std::string _type;
+    std::optional<std::string> _grad_scheme;
+    std::optional<std::vector<double>> _units;
 };
 
 /** @brief Boundary condition class

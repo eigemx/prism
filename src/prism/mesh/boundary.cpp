@@ -46,21 +46,25 @@ auto arePatchesAnArray(const json& doc) -> bool {
 }
 
 auto parseField(const json& field) -> FieldInfo {
-    FieldInfo f;
+    std::optional<std::string> grad_scheme = std::nullopt;
+    std::optional<std::vector<double>> units = std::nullopt;
 
     if (!field.contains("name") || !field.contains("type")) {
         throw std::runtime_error("Field must contain name and type");
     }
 
-    f.name = field["name"].get<std::string>();
-    f.type = field["type"].get<std::string>();
+    auto name = field["name"].get<std::string>();
+    auto type = field["type"].get<std::string>();
+
     if (field.contains("gradScheme")) {
-        f.gradScheme = field["gradScheme"].get<std::string>();
+        grad_scheme = field["gradScheme"].get<std::string>();
     }
     if (field.contains("units")) {
-        f.units = field["units"].get<std::vector<double>>();
+        units = field["units"].get<std::vector<double>>();
     }
-    return f;
+
+
+    return {name, type, grad_scheme, units};
 }
 
 auto parseFields(const json& fields) -> std::vector<FieldInfo> {
@@ -74,7 +78,7 @@ auto parseFields(const json& fields) -> std::vector<FieldInfo> {
 auto fieldsFilesExist(const std::vector<FieldInfo>& fields,
                       const std::filesystem::path& path) -> bool {
     for (const auto& field : fields) {
-        auto file_name = fmt::format("{}.json", field.name);
+        auto file_name = fmt::format("{}.json", field.name());
         auto file_path = path.parent_path() / file_name;
         if (!std::filesystem::exists(file_path)) {
             return false;
@@ -144,8 +148,8 @@ auto readFieldsBoundaryFiles(const std::filesystem::path& path,
         spdlog::debug(
             "prism::mesh::readFieldsBoundaryFiles() : Reading boundary conditions file for field "
             "{}",
-            field.name);
-        auto file_name = fmt::format("{}.json", field.name);
+            field.name());
+        auto file_name = fmt::format("{}.json", field.name());
         auto file_path = path.parent_path() / file_name;
         std::string json_data = fileToString(file_path);
 
@@ -159,7 +163,7 @@ auto readFieldsBoundaryFiles(const std::filesystem::path& path,
         }
 
         auto doc = json::parse(json_data);
-        boundary_files.emplace_back(readFieldsBoundaryFile(field.name, doc));
+        boundary_files.emplace_back(readFieldsBoundaryFile(field.name(), doc));
     }
 
     return boundary_files;
