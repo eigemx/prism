@@ -90,7 +90,7 @@ class PMesh {
     auto inline boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>& {
         return _boundary_patches;
     }
-    auto inline boundary_patch(const Face& face) const noexcept -> const BoundaryPatch& {
+    auto inline boundaryPatch(const Face& face) const noexcept -> const BoundaryPatch& {
         assert(face.isBoundary() && face.boundaryPatchId().has_value());
         return _boundary_patches[face.boundaryPatchId().value()];
     }

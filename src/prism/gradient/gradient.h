@@ -121,7 +121,7 @@ auto IGradient<Field>::gradAtFace(const mesh::Face& face) -> Vector3d {
 
 template <field::IScalarBased Field>
 auto IGradient<Field>::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
-    const auto& boundary_patch = _field.mesh().boundary_patch(face);
+    const auto& boundary_patch = _field.mesh().boundaryPatch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field.name());
 
     auto handler = this->boundaryHandlersManager().getHandler(boundary_condition.kindString());

@@ -330,7 +330,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtInteriorFace(const mesh::Face
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face& face) const
     -> double {
-    const auto& patch = mesh().boundary_patch(face);
+    const auto& patch = mesh().boundaryPatch(face);
     const auto& bc = patch.getBoundaryCondition(name());
 
     auto handler = this->boundaryHandlersManager().getHandler(bc.kindString());

@@ -126,7 +126,7 @@ auto fluxAtBoundaryFace(const mesh::PMesh& mesh,
         return Uf.dot(Sf);
     }
 
-    const auto& boundary_patch = mesh.boundary_patch(face);
+    const auto& boundary_patch = mesh.boundaryPatch(face);
 
     if (boundary_patch.isEmpty()) {
         return 0.0;

@@ -123,11 +123,6 @@ class BoundaryPatch {
 
     auto inline isEmpty() const noexcept -> bool { return _is_empty; }
 
-    // TODO: remove this method
-    auto inline map() const noexcept -> const std::map<std::string, BoundaryCondition>& {
-        return _field_name_to_bc_map;
-    }
-
   private:
     auto getScalarBCSubfield(const std::string& name) const -> double;
 
