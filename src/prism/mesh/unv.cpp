@@ -85,7 +85,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
         boundary_names.push_back(name);
     }
 
-    _boundary_patches = readBoundaryFile(boundary_path, boundary_names);
+    _boundary_patches = MeshBoundary(boundary_path).patches();
 
     spdlog::debug("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
 

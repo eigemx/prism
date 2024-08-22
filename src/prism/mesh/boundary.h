@@ -3,6 +3,7 @@
 #include <prism/types.h>
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -32,6 +33,18 @@ enum class BoundaryConditionValueKind {
  */
 using BoundaryConditionValue = std::variant<double, Vector3d>;
 
+/** @brief Field info class
+ *
+ * This class contains information about a field, such as its name, type, value kind, value, and
+ * gradient scheme. After parsing "fields.json" file, we get a vector of FieldInfo objects.
+ *
+ */
+struct FieldInfo {
+    std::string name;
+    std::string type;
+    std::optional<std::string> gradScheme;
+    std::optional<std::vector<double>> units;
+};
 
 /** @brief Boundary condition class
  *
@@ -45,13 +58,9 @@ class BoundaryCondition {
                       BoundaryConditionValue value,
                       std::string bc_type_str);
 
-    auto inline valueKind() const noexcept -> BoundaryConditionValueKind {
-        // Should we check if the value is Nil?
-        // this always assumes that value is either scalar or vector.
-        return _value_kind;
-    }
-    auto inline value() const noexcept -> const BoundaryConditionValue& { return _value; }
-    auto inline kindString() const noexcept -> const std::string& { return _kind_str; }
+    auto valueKind() const noexcept -> BoundaryConditionValueKind { return _value_kind; }
+    auto value() const noexcept -> const BoundaryConditionValue& { return _value; }
+    auto kindString() const noexcept -> const std::string& { return _kind_str; }
 
   private:
     std::string _kind_str;
@@ -83,6 +92,11 @@ class BoundaryPatch {
 
     auto inline isEmpty() const noexcept -> bool { return _is_empty; }
 
+    // TODO: remove this method
+    auto inline map() const noexcept -> const std::map<std::string, BoundaryCondition>& {
+        return _field_name_to_bc_map;
+    }
+
   private:
     auto getScalarBCSubfield(const std::string& name) const -> double;
 
@@ -92,18 +106,17 @@ class BoundaryPatch {
     bool _is_empty {false};
 };
 
-/** @brief Read boundary file
- *
- * This function reads the boundary file and returns a vector of boundary patches.
- *
- * @param path Path to the boundary file
- * @param boundary_names Vector of expected boundary names to read from the file
- * @return std::vector<BoundaryPatch> Vector of boundary patches
- */
-auto readBoundaryFile(const std::filesystem::path& path,
-                      const std::vector<std::string_view>& boundary_patches_names)
-    -> std::vector<BoundaryPatch>;
+class MeshBoundary {
+  public:
+    MeshBoundary(const std::filesystem::path& fields_path);
+    auto inline fields() const noexcept -> const std::vector<FieldInfo>& { return _fields; }
+    auto inline patches() const noexcept -> const std::vector<BoundaryPatch>& {
+        return _boundary_patches;
+    }
 
-auto readBoundaryFile(const std::filesystem::path& path) -> std::vector<BoundaryPatch>;
+  private:
+    std::vector<FieldInfo> _fields;
+    std::vector<BoundaryPatch> _boundary_patches;
+};
 
 } // namespace prism::mesh

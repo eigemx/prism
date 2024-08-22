@@ -8,6 +8,7 @@
 #include "prism/export.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
+#include "prism/schemes/convection.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -27,7 +28,7 @@ auto main(int argc, char* argv[]) -> int {
     auto unv_file_name = args[1];
 
     // read mesh
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
+    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     spdlog::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
@@ -62,8 +63,8 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = eqn::Transport(
-        scheme::convection::Upwind(rho, U, T),       // ∇.(ρUT)
-        scheme::diffusion::Corrected(kappa, T),      // - ∇.(κ ∇T)
+        scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
+        scheme::diffusion::Corrected(kappa, T),           // - ∇.(κ ∇T)
         scheme::source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 

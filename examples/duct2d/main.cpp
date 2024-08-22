@@ -5,7 +5,6 @@
 #include <filesystem>
 
 
-/*
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
@@ -18,14 +17,14 @@ auto main(int argc, char* argv[]) -> int {
     const auto* unv_file_name = argv[1]; // NOLINT
 
     // read mesh
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
+    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     fmt::println("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto mu = field::UniformScalar("viscosity", mesh, 1e-6);
     auto rho = field::Scalar("density", mesh, 1.18);
-    auto U = field::Velocity("velocity", mesh, {0.05, 0.05, 0.0});
-    auto P = field::Pressure("pressure", mesh, 1.0);
+    auto U = field::Velocity("U", mesh, {0.05, 0.05, 0.0});
+    auto P = field::Pressure("P", mesh, 1.0);
 
     auto uEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
@@ -113,13 +112,4 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     prism::export_field_vtu(uEqn.field(), "solution.vtu");
-}
-*/
-
-auto main(int argc, char* argv[]) -> int {
-    const auto* unv_file_name = argv[1]; // NOLINT
-
-    // read mesh
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
-    auto _ = prism::mesh::readBoundaryFile(boundary_file);
 }

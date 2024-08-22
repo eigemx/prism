@@ -47,7 +47,9 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
     : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, value, Coord::X, static_cast<IVector*>(this)),
       _y(this->name() + "_y", mesh, value, Coord::Y, static_cast<IVector*>(this)),
-      _z(this->name() + "_z", mesh, value, Coord::Z, static_cast<IVector*>(this)) {}
+      _z(this->name() + "_z", mesh, value, Coord::Z, static_cast<IVector*>(this)) {
+    spdlog::debug("Creating vector field: '{}' with double value = {}", this->name(), value);
+}
 
 template <typename ComponentType>
 GeneralVector<ComponentType>::GeneralVector(std::string name,
@@ -56,13 +58,16 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
     : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, data[0], Coord::X, static_cast<IVector*>(this)),
       _y(this->name() + "_y", mesh, data[1], Coord::Y, static_cast<IVector*>(this)),
-      _z(this->name() + "_z", mesh, data[2], Coord::Z, static_cast<IVector*>(this)) {}
+      _z(this->name() + "_z", mesh, data[2], Coord::Z, static_cast<IVector*>(this)) {
+    spdlog::debug("Creating vector field: '{}' with uniform vector value", this->name());
+}
 
 template <typename ComponentType>
 GeneralVector<ComponentType>::GeneralVector(std::string name,
                                             const mesh::PMesh& mesh,
                                             std::array<ComponentType, 3>& fields)
     : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
+    spdlog::debug("Creating vector field: '{}'", this->name());
     // check mesh consistency
     for (auto& field : fields) {
         if (&mesh != &field.mesh()) {

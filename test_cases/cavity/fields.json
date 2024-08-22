@@ -1,0 +1,15 @@
+{
+    "fields": [
+        {
+            "name": "U",
+            "type": "velocity",
+            "gradScheme": "greenGauss"
+        },
+        
+        {
+            "name": "P",
+            "type": "pressure",
+            "gradScheme": "leastSquares"
+        }
+    ]
+}

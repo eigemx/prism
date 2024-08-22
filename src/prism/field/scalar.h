@@ -366,8 +366,7 @@ void GeneralScalar<Units, BHManagerSetter>::addDefaultHandlers() {
 void inline ScalarBHManagerSetter::set(IScalarBHManager& manager) {
     spdlog::debug(
         "prism::field::ScalarBHManagerSetter::set(): adding default boundary handlers for a "
-        "scalar "
-        "field instance");
+        "scalar field instance");
     manager.addHandler<field::boundary::Fixed<Scalar>>();
     manager.addHandler<field::boundary::Empty<Scalar>>();
     manager.addHandler<field::boundary::Symmetry<Scalar>>();

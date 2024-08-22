@@ -133,7 +133,9 @@ void inline Divergence<Sign, Vector>::apply() {
 
 template <SourceSign Sign, typename Field, typename GradientScheme>
 Gradient<Sign, Field, GradientScheme>::Gradient(Field phi, Coord coord)
-    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {}
+    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {
+    spdlog::debug("Creating gradient source for field '{}'", phi.name());
+}
 
 template <SourceSign Sign, typename Field, typename GradientScheme>
 void Gradient<Sign, Field, GradientScheme>::apply() {
@@ -153,12 +155,6 @@ void Gradient<Sign, Field, GradientScheme>::apply() {
         case Coord::Z: {
             rhs() = grad_field.z().values().array() * vol_field.array();
             break;
-        }
-
-        default: {
-            // We should not reach this!
-            throw std::runtime_error(
-                "source::Gradient::apply() was given an unknown coordinate!");
         }
     }
 

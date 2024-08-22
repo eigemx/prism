@@ -77,7 +77,7 @@ class CentralDifference : public IConvection<F>, public gradient::GradientProvid
 
 
 // Upwind scheme
-template <typename F, typename G = gradient::LeastSquares<F>>
+template <typename F>
 class Upwind : public IConvection<F> {
   public:
     Upwind(field::Scalar rho, field::Velocity U, F phi) : IConvection<F>(rho, U, phi) {}
@@ -197,11 +197,11 @@ auto CentralDifference<F, G>::interpolate(double m_dot,
     return {a_C, a_N, b};
 }
 
-template <typename F, typename G>
-auto Upwind<F, G>::interpolate(double m_dot,
-                               const mesh::Cell& cell,     // NOLINT
-                               const mesh::Cell& neighbor, // NOLINT
-                               const mesh::Face& face)     // NOLINT
+template <typename F>
+auto Upwind<F>::interpolate(double m_dot,
+                            const mesh::Cell& cell,     // NOLINT
+                            const mesh::Cell& neighbor, // NOLINT
+                            const mesh::Face& face)     // NOLINT
     -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const double a_C = std::max(m_dot, 0.0);
