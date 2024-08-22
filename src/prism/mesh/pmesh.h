@@ -1,8 +1,9 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <cmath>
 #include <iterator>
-#include <memory>
 
 #include "boundary.h"
 #include "cell.h"
@@ -89,6 +90,7 @@ class PMesh {
         return _boundary_patches;
     }
     auto inline boundary_patch(const Face& face) const noexcept -> const BoundaryPatch& {
+        assert(face.isBoundary() && face.boundaryPatchId().has_value());
         return _boundary_patches[face.boundaryPatchId().value()];
     }
 

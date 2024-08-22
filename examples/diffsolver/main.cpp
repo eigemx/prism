@@ -26,12 +26,12 @@ auto main(int argc, char* argv[]) -> int {
     auto unv_file_name = args[1];
 
     // read mesh
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "boundary.txt";
-    fmt::print("Loading mesh file `{}`...", unv_file_name);
+    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
+    fmt::println("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = field::Scalar("temperature", mesh, 300.0);
+    auto T = field::Scalar("T", mesh, 300.0);
 
     // define a source term
     prism::VectorXd source_field_data = VectorXd::Zero(mesh.nCells());

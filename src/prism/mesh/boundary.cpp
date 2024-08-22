@@ -1,175 +1,254 @@
-// TODO: boundary file reading results in segmenation fault in case boundary file is not as per
-// the expected format.
 #include "boundary.h"
 
+#include <fmt/base.h>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
-#include <toml++/toml.h>
 
-#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <set>
 #include <stdexcept>
-#include <string_view>
 
-// TODO: We're using name.substr(0, name.size() - 2) many times to get the parent field name
-// it's better to wrap this in a little inline function
+using json = nlohmann::json;
 
 namespace prism::mesh {
 
-auto inline isComponentField(const std::string& name) -> bool;
-auto inline parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch;
-auto inline parseFieldBoundaryCondition(const toml::table& table,
-                                        const std::string& patch_name,
-                                        const std::string& field_name) -> BoundaryCondition;
+struct FieldBoundaryFile {
+    std::string fieldName;
+    std::map<std::string, BoundaryCondition> patchToBoundaryCondition;
+};
 
-auto parsePatch(const toml::table& table, const std::string& patch_name) -> BoundaryPatch {
-    // for each sub-table, get its type and data
-    std::map<std::string, BoundaryCondition> field_name_to_bc_map;
-    const auto& patch_table = *(table[patch_name].as_table());
-
-    for (const auto& [field_name_key, field_table] : patch_table) {
-        const auto& field_name = std::string(field_name_key.str());
-        auto field_bc = parseFieldBoundaryCondition(table, patch_name, field_name);
-
-        field_name_to_bc_map.insert({field_name, field_bc});
-
-        if (field_bc.valueKind() == BoundaryConditionValueKind::Vector) {
-            // to make it easier to access the x, y, z boundary conditions for a vector field
-            auto vec_value = std::get<Vector3d>(field_bc.value());
-            field_name_to_bc_map.insert({field_name + "_x",
-                                         BoundaryCondition {
-                                             BoundaryConditionValueKind::Scalar,
-                                             vec_value.x(),
-                                             field_bc.kindString(),
-                                         }});
-            field_name_to_bc_map.insert({field_name + "_y",
-                                         BoundaryCondition {
-                                             BoundaryConditionValueKind::Scalar,
-                                             vec_value.y(),
-                                             field_bc.kindString(),
-                                         }});
-            field_name_to_bc_map.insert({field_name + "_z",
-                                         BoundaryCondition {
-                                             BoundaryConditionValueKind::Scalar,
-                                             vec_value.z(),
-                                             field_bc.kindString(),
-                                         }});
-        }
-    }
-
-    return BoundaryPatch {patch_name, field_name_to_bc_map};
+auto fileToString(const std::filesystem::path& path) -> std::string {
+    std::ifstream file(path);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
-auto parseFieldBoundaryCondition(const toml::table& table,
-                                 const std::string& patch_name,
-                                 const std::string& field_name) -> BoundaryCondition {
-    const auto& field_table = *(table[patch_name][field_name].as_table());
-
-    if (!field_table.contains("type")) {
-        throw std::runtime_error(fmt::format(
-            "prism::mesh:parseFieldBoundaryCondition(): Boundary patch `{}` field `{}` does "
-            "not have a type or value.",
-            patch_name,
-            field_name));
-    }
-
-    auto bc_type_str = field_table["type"].value<std::string_view>().value();
-
-    if (!field_table.contains("value")) {
-        return BoundaryCondition {
-            BoundaryConditionValueKind::Nil, BoundaryConditionValue {}, std::string(bc_type_str)};
-    }
-
-    auto bc_value = field_table["value"];
-
-    if (bc_value.is_number() || bc_value.is_floating_point()) {
-        double value = bc_value.value<double>().value();
-        return BoundaryCondition {
-            BoundaryConditionValueKind::Scalar, value, std::string(bc_type_str)};
-    }
-
-    if (bc_value.is_array()) {
-        const auto& array = bc_value.as_array();
-
-        if (array->size() != 3) {
-            throw std::runtime_error(fmt::format(
-                "prism::mesh:parseFieldBoundaryCondition(): Array value for field `{}` for "
-                "patch `{}` is not a 3D vector",
-                field_name,
-                patch_name));
-        }
-
-        return {BoundaryConditionValueKind::Vector,
-                Vector3d {
-                    array->at(0).value<double>().value(),
-                    array->at(1).value<double>().value(),
-                    array->at(2).value<double>().value(),
-                },
-                std::string(bc_type_str)};
-    }
-
-    throw std::runtime_error(fmt::format(
-        "prism::mesh::parseFieldBoundaryCondition(): Boundary patch `{}` field `{}` has an "
-        "invalid type or value.",
-        patch_name,
-        field_name));
+auto isGoodJson(const std::string& json_data) -> bool {
+    return json::accept(json_data);
 }
 
+auto containsFields(const json& doc) -> bool {
+    return doc.contains(std::string("fields"));
+}
 
-auto readBoundaryFile(const std::filesystem::path& path,
-                      const std::vector<std::string_view>& boundary_patches_names)
+auto areFieldsAnArray(const json& doc) -> bool {
+    return doc["fields"].is_array();
+}
+
+auto containsPatches(const json& doc) -> bool {
+    return doc.contains(std::string("patches"));
+}
+
+auto arePatchesAnArray(const json& doc) -> bool {
+    return doc["patches"].is_array();
+}
+
+auto parseField(const json& field) -> FieldInfo {
+    FieldInfo f;
+
+    if (!field.contains("name") || !field.contains("type")) {
+        throw std::runtime_error("Field must contain name and type");
+    }
+
+    f.name = field["name"].get<std::string>();
+    f.type = field["type"].get<std::string>();
+    if (field.contains("gradScheme")) {
+        f.gradScheme = field["gradScheme"].get<std::string>();
+    }
+    if (field.contains("units")) {
+        f.units = field["units"].get<std::vector<double>>();
+    }
+    return f;
+}
+
+auto parseFields(const json& fields) -> std::vector<FieldInfo> {
+    std::vector<FieldInfo> parsed_fields;
+    for (const auto& field : fields) {
+        parsed_fields.emplace_back(parseField(field));
+    }
+    return parsed_fields;
+}
+
+auto fieldsFilesExist(const std::vector<FieldInfo>& fields,
+                      const std::filesystem::path& path) -> bool {
+    for (const auto& field : fields) {
+        auto file_name = fmt::format("{}.json", field.name);
+        auto file_path = path.parent_path() / file_name;
+        if (!std::filesystem::exists(file_path)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+auto readFieldsBoundaryFile(const std::string& field_name, const json& doc) -> FieldBoundaryFile {
+    FieldBoundaryFile boundary_file;
+    boundary_file.fieldName = field_name;
+
+    if (!containsPatches(doc) || !arePatchesAnArray(doc)) {
+        throw std::runtime_error(
+            fmt::format("prism::mesh::readBoundaryFile(): file `{}` either don't contain "
+                        "`patches` field of `patches` is not an array",
+                        field_name));
+    }
+
+    auto patches = doc["patches"];
+
+    for (const auto& patch : patches) {
+        if (!patch.contains("name") || !patch.contains("type")) {
+            throw std::runtime_error(
+                fmt::format("prism::mesh::readBoundaryFile(): file `{}` either don't contain "
+                            "`name` or `type` field",
+                            field_name));
+        }
+        auto name = patch["name"].get<std::string>();
+        auto type = patch["type"].get<std::string>();
+
+        if (patch.contains("value")) {
+            auto value = patch["value"];
+            if (value.is_number()) {
+                auto bc = BoundaryCondition(
+                    BoundaryConditionValueKind::Scalar, value.get<double>(), type);
+                boundary_file.patchToBoundaryCondition.insert({name, bc});
+            }
+
+            if (value.is_array()) {
+                // make sure that the array is of size 3
+                if (value.size() != 3) {
+                    throw std::runtime_error(
+                        fmt::format("prism::mesh::readBoundaryFile(): expected array of size 3 "
+                                    "for field `{}` in patch `{}`",
+                                    field_name,
+                                    name));
+                }
+                auto value_array = value.get<std::vector<double>>();
+                auto V = Vector3d {value_array[0], value_array[1], value_array[2]};
+                auto bc = BoundaryCondition(BoundaryConditionValueKind::Vector, V, type);
+                boundary_file.patchToBoundaryCondition.insert({name, bc});
+            }
+        }
+        // patch do not have a value (empty, symmetry, outlet,...)
+        auto bc = BoundaryCondition(BoundaryConditionValueKind::Nil, 0.0, type);
+        boundary_file.patchToBoundaryCondition.insert({name, bc});
+    }
+    return boundary_file;
+}
+
+auto readFieldsBoundaryFiles(const std::filesystem::path& path,
+                             const std::vector<FieldInfo>& fields)
+    -> std::vector<FieldBoundaryFile> {
+    std::vector<FieldBoundaryFile> boundary_files;
+    for (const auto& field : fields) {
+        spdlog::debug(
+            "prism::mesh::readFieldsBoundaryFiles() : Reading boundary conditions file for field "
+            "{}",
+            field.name);
+        auto file_name = fmt::format("{}.json", field.name);
+        auto file_path = path.parent_path() / file_name;
+        std::string json_data = fileToString(file_path);
+
+        if (!isGoodJson(json_data)) {
+            try {
+                json Doc {json::parse(json_data)};
+            } catch (json::parse_error& e) {
+                throw std::runtime_error(fmt::format(
+                    "prism::mesh::readBoundaryFile(): Error parsing json file: {}", e.what()));
+            }
+        }
+
+        auto doc = json::parse(json_data);
+        boundary_files.emplace_back(readFieldsBoundaryFile(field.name, doc));
+    }
+
+    return boundary_files;
+}
+
+auto extractBoundaryPatches(const std::vector<FieldBoundaryFile>& boundary_files)
     -> std::vector<BoundaryPatch> {
-    std::vector<BoundaryPatch> boundary_patches;
-    boundary_patches.reserve(boundary_patches_names.size());
-
-    auto fstream {std::ifstream {path}};
-
-    if (!fstream) {
-        throw std::runtime_error(fmt::format(
-            "prism::mesh::readBoundaryFile(): Failed to open boundary conditions file `{}`",
-            path.string()));
+    // each boundary file contains a map of patch name to boundary condition, we need to extract
+    // the patch names (keys  of the map) to a std::vector
+    std::set<std::string> patch_names;
+    for (const auto& boundary_file : boundary_files) {
+        for (const auto& [name, _] : boundary_file.patchToBoundaryCondition) {
+            patch_names.insert(name);
+        }
     }
 
-    toml::table doc;
+    auto patches = std::vector<BoundaryPatch>();
+    for (const auto& patch_name : patch_names) {
+        std::map<std::string, BoundaryCondition> field_to_bc;
+        for (const auto& boundary_file : boundary_files) {
+            field_to_bc.insert(
+                {boundary_file.fieldName, boundary_file.patchToBoundaryCondition.at(patch_name)});
+        }
 
-    // parse boundary TOML file
-    try {
-        doc = toml::parse(fstream);
-    } catch (const toml::parse_error& e) {
-        // file cannot be parsed
+        patches.emplace_back(patch_name, field_to_bc);
+    }
+    return patches;
+}
+
+auto parsePatches(const std::filesystem::path& path,
+                  const std::vector<FieldInfo>& fields) -> std::vector<BoundaryPatch> {
+    // check if there is a json file for every field
+    if (!fieldsFilesExist(fields, path)) {
         throw std::runtime_error(
-            fmt::format("prism::mesh::readBoundaryFile(): Failed to parse boundary condition "
-                        "file: `{}`, complete error: `{}`",
-                        path.string(),
-                        e.what()));
+            fmt::format("prism::mesh::readBoundaryFile(): Some field defined in `fields.json` "
+                        "file are not present in a dedicated boundary conditions file"));
     }
 
-    // read fields table
-    auto fields_table {doc["fields"]};
-    if (!fields_table) {
+    auto boundary_files = readFieldsBoundaryFiles(path, fields);
+
+    // make sure that boundary files are consistent
+    auto patches_count = boundary_files.at(0).patchToBoundaryCondition.size();
+
+    for (const auto& boundary_file : boundary_files) {
+        if (boundary_file.patchToBoundaryCondition.size() != patches_count) {
+            throw std::runtime_error(
+                "prism::mesh::readBoundaryFile(): boundary conditions files are "
+                "not consistent, please make sure that all boundary conditions "
+                "files have the same number of patches");
+        }
+    }
+    return extractBoundaryPatches(boundary_files);
+}
+
+MeshBoundary::MeshBoundary(const std::filesystem::path& path) {
+    // read boundary file
+    auto file = std::ifstream(path);
+
+    if (!file) {
         throw std::runtime_error(
-            fmt::format("prism::mesh::readBoundaryFile(): Couldn't find definition for "
-                        "fields in boundary conditions file `{}`",
+            fmt::format("prism::mesh::readBoundaryFile(): Failed to open "
+                        "boundary conditions file `{}`",
                         path.string()));
     }
 
-    // for each patch, get its BoundaryData object
-    for (const auto& bname : boundary_patches_names) {
-        auto table {doc[bname.data()]};
+    std::string json_data = fileToString(path);
 
-        if (!table) {
-            throw std::runtime_error(
-                fmt::format("prism::mesh::readBoundaryFile(): Couldn't find definition for "
-                            "boundary patch '{}' in boundary conditions file `{}`",
-                            bname,
-                            path.string()));
+    if (!isGoodJson(json_data)) {
+        try {
+            json Doc {json::parse(json_data)};
+        } catch (json::parse_error& e) {
+            throw std::runtime_error(fmt::format(
+                "prism::mesh::readBoundaryFile(): Error parsing json file: {}", e.what()));
         }
-
-        boundary_patches.emplace_back(parsePatch(doc, std::string(bname)));
     }
 
-    return boundary_patches;
-}
+    auto doc = json::parse(json_data);
 
+    if (!containsFields(doc) || !areFieldsAnArray(doc)) {
+        throw std::runtime_error(
+            fmt::format("prism::mesh::readBoundaryFile(): Couldn't find "
+                        "definition for fields in "
+                        "boundary conditions file `{}`",
+                        path.string()));
+    }
+
+    _fields = parseFields(doc["fields"]);
+    _boundary_patches = parsePatches(path, _fields);
+}
 
 auto isComponentField(const std::string& name) -> bool {
     if (name.size() < 2) {
@@ -235,10 +314,11 @@ auto BoundaryPatch::getBoundaryCondition(const std::string& field_name) const
 
 
 auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) const -> double {
-    // in some cases we're dealing with a ScalarField that is a component of a parent VectorField,
-    // such as when dealing with the x-component ScalarField of a velocity VectorField U.
-    // in this case we won't find the boundary condition value for U_x as a single scalar BC,
-    // but we can get it from the first component of the vector BC value of U.
+    // in some cases we're dealing with a ScalarField that is a component of a parent
+    // VectorField, such as when dealing with the x-component ScalarField of a velocity
+    // VectorField U. in this case we won't find the boundary condition value for U_x as a
+    // single scalar BC, but we can get it from the first component of the vector BC value of
+    // U.
     if (isComponentField(field_name)) {
         return getScalarBCSubfield(field_name);
     }
@@ -305,7 +385,8 @@ auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double
             return vec_value[2];
         default: {
             throw std::runtime_error(
-                "prism::mesh::BoundaryPatch::getScalarBCSubfield was given a field with a name "
+                "prism::mesh::BoundaryPatch::getScalarBCSubfield was given a field with a "
+                "name "
                 "that does not in with a valid Cartesian componenet.");
         }
     }
@@ -313,5 +394,6 @@ auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double
     // It should be impossible to reach this
     return 0.0;
 }
+
 
 } // namespace prism::mesh

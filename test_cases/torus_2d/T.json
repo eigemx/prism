@@ -1,0 +1,22 @@
+{
+    "patches": [
+        {
+            "name": "front",
+            "type": "empty"
+        },
+        {
+            "name": "back",
+            "type": "empty"
+        },
+        {
+            "name": "inner",
+            "type": "fixed",
+            "value": 900
+        },
+        {
+            "name": "outer",
+            "type": "fixed",
+            "value": 300
+        }
+    ]
+}

@@ -1,0 +1,32 @@
+{
+    "patches": [
+        {
+            "name": "top",
+            "type": "no-slip",
+            "value": [1.0, 0.0, 0.0]
+        },
+        {
+            "name": "bottom",
+            "type": "no-slip",
+            "value": [0.0, 0.0, 0.0]
+        },
+        {
+            "name": "left",
+            "type": "no-slip",
+            "value": [0.0, 0.0, 0.0]
+        },
+        {
+            "name": "right",
+            "type": "no-slip",
+            "value": [0.0, 0.0, 0.0]
+        },
+        {
+            "name": "front",
+            "type": "empty"
+        },
+        {
+            "name": "back",
+            "type": "empty"
+        }
+    ]
+}
