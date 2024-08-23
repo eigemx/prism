@@ -74,7 +74,9 @@ endif()
 
 add_subdirectory(src/prism)
 target_include_directories(prism PUBLIC src/)
-target_link_libraries(prism PRIVATE Eigen3::Eigen fmt::fmt-header-only nlohmann_json::nlohmann_json spdlog::spdlog)
+target_link_libraries(prism 
+                        PRIVATE Eigen3::Eigen fmt::fmt-header-only nlohmann_json::nlohmann_json unvpp
+                        PUBLIC spdlog::spdlog)
 
 if (PRISM_BUILD_EXAMPLES)
     add_subdirectory(examples)

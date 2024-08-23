@@ -2,7 +2,6 @@
 
 #include <fmt/format.h>
 #include <prism/exceptions.h>
-#include <spdlog/spdlog.h>
 #include <unvpp/unvpp.h>
 
 #include <algorithm>
@@ -11,6 +10,7 @@
 #include <string_view>
 
 #include "boundary.h"
+#include "prism/log.h"
 
 
 using VectorOfFaces = std::vector<std::vector<std::size_t>>;
@@ -89,7 +89,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
     _boundary_patches = mesh_boundary.patches();
     _field_infos = mesh_boundary.fields();
 
-    spdlog::debug("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
+    log::debug("UnvToPMeshConverter read {} boundary patches", _boundary_patches.size());
 
     // for each boundary patch, set the faces that belong to it, and make the patch aware of the
     // ids of the faces it owns

@@ -8,8 +8,8 @@
 #include <string>
 
 #include "prism/exceptions.h"
+#include "prism/log.h"
 #include "prism/mesh/pmesh.h"
-#include "spdlog/spdlog.h"
 
 namespace prism::boundary {
 
@@ -133,7 +133,7 @@ void applyBoundary(const std::string& applier_name, Applier& applier) {
                 bc.kindString());
         }
 
-        spdlog::debug(
+        log::debug(
             "prism::boundary::detail::applyBoundary(): applying boundary condition type {} on "
             "patch {} applied by {}.",
             handler->name(),
@@ -154,7 +154,7 @@ void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
         auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler == nullptr) {
-            spdlog::debug(
+            log::debug(
                 "prism::boundary::detail::applyBoundaryIfExists(): no equation boundary handler "
                 "defined for patch {}, applied by {}, "
                 "ignoring...",
@@ -163,7 +163,7 @@ void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
             continue;
         }
 
-        spdlog::debug(
+        log::debug(
             "prism::boundary::detail::applyBoundaryIfExists(): applying boundary condition type "
             "{} on "
             "patch {}, applied by {}'.",

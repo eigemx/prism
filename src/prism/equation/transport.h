@@ -7,6 +7,7 @@
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/linear.h"
+#include "prism/log.h"
 #include "prism/schemes/convection.h"
 #include "prism/schemes/diffusion.h"
 #include "prism/schemes/source.h"
@@ -83,11 +84,11 @@ Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
     (addScheme(std::forward<Schemes>(schemes)), ...);
 
     if (_diff_scheme) {
-        spdlog::debug("Transport::addScheme() found a diffusion scheme.");
+        log::debug("Transport::addScheme() found a diffusion scheme.");
     }
 
     if (_conv_scheme) {
-        spdlog::debug("Transport::addScheme() found a convection scheme.");
+        log::debug("Transport::addScheme() found a convection scheme.");
     }
 }
 

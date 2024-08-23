@@ -2,6 +2,7 @@
 
 #include "prism/field/scalar.h"
 #include "prism/gradient/gradient.h"
+#include "prism/log.h"
 #include "prism/operations/operations.h"
 #include "scheme.h"
 
@@ -134,7 +135,7 @@ void inline Divergence<Sign, Vector>::apply() {
 template <SourceSign Sign, typename Field, typename GradientScheme>
 Gradient<Sign, Field, GradientScheme>::Gradient(Field phi, Coord coord)
     : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {
-    spdlog::debug("Creating gradient source for field '{}'", phi.name());
+    log::debug("Creating gradient source for field '{}'", phi.name());
 }
 
 template <SourceSign Sign, typename Field, typename GradientScheme>

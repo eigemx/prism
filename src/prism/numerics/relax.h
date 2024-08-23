@@ -1,8 +1,7 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include "prism/equation/transport.h"
+#include "prism/log.h"
 
 namespace prism::solver {
 
@@ -37,7 +36,7 @@ class ExplicitUnderRelaxation : public IRelaxer<Field> {
 template <typename Field>
 void ImplicitUnderRelaxation<Field>::preRelax(eqn::Transport<Field>& eqn, double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
-        spdlog::debug(
+        log::debug(
             "ImplicitUnderRelaxation::preRelax(): relaxation factor is"
             " either less than 0.0 or equals 1.0, skipping relaxation...");
         return;
@@ -56,7 +55,7 @@ void ImplicitUnderRelaxation<Field>::preRelax(eqn::Transport<Field>& eqn, double
 template <typename Field>
 void ExplicitUnderRelaxation<Field>::postRelax(eqn::Transport<Field>& eqn, double lambda) const {
     if (lambda < 0.0 || lambda == 1.0) {
-        spdlog::debug(
+        log::debug(
             "ImplicitUnderRelaxation::preRelax(): relaxation factor is"
             " either less than 0.0 or equals 1.0, skipping relaxation...");
         return;
