@@ -101,7 +101,7 @@ auto main(int argc, char* argv[]) -> int {
 
         // update velocity fields
         for (const auto& cell : mesh.cells()) {
-            auto correction = -D.valueAtCell(cell) * P.gradScheme()->gradAtCell(cell);
+            auto correction = -D.valueAtCell(cell) * P.gradAtCell(cell);
             U.x()[cell.id()] += correction[0];
             U.y()[cell.id()] += correction[1];
         }

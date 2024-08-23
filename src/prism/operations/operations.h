@@ -124,11 +124,11 @@ auto grad(const Field& field, Coord coord) -> field::Scalar {
     auto i = detail::coordToIndex(coord);
 
     for (std::size_t j = 0; j < n_cells; ++j) {
-        grad_values[j] = field.gradScheme()->gradAtCell(mesh.cell(j))[i];
+        grad_values[j] = field.gradAtCell(mesh.cell(j))[i];
     }
 
     for (std::size_t j = 0; j < n_faces; ++j) {
-        grad_face_values[j] = field.gradScheme()->gradAtFace(mesh.face(j))[i];
+        grad_face_values[j] = field.gradAtFace(mesh.face(j))[i];
     }
 
     return field::Scalar(grad_field_name + fmt::format("_{}", field::coordToStr(coord)),

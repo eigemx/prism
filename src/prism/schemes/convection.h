@@ -215,9 +215,9 @@ auto SecondOrderUpwind<F>::interpolate(double m_dot,
                                        const mesh::Cell& neighbor,
                                        const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->field().gradScheme()->gradAtFace(face);
-    const Vector3d cell_grad_phi = this->field().gradScheme()->gradAtCell(cell);
-    const Vector3d neighbor_grad_phi = this->field().gradScheme()->gradAtCell(neighbor);
+    const Vector3d face_grad_phi = this->field().gradAtFace(face);
+    const Vector3d cell_grad_phi = this->field().gradAtCell(cell);
+    const Vector3d neighbor_grad_phi = this->field().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
     // auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);

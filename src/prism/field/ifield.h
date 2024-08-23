@@ -50,8 +50,11 @@ class IField {
 // using IScalar = IField<double>;
 class IScalar : public IField<double> {
   public:
-    IScalar(std::string name, const mesh::PMesh& mesh) : IField<double>(std::move(name), mesh) {}
-    virtual auto gradScheme() const -> const SharedPtr<gradient::IGradient>& = 0;
+    IScalar(std::string name, const mesh::PMesh& mesh);
+
+    virtual auto gradAtFace(const mesh::Face& face) const -> Vector3d = 0;
+    virtual auto gradAtCell(const mesh::Cell& cell) const -> Vector3d = 0;
+    virtual auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d = 0;
 };
 
 template <typename T>

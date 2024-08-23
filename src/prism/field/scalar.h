@@ -21,12 +21,9 @@ class UniformScalar : public IScalar {
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
-    // TODO: this is a glue, get rid of it
-    // we need to add gradAtCell() and gradAtFace() functions directly in IScalar and make
-    // gradScheme() protected
-    auto gradScheme() const -> const SharedPtr<gradient::IGradient>& override {
-        return _grad_scheme;
-    }
+    auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
+    auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
   private:
     double _value {0.0};
@@ -97,7 +94,10 @@ class GeneralScalar
     auto parent() -> IVector*;
     void setParent(IVector* parent);
 
-    auto gradScheme() const -> const SharedPtr<gradient::IGradient>& override;
+    auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
+    auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
+
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
 
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
@@ -387,12 +387,6 @@ void GeneralScalar<Units, BHManagerSetter>::addDefaultHandlers() {
 }
 
 template <typename Units, typename BHManagerSetter>
-auto GeneralScalar<Units, BHManagerSetter>::gradScheme() const
-    -> const SharedPtr<gradient::IGradient>& {
-    return _grad_scheme;
-}
-
-template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::setGradScheme(
     const SharedPtr<gradient::IGradient>& grad_scheme) {
     if (grad_scheme == nullptr) {
@@ -432,6 +426,22 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
         return;
     }
     _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::gradAtFace(const mesh::Face& face) const -> Vector3d {
+    return _grad_scheme->gradAtFace(face);
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::gradAtCell(const mesh::Cell& cell) const -> Vector3d {
+    return _grad_scheme->gradAtCell(cell);
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::gradAtCellStored(const mesh::Cell& cell) const
+    -> Vector3d {
+    return _grad_scheme->gradAtCellStored(cell);
 }
 
 } // namespace prism::field
