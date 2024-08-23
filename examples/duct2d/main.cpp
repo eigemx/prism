@@ -28,7 +28,7 @@ auto main(int argc, char* argv[]) -> int {
     auto uEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(
-            mu, U.x()), //, // - ∇.(μ∇u)
+            mu, U.x()), // - ∇.(μ∇u)
         scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
             P, Coord::X) // ∂p/∂x
     );
@@ -90,7 +90,7 @@ auto main(int argc, char* argv[]) -> int {
         // Few things missing to implement:
         // 1) it's actually ρD not just D
         // 2) ∇.(ρU) not ∇.U
-        auto P_prime = field::Pressure("pressure", mesh, 0.0);
+        auto P_prime = field::Pressure("P", mesh, 0.0);
         auto pEqn = eqn::Transport<field::Pressure>(
             scheme::diffusion::NonCorrected<field::Tensor, field::Pressure>(D, P_prime),
             scheme::source::Divergence<scheme::source::SourceSign::Negative, field::Velocity>(U));
@@ -100,9 +100,8 @@ auto main(int argc, char* argv[]) -> int {
         p_solver.solve(pEqn, 10, 1e-5, 1);
 
         // update velocity fields
-        auto p_grad = gradient::LeastSquares(P_prime);
         for (const auto& cell : mesh.cells()) {
-            auto correction = -D.valueAtCell(cell) * p_grad.gradAtCell(cell);
+            auto correction = -D.valueAtCell(cell) * P.gradScheme()->gradAtCell(cell);
             U.x()[cell.id()] += correction[0];
             U.y()[cell.id()] += correction[1];
         }

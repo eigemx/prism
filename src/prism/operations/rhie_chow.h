@@ -9,7 +9,7 @@
 
 namespace prism::ops {
 
-template <typename Vector, typename GradScheme = gradient::LeastSquares<field::Pressure>>
+template <typename Vector>
 void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P);
 
 namespace detail {
@@ -19,10 +19,9 @@ auto correctGrad(const mesh::PMesh& mesh,
                  const Vector3d& grad_p_f) -> Vector3d;
 }
 
-template <typename Vector, typename GradScheme>
+template <typename Vector>
 void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P) {
     const auto& mesh = U.mesh();
-    GradScheme p_grad_scheme(P);
 
     VectorXd u_face_data;
     VectorXd v_face_data;
@@ -35,7 +34,7 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
         const std::size_t face_id = face.id();
         const Vector3d& Uf = U.valueAtFace(face);
         const Matrix3d& Df = D.valueAtFace(face);
-        const Vector3d& grad_p_f = p_grad_scheme.gradAtFace(face);
+        const Vector3d& grad_p_f = P.gradScheme()->gradAtFace(face);
 
         Vector3d grad_p_f_corr = grad_p_f + detail::correctGrad(mesh, face, P, grad_p_f);
 
@@ -53,8 +52,8 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
         // Equation (15.110)
         const Vector3d Ub = U.valueAtCell(owner);
         const Matrix3d& Df = D.valueAtCell(owner);
-        const Vector3d grad_p_f = p_grad_scheme.gradAtFace(face);
-        const Vector3d grad_p_C = p_grad_scheme.gradAtCell(owner);
+        const Vector3d grad_p_f = P.gradScheme()->gradAtFace(face);
+        const Vector3d grad_p_C = P.gradScheme()->gradAtCell(owner);
 
         // Equation (15.111)
         Vector3d Ub_corrected = Ub - (Df * (grad_p_f - grad_p_C));

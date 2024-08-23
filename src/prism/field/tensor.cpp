@@ -27,7 +27,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data)
     : IField(std::move(name), mesh), _data(std::move(data)) {
-    log::debug("Creating a  tensor field: '{}' given a vector of Matrix3d objects", this->name());
+    log::debug("Creating a tensor field: '{}' given a vector of Matrix3d objects", this->name());
 
     if (_data.size() != mesh.nCells()) {
         throw std::runtime_error(

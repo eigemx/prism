@@ -8,6 +8,9 @@
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 
+namespace prism::gradient {
+class IGradient;
+}
 namespace prism::field {
 
 namespace detail {
@@ -35,7 +38,6 @@ class IField {
     virtual auto valueAtCell(const mesh::Cell& cell) const -> CellValueType = 0;
     virtual auto valueAtFace(std::size_t face_id) const -> CellValueType = 0;
     virtual auto valueAtFace(const mesh::Face& face) const -> CellValueType = 0;
-
     virtual auto coord() const noexcept -> std::optional<Coord> { return std::nullopt; }
 
     using ValueType = CellValueType;
@@ -45,7 +47,12 @@ class IField {
     std::string _name;
 };
 
-using IScalar = IField<double>;
+// using IScalar = IField<double>;
+class IScalar : public IField<double> {
+  public:
+    IScalar(std::string name, const mesh::PMesh& mesh) : IField<double>(std::move(name), mesh) {}
+    virtual auto gradScheme() const -> const SharedPtr<gradient::IGradient>& = 0;
+};
 
 template <typename T>
 concept IScalarBased = std::derived_from<T, IScalar>;

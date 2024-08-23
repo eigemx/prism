@@ -2,12 +2,15 @@
 
 #include <fmt/format.h>
 
+#include <cstdint>
+
 #include "prism/field/scalar.h"
 #include "prism/field/vector.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/mesh/utilities.h"
+#include "prism/types.h"
 
 namespace prism::ops {
 
@@ -26,12 +29,35 @@ auto mag(const Vector& U, bool return_face_data = true) -> field::Scalar;
 template <typename Vector>
 auto curl(const Vector& U, bool return_face_data = true) -> field::Vector;
 
+template <field::IScalarBased Field>
+auto grad(const Field& field, Coord coord) -> field::Scalar;
+
 // face mass flow rate
 auto inline faceFlowRate(double rho, const Vector3d& U, const Vector3d& S) -> double {
     return rho * U.dot(S);
 }
 
 namespace detail {
+auto inline coordToIndex(Coord coord) -> std::uint8_t {
+    std::uint8_t i = 0;
+    switch (coord) {
+        case Coord::X: {
+            i = 0;
+            break;
+        }
+
+        case Coord::Y: {
+            i = 1;
+            break;
+        }
+
+        case Coord::Z: {
+            i = 2;
+            break;
+        }
+    }
+    return i;
+}
 template <typename Vector>
 auto divAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double;
 
@@ -83,6 +109,32 @@ auto div(const Vector& U, bool return_face_data) -> field::Scalar {
     }
 
     return {name, mesh, cell_data};
+}
+
+template <field::IScalarBased Field>
+auto grad(const Field& field, Coord coord) -> field::Scalar {
+    auto grad_field_name = fmt::format("grad({})", field.name());
+    const auto& mesh = field.mesh();
+
+    const auto n_cells = mesh.nCells();
+    const auto n_faces = mesh.nFaces();
+
+    VectorXd grad_values = VectorXd::Zero(n_cells);
+    VectorXd grad_face_values = VectorXd::Zero(n_faces);
+    auto i = detail::coordToIndex(coord);
+
+    for (std::size_t j = 0; j < n_cells; ++j) {
+        grad_values[j] = field.gradScheme()->gradAtCell(mesh.cell(j))[i];
+    }
+
+    for (std::size_t j = 0; j < n_faces; ++j) {
+        grad_face_values[j] = field.gradScheme()->gradAtFace(mesh.face(j))[i];
+    }
+
+    return field::Scalar(grad_field_name + fmt::format("_{}", field::coordToStr(coord)),
+                         field.mesh(),
+                         grad_values,
+                         grad_face_values);
 }
 
 namespace detail {

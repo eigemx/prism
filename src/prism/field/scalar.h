@@ -1,7 +1,10 @@
 #pragma once
 
+#include <algorithm>
+
 #include "ifield.h"
 #include "prism/exceptions.h"
+#include "prism/gradient/gradient.h"
 #include "prism/log.h"
 #include "prism/mesh/utilities.h"
 #include "scalar_boundary.h"
@@ -18,8 +21,16 @@ class UniformScalar : public IScalar {
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
+    // TODO: this is a glue, get rid of it
+    // we need to add gradAtCell() and gradAtFace() functions directly in IScalar and make
+    // gradScheme() protected
+    auto gradScheme() const -> const SharedPtr<gradient::IGradient>& override {
+        return _grad_scheme;
+    }
+
   private:
     double _value {0.0};
+    SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
 };
 
 template <typename Units, typename BHManagerSetter>
@@ -86,6 +97,9 @@ class GeneralScalar
     auto parent() -> IVector*;
     void setParent(IVector* parent);
 
+    auto gradScheme() const -> const SharedPtr<gradient::IGradient>& override;
+    void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
+
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
 
@@ -94,10 +108,13 @@ class GeneralScalar
     auto valueAtBoundaryFace(const mesh::Face& face) const -> double;
 
   private:
+    void setGradScheme();
     void addDefaultHandlers();
 
-    std::shared_ptr<VectorXd> _data = nullptr;
-    std::shared_ptr<VectorXd> _face_data = nullptr;
+    SharedPtr<VectorXd> _data = nullptr;
+    SharedPtr<VectorXd> _face_data = nullptr;
+    SharedPtr<gradient::IGradient> _grad_scheme;
+
     IVector* _parent = nullptr;
     std::optional<Coord> _coord = std::nullopt;
     BHManagerSetter _setter;
@@ -123,6 +140,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _parent(parent) {
     log::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     addDefaultHandlers();
+    setGradScheme();
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -140,6 +158,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                coordToStr(coord),
                value);
     addDefaultHandlers();
+    setGradScheme();
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -161,6 +180,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                this->name(),
                _data->size());
     addDefaultHandlers();
+    setGradScheme();
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -186,6 +206,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         coordToStr(coord),
         _data->size());
     addDefaultHandlers();
+    setGradScheme();
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -220,6 +241,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         _face_data->size());
 
     addDefaultHandlers();
+    setGradScheme();
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -258,17 +280,17 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         _face_data->size());
 
     addDefaultHandlers();
+    setGradScheme();
 }
 
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     if (values.size() != mesh().nFaces()) {
-        throw std::runtime_error(
-            fmt::format("prism::field::GeneralScalar<Units, BHManagerProvider, "
-                        "BHManagerSetter>::setFaceValues(): cannot set face values for "
-                        "scalar field {}, to a "
-                        "face data vector having a different size that field's faces count.",
-                        name()));
+        throw std::runtime_error(fmt::format(
+            "prism::field::GeneralScalar<Units, BHManagerProvider, "
+            "BHManagerSetter>::setFaceValues(): cannot set face values for scalar field {}, to a "
+            "face data vector having a different size that field's faces count.",
+            name()));
     }
 
     if (hasFaceValues()) {
@@ -364,15 +386,52 @@ void GeneralScalar<Units, BHManagerSetter>::addDefaultHandlers() {
     _setter.set(this->boundaryHandlersManager());
 }
 
-void inline ScalarBHManagerSetter::set(IScalarBHManager& manager) {
-    log::debug(
-        "prism::field::ScalarBHManagerSetter::set(): adding default boundary handlers for a "
-        "scalar field instance");
-    manager.addHandler<field::boundary::Fixed<Scalar>>();
-    manager.addHandler<field::boundary::Empty<Scalar>>();
-    manager.addHandler<field::boundary::Symmetry<Scalar>>();
-    manager.addHandler<field::boundary::Outlet<Scalar>>();
-    manager.addHandler<field::boundary::FixedGradient<Scalar>>();
-    manager.addHandler<field::boundary::ZeroGradient<Scalar>>();
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::gradScheme() const
+    -> const SharedPtr<gradient::IGradient>& {
+    return _grad_scheme;
 }
+
+template <typename Units, typename BHManagerSetter>
+void GeneralScalar<Units, BHManagerSetter>::setGradScheme(
+    const SharedPtr<gradient::IGradient>& grad_scheme) {
+    if (grad_scheme == nullptr) {
+        throw std::runtime_error(
+            "GeneralScalar::setGradScheme() was given a null gradient scheme pointer");
+    }
+    _grad_scheme = grad_scheme;
+}
+
+template <typename Units, typename BHManagerSetter>
+void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
+    // did user specify gradient scheme for the field in `fields.json`?
+    auto field_infos = this->mesh().fieldsInfo();
+    auto it = std::find_if(field_infos.begin(), field_infos.end(), [this](const auto& fi) {
+        return fi.name() == this->name() && fi.gradScheme().has_value();
+    });
+
+    if (it == field_infos.end()) {
+        log::debug(
+            "GeneralScalar::setGradScheme(): couldn't find a specified gradient scheme for field "
+            "`{}` in `fields.json`, setting the gradient scheme to least squares.",
+            this->name());
+
+        _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+        return;
+    }
+
+    auto grad_scheme_name = it->gradScheme().value();
+
+    if (grad_scheme_name == "green_gauss" || grad_scheme_name == "greenGauss") {
+        _grad_scheme = std::make_shared<gradient::GreenGauss>(this);
+        return;
+    }
+
+    if (grad_scheme_name == "least_squares" || grad_scheme_name == "leastSquares") {
+        _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+        return;
+    }
+    _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+}
+
 } // namespace prism::field

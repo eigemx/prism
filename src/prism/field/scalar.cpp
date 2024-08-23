@@ -25,5 +25,16 @@ auto UniformScalar::valueAtFace(const mesh::Face& face) const -> double { // NOL
     return _value;
 }
 
+void ScalarBHManagerSetter::set(IScalarBHManager& manager) {
+    log::debug(
+        "prism::field::ScalarBHManagerSetter::set(): adding default boundary handlers for a "
+        "scalar field instance");
+    manager.addHandler<field::boundary::Fixed<Scalar>>();
+    manager.addHandler<field::boundary::Empty<Scalar>>();
+    manager.addHandler<field::boundary::Symmetry<Scalar>>();
+    manager.addHandler<field::boundary::Outlet<Scalar>>();
+    manager.addHandler<field::boundary::FixedGradient<Scalar>>();
+    manager.addHandler<field::boundary::ZeroGradient<Scalar>>();
+}
 
 } // namespace prism::field

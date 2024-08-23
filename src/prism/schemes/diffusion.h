@@ -7,7 +7,6 @@
 #include "nonortho.h"
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
-#include "prism/gradient/gradient.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/types.h"
@@ -37,11 +36,8 @@ class INonCorrected {};
 // BHManagerProvider without type clutter
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
-          typename Field = field::Scalar,
-          typename GradScheme = gradient::LeastSquares<Field>>
-class Corrected : public ICorrected,
-                  public IDiffusion<KappaType, Field>,
-                  public gradient::GradientProvider<Field, GradScheme> {
+          typename Field = field::Scalar>
+class Corrected : public ICorrected, public IDiffusion<KappaType, Field> {
   public:
     Corrected(KappaType kappa, Field phi);
 
@@ -49,7 +45,7 @@ class Corrected : public ICorrected,
     auto corrector() -> NonOrthoCorrector { return _corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
 
-    using Scheme = Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>;
+    using Scheme = Corrected<KappaType, NonOrthoCorrector, Field>;
     using BoundaryHandlersManager =
         prism::boundary::BoundaryHandlersManager<boundary::ISchemeBoundaryHandler<Scheme>>;
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
@@ -92,10 +88,9 @@ IDiffusion<KappaType, Field>::IDiffusion(KappaType kappa, Field phi)
 //
 // Corrected implementation
 //
-template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
-Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::Corrected(KappaType kappa, Field phi)
-    : IDiffusion<KappaType, Field>(kappa, phi),
-      gradient::GradientProvider<Field, GradScheme>(phi) {
+template <typename KappaType, typename NonOrthoCorrector, typename Field>
+Corrected<KappaType, NonOrthoCorrector, Field>::Corrected(KappaType kappa, Field phi)
+    : IDiffusion<KappaType, Field>(kappa, phi) {
     assert(this->needsCorrection() == true &&
            "prism::scheme::diffusion::Corrected::needsCorrection() must return true");
 
@@ -110,8 +105,8 @@ Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::Corrected(KappaType 
     _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
-template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
-void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply() {
+template <typename KappaType, typename NonOrthoCorrector, typename Field>
+void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply() {
     /** @brief Applies discretized diffusion equation to the mesh.
      * The discretized equation is applied per face basis, using apply_interior() and
      * apply_boundary() functions.
@@ -131,13 +126,13 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply() 
     this->collect();
 }
 
-template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
-void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply_boundary() {
+template <typename KappaType, typename NonOrthoCorrector, typename Field>
+void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply_boundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::Corrected", *this);
 }
 
-template <typename KappaType, typename NonOrthoCorrector, typename Field, typename GradScheme>
-void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply_interior(
+template <typename KappaType, typename NonOrthoCorrector, typename Field>
+void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply_interior(
     const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
@@ -170,7 +165,7 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field, GradScheme>::apply_in
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
-    const Vector3d grad_f = this->gradScheme().gradAtFace(face);
+    const Vector3d grad_f = this->field().gradScheme()->gradAtFace(face);
 
     // update right hand side
     this->rhs(owner_id) += Tf_prime.dot(grad_f);
