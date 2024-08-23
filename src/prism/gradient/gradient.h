@@ -128,7 +128,7 @@ auto IGradient<Field>::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
 
     if (handler == nullptr) {
         throw prism::error::NonImplementedBoundaryCondition(
-            "prism::gradient::IGradient::gradAtBoundaryFace",
+            "prism::gradient::IGradient::gradAtBoundaryFace()",
             boundary_patch.name(),
             boundary_condition.kindString());
     }
@@ -198,8 +198,9 @@ GreenGauss<Field>::GreenGauss(Field field) : IGradient<Field>(field) { // NOLINT
     // correction for faces with skewness.
     const std::size_t n_cells = this->field().mesh().nCells();
 
-
     _cell_gradients.reserve(n_cells);
+
+    // TODO: replace this with std::transform
     for (const auto& cell : this->field().mesh().cells()) {
         // caclulate the gradient without skewness correction
         _cell_gradients.emplace_back(gradAtCell_(cell, false));
