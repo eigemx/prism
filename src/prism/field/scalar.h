@@ -2,6 +2,7 @@
 
 #include "ifield.h"
 #include "prism/exceptions.h"
+#include "prism/log.h"
 #include "prism/mesh/utilities.h"
 #include "scalar_boundary.h"
 #include "units.h"
@@ -120,7 +121,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
     : IScalar(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
       _parent(parent) {
-    spdlog::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
+    log::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     addDefaultHandlers();
 }
 
@@ -134,10 +135,10 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
       _coord(coord),
       _parent(parent) {
-    spdlog::debug("Creating scalar field: '{}' (as {}-coordinate) with double value = {}",
-                  this->name(),
-                  coordToStr(coord),
-                  value);
+    log::debug("Creating scalar field: '{}' (as {}-coordinate) with double value = {}",
+               this->name(),
+               coordToStr(coord),
+               value);
     addDefaultHandlers();
 }
 
@@ -156,9 +157,9 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
             this->name()));
     }
 
-    spdlog::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
-                  this->name(),
-                  _data->size());
+    log::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
+               this->name(),
+               _data->size());
     addDefaultHandlers();
 }
 
@@ -179,7 +180,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
             this->name()));
     }
 
-    spdlog::debug(
+    log::debug(
         "Creating scalar field: '{}' (as {}-coordinate) with a cell vector data of size = {}",
         this->name(),
         coordToStr(coord),
@@ -211,7 +212,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                         this->name()));
     }
 
-    spdlog::debug(
+    log::debug(
         "Creating scalar field: '{}' with a cell data vector of size = {} and face data vector "
         "of size = {}",
         this->name(),
@@ -247,7 +248,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                         this->name()));
     }
 
-    spdlog::debug(
+    log::debug(
         "Creating scalar field: '{}' (as {}-coordinate) with a cell data vector of size = {} and "
         "face data vector "
         "of size = {}",
@@ -271,8 +272,8 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     }
 
     if (hasFaceValues()) {
-        spdlog::debug("Setting new face values to scalar field '{}', discarding old face values.",
-                      name());
+        log::debug("Setting new face values to scalar field '{}', discarding old face values.",
+                   name());
     }
 
     _face_data = std::make_shared<VectorXd>(std::move(values));
@@ -364,7 +365,7 @@ void GeneralScalar<Units, BHManagerSetter>::addDefaultHandlers() {
 }
 
 void inline ScalarBHManagerSetter::set(IScalarBHManager& manager) {
-    spdlog::debug(
+    log::debug(
         "prism::field::ScalarBHManagerSetter::set(): adding default boundary handlers for a "
         "scalar field instance");
     manager.addHandler<field::boundary::Fixed<Scalar>>();

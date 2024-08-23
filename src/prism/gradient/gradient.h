@@ -1,7 +1,6 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <spdlog/spdlog.h>
 
 #include <cmath>
 #include <cstddef>
@@ -12,6 +11,7 @@
 #include "prism/field/scalar.h"
 #include "prism/field/vector.h"
 #include "prism/gradient/boundary.h"
+#include "prism/log.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/utilities.h"
 #include "prism/types.h"
@@ -87,7 +87,7 @@ class GradientProvider {
 
 template <field::IScalarBased Field>
 IGradient<Field>::IGradient(Field field) : _field(field) { // NOLINT
-    spdlog::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
+    log::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
     this->boundaryHandlersManager().template addHandler<boundary::Fixed>();
     this->boundaryHandlersManager().template addHandler<boundary::FixedGradient>();
     this->boundaryHandlersManager().template addHandler<boundary::Empty>();

@@ -1,5 +1,6 @@
 #include "velocity.h"
 
+#include "prism/log.h"
 #include "velocity_boundary.h"
 
 namespace prism::field {
@@ -15,7 +16,7 @@ Velocity::Velocity(std::string name,
     : GeneralVector(std::move(name), mesh, fields) {}
 
 void VelocityCompBHManagerSetter::set(IScalarBHManager& manager) {
-    spdlog::debug(
+    log::debug(
         "prism::field::VelocityCompBHManagerSetter::set(): adding default boundary handlers for "
         "a VelocityComponent field instance");
 

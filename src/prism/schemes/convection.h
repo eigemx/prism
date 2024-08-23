@@ -1,7 +1,5 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include <cmath>
 
 #include "boundary.h"
@@ -10,6 +8,7 @@
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
 #include "prism/gradient/gradient.h"
+#include "prism/log.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/utilities.h"
 #include "prism/operations/operations.h"
@@ -338,9 +337,9 @@ void Outlet<convection::IConvection<F>>::apply(convection::IConvection<F>& schem
     }
 
     if (_n_reverse_flow_faces > 0) {
-        spdlog::warn("Reverse flow detected in {} faces in outlet flow patch '{}'",
-                     _n_reverse_flow_faces,
-                     patch.name());
+        log::warn("Reverse flow detected in {} faces in outlet flow patch '{}'",
+                  _n_reverse_flow_faces,
+                  patch.name());
     }
 }
 } // namespace prism::scheme::boundary

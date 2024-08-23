@@ -1,19 +1,13 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
-#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <filesystem>
 
-#include "prism/export.h"
-#include "prism/field/scalar.h"
-#include "prism/field/velocity.h"
-#include "prism/schemes/convection.h"
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
-    spdlog::set_level(spdlog::level::level_enum::debug);
-
+    log::setLevel(log::Level::Debug);
 
     fmt::println("convsolver - A steady state temperature advection solver");
 
@@ -29,7 +23,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    spdlog::info("Loading mesh file `{}`...", unv_file_name);
+    log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]

@@ -5,6 +5,7 @@
 #include "export.h"
 #include "field/field.h"
 #include "gradient/gradient.h"
+#include "log.h"
 #include "mesh/pmesh.h"
 #include "mesh/reorder.h"
 #include "mesh/unv.h"

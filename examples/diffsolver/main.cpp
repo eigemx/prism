@@ -1,7 +1,5 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
-#include <spdlog/common.h>
-#include <spdlog/spdlog.h>
 
 #include <string>
 #include <vector>
@@ -10,7 +8,7 @@
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
-    spdlog::set_level(spdlog::level::level_enum::debug);
+    log::setLevel(log::Level::Debug);
 
     fmt::println("diffsolver - A steady state temperature diffusion solver");
     fmt::println("");
@@ -19,7 +17,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
-        fmt::println("Usage: diffsolver [mesh-file]");
+        log::error("Usage: diffsolver [mesh-file]");
         return 1;
     }
 
@@ -27,7 +25,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    fmt::println("Loading mesh file `{}`...", unv_file_name);
+    log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include <Eigen/IterativeLinearSolvers>
 
 #include "prism/equation/transport.h"
+#include "prism/log.h"
 
 namespace prism::solver {
 
@@ -69,8 +68,8 @@ void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         // check for convergence
         if (res_norm < eps) {
-            spdlog::info("Converged after {} iterations", i);
-            spdlog::info("Residual: {}", res_norm);
+            log::info("Converged after {} iterations", i);
+            log::info("Residual: {}", res_norm);
             break;
         }
 
@@ -79,7 +78,7 @@ void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         rx.postRelax(eqn, lambda);
 
-        spdlog::info("Iteration: {}, Residual: {}", i, res_norm);
+        log::info("Iteration: {}, Residual: {}", i, res_norm);
 
         // zero out the left & right hand side vector, for the next iteration
         eqn.zeroOutCoeffs();
@@ -109,8 +108,8 @@ void GaussSeidel<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         // check for convergence
         if (res_norm < eps) {
-            spdlog::info("Converged after {} iterations", i);
-            spdlog::info("Residual: {}", res_norm);
+            log::info("Converged after {} iterations", i);
+            log::info("Residual: {}", res_norm);
             break;
         }
 
@@ -129,7 +128,7 @@ void GaussSeidel<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         rx.postRelax(eqn, lambda);
 
-        spdlog::info("Iteration: {}, Residual: {}", i, res_norm);
+        log::info("Iteration: {}, Residual: {}", i, res_norm);
 
         // zero out the left & right hand side vector, for the next iteration
         eqn.zeroOutCoeffs();

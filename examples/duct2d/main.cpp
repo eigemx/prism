@@ -1,6 +1,5 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
-#include <spdlog/spdlog.h>
 
 #include <filesystem>
 
@@ -8,7 +7,7 @@
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
-    spdlog::set_level(spdlog::level::level_enum::debug);
+    log::setLevel(log::Level::Debug);
     if (argc < 2) {
         fmt::println("usage: {} [mesh-file]", argv[1]); // NOLINT
         return 1;
@@ -78,10 +77,10 @@ auto main(int argc, char* argv[]) -> int {
 
         auto D = prism::field::Tensor("D", mesh, D_data);
 
-        spdlog::info("Solving y-eqn::Momentum equation");
+        log::info("Solving y-eqn::Momentum equation");
         solver.solve(vEqn, 2, 1e-3, 0.9);
 
-        spdlog::info("Solving x-eqn::Momentum equation");
+        log::info("Solving x-eqn::Momentum equation");
         solver.solve(uEqn, 2, 1e-3, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
@@ -97,7 +96,7 @@ auto main(int argc, char* argv[]) -> int {
             scheme::source::Divergence<scheme::source::SourceSign::Negative, field::Velocity>(U));
 
         pEqn.updateCoeffs();
-        spdlog::info("Solving pressure correction equation");
+        log::info("Solving pressure correction equation");
         p_solver.solve(pEqn, 10, 1e-5, 1);
 
         // update velocity fields

@@ -1,13 +1,12 @@
 #include "tensor.h"
 
-#include <spdlog/spdlog.h>
-
+#include "prism/log.h"
 #include "prism/mesh/utilities.h"
 
 namespace prism::field {
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
     : IField(std::move(name), mesh) {
-    spdlog::debug("Creating tensor field: '{}' with double value = {}", this->name(), value);
+    log::debug("Creating tensor field: '{}' with double value = {}", this->name(), value);
     const std::size_t n_cells = this->mesh().nCells();
     _data.reserve(n_cells);
     for (std::size_t i = 0; i < n_cells; ++i) {
@@ -17,7 +16,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
     : IField(std::move(name), mesh) {
-    spdlog::debug("Creating a uniform tensor field: '{}' given a Matrix3d object", this->name());
+    log::debug("Creating a uniform tensor field: '{}' given a Matrix3d object", this->name());
 
     const std::size_t n_cells = this->mesh().nCells();
     _data.reserve(n_cells);
@@ -28,8 +27,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
 
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> data)
     : IField(std::move(name), mesh), _data(std::move(data)) {
-    spdlog::debug("Creating a  tensor field: '{}' given a vector of Matrix3d objects",
-                  this->name());
+    log::debug("Creating a  tensor field: '{}' given a vector of Matrix3d objects", this->name());
 
     if (_data.size() != mesh.nCells()) {
         throw std::runtime_error(
@@ -58,7 +56,7 @@ auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
     const mesh::Cell& owner = mesh.cell(face.owner());
 
     if (face.isBoundary()) {
-        spdlog::warn(
+        log::warn(
             "field::Tensor::valueAtFace() was called on a boundary face (face id = {}). "
             "Returning value of the tensor field at owner cell.",
             face.id());
