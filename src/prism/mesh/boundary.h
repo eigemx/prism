@@ -85,6 +85,8 @@ class FieldInfo {
  */
 class BoundaryCondition {
   public:
+    // TODO: _value should be a std::option<BoundaryConditionValue>, to avoid having to construct
+    // Nil-valued boundary conditions with double value 0.0;
     BoundaryCondition(BoundaryConditionValueKind type,
                       BoundaryConditionValue value,
                       std::string bc_type_str);

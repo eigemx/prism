@@ -2,12 +2,13 @@
 
 #include <fmt/base.h>
 #include <fmt/format.h>
-#include <spdlog/spdlog.h>
 
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <stdexcept>
+
+#include "prism/log.h"
 
 using json = nlohmann::json;
 
@@ -145,7 +146,7 @@ auto readFieldsBoundaryFiles(const std::filesystem::path& path,
     -> std::vector<FieldBoundaryFile> {
     std::vector<FieldBoundaryFile> boundary_files;
     for (const auto& field : fields) {
-        spdlog::debug(
+        log::debug(
             "prism::mesh::readFieldsBoundaryFiles() : Reading boundary conditions file for field "
             "{}",
             field.name());
@@ -389,14 +390,10 @@ auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double
             return vec_value[2];
         default: {
             throw std::runtime_error(
-                "prism::mesh::BoundaryPatch::getScalarBCSubfield was given a field with a "
-                "name "
-                "that does not in with a valid Cartesian componenet.");
+                "prism::mesh::BoundaryPatch::getScalarBCSubfield() was given a field with a "
+                "name that does not end with a valid cartesian component (aka x, y or z).");
         }
     }
-
-    // It should be impossible to reach this
-    return 0.0;
 }
 
 
