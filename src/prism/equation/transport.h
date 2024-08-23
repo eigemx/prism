@@ -8,9 +8,9 @@
 #include "prism/field/scalar.h"
 #include "prism/linear.h"
 #include "prism/log.h"
-#include "prism/schemes/convection.h"
-#include "prism/schemes/diffusion.h"
-#include "prism/schemes/source.h"
+#include "prism/scheme/convection.h"
+#include "prism/scheme/diffusion.h"
+#include "prism/scheme/source.h"
 
 namespace prism::eqn {
 

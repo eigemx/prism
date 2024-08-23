@@ -7,7 +7,6 @@
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
-#include "prism/gradient/gradient.h"
 #include "prism/log.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/utilities.h"
