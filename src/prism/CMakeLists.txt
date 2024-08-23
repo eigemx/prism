@@ -23,7 +23,7 @@ add_library(prism
     mesh/trie.cpp
     mesh/reorder.cpp
 
-    schemes/nonortho.cpp
+    scheme/nonortho.cpp
 
     # gradient
     gradient/boundary.cpp
