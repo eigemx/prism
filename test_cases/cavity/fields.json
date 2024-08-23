@@ -3,13 +3,17 @@
         {
             "name": "U",
             "type": "velocity",
-            "gradScheme": "greenGauss"
+            "gradScheme": "least-squares"
         },
         
         {
             "name": "P",
             "type": "pressure",
-            "gradScheme": "leastSquares"
+            "gradScheme": "least-squares"
+        },
+        {
+            "name": "rho",
+            "type": "scalar"
         }
     ]
 }

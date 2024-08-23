@@ -8,7 +8,7 @@
 
 #include "prism/boundary.h"
 #include "prism/constants.h"
-#include "prism/field/scalar.h"
+#include "prism/field/ifield.h"
 #include "prism/field/vector.h"
 #include "prism/gradient/boundary.h"
 #include "prism/log.h"
@@ -70,7 +70,7 @@ class LeastSquares : public IGradient<Field> {
   private:
     void setPseudoInvMatrices();
 
-    std::vector<MatrixX3d> _pinv_matrices; // pseudo-inverse matrices
+    std::vector<Matrix3d> _pinv_matrices; // pseudo-inverse matrices
 };
 
 

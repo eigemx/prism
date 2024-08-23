@@ -21,9 +21,9 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto mu = field::UniformScalar("viscosity", mesh, 1e-6);
-    auto rho = field::Scalar("density", mesh, 1.18);
     auto U = field::Velocity("U", mesh, {0.05, 0.05, 0.0});
     auto P = field::Pressure("P", mesh, 1.0);
+    auto rho = field::Scalar("rho", mesh, 1.18);
 
     auto uEqn = eqn::Momentum(
         scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
