@@ -25,6 +25,18 @@ auto UniformScalar::valueAtFace(const mesh::Face& face) const -> double { // NOL
     return _value;
 }
 
+auto UniformScalar::gradAtFace(const mesh::Face& face) const -> Vector3d { // NOLINT
+    return {0.0, 0.0, 0.0};
+}
+
+auto UniformScalar::gradAtCell(const mesh::Cell& cell) const -> Vector3d { // NOLINT
+    return {0.0, 0.0, 0.0};
+}
+
+auto UniformScalar::gradAtCellStored(const mesh::Cell& cell) const -> Vector3d { // NOLINT
+    return {0.0, 0.0, 0.0};
+}
+
 void ScalarBHManagerSetter::set(IScalarBHManager& manager) {
     log::debug(
         "prism::field::ScalarBHManagerSetter::set(): adding default boundary handlers for a "

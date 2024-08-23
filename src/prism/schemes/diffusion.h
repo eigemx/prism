@@ -165,7 +165,7 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply_interior(
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
-    const Vector3d grad_f = this->field().gradScheme()->gradAtFace(face);
+    const Vector3d grad_f = this->field().gradAtFace(face);
 
     // update right hand side
     this->rhs(owner_id) += Tf_prime.dot(grad_f);
