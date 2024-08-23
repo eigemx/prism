@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int {
     auto U = field::Velocity("velocity", mesh, inlet_velocity);
 
     // A zero field, just to demonstrate how to add arbitray constant source terms
-    auto useLessField = field::Scalar("zero", mesh, 0.0);
+    // auto useLessField = field::Scalar("zero", mesh, 0.0);
 
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
 
@@ -58,8 +58,8 @@ auto main(int argc, char* argv[]) -> int {
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = eqn::Transport(
         scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
-        scheme::diffusion::Corrected(kappa, T),           // - ∇.(κ ∇T)
-        scheme::source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
+        scheme::diffusion::Corrected(kappa, T)            // - ∇.(κ ∇T)
+        // scheme::source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 
     // solve

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "prism/field/scalar.h"
-#include "prism/gradient/gradient.h"
 #include "prism/log.h"
 #include "prism/operations/operations.h"
 #include "scheme.h"
@@ -56,26 +55,21 @@ class Divergence : public IExplicitSource {
 
 // Adds a source for a gradient of a scalar field, in a specific coordinate
 // for example the gradient of the pressure in the x-direction: ∂p/∂x
-template <SourceSign Sign = SourceSign::Positive,
-          typename Field = field::Scalar,
-          typename GradientScheme = gradient::LeastSquares<Field>>
+template <SourceSign Sign = SourceSign::Positive, typename Field = field::Scalar>
 class Gradient : public IExplicitSource {
   public:
     Gradient(Field phi, Coord coord);
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return true; }
 
-
   private:
     Field _phi;
     Coord _coord;
-    GradientScheme _grad_scheme;
 };
 
 template <SourceSign Sign = SourceSign::Positive,
           typename Kappa = field::UniformScalar,
-          typename Field = field::Scalar,
-          typename GradientScheme = gradient::LeastSquares<Field>>
+          typename Field = field::Scalar>
 class Laplacian : public IExplicitSource {
   public:
     Laplacian(Kappa kappa, Field phi);
@@ -84,7 +78,6 @@ class Laplacian : public IExplicitSource {
   private:
     Kappa _kappa;
     Field _phi;
-    GradientScheme _grad_scheme;
 };
 
 // TODO: Test this!
@@ -132,29 +125,29 @@ void inline Divergence<Sign, Vector>::apply() {
     rhs() = -ops::div(_U).values();
 }
 
-template <SourceSign Sign, typename Field, typename GradientScheme>
-Gradient<Sign, Field, GradientScheme>::Gradient(Field phi, Coord coord)
-    : _phi(phi), _grad_scheme(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {
-    log::debug("Creating gradient source for field '{}'", phi.name());
+template <SourceSign Sign, typename Field>
+Gradient<Sign, Field>::Gradient(Field phi, Coord coord)
+    : _phi(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {
+    log::debug("prism::scheme::source::Gradient(): Creating gradient source for field '{}'",
+               phi.name());
 }
 
-template <SourceSign Sign, typename Field, typename GradientScheme>
-void Gradient<Sign, Field, GradientScheme>::apply() {
-    auto grad_field = _grad_scheme.gradField();
+template <SourceSign Sign, typename Field>
+void Gradient<Sign, Field>::apply() {
     const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
     switch (_coord) {
         case Coord::X: {
-            rhs() = grad_field.x().values().array() * vol_field.array();
+            rhs() = ops::grad(_phi, Coord::X).values().array() * vol_field.array();
             break;
         }
         case Coord::Y: {
-            rhs() = grad_field.y().values().array() * vol_field.array();
+            rhs() = ops::grad(_phi, Coord::Y).values().array() * vol_field.array();
             break;
         }
 
         case Coord::Z: {
-            rhs() = grad_field.z().values().array() * vol_field.array();
+            rhs() = ops::grad(_phi, Coord::Z).values().array() * vol_field.array();
             break;
         }
     }
@@ -164,16 +157,13 @@ void Gradient<Sign, Field, GradientScheme>::apply() {
     }
 }
 
-template <SourceSign Sign, typename Kappa, typename Field, typename GradientScheme>
-Laplacian<Sign, Kappa, Field, GradientScheme>::Laplacian(Kappa kappa, Field phi)
-    : IExplicitSource(phi.mesh().nCells()),
-      _kappa(kappa),
-      _phi(phi),
-      _grad_scheme(GradientScheme(phi)) {}
+template <SourceSign Sign, typename Kappa, typename Field>
+Laplacian<Sign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
+    : IExplicitSource(phi.mesh().nCells()), _kappa(kappa), _phi(phi) {}
 
-template <SourceSign Sign, typename Kappa, typename Field, typename GradientScheme>
-void inline Laplacian<Sign, Kappa, Field, GradientScheme>::apply() {
-    auto grad_phi = _grad_scheme.gradField();
+template <SourceSign Sign, typename Kappa, typename Field>
+void inline Laplacian<Sign, Kappa, Field>::apply() {
+    auto grad_phi = _phi.gradScheme()->gradField();
     auto div = ops::div(grad_phi);
 
     if (Sign == SourceSign::Positive) {

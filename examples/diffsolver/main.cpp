@@ -39,14 +39,14 @@ auto main(int argc, char* argv[]) -> int {
             source_field_data[cell.id()] = 100000.0;
         }
     }
-    auto S = field::Scalar("S", mesh, source_field_data);
+    // auto S = field::Scalar("S", mesh, source_field_data);
 
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
     auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
-    auto eqn =
-        eqn::Transport(scheme::diffusion::Corrected(kappa, T), scheme::source::ConstantScalar(S));
+    auto eqn = eqn::Transport(
+        scheme::diffusion::Corrected(kappa, T)); //, scheme::source::ConstantScalar(S));
 
     // solve
     auto solver =
@@ -55,7 +55,7 @@ auto main(int argc, char* argv[]) -> int {
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 
-    auto gradT_x = gradient::LeastSquares(T).gradField().x();
+    auto gradT_x = ops::grad(T, Coord::X);
     prism::export_field_vtu(gradT_x, "gradT_x_ls.vtu");
 
     return 0;

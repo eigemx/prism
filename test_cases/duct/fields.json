@@ -9,6 +9,10 @@
             "name": "velocity",
             "type": "velocity",
             "gradScheme": "greenGauss"
+        },
+        {
+            "name": "rho",
+            "type": "scalar"
         }
     ]
 }

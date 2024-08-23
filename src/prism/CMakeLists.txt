@@ -9,6 +9,7 @@ add_library(prism
     field/velocity.cpp
     field/velocity_boundary.cpp
     field/pressure.cpp
+    field/pressure_boundary.cpp
     
     export.cpp
     exceptions.cpp
@@ -26,6 +27,9 @@ add_library(prism
 
     # gradient
     gradient/boundary.cpp
+    gradient/gradient.cpp
+    gradient/green_gauss.cpp
+    gradient/least_squares.cpp
 
     # operations
     operations/rhie_chow.cpp

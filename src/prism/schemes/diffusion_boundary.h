@@ -15,7 +15,7 @@ class INonCorrected;
 template <typename T>
 concept INonCorrectedBased = std::is_base_of_v<INonCorrected, T>;
 
-template <typename KappaType, typename NonOrthoCorrector, typename GradScheme, typename Field>
+template <typename KappaType, typename NonOrthoCorrector, typename Field>
 class Corrected;
 
 template <typename KappaType, typename Field>
