@@ -46,6 +46,7 @@ if(NOT DEFINED PRISM_BUILD_EXAMPLES)
     message(STATUS "Set PRISM_BUILD_EXAMPLES to OFF to disable building examples.")
 endif()
 
+
 # set optimization flags for release builds for gcc, clang and msvc
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -81,3 +82,6 @@ target_link_libraries(prism
 if (PRISM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+# TODO: tests should be used only when building as main project?
+add_subdirectory(tests)
