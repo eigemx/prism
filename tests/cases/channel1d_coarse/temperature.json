@@ -1,0 +1,18 @@
+{
+    "patches": [
+        {
+            "name": "empty",
+            "type": "empty"
+        },
+        {
+            "name": "inlet",
+            "type": "fixed",
+            "value": 900
+        },
+        {
+            "name": "outlet",
+            "type": "fixed",
+            "value": 300
+        }
+    ]
+}

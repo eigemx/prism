@@ -13,14 +13,18 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
 
 
 GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) { // NOLINT
-    const std::size_t n_cells = field->mesh().nCells();
+    const auto& mesh = field->mesh();
+    _cell_gradients.reserve(mesh.nCells());
 
-    _cell_gradients.reserve(n_cells);
+    std::transform(_cell_gradients.begin(),
+                   _cell_gradients.end(),
+                   std::back_inserter(_cell_gradients),
+                   [](const auto& _) { return Vector3d::Zero(); }); // NOLINT
 
-    // TODO: replace this with std::transform
-    for (const auto& cell : field->mesh().cells()) {
-        _cell_gradients.emplace_back(Vector3d::Zero());
-    }
+    std::transform(mesh.cells().begin(),
+                   mesh.cells().end(),
+                   _cell_gradients.begin(),
+                   [this](const auto& cell) { return gradAtCell(cell); });
 }
 
 auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
@@ -77,12 +81,4 @@ auto GreenGauss::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d {
     return phi * face.area_vector();
 }
 
-LeastSquares::LeastSquares(field::IScalar* field) : IGradient(field) {
-    const auto& mesh = this->field()->mesh();
-
-    for (const auto& cell : mesh.cells()) {
-        _cell_gradients.emplace_back(Vector3d::Zero());
-    }
-    setPseudoInvMatrices();
-}
 } // namespace prism::gradient
