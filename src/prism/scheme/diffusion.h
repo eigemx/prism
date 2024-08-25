@@ -51,10 +51,8 @@ class Corrected : public ICorrected, public IDiffusion<KappaType, Field> {
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:
-    void apply_interior(const mesh::Face& face) override;
-    // TODO: remove this
-    void apply_boundary(const mesh::Face& face) override {}
-    void apply_boundary();
+    void applyInterior(const mesh::Face& face) override;
+    void applyBoundary();
 
     NonOrthoCorrector _corrector;
     BoundaryHandlersManager _bc_manager;
@@ -74,9 +72,8 @@ class NonCorrected : public INonCorrected, public IDiffusion<KappaType, Field> {
     auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:
-    void apply_interior(const mesh::Face& face) override;
-    void apply_boundary(const mesh::Face& face) override {}
-    void apply_boundary();
+    void applyInterior(const mesh::Face& face) override;
+    void applyBoundary();
 
     BoundaryHandlersManager _bc_manager;
 };
@@ -116,11 +113,11 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply() {
      * the scheme coefficients and will not zero out the scheme matrix and RHS vector.
      */
 
-    apply_boundary();
+    applyBoundary();
 
     const auto& interior_faces = this->field().mesh().interiorFaces();
     std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
-        apply_interior(face);
+        applyInterior(face);
     });
 
     // we've inserted all the triplets, now we can collect them into the matrix
@@ -128,12 +125,12 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply() {
 }
 
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
-void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply_boundary() {
+void inline Corrected<KappaType, NonOrthoCorrector, Field>::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::Corrected", *this);
 }
 
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
-void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply_interior(
+void inline Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(
     const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
@@ -196,23 +193,23 @@ NonCorrected<KappaType, Field>::NonCorrected(KappaType kappa, Field phi)
 
 template <typename KappaType, typename Field>
 void inline NonCorrected<KappaType, Field>::apply() {
-    apply_boundary();
+    applyBoundary();
 
     const auto& interior_faces = this->field().mesh().interiorFaces();
     std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
-        apply_interior(face);
+        applyInterior(face);
     });
 
     this->collect();
 }
 
 template <typename KappaType, typename Field>
-void inline NonCorrected<KappaType, Field>::apply_boundary() {
+void inline NonCorrected<KappaType, Field>::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::NonCorrected", *this);
 }
 
 template <typename KappaType, typename Field>
-void inline NonCorrected<KappaType, Field>::apply_interior(const mesh::Face& face) {
+void inline NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());

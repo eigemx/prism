@@ -82,13 +82,14 @@ auto Empty<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
 
 template <IScalarBased Field>
 auto Symmetry<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    return field.valueAtCell(face.owner());
+    ZeroGradient<Field> zg;
+    return zg.get(field, face);
 }
 
 template <IScalarBased Field>
 auto Outlet<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    Symmetry<Field> symm;
-    return symm.get(field, face);
+    ZeroGradient<Field> zg;
+    return zg.get(field, face);
 }
 
 template <IScalarBased Field>
@@ -109,18 +110,7 @@ auto FixedGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> 
 
 template <IScalarBased Field>
 auto ZeroGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    const auto& mesh = field.mesh();
-    const auto& patch = mesh.boundaryPatch(face);
-
-    Vector3d grad_at_boundary = Vector3d {0.0, 0.0, 0.0};
-    const auto& owner = mesh.cell(face.owner());
-
-    Vector3d e = face.center() - owner.center();
-    double d_Cf = e.norm();
-    e = e / e.norm();
-    grad_at_boundary = grad_at_boundary * d_Cf;
-
-    return grad_at_boundary.dot(e) + field.valueAtCell(owner);
+    return field.valueAtCell(face.owner());
 }
 
 } // namespace prism::field::boundary
