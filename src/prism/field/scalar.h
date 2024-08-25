@@ -416,12 +416,12 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
 
     auto grad_scheme_name = it->gradScheme().value();
 
-    if (grad_scheme_name == "green_gauss" || grad_scheme_name == "greenGauss") {
+    if (grad_scheme_name == "green-gauss" || grad_scheme_name == "greenGauss") {
         _grad_scheme = std::make_shared<gradient::GreenGauss>(this);
         return;
     }
 
-    if (grad_scheme_name == "least_squares" || grad_scheme_name == "leastSquares") {
+    if (grad_scheme_name == "least-squares" || grad_scheme_name == "leastSquares") {
         _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
         return;
     }

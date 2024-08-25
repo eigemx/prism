@@ -102,6 +102,8 @@ Corrected<KappaType, NonOrthoCorrector, Field>::Corrected(KappaType kappa, Field
     _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
 }
 
+
+// TODO: this is the same function used in Corrected and NonCorrected, we need to use it only once
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
 void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply() {
     /** @brief Applies discretized diffusion equation to the mesh.

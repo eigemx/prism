@@ -2,7 +2,6 @@
 
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
-#include "prism/gradient/gradient.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/types.h"

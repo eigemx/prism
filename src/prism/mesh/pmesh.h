@@ -51,6 +51,7 @@ struct BoundaryFaces {
     const std::vector<std::size_t>& _boundary_faces_ids;
 };
 
+// TODO: InteriorFaces should provide iteration over non-empty interior faces
 struct InteriorFaces {
     InteriorFaces(const std::vector<Face>& faces,
                   const std::vector<std::size_t>& interior_faces_ids);

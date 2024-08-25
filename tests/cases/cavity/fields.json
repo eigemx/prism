@@ -9,7 +9,7 @@
         {
             "name": "P",
             "type": "pressure",
-            "gradScheme": "least-squares"
+            "gradScheme": "green-gauss"
         },
         {
             "name": "rho",
