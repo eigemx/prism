@@ -20,11 +20,6 @@ GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) { // NOLINT
                    _cell_gradients.end(),
                    std::back_inserter(_cell_gradients),
                    [](const auto& _) { return Vector3d::Zero(); }); // NOLINT
-
-    std::transform(mesh.cells().begin(),
-                   mesh.cells().end(),
-                   _cell_gradients.begin(),
-                   [this](const auto& cell) { return gradAtCell(cell); });
 }
 
 auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {

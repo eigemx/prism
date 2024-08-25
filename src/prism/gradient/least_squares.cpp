@@ -15,11 +15,6 @@ LeastSquares::LeastSquares(field::IScalar* field) : IGradient(field) {
                    [](const auto& _) { return Vector3d::Zero(); }); // NOLINT
 
     setPseudoInvMatrices();
-
-    std::transform(mesh.cells().begin(),
-                   mesh.cells().end(),
-                   _cell_gradients.begin(),
-                   [this](const auto& cell) { return gradAtCell(cell); });
 }
 
 void LeastSquares::setPseudoInvMatrices() {

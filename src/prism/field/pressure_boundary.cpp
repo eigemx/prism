@@ -5,7 +5,6 @@
 namespace prism::field::boundary {
 template <>
 auto NoSlip<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
-    assert(field.gradScheme() != nullptr);
     const auto& owner = field.mesh().cell(face.owner());
     const Vector3d d_Cb = face.center() - owner.center();
 
