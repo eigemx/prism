@@ -1,7 +1,27 @@
+#include <algorithm>
+
 #include "gradient.h"
 #include "prism/constants.h"
 
 namespace prism::gradient {
+
+LeastSquares::LeastSquares(field::IScalar* field) : IGradient(field) {
+    const auto& mesh = this->field()->mesh();
+    _cell_gradients.reserve(mesh.nCells());
+
+    std::transform(_cell_gradients.begin(),
+                   _cell_gradients.end(),
+                   std::back_inserter(_cell_gradients),
+                   [](const auto& _) { return Vector3d::Zero(); }); // NOLINT
+
+    setPseudoInvMatrices();
+
+    std::transform(mesh.cells().begin(),
+                   mesh.cells().end(),
+                   _cell_gradients.begin(),
+                   [this](const auto& cell) { return gradAtCell(cell); });
+}
+
 void LeastSquares::setPseudoInvMatrices() {
     // This function is based on section 9.3 'Least-Square Gradient'
     const auto& mesh = this->field()->mesh();

@@ -118,9 +118,10 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field>::apply() {
 
     apply_boundary();
 
-    for (const auto& iface : this->field().mesh().interiorFaces()) {
-        apply_interior(iface);
-    }
+    const auto& interior_faces = this->field().mesh().interiorFaces();
+    std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
+        apply_interior(face);
+    });
 
     // we've inserted all the triplets, now we can collect them into the matrix
     this->collect();
@@ -197,11 +198,11 @@ template <typename KappaType, typename Field>
 void inline NonCorrected<KappaType, Field>::apply() {
     apply_boundary();
 
-    for (const auto& iface : this->field().mesh().interiorFaces()) {
-        apply_interior(iface);
-    }
+    const auto& interior_faces = this->field().mesh().interiorFaces();
+    std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
+        apply_interior(face);
+    });
 
-    // we've inserted all the triplets, now we can collect them into the matrix
     this->collect();
 }
 

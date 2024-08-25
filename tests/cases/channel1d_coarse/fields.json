@@ -1,0 +1,18 @@
+{
+    "fields": [
+        {
+            "name": "temperature",
+            "type": "scalar",
+            "gradScheme": "leastSquares"
+        },
+        {
+            "name": "velocity",
+            "type": "velocity",
+            "gradScheme": "leastSquares"
+        },
+        {
+            "name": "rho",
+            "type": "scalar"
+        }
+    ]
+}

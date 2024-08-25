@@ -58,7 +58,7 @@ auto main(int argc, char* argv[]) -> int {
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     auto eqn = eqn::Transport(
         scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
-        scheme::diffusion::Corrected(kappa, T)            // - ∇.(κ ∇T)
+        scheme::diffusion::NonCorrected(kappa, T)         // - ∇.(κ ∇T)
         // scheme::source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
     );
 
