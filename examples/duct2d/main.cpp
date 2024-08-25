@@ -26,7 +26,7 @@ auto main(int argc, char* argv[]) -> int {
     auto rho = field::Scalar("rho", mesh, 1.18);
 
     auto uEqn = eqn::Momentum(
-        scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
+        scheme::convection::SecondOrderUpwind<field::VelocityComponent>(rho, U, U.x()), // ∇.(ρUu)
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(
             mu, U.x()), // - ∇.(μ∇u)
         scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
@@ -34,7 +34,7 @@ auto main(int argc, char* argv[]) -> int {
     );
 
     auto vEqn = eqn::Momentum(
-        scheme::convection::Upwind<field::VelocityComponent>(rho, U, U.y()),
+        scheme::convection::SecondOrderUpwind<field::VelocityComponent>(rho, U, U.y()),
         scheme::diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>(mu,
                                                                                         U.y()),
         scheme::source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>(
@@ -78,10 +78,10 @@ auto main(int argc, char* argv[]) -> int {
         auto D = prism::field::Tensor("D", mesh, D_data);
 
         log::info("Solving y-eqn::Momentum equation");
-        solver.solve(vEqn, 2, 1e-3, 0.9);
+        solver.solve(vEqn, 2, 1e-5, 0.9);
 
         log::info("Solving x-eqn::Momentum equation");
-        solver.solve(uEqn, 2, 1e-3, 0.9);
+        solver.solve(uEqn, 2, 1e-5, 0.9);
 
         // Rhie-Chow interpolation for velocity face values
         ops::correctRhieChow(U, D, P);

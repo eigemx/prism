@@ -41,8 +41,7 @@ class IFullScheme : public IScheme, public LinearSystem {
     virtual auto field() -> Field = 0;
 
   private:
-    virtual void apply_interior(const mesh::Face& face) = 0;
-    virtual void apply_boundary(const mesh::Face& face) = 0;
+    virtual void applyInterior(const mesh::Face& face) = 0;
 };
 
 } // namespace prism::scheme

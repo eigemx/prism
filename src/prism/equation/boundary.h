@@ -37,5 +37,19 @@ class NoSlip<Momentum> : public IEquationBoundaryHandler<Momentum> {
     void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
 };
 
+template <typename Equation>
+class Outlet : public IEquationBoundaryHandler<Equation> {
+  public:
+    auto name() const noexcept -> std::string override { return "outlet"; }
+    void apply(Equation& eqn, const mesh::BoundaryPatch& patch) override;
+};
+
+template <>
+class Outlet<Momentum> : public IEquationBoundaryHandler<Momentum> {
+  public:
+    auto name() const noexcept -> std::string override { return "outlet"; }
+    void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
+};
+
 
 } // namespace prism::eqn::boundary

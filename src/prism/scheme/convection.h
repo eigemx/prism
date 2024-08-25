@@ -50,9 +50,8 @@ class IConvection : public IFullScheme<Field>,
                              const mesh::Cell& neighbor,
                              const mesh::Face& face) -> detail::CoeffsTriplet = 0;
 
-    void apply_interior(const mesh::Face& face) override;
-    void apply_boundary(const mesh::Face& face) override {}
-    void apply_boundary();
+    void applyInterior(const mesh::Face& face) override;
+    void applyBoundary();
 
     field::Scalar _rho;
     field::Velocity _U;
@@ -134,17 +133,17 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
 
 template <typename Field>
 void IConvection<Field>::apply() {
-    apply_boundary();
+    applyBoundary();
 
     for (const auto& iface : _phi.mesh().interiorFaces()) {
-        apply_interior(iface);
+        applyInterior(iface);
     }
 
     this->collect();
 }
 
 template <typename Field>
-void IConvection<Field>::apply_interior(const mesh::Face& face) {
+void IConvection<Field>::applyInterior(const mesh::Face& face) {
     const auto& mesh = _phi.mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
@@ -171,7 +170,7 @@ void IConvection<Field>::apply_interior(const mesh::Face& face) {
 }
 
 template <typename Field>
-void IConvection<Field>::apply_boundary() {
+void IConvection<Field>::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::convection::IConvection", *this);
 }
 

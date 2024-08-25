@@ -1,7 +1,24 @@
 #include <prism/prism.h>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
+#include <cmath>
 #include <filesystem>
+
+auto peclet_number(double rho, double kappa, double u, double L) {
+    return (rho * u * L) / kappa;
+}
+auto advection_1d(double x, double u) -> double {
+    double phi_west = 1;
+    double phi_east = 0;
+    double pecklet = peclet_number(1.18, 1e-2, u, 1.0);
+
+    auto result = (std::exp(pecklet * (x)) - 1) / (std::exp(pecklet) - 1);
+    result *= phi_east - phi_west;
+    result += phi_west;
+    return result;
+}
 
 TEST_CASE("field::UniformScalar as uniform cell and face values", "[UniformScalar]") {
     using namespace prism;
@@ -16,4 +33,45 @@ TEST_CASE("field::UniformScalar as uniform cell and face values", "[UniformScala
     REQUIRE(T.gradAtFace(mesh.face(0)) == Vector3d {0.0, 0.0, 0.0});
     REQUIRE(T.gradAtCell(mesh.cell(0)) == Vector3d {0.0, 0.0, 0.0});
     REQUIRE(T.gradAtCellStored(mesh.cell(0)) == Vector3d {0.0, 0.0, 0.0});
+}
+
+TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
+    using namespace prism;
+
+    log::setLevel(log::Level::Error);
+
+    const auto* mesh_file = "tests/cases/channel1d_coarse/mesh.unv";
+    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
+    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).to_pmesh();
+
+    auto T = field::Scalar("temperature", mesh, 0.5);
+    auto rho = field::Scalar("rho", mesh, 1.18);
+
+    const auto& inlet_patch = std::find_if(
+        mesh.boundaryPatches().begin(), mesh.boundaryPatches().end(), [](const auto& patch) {
+            return patch.name() == "inlet";
+        });
+
+
+    Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("velocity");
+    auto U = field::Velocity("velocity", mesh, inlet_velocity);
+
+    auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
+    auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
+                              scheme::diffusion::NonCorrected(kappa, T)         // - ∇.(κ ∇T)
+    );
+
+    auto solver =
+        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    solver.solve(eqn, 100, 1e-5, 1);
+
+    std::vector<double> diff;
+    for (const auto& cell : T.mesh().cells()) {
+        diff.push_back(T.valueAtCell(cell.id()) -
+                       advection_1d(cell.center().x(), inlet_velocity.x()));
+    }
+    VectorXd diff_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(diff.data(), diff.size());
+
+    REQUIRE(diff_vec.norm() < 0.05);
+    REQUIRE(std::is_sorted(diff.rbegin(), diff.rend()));
 }
