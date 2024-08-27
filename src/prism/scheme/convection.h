@@ -123,12 +123,12 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
       IFullScheme<Field>(phi.mesh().nCells()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    this->boundaryHandlersManager().template addHandler<scheme::boundary::Empty<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<scheme::boundary::Fixed<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<scheme::boundary::Outlet<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<scheme::boundary::Symmetry<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<scheme::boundary::ZeroGradient<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<scheme::boundary::NoSlip<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
 }
 
 template <typename Field>
