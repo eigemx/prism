@@ -12,8 +12,10 @@ auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
     return std::dynamic_pointer_cast<To>(ptr);
 }
 
-auto contribution(Coord coord, const Vector3d& Uc, const Vector3d& Ub, const Vector3d& n)
-    -> std::pair<double, double> {
+auto contribution(Coord coord,
+                  const Vector3d& Uc,
+                  const Vector3d& Ub,
+                  const Vector3d& n) -> std::pair<double, double> {
     // n
     double nx = n.x();
     double ny = n.y();
@@ -64,7 +66,7 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     auto conv_scheme = castScheme<F, IConvection<F>>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
 
-    using Diffusion = scheme::diffusion::IDiffusion<field::UniformScalar, F>;
+    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::UniformScalar, F>;
     auto diff_scheme = castScheme<F, Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
