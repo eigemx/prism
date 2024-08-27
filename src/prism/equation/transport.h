@@ -53,9 +53,10 @@ class Transport : public LinearSystem,
     void addScheme(Convection&& convection);
 
     template <typename Diffusion>
-        requires std::derived_from<Diffusion,
-                                   scheme::diffusion::IDiffusion<typename Diffusion::KappaType,
-                                                                 typename Diffusion::FieldType>>
+        requires std::derived_from<
+            Diffusion,
+            scheme::diffusion::IAppliedDiffusion<typename Diffusion::KappaType,
+                                                 typename Diffusion::FieldType>>
     void addScheme(Diffusion&& diffusion);
 
     template <typename Source>
@@ -153,9 +154,10 @@ void Transport<Field>::addScheme(Convection&& convection) {
 
 template <typename Field>
 template <typename Diffusion>
-    requires std::derived_from<Diffusion,
-                               scheme::diffusion::IDiffusion<typename Diffusion::KappaType,
-                                                             typename Diffusion::FieldType>>
+    requires std::derived_from<
+        Diffusion,
+        scheme::diffusion::IAppliedDiffusion<typename Diffusion::KappaType,
+                                             typename Diffusion::FieldType>>
 void Transport<Field>::addScheme(Diffusion&& diffusion) {
     if (diffusion.needsCorrection()) {
         _n_corrected_schemes++;

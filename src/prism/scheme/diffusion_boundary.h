@@ -1,19 +1,26 @@
 #pragma once
 
+#include <concepts>
+
 #include "boundary.h"
 #include "prism/constants.h"
 
 namespace prism::scheme::diffusion {
 
+class IDiffusion;
+
+template <typename T>
+concept IDiffusionBased = std::derived_from<T, IDiffusion>;
+
 class ICorrected;
 
 template <typename T>
-concept ICorrectedBased = std::is_base_of_v<ICorrected, T>;
+concept ICorrectedBased = std::derived_from<T, ICorrected>;
 
 class INonCorrected;
 
 template <typename T>
-concept INonCorrectedBased = std::is_base_of_v<INonCorrected, T>;
+concept INonCorrectedBased = std::derived_from<T, INonCorrected>;
 
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
 class Corrected;
@@ -24,6 +31,35 @@ class NonCorrected;
 } // namespace prism::scheme::diffusion
 
 namespace prism::scheme::boundary {
+template <diffusion::IDiffusionBased Scheme>
+class Symmetry<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
+    auto inline name() const -> std::string override { return "symmetry"; }
+};
+
+template <diffusion::IDiffusionBased Scheme>
+class Outlet<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
+    auto inline name() const -> std::string override { return "outlet"; }
+};
+
+// general Von Neumann boundary condition, or fixed gradient boundary condition.
+template <diffusion::IDiffusionBased Scheme>
+class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
+    auto inline name() const -> std::string override { return "fixed-gradient"; }
+};
+
+template <diffusion::IDiffusionBased Scheme>
+class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
+    auto inline name() const -> std::string override { return "zero-gradient"; }
+};
+
 //
 // diffusion::Corrected default boundary handlers
 //
@@ -33,25 +69,14 @@ namespace prism::scheme::boundary {
 // side of the equation, or the matrix coefficients, and no need for non-orthogonal correction.
 // check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph, and
 // paragraph 8.6.8.2 - Chapter 8 in same reference.
-template <scheme::diffusion::ICorrectedBased Scheme>
-class Symmetry<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "symmetry"; }
-};
 
 // We treat outlet boundary condition in diffusion scheme same as symmetry (zero gradient of the
 // conserved scalar field)
-template <scheme::diffusion::ICorrectedBased Scheme>
-class Outlet<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "outlet"; }
-};
+
 
 // Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion with a conserved
 // general scalar field (for example: velocity component or temperature).
-template <scheme::diffusion::ICorrectedBased Scheme>
+template <diffusion::ICorrectedBased Scheme>
 class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
@@ -65,68 +90,54 @@ class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
     auto inline name() const -> std::string override { return "no-slip"; }
 };
 
-// general Von Neumann boundary condition, or fixed gradient boundary condition.
-template <scheme::diffusion::ICorrectedBased Scheme>
-class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
-    auto inline name() const -> std::string override { return "fixed-gradient"; }
-};
-
-template <scheme::diffusion::ICorrectedBased Scheme>
-class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "zero-gradient"; }
-};
 
 //
 // diffusion::NonCorrected default boundary handlers
 //
-template <scheme::diffusion::INonCorrectedBased Scheme>
+template <diffusion::INonCorrectedBased Scheme>
 class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "fixed"; }
 };
 
-template <scheme::diffusion::INonCorrectedBased Scheme>
-class Symmetry<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "symmetry"; }
-};
-
-template <scheme::diffusion::INonCorrectedBased Scheme>
-class Outlet<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "outlet"; }
-};
-
-template <scheme::diffusion::INonCorrectedBased Scheme>
-class FixedGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
-    auto inline name() const -> std::string override { return "fixed-gradient"; }
-};
-
-template <scheme::diffusion::INonCorrectedBased Scheme>
-class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {}
-    auto inline name() const -> std::string override { return "zero-gradient"; }
-};
-
-template <scheme::diffusion::INonCorrectedBased Scheme>
+template <diffusion::INonCorrectedBased Scheme>
 class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
     auto inline name() const -> std::string override { return "no-slip"; }
 };
 
-// TODO: boundary handlers for Corrected and NonCorrected should be the same,
-// right?
+template <diffusion::IDiffusionBased Scheme>
+void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation to the cell,
+     * when the current face is a boundary face, and the boundary condition
+     * is a general Von Neumann boundary condition, or fixed gradient boundary condition.
+     *
+     * @param cell The cell which owns the boundary face.
+     * @param face The boundary face.
+     */
+    const auto phi = scheme.field();
+    const auto& kappa = scheme.kappa();
+    const auto& mesh = phi.mesh();
+
+    for (const auto& face_id : patch.facesIds()) {
+        const mesh::Face& face = mesh.face(face_id);
+        const mesh::Cell& owner = mesh.cell(face.owner());
+
+        // get the fixed gradient (flux) value associated with the face
+        const auto& boundary_patch = mesh.faceBoundaryPatch(face);
+        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
+
+        const Vector3d& Sf = face.areaVector();
+        Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
+
+        // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
+        // and paragraph 8.6.8.2
+        scheme.rhs(owner.id()) += wall_grad.dot(Sf_prime);
+    }
+}
+
 template <scheme::diffusion::ICorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     const auto phi = scheme.field();
@@ -169,36 +180,6 @@ void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     return fixed.apply(scheme, patch);
 }
 
-template <scheme::diffusion::ICorrectedBased Scheme>
-void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    /** @brief Applies boundary discretized diffusion equation to the cell,
-     * when the current face is a boundary face, and the boundary condition
-     * is a general Von Neumann boundary condition, or fixed gradient boundary condition.
-     *
-     * @param cell The cell which owns the boundary face.
-     * @param face The boundary face.
-     */
-    const auto phi = scheme.field();
-    const auto& kappa = scheme.kappa();
-    const auto& mesh = phi.mesh();
-
-    for (const auto& face_id : patch.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
-        const mesh::Cell& owner = mesh.cell(face.owner());
-
-        // get the fixed gradient (flux) value associated with the face
-        const auto& boundary_patch = mesh.faceBoundaryPatch(face);
-        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
-
-        const Vector3d& Sf = face.areaVector();
-        Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
-
-        // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
-        // and paragraph 8.6.8.2
-        scheme.rhs(owner.id()) += wall_grad.dot(Sf_prime);
-    }
-}
-
 template <scheme::diffusion::INonCorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     const auto phi = scheme.field();
@@ -233,28 +214,5 @@ void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     return fixed.apply(scheme, patch);
 }
 
-template <scheme::diffusion::INonCorrectedBased Scheme>
-void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    // This is exactly the same implementation of FixedGradient for CorrectedDiffusion.
-    const auto phi = scheme.field();
-    const auto& kappa = scheme.kappa();
-    const auto& mesh = phi.mesh();
-
-    for (const auto& face_id : patch.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
-        const mesh::Cell& owner = mesh.cell(face.owner());
-
-        // get the fixed gradient (flux) value associated with the face
-        const auto& boundary_patch = mesh.faceBoundaryPatch(face);
-        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
-
-        const Vector3d& Sf = face.areaVector();
-        Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
-
-        // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
-        // and paragraph 8.6.8.2
-        scheme.rhs(owner.id()) += wall_grad.dot(Sf_prime);
-    }
-}
 
 } // namespace prism::scheme::boundary

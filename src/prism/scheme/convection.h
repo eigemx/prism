@@ -7,7 +7,6 @@
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
-#include "prism/log.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/utilities.h"
 #include "prism/operations/operations.h"
@@ -50,7 +49,7 @@ class IConvection : public IFullScheme<Field>,
                              const mesh::Cell& neighbor,
                              const mesh::Face& face) -> detail::CoeffsTriplet = 0;
 
-    void applyInterior(const mesh::Face& face) override;
+    void applyInterior(const mesh::Face& face);
     void applyBoundary();
 
     field::Scalar _rho;

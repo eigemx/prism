@@ -1,7 +1,6 @@
 #pragma once
 
 #include "prism/linear.h"
-#include "prism/mesh/face.h"
 
 namespace prism::scheme {
 
@@ -39,9 +38,6 @@ class IFullScheme : public IScheme, public LinearSystem {
 
     // returns the conserved transport field
     virtual auto field() -> Field = 0;
-
-  private:
-    virtual void applyInterior(const mesh::Face& face) = 0;
 };
 
 } // namespace prism::scheme
