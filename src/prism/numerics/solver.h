@@ -68,8 +68,7 @@ void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         // check for convergence
         if (res_norm < eps) {
-            log::info("Converged after {} iterations", i);
-            log::info("Residual: {}", res_norm);
+            log::info("Converged after {} iterations, Residual: {}", i, res_norm);
             break;
         }
 

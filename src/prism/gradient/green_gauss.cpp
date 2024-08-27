@@ -73,7 +73,7 @@ auto GreenGauss::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d {
     }
 
     auto phi = this->field()->valueAtFace(face);
-    return phi * face.area_vector();
+    return phi * face.areaVector();
 }
 
 } // namespace prism::gradient

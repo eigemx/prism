@@ -168,9 +168,7 @@ template <typename Vector>
 auto fluxAtBoundaryFace(const mesh::PMesh& mesh,
                         const mesh::Face& face,
                         const Vector& U) -> double {
-    // this is a boundary face, where normal is always pointing outside of the cell
-    // no need to call mesh::outward_area_vector()
-    const auto& Sf = face.area_vector();
+    const auto& Sf = face.areaVector();
 
     if (U.hasFaceValues()) {
         // face values of U are available, no need to manually calculate them

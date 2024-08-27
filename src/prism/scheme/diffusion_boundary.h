@@ -147,7 +147,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        const Vector3d Sf_prime = kappa.valueAtFace(face) * face.area_vector();
+        const Vector3d Sf_prime = kappa.valueAtFace(face) * face.areaVector();
 
         const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
 
@@ -190,7 +190,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
         const auto& boundary_patch = mesh.faceBoundaryPatch(face);
         const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
 
-        const Vector3d& Sf = face.area_vector();
+        const Vector3d& Sf = face.areaVector();
         Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
 
         // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
@@ -218,7 +218,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        Vector3d Sf_prime = kappa.valueAtCell(owner) * face.area_vector();
+        Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
 
         const double g_diff = Sf_prime.norm() / (d_Cf_norm + EPSILON);
 
@@ -248,7 +248,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
         const auto& boundary_patch = mesh.faceBoundaryPatch(face);
         const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
 
-        const Vector3d& Sf = face.area_vector();
+        const Vector3d& Sf = face.areaVector();
         Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
 
         // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,

@@ -3,7 +3,6 @@
 
 #include <filesystem>
 
-
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
     using namespace prism::scheme;
@@ -22,11 +21,11 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto mu = field::UniformScalar("mu", mesh, 1e-3);
-    auto U = field::Velocity("U", mesh, 0.0);
+    auto U = field::Velocity("U", mesh, {0.01, 0, 0});
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::Scalar("rho", mesh, 1000);
 
-    using div = convection::SecondOrderUpwind<field::VelocityComponent>;
+    using div = convection::Upwind<field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>;
 
@@ -50,7 +49,7 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver =
         solver::BiCGSTAB<field::Pressure, solver::ImplicitUnderRelaxation<field::Pressure>>();
 
-    for (auto i = 0; i < 10; ++i) {
+    for (auto i = 0; i < 2; ++i) {
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
 
@@ -59,7 +58,7 @@ auto main(int argc, char* argv[]) -> int {
         const auto& uEqn_diag = uEqn.matrix().diagonal();
         const auto& vEqn_diag = vEqn.matrix().diagonal();
 
-        auto D_data = std::vector<prism::Matrix3d>();
+        auto D_data = std::vector<Matrix3d>();
         D_data.reserve(mesh.nCells());
 
         auto Du = vol_vec.array() / (uEqn_diag.array() + prism::EPSILON);
@@ -76,17 +75,25 @@ auto main(int argc, char* argv[]) -> int {
             D_data.emplace_back(Di);
         }
 
+        uEqn.zeroOutCoeffs();
+        vEqn.zeroOutCoeffs();
+
         auto D = prism::field::Tensor("D", mesh, D_data);
 
-        log::info("Solving x-eqn::Momentum equation");
-        U_solver.solve(uEqn, 4, 1e-4, 0.9);
+        log::info("Solving x-momentum equation");
+        U_solver.solve(uEqn, 100, 1e-4, 1);
 
-        log::info("Solving y-eqn::Momentum equation");
-        U_solver.solve(vEqn, 4, 1e-4, 0.9);
+        log::info("Solving y-momentum equation");
+        U_solver.solve(vEqn, 100, 1e-4, 1);
+
+        uEqn.zeroOutCoeffs();
+        vEqn.zeroOutCoeffs();
 
         // Rhie-Chow interpolation for velocity face values
         ops::correctRhieChow(U, D, P);
 
+        // pressure correction field created with same name as pressure field to get same boundary
+        // conditions without having to define P_prime in fields.json file.
         auto P_prime = field::Pressure("P", mesh, 0.0);
 
         using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
@@ -98,16 +105,15 @@ auto main(int argc, char* argv[]) -> int {
                                                     div_p(U)                 // == - (∇.U)
         );
 
-        pEqn.updateCoeffs();
         log::info("Solving pressure correction equation");
-        p_solver.solve(pEqn, 10, 1e-5, 1);
+        p_solver.solve(pEqn, 100, 1e-5, 1);
         prism::export_field_vtu(P_prime, "P_prime.vtu");
 
         // update velocity fields
         for (const auto& cell : mesh.cells()) {
-            auto correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
-            U.x()[cell.id()] += correction[0];
-            U.y()[cell.id()] += correction[1];
+            auto correction = D.valueAtCell(cell) * P_prime.gradAtCell(cell);
+            U.x()[cell.id()] += -correction[0];
+            U.y()[cell.id()] += -correction[1];
         }
 
         P.values() = P.values().array() + (0.85 * P_prime.values().array());

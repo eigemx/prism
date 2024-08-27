@@ -73,7 +73,7 @@ void Fixed<convection::IConvection<F>>::apply(convection::IConvection<F>& scheme
         const mesh::Cell& owner = mesh.cell(face.owner());
         const double phi_wall = patch.getScalarBoundaryCondition(phi.name());
 
-        const Vector3d& S_f = face.area_vector();
+        const Vector3d& S_f = face.areaVector();
         const Vector3d U_f = scheme.U().valueAtFace(face);
 
         // TODO: check if this is correct
@@ -115,7 +115,7 @@ void Outlet<convection::IConvection<F>>::apply(convection::IConvection<F>& schem
         const std::size_t cell_id = owner.id();
 
         // face area vector
-        const Vector3d& S_f = face.area_vector();
+        const Vector3d& S_f = face.areaVector();
 
         // use owner cell velocity as the velocity at the outlet face centroid
         const Vector3d U_f = scheme.U().valueAtFace(face);
