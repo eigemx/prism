@@ -105,7 +105,7 @@ template <SourceSign Sign, field::IScalarBased Field>
 void inline ConstantScalar<Sign, Field>::apply() {
     const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
-    if (Sign == SourceSign::Positive) {
+    if constexpr (Sign == SourceSign::Positive) {
         rhs() = _phi.values().array() * vol_field.array();
         return;
     }
@@ -118,7 +118,7 @@ Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh().nCells
 
 template <SourceSign Sign, typename Vector>
 void inline Divergence<Sign, Vector>::apply() {
-    if (Sign == SourceSign::Positive) {
+    if constexpr (Sign == SourceSign::Positive) {
         rhs() = ops::div(_U).values();
         return;
     }
@@ -152,7 +152,7 @@ void Gradient<Sign, Field>::apply() {
         }
     }
 
-    if (Sign == SourceSign::Negative) {
+    if constexpr (Sign == SourceSign::Negative) {
         rhs() = -rhs();
     }
 }
@@ -166,7 +166,7 @@ void inline Laplacian<Sign, Kappa, Field>::apply() {
     auto grad_phi = _phi.gradScheme()->gradField();
     auto div = ops::div(grad_phi);
 
-    if (Sign == SourceSign::Positive) {
+    if constexpr (Sign == SourceSign::Positive) {
         rhs() = div.values();
         return;
     }
@@ -177,7 +177,7 @@ template <SourceSign Sign, field::IScalarBased Field>
 void inline ImplicitField<Sign, Field>::apply() {
     this->matrix().setIdentity();
 
-    if (Sign == SourceSign::Positive) {
+    if constexpr (Sign == SourceSign::Positive) {
         this->matrix() *= -1;
         return;
     }
