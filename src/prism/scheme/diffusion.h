@@ -93,13 +93,13 @@ Corrected<KappaType, NonOrthoCorrector, Field>::Corrected(KappaType kappa, Field
 
     // add default boundary handlers for Corrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::FixedGradient<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::ZeroGradient<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
+    _bc_manager.template addHandler<boundary::Empty<Scheme>>();
+    _bc_manager.template addHandler<boundary::Fixed<Scheme>>();
+    _bc_manager.template addHandler<boundary::Symmetry<Scheme>>();
+    _bc_manager.template addHandler<boundary::Outlet<Scheme>>();
+    _bc_manager.template addHandler<boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<boundary::ZeroGradient<Scheme>>();
+    _bc_manager.template addHandler<boundary::NoSlip<Scheme>>();
 }
 
 
@@ -184,13 +184,13 @@ NonCorrected<KappaType, Field>::NonCorrected(KappaType kappa, Field phi)
 
     // add default boundary handlers for NonCorrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template addHandler<scheme::boundary::Empty<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Fixed<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Symmetry<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::Outlet<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::FixedGradient<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::ZeroGradient<Scheme>>();
-    _bc_manager.template addHandler<scheme::boundary::NoSlip<Scheme>>();
+    _bc_manager.template addHandler<boundary::Empty<Scheme>>();
+    _bc_manager.template addHandler<boundary::Fixed<Scheme>>();
+    _bc_manager.template addHandler<boundary::Symmetry<Scheme>>();
+    _bc_manager.template addHandler<boundary::Outlet<Scheme>>();
+    _bc_manager.template addHandler<boundary::FixedGradient<Scheme>>();
+    _bc_manager.template addHandler<boundary::ZeroGradient<Scheme>>();
+    _bc_manager.template addHandler<boundary::NoSlip<Scheme>>();
 }
 
 template <typename KappaType, typename Field>

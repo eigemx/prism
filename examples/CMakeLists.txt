@@ -1,3 +1,4 @@
 add_subdirectory(convsolver)
 add_subdirectory(diffsolver)
 add_subdirectory(SIMPLEsolver)
+add_subdirectory(poisson)
