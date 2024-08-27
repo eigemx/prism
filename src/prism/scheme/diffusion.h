@@ -144,7 +144,7 @@ void inline Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(
 
     // unit vector in d_CF direction
     const Vector3d e = d_CF / d_CF_norm;
-    const Vector3d Sf_prime = this->kappa().valueAtFace(face) * face.area_vector();
+    const Vector3d Sf_prime = this->kappa().valueAtFace(face) * face.areaVector();
 
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
@@ -220,7 +220,7 @@ void inline NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face
     auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
 
-    const Vector3d& Sf = face.area_vector();
+    const Vector3d& Sf = face.areaVector();
     Vector3d Sf_prime = this->kappa().valueAtFace(face) * Sf;
 
     // geometric diffusion coefficient

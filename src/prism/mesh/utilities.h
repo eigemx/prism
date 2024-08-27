@@ -19,7 +19,7 @@ namespace prism::mesh {
  */
 auto inline outwardAreaVector(const Face& face, const Cell& cell) -> Vector3d {
     bool is_neighbor = !face.isOwnedBy(cell.id());
-    return face.area_vector() * std::pow(-1., static_cast<int>(is_neighbor));
+    return face.areaVector() * std::pow(-1., static_cast<int>(is_neighbor));
 }
 
 /**

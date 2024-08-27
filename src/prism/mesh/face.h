@@ -15,11 +15,11 @@ class Face {
     auto inline area() const noexcept -> double { return _area; }
     auto inline normal() const noexcept -> const Vector3d& { return _normal; }
     auto inline center() const noexcept -> const Vector3d& { return _center; }
-    auto inline area_vector() const noexcept -> Vector3d { return _area * _normal; }
+    auto inline areaVector() const noexcept -> Vector3d { return _area * _normal; }
 
     auto inline id() const noexcept -> std::size_t { return _id; }
     auto inline id() noexcept -> std::size_t& { return _id; }
-    auto inline vertices_ids() const noexcept -> const std::vector<std::size_t>& {
+    auto inline verticesIds() const noexcept -> const std::vector<std::size_t>& {
         return _vertices_ids;
     }
 
