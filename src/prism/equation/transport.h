@@ -106,6 +106,7 @@ void Transport<Field>::updateCoeffs() {
         rhs() += scheme->rhs();
     }
 
+    // TODO: this does not consider implicit sources
     for (auto& scheme : _sources) {
         // apply the scheme
         scheme->apply();

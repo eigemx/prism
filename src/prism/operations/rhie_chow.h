@@ -21,13 +21,9 @@ auto correctGrad(const mesh::PMesh& mesh,
 template <typename Vector>
 void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P) {
     const auto& mesh = U.mesh();
-
-    VectorXd u_face_data;
-    VectorXd v_face_data;
-    VectorXd w_face_data;
-    u_face_data.resize(mesh.nFaces());
-    v_face_data.resize(mesh.nFaces());
-    w_face_data.resize(mesh.nFaces());
+    auto u_face_data = VectorXd::Zero(mesh.nFaces());
+    auto v_face_data = VectorXd::Zero(mesh.nFaces());
+    auto w_face_data = VectorXd::Zero(mesh.nFaces());
 
     for (const auto& face : mesh.interiorFaces()) {
         const std::size_t face_id = face.id();
@@ -45,6 +41,10 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
     }
 
     for (const auto& face : mesh.boundaryFaces()) {
+        if (face.isEmpty()) {
+            continue;
+        }
+
         const std::size_t face_id = face.id();
         const auto& owner = mesh.cell(face.owner());
 

@@ -10,12 +10,12 @@
         },
         {
             "name": "inner",
-            "type": "fixed",
+            "type": "no-slip",
             "value": 900
         },
         {
             "name": "outer",
-            "type": "fixed",
+            "type": "no-slip",
             "value": 300
         }
     ]

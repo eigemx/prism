@@ -1,14 +1,13 @@
 #pragma once
 
 #include <cassert>
-#include <iostream>
 
 #include "cell.h"
 #include "face.h"
-#include "prism/mesh/pmesh.h"
 #include "prism/types.h"
 
 namespace prism::mesh {
+// TODO: move definitions to .cpp file
 /**
  * @brief Calculates the area vector of a face, pointing out of the cell.
  * The area vector is calculated as the area of the face times the unit normal
@@ -36,17 +35,6 @@ auto inline geometricWeight(const Cell& c, const Cell& n, const Face& f) -> doub
     assert(gc > 0 && "geometricWeight() returned a negative weight factor");
     assert(gc <= 1.0 && "geometricWeight() returned a weight factor higher than 1.0");
     return gc;
-}
-
-auto inline cellsVolumeVector(const mesh::PMesh& mesh) -> VectorXd {
-    VectorXd vec;
-    vec.resize(mesh.nCells());
-
-    for (const auto& cell : mesh.cells()) {
-        vec[cell.id()] = cell.volume();
-    }
-
-    return vec;
 }
 
 } // namespace prism::mesh
