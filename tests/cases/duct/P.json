@@ -1,0 +1,29 @@
+{
+    "patches": [
+        {
+            "name": "back",
+            "type": "empty"
+        },
+        {
+            "name": "front",
+            "type": "empty"
+        },
+        {
+            "name": "heatedWall",
+            "type": "zero-gradient"
+        },
+        {
+            "name": "inlet",
+            "type": "zero-gradient"
+        },
+        {
+            "name": "insulatedWall",
+            "type": "zero-gradient"
+        },
+        {
+            "name": "outlet",
+            "type": "fixed",
+            "value": 0.0
+        }
+    ]
+}

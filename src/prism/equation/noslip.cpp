@@ -33,6 +33,7 @@ auto contribution(Coord coord,
 
     switch (coord) {
         case Coord::X: {
+            // Eqn (15.124)
             double ac = 1 - (nx * nx);
             double b = ub * (1 - (nx * nx));
             b += (vc - vb) * ny * nx;
@@ -41,6 +42,7 @@ auto contribution(Coord coord,
         }
 
         case Coord::Y: {
+            // Eqn (15.125)
             double ac = 1 - (ny * ny);
             double b = (uc - ub) * nx * ny;
             b += vb * (1 - (ny * ny));
@@ -48,6 +50,7 @@ auto contribution(Coord coord,
             return {ac, b};
         }
         case Coord::Z: {
+            // Eqn (15.126)
             double ac = 1 - (nz * nz);
             double b = (uc - ub) * nx * nz;
             b += (vc - vb) * ny * nz;

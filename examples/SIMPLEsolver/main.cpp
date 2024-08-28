@@ -21,7 +21,7 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
 
     auto mu = field::UniformScalar("mu", mesh, 1e-3);
-    auto U = field::Velocity("U", mesh, {0.01, 0, 0});
+    auto U = field::Velocity("U", mesh, {0.01, 0.01, 0});
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::Scalar("rho", mesh, 1000);
 
@@ -50,6 +50,15 @@ auto main(int argc, char* argv[]) -> int {
         solver::BiCGSTAB<field::Pressure, solver::ImplicitUnderRelaxation<field::Pressure>>();
 
     for (auto i = 0; i < 2; ++i) {
+        log::info("Solving x-momentum equation");
+        U_solver.solve(uEqn, 10, 1e-4, 0.8);
+
+        log::info("Solving y-momentum equation");
+        U_solver.solve(vEqn, 10, 1e-4, 0.8);
+
+        uEqn.zeroOutCoeffs();
+        vEqn.zeroOutCoeffs();
+
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
 
@@ -75,19 +84,7 @@ auto main(int argc, char* argv[]) -> int {
             D_data.emplace_back(Di);
         }
 
-        uEqn.zeroOutCoeffs();
-        vEqn.zeroOutCoeffs();
-
         auto D = prism::field::Tensor("D", mesh, D_data);
-
-        log::info("Solving x-momentum equation");
-        U_solver.solve(uEqn, 100, 1e-4, 1);
-
-        log::info("Solving y-momentum equation");
-        U_solver.solve(vEqn, 100, 1e-4, 1);
-
-        uEqn.zeroOutCoeffs();
-        vEqn.zeroOutCoeffs();
 
         // Rhie-Chow interpolation for velocity face values
         ops::correctRhieChow(U, D, P);
@@ -106,8 +103,7 @@ auto main(int argc, char* argv[]) -> int {
         );
 
         log::info("Solving pressure correction equation");
-        p_solver.solve(pEqn, 100, 1e-5, 1);
-        prism::export_field_vtu(P_prime, "P_prime.vtu");
+        p_solver.solve(pEqn, 5, 1e-5, 1.0);
 
         // update velocity fields
         for (const auto& cell : mesh.cells()) {
@@ -117,9 +113,8 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         P.values() = P.values().array() + (0.85 * P_prime.values().array());
-    }
 
-    prism::export_field_vtu(uEqn.field(), "solution_x.vtu");
-    prism::export_field_vtu(vEqn.field(), "solution_y.vtu");
-    prism::export_field_vtu(P, "P.vtu");
+        uEqn.zeroOutCoeffs();
+        vEqn.zeroOutCoeffs();
+    }
 }

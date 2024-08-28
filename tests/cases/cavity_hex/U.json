@@ -2,22 +2,22 @@
     "patches": [
         {
             "name": "top",
-            "type": "fixed",
-            "value": [0.01, 0.0, 0.0]
+            "type": "no-slip",
+            "value": [1, 0.0, 0.0]
         },
         {
             "name": "bottom",
-            "type": "fixed",
+            "type": "no-slip",
             "value": [0.0, 0.0, 0.0]
         },
         {
             "name": "left",
-            "type": "fixed",
+            "type": "no-slip",
             "value": [0.0, 0.0, 0.0]
         },
         {
             "name": "right",
-            "type": "fixed",
+            "type": "no-slip",
             "value": [0.0, 0.0, 0.0]
         },
         {

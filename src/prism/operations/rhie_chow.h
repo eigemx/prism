@@ -56,9 +56,12 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
 
         // Equation (15.111)
         Vector3d Ub_corrected = Uc - (Df * (grad_p_f - grad_p_C));
-        u_face_data[face_id] = Ub_corrected.x();
-        v_face_data[face_id] = Ub_corrected.y();
-        w_face_data[face_id] = Ub_corrected.z();
+        // u_face_data[face_id] = Ub_corrected.x();
+        // v_face_data[face_id] = Ub_corrected.y();
+        // w_face_data[face_id] = Ub_corrected.z();
+        u_face_data[face_id] = U.x().valueAtFace(face);
+        v_face_data[face_id] = U.y().valueAtFace(face);
+        w_face_data[face_id] = U.z().valueAtFace(face);
     }
 
     U.x().setFaceValues(u_face_data);

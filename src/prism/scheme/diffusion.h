@@ -82,7 +82,7 @@ class NonCorrected : public INonCorrected, public IAppliedDiffusion<KappaType, F
 };
 
 //
-// diffusion::IDiffusion implementation
+// diffusion::IAppliedDiffusion implementation
 //
 template <typename KappaType, typename Field>
 IAppliedDiffusion<KappaType, Field>::IAppliedDiffusion(KappaType kappa, Field phi)

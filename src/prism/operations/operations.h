@@ -32,6 +32,9 @@ auto curl(const Vector& U, bool return_face_data = true) -> field::Vector;
 template <field::IScalarBased Field>
 auto grad(const Field& field, Coord coord) -> field::Scalar;
 
+template <field::IScalarBased Field>
+auto grad(const Field& field) -> field::Vector;
+
 // face mass flow rate
 auto inline faceFlowRate(double rho, const Vector3d& U, const Vector3d& S) -> double {
     return rho * U.dot(S);
@@ -113,7 +116,7 @@ auto div(const Vector& U, bool return_face_data) -> field::Scalar {
 
 template <field::IScalarBased Field>
 auto grad(const Field& field, Coord coord) -> field::Scalar {
-    auto grad_field_name = fmt::format("grad({})", field.name());
+    auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
 
     const auto n_cells = mesh.nCells();
@@ -131,10 +134,15 @@ auto grad(const Field& field, Coord coord) -> field::Scalar {
         grad_face_values[j] = field.gradAtFace(mesh.face(j))[i];
     }
 
-    return field::Scalar(grad_field_name + fmt::format("_{}", field::coordToStr(coord)),
-                         field.mesh(),
-                         grad_values,
-                         grad_face_values);
+    return field::Scalar(grad_field_name, field.mesh(), grad_values, grad_face_values);
+}
+
+template <field::IScalarBased Field>
+auto grad(const Field& field) -> field::Vector {
+    std::array<field::Scalar, 3> fields {
+        grad(field, Coord::X), grad(field, Coord::Y), grad(field, Coord::Z)};
+
+    return field::Vector(fmt::format("grad({})", field.name()), field.mesh(), fields);
 }
 
 namespace detail {
