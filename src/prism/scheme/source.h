@@ -74,6 +74,7 @@ class Laplacian : public IExplicitSource {
   public:
     Laplacian(Kappa kappa, Field phi);
     void apply() override;
+    auto needsCorrection() const noexcept -> bool override { return true; }
 
   private:
     Kappa _kappa;
@@ -163,7 +164,7 @@ Laplacian<Sign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
 
 template <SourceSign Sign, typename Kappa, typename Field>
 void inline Laplacian<Sign, Kappa, Field>::apply() {
-    auto grad_phi = _phi.gradScheme()->gradField();
+    auto grad_phi = ops::grad(_phi);
     auto div = ops::div(grad_phi);
 
     if constexpr (Sign == SourceSign::Positive) {

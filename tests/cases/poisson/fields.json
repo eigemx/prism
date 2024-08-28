@@ -1,0 +1,12 @@
+{
+    "fields": [
+        {
+            "name": "P",
+            "type": "pressure"
+        },
+        {
+            "name": "S",
+            "type": "scalar"
+        }
+    ]
+}

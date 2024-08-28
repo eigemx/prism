@@ -9,6 +9,10 @@
             "type": "velocity"
         },
         {
+            "name": "P",
+            "type": "pressure"
+        },
+        {
             "name": "rho",
             "type": "scalar"
         }
