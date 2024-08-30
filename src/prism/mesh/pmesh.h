@@ -13,7 +13,7 @@
 namespace prism::mesh {
 
 // TODO: remove const std::vector& members to std::span
-namespace detail {
+namespace iterators {
 struct FaceIterator {
     using iterator_category = std::input_iterator_tag;
     using value_type = Face;
@@ -38,33 +38,31 @@ struct FaceIterator {
     std::size_t _current {};
 };
 
-
 struct BoundaryFaces {
     BoundaryFaces(const std::vector<Face>& faces,
                   const std::vector<std::size_t>& boundary_faces_ids);
 
-    auto begin() const -> detail::FaceIterator;
-    auto end() const -> detail::FaceIterator;
+    auto begin() const -> iterators::FaceIterator;
+    auto end() const -> iterators::FaceIterator;
 
   private:
     const std::vector<Face>& _faces;
     const std::vector<std::size_t>& _boundary_faces_ids;
 };
 
-// TODO: InteriorFaces should provide iteration over non-empty interior faces
 struct InteriorFaces {
     InteriorFaces(const std::vector<Face>& faces,
                   const std::vector<std::size_t>& interior_faces_ids);
 
-    auto begin() const -> detail::FaceIterator;
-    auto end() const -> detail::FaceIterator;
+    auto begin() const -> iterators::FaceIterator;
+    auto end() const -> iterators::FaceIterator;
 
   private:
     const std::vector<Face>& _faces;
     const std::vector<std::size_t>& _interior_faces_ids;
 };
 
-} // namespace detail
+} // namespace iterators
 
 class PMesh {
   public:
@@ -76,49 +74,51 @@ class PMesh {
           std::vector<std::size_t> boundary_faces_ids,
           std::vector<std::size_t> interior_faces_ids) noexcept;
 
-    auto inline vertices() const noexcept -> const std::vector<Vector3d>& { return _vertices; }
+    auto vertices() const noexcept -> const std::vector<Vector3d>&;
 
-    auto inline cells() const noexcept -> const std::vector<Cell>& { return _cells; }
-    auto inline cells() noexcept -> std::vector<Cell>& { return _cells; }
-    auto inline cell(std::size_t cell_id) const -> const Cell& { return _cells[cell_id]; }
-    auto inline cell(std::size_t cell_id) noexcept -> Cell& { return _cells[cell_id]; }
+    auto cells() const noexcept -> const std::vector<Cell>&;
+    auto cells() noexcept -> std::vector<Cell>&;
+    auto cell(std::size_t cell_id) const -> const Cell&;
+    auto cell(std::size_t cell_id) noexcept -> Cell&;
 
-    auto inline faces() const noexcept -> const std::vector<Face>& { return _faces; }
-    auto inline faces() noexcept -> std::vector<Face>& { return _faces; }
-    auto inline face(std::size_t face_id) const -> const Face& { return _faces[face_id]; }
-    auto inline face(std::size_t face_id) noexcept -> Face& { return _faces[face_id]; }
+    auto faces() const noexcept -> const std::vector<Face>&;
+    auto faces() noexcept -> std::vector<Face>&;
+    auto face(std::size_t face_id) const -> const Face&;
+    auto face(std::size_t face_id) noexcept -> Face&;
 
-    auto inline boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>& {
-        return _boundary_patches;
-    }
-    auto inline boundaryPatch(const Face& face) const noexcept -> const BoundaryPatch& {
-        assert(face.isBoundary() && face.boundaryPatchId().has_value());
-        return _boundary_patches[face.boundaryPatchId().value()];
-    }
+    auto boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>&;
+    auto boundaryPatch(const Face& face) const noexcept -> const BoundaryPatch&;
 
     auto faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch&;
     auto faceBoundaryPatch(const Face& face) const -> const BoundaryPatch&;
 
-    auto nCells() const noexcept -> std::size_t { return _n_cells; }
-    auto nFaces() const noexcept -> std::size_t { return _n_faces; }
+    auto cellCount() const noexcept -> std::size_t;
+    auto faceCount() const noexcept -> std::size_t;
+    auto boundaryFaceCount() const noexcept -> std::size_t;
+    auto nonEmptyboundaryFaceCount() const noexcept -> std::size_t;
 
-    auto cellsVolumeVector() const noexcept -> const VectorXd& { return _cells_volume; }
+    auto cellsVolumeVector() const noexcept -> const VectorXd&;
 
     auto otherSharingCell(const Cell& c, const Face& f) const -> const Cell&;
 
-    auto boundaryFaces() const -> detail::BoundaryFaces { return {_faces, _boundary_faces_ids}; }
-    auto interiorFaces() const -> detail::InteriorFaces { return {_faces, _interior_faces_ids}; }
+    auto interiorFaces() const -> iterators::InteriorFaces;
+    auto boundaryFaces() const -> iterators::BoundaryFaces;
+    auto nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces;
 
-    auto fieldsInfo() const noexcept -> const std::vector<FieldInfo>& { return _field_infos; }
+    auto fieldsInfo() const noexcept -> const std::vector<FieldInfo>&;
 
   private:
     std::vector<Vector3d> _vertices;
     std::vector<Cell> _cells;
     std::vector<Face> _faces;
+
     std::vector<std::size_t> _boundary_faces_ids;
+    std::vector<std::size_t> _nonempty_boundary_faces_ids;
     std::vector<std::size_t> _interior_faces_ids;
+
     std::vector<BoundaryPatch> _boundary_patches;
     std::vector<FieldInfo> _field_infos;
+
     std::size_t _n_cells {0};
     std::size_t _n_faces {0};
     VectorXd _cells_volume;
@@ -146,7 +146,7 @@ class ToPMeshConverter {
     auto operator=(ToPMeshConverter&&) -> ToPMeshConverter& = default;
     virtual ~ToPMeshConverter() = default;
 
-    virtual auto to_pmesh() -> PMesh = 0;
+    virtual auto toPMesh() -> PMesh = 0;
 };
 
 } // namespace prism::mesh

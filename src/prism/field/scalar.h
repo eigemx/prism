@@ -112,6 +112,8 @@ class GeneralScalar
     void addDefaultHandlers();
 
     SharedPtr<VectorXd> _data = nullptr;
+
+    // TODO: _face_data should not include empty faces
     SharedPtr<VectorXd> _face_data = nullptr;
     SharedPtr<gradient::IGradient> _grad_scheme;
 
@@ -136,7 +138,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      double value,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
+      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.cellCount()) * value)),
       _parent(parent) {
     log::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     addDefaultHandlers();
@@ -150,7 +152,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      Coord coord,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.nCells()) * value)),
+      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.cellCount()) * value)),
       _coord(coord),
       _parent(parent) {
     log::debug("Creating scalar field: '{}' (as {}-coordinate) with double value = {}",
@@ -169,7 +171,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
     : IScalar(std::move(name), mesh),
       _data(std::make_shared<VectorXd>(std::move(data))),
       _parent(parent) {
-    if (_data->size() != mesh.nCells()) {
+    if (_data->size() != mesh.cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
@@ -193,7 +195,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _data(std::make_shared<VectorXd>(std::move(data))),
       _coord(coord),
       _parent(parent) {
-    if (_data->size() != mesh.nCells()) {
+    if (_data->size() != mesh.cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
@@ -219,14 +221,14 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _data(std::make_shared<VectorXd>(std::move(data))),
       _face_data(std::make_shared<VectorXd>(std::move(face_data))),
       _parent(parent) {
-    if (_data->size() != mesh.nCells()) {
+    if (_data->size() != mesh.cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
             this->name()));
     }
 
-    if (_face_data->size() != mesh.nFaces()) {
+    if (_face_data->size() != mesh.faceCount()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
                         "vector that has a different size than mesh's faces count.",
@@ -256,14 +258,14 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _face_data(std::make_shared<VectorXd>(std::move(face_data))),
       _coord(coord),
       _parent(parent) {
-    if (_data->size() != mesh.nCells()) {
+    if (_data->size() != mesh.cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
             this->name()));
     }
 
-    if (_face_data->size() != mesh.nFaces()) {
+    if (_face_data->size() != mesh.faceCount()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
                         "vector that has a different size than mesh's faces count.",
@@ -285,7 +287,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
-    if (values.size() != mesh().nFaces()) {
+    if (values.size() != mesh().faceCount()) {
         throw std::runtime_error(fmt::format(
             "prism::field::GeneralScalar<Units, BHManagerProvider, "
             "BHManagerSetter>::setFaceValues(): cannot set face values for scalar field {}, to a "

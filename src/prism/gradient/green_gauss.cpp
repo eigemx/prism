@@ -14,7 +14,7 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
 
 GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) { // NOLINT
     const auto& mesh = field->mesh();
-    _cell_gradients.reserve(mesh.nCells());
+    _cell_gradients.reserve(mesh.cellCount());
 
     std::transform(_cell_gradients.begin(),
                    _cell_gradients.end(),

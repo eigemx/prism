@@ -109,7 +109,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
     _unv_mesh.release();
 }
 
-auto UnvToPMeshConverter::to_pmesh() -> PMesh {
+auto UnvToPMeshConverter::toPMesh() -> PMesh {
     // TODO: This makes UnvToPMeshConverter usable only once, but the user is not aware (fix).
     // move all resources to PMesh object, UnvToPMeshConverter is no longer needed
     return {std::move(_vertices),

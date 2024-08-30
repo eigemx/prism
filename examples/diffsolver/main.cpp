@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
 
@@ -26,13 +25,13 @@ auto main(int argc, char* argv[]) -> int {
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     log::info("Loading mesh file `{}`...", unv_file_name);
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = field::Scalar("T", mesh, 300.0);
 
     // define a source term
-    prism::VectorXd source_field_data = VectorXd::Zero(mesh.nCells());
+    prism::VectorXd source_field_data = VectorXd::Zero(mesh.cellCount());
     for (const auto& cell : mesh.cells()) {
         const auto& center = cell.center();
         if (center.norm() <= 0.15) {

@@ -7,7 +7,7 @@ namespace prism::gradient {
 
 LeastSquares::LeastSquares(field::IScalar* field) : IGradient(field) {
     const auto& mesh = this->field()->mesh();
-    _cell_gradients.reserve(mesh.nCells());
+    _cell_gradients.reserve(mesh.cellCount());
 
     std::transform(_cell_gradients.begin(),
                    _cell_gradients.end(),
@@ -22,7 +22,7 @@ void LeastSquares::setPseudoInvMatrices() {
     const auto& mesh = this->field()->mesh();
 
     // resize the pseudo-inverse matrices vector
-    _pinv_matrices.resize(mesh.nCells());
+    _pinv_matrices.resize(mesh.cellCount());
 
     for (const auto& cell : mesh.cells()) {
         // A 3x3 matrix of the left hand side of equation (9.27)

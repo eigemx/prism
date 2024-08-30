@@ -77,7 +77,7 @@ template <typename Scheme, typename... Schemes>
 Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()),
       _phi_old(scheme.field()),
-      LinearSystem(scheme.field().mesh().nCells()) {
+      LinearSystem(scheme.field().mesh().cellCount()) {
     // add the first mandatory scheme
     addScheme(std::forward<Scheme>(scheme));
 

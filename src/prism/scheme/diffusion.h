@@ -46,7 +46,7 @@ class Corrected : public ICorrected, public IAppliedDiffusion<KappaType, Field> 
   public:
     Corrected(KappaType kappa, Field phi);
 
-    auto corrector() -> NonOrthoCorrector { return _corrector; }
+    auto corrector() const noexcept -> const NonOrthoCorrector& { return _corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
 
     using Scheme = Corrected<KappaType, NonOrthoCorrector, Field>;
@@ -86,7 +86,7 @@ class NonCorrected : public INonCorrected, public IAppliedDiffusion<KappaType, F
 //
 template <typename KappaType, typename Field>
 IAppliedDiffusion<KappaType, Field>::IAppliedDiffusion(KappaType kappa, Field phi)
-    : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh().nCells()) {}
+    : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh().cellCount()) {}
 
 template <typename KappaType, typename Field>
 void IAppliedDiffusion<KappaType, Field>::apply() {
@@ -95,7 +95,6 @@ void IAppliedDiffusion<KappaType, Field>::apply() {
      * applyBoundary() functions.
      *
      */
-
     applyBoundary();
 
     const auto& interior_faces = this->field().mesh().interiorFaces();

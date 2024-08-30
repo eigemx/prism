@@ -100,7 +100,7 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
 
 template <SourceSign Sign, field::IScalarBased Field>
 ConstantScalar<Sign, Field>::ConstantScalar(Field phi)
-    : _phi(phi), IExplicitSource(phi.mesh().nCells()) {}
+    : _phi(phi), IExplicitSource(phi.mesh().cellCount()) {}
 
 template <SourceSign Sign, field::IScalarBased Field>
 void inline ConstantScalar<Sign, Field>::apply() {
@@ -114,7 +114,7 @@ void inline ConstantScalar<Sign, Field>::apply() {
 }
 
 template <SourceSign Sign, typename Vector>
-Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh().nCells()), _U(U) {}
+Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh().cellCount()), _U(U) {}
 
 
 template <SourceSign Sign, typename Vector>
@@ -128,7 +128,7 @@ void inline Divergence<Sign, Vector>::apply() {
 
 template <SourceSign Sign, typename Field>
 Gradient<Sign, Field>::Gradient(Field phi, Coord coord)
-    : _phi(phi), _coord(coord), IExplicitSource(phi.mesh().nCells()) {
+    : _phi(phi), _coord(coord), IExplicitSource(phi.mesh().cellCount()) {
     log::debug("prism::scheme::source::Gradient(): Creating gradient source for field '{}'",
                phi.name());
 }

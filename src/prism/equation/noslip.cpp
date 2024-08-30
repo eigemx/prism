@@ -73,7 +73,7 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     auto diff_scheme = castScheme<F, Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
-    LinearSystem sys(mesh.nCells());
+    LinearSystem sys(mesh.cellCount());
 
     for (std::size_t face_id : patch.facesIds()) {
         const auto& face = mesh.face(face_id);

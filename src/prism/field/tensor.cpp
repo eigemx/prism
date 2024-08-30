@@ -7,7 +7,7 @@ namespace prism::field {
 Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
     : IField(std::move(name), mesh) {
     log::debug("Creating tensor field: '{}' with double value = {}", this->name(), value);
-    const std::size_t n_cells = this->mesh().nCells();
+    const std::size_t n_cells = this->mesh().cellCount();
     _data.reserve(n_cells);
     for (std::size_t i = 0; i < n_cells; ++i) {
         _data.emplace_back(Matrix3d::Ones() * value);
@@ -18,7 +18,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, const Matrix3d& data)
     : IField(std::move(name), mesh) {
     log::debug("Creating a uniform tensor field: '{}' given a Matrix3d object", this->name());
 
-    const std::size_t n_cells = this->mesh().nCells();
+    const std::size_t n_cells = this->mesh().cellCount();
     _data.reserve(n_cells);
     for (std::size_t i = 0; i < n_cells; ++i) {
         _data.push_back(data);
@@ -29,7 +29,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> 
     : IField(std::move(name), mesh), _data(std::move(data)) {
     log::debug("Creating a tensor field: '{}' given a vector of Matrix3d objects", this->name());
 
-    if (_data.size() != mesh.nCells()) {
+    if (_data.size() != mesh.cellCount()) {
         throw std::runtime_error(
             fmt::format("field::Tensor() cannot create a tensor field '{}' given a vector of "
                         "Matrix3d that has a different size than mesh's cell count.",

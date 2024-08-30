@@ -82,18 +82,20 @@ auto div(const Vector& U, bool return_face_data) -> field::Scalar {
     const mesh::PMesh& mesh = U.mesh();
 
     VectorXd cell_data;
-    cell_data.resize(mesh.nCells());
+    cell_data.resize(mesh.cellCount());
 
     for (const auto& cell : mesh.cells()) {
         cell_data[cell.id()] = detail::divAtCell(mesh, cell, U);
     }
 
     if (return_face_data) {
+        // TODO: this will leave empty faces with values as initiated by face_data declaration, we
+        // should resize with number of non-empty faces only.
         VectorXd face_data;
-        face_data.resize(mesh.nFaces());
+        face_data.resize(mesh.faceCount());
 
         // We start with calculating the fluxes at boundary faces
-        for (const auto& bface : mesh.boundaryFaces()) {
+        for (const auto& bface : mesh.nonEmptyBoundaryFaces()) {
             face_data[bface.id()] = detail::fluxAtBoundaryFace(mesh, bface, U);
         }
 
@@ -119,8 +121,8 @@ auto grad(const Field& field, Coord coord) -> field::Scalar {
     auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
 
-    const auto n_cells = mesh.nCells();
-    const auto n_faces = mesh.nFaces();
+    const auto n_cells = mesh.cellCount();
+    const auto n_faces = mesh.faceCount();
 
     VectorXd grad_values = VectorXd::Zero(n_cells);
     VectorXd grad_face_values = VectorXd::Zero(n_faces);
