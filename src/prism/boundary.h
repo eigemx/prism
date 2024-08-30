@@ -26,7 +26,7 @@ class IBoundaryHandler {
 template <typename BaseHandler>
 class BoundaryHandlersManager {
   public:
-    auto getHandler(const std::string& bc) const -> std::shared_ptr<BaseHandler>;
+    auto getHandler(const std::string& bc) const -> SharedPtr<BaseHandler>;
 
     template <typename Handler>
     void addHandler();
@@ -37,7 +37,7 @@ class BoundaryHandlersManager {
     void removeHandler(const std::string& bc);
 
   private:
-    using InstanceCreatorPtr = std::shared_ptr<IBoundaryHandler> (*)();
+    using InstanceCreatorPtr = SharedPtr<IBoundaryHandler> (*)();
     void addHandler(const std::string& bc, InstanceCreatorPtr creator);
     std::map<std::string, InstanceCreatorPtr> _bc_map;
 };
@@ -56,22 +56,21 @@ class BHManagersProvider {
 };
 
 template <typename T>
-auto createHandlerInstance() -> std::shared_ptr<IBoundaryHandler> {
+auto createHandlerInstance() -> SharedPtr<IBoundaryHandler> {
     return std::make_shared<T>();
 }
 
 template <typename BaseHandler>
 auto BoundaryHandlersManager<BaseHandler>::getHandler(const std::string& bc) const
-    -> std::shared_ptr<BaseHandler> {
+    -> SharedPtr<BaseHandler> {
     if (!_bc_map.contains(bc)) {
         return nullptr;
     }
 
     auto handler_creator = _bc_map.at(bc); // handler instance creator function
-    auto raw_handler = handler_creator();  // std::shared_ptr<IBoundaryHandler>
+    auto raw_handler = handler_creator();  // SharedPtr<IBoundaryHandler>
 
-    // we need to cast std::shared_ptr<IBoundaryHandler> to
-    // std::shared_ptr<BaseHandler>
+    // we need to cast SharedPtr<IBoundaryHandler> to SharedPtr<BaseHandler>
     auto handler = std::dynamic_pointer_cast<BaseHandler>(raw_handler);
 
     return handler;

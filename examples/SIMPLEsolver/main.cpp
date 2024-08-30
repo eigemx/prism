@@ -18,7 +18,7 @@ auto main(int argc, char* argv[]) -> int {
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     fmt::println("Loading mesh file `{}`...", unv_file_name);
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     auto mu = field::UniformScalar("mu", mesh, 1e-3);
     auto U = field::Velocity("U", mesh, {0.01, 0.01, 0});
@@ -68,7 +68,7 @@ auto main(int argc, char* argv[]) -> int {
         const auto& vEqn_diag = vEqn.matrix().diagonal();
 
         auto D_data = std::vector<Matrix3d>();
-        D_data.reserve(mesh.nCells());
+        D_data.reserve(mesh.cellCount());
 
         auto Du = vol_vec.array() / (uEqn_diag.array() + prism::EPSILON);
         auto Dv = vol_vec.array() / (vEqn_diag.array() + prism::EPSILON);

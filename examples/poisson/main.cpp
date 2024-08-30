@@ -7,7 +7,7 @@
 
 auto solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
-    sol.resize(mesh.nCells());
+    sol.resize(mesh.cellCount());
 
     for (const auto& cell : mesh.cells()) {
         double x = cell.center().x();
@@ -38,13 +38,13 @@ auto main(int argc, char* argv[]) -> int {
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     log::info("Loading mesh file `{}`...", unv_file_name);
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).to_pmesh();
+    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     auto P = field::Scalar("P", mesh, 0.0);
 
     // create source term
     VectorXd src_values;
-    src_values.resize(mesh.nCells());
+    src_values.resize(mesh.cellCount());
 
     for (const auto& cell : mesh.cells()) {
         double x = cell.center().x();

@@ -119,7 +119,7 @@ IConvection<Field>::IConvection(field::Scalar rho, field::Velocity U, Field phi)
     : _rho(std::move(rho)),
       _U(std::move(U)),
       _phi(std::move(phi)),
-      IFullScheme<Field>(phi.mesh().nCells()) {
+      IFullScheme<Field>(phi.mesh().cellCount()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
     this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
@@ -134,9 +134,10 @@ template <typename Field>
 void IConvection<Field>::apply() {
     applyBoundary();
 
-    for (const auto& iface : _phi.mesh().interiorFaces()) {
-        applyInterior(iface);
-    }
+    const auto& interior_faces = this->field().mesh().interiorFaces();
+    std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
+        applyInterior(face);
+    });
 
     this->collect();
 }
@@ -179,7 +180,7 @@ auto CentralDifference<F>::interpolate(double m_dot,
                                        const mesh::Cell& neighbor,
                                        const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->field().gradScheme()->gradAtFace(face);
+    const Vector3d face_grad_phi = this->field().gradAtFace(face);
     const Vector3d d_Cf = face.center() - cell.center();
     const double a_C = std::max(m_dot, 0.0);
     double b = -std::max(m_dot, 0.0) * d_Cf.dot(face_grad_phi);
@@ -240,9 +241,9 @@ auto QUICK<F>::interpolate(double m_dot,
                            const mesh::Cell& neighbor,
                            const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->field().gradScheme()->gradAtFace(face);
-    const Vector3d cell_grad_phi = this->field().gradScheme()->gradAtCell(cell);
-    const Vector3d neighbor_grad_phi = this->field().gradScheme()->gradAtCell(neighbor);
+    const Vector3d face_grad_phi = this->field().gradAtFace(face);
+    const Vector3d cell_grad_phi = this->field().gradAtCell(cell);
+    const Vector3d neighbor_grad_phi = this->field().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
     auto correction = 0.5 * d_Cf.dot(cell_grad_phi + face_grad_phi);

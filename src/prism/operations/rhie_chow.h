@@ -24,9 +24,9 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
     VectorXd u_face_data;
     VectorXd v_face_data;
     VectorXd w_face_data;
-    u_face_data.resize(mesh.nFaces());
-    v_face_data.resize(mesh.nFaces());
-    w_face_data.resize(mesh.nFaces());
+    u_face_data.resize(mesh.faceCount());
+    v_face_data.resize(mesh.faceCount());
+    w_face_data.resize(mesh.faceCount());
 
 
     for (const auto& face : mesh.interiorFaces()) {

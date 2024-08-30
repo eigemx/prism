@@ -25,7 +25,7 @@ TEST_CASE("field::UniformScalar as uniform cell and face values", "[UniformScala
 
     const auto* mesh_file = "tests/cases/duct/mesh.unv";
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).to_pmesh();
+    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
     auto T = field::UniformScalar("T", mesh, 1.0);
 
@@ -42,7 +42,7 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
 
     const auto* mesh_file = "tests/cases/channel1d_coarse/mesh.unv";
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).to_pmesh();
+    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
     auto T = field::Scalar("temperature", mesh, 0.5);
     auto rho = field::Scalar("rho", mesh, 1.18);

@@ -22,7 +22,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     UnvToPMeshConverter(const std::filesystem::path& mesh_path,
                         const std::filesystem::path& boundary_path);
 
-    auto to_pmesh() -> PMesh override;
+    auto toPMesh() -> PMesh override;
 
   private:
     // BoundaryFaceData (we need a better name) is a pair of:
