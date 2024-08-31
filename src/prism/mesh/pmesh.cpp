@@ -13,6 +13,7 @@ auto isSameDirection(const Vector3d& v1, const Vector3d& v2) -> bool {
 }
 
 auto getMeshDimension(const PMesh& mesh) -> Dimension {
+    // TODO: this is an ugly hack and should be avoided!
     std::vector<BoundaryPatch> boundary_patches;
     std::copy_if(mesh.boundaryPatches().begin(),
                  mesh.boundaryPatches().end(),
