@@ -108,10 +108,9 @@ void Transport<Field>::updateCoeffs() {
     }
 
     // TODO: this does not consider implicit sources
-    for (auto& scheme : _sources) {
-        // apply the scheme
-        scheme->apply();
-        rhs() += scheme->rhs();
+    for (auto& source : _sources) {
+        source->apply();
+        rhs() += source->rhs();
     }
 
     prism::boundary::detail::applyBoundaryIfExists("prism::eqn::Transport", *this);
@@ -122,6 +121,11 @@ void Transport<Field>::zeroOutCoeffs() {
     for (auto& scheme : _schemes) {
         scheme->matrix().setZero();
         scheme->rhs().setZero();
+    }
+
+    // TODO: this does not consider implicit sources
+    for (auto& source : _sources) {
+        source->rhs().setZero();
     }
 
     // zero out the universal coefficient matrix and RHS vector

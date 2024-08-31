@@ -64,8 +64,6 @@ struct InteriorFaces {
 
 } // namespace iterators
 
-enum class Dimension { One, Two, Three };
-
 class PMesh {
   public:
     PMesh(std::vector<Vector3d> vertices,
@@ -108,7 +106,6 @@ class PMesh {
     auto nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces;
 
     auto fieldsInfo() const noexcept -> const std::vector<FieldInfo>&;
-    auto dimension() const noexcept -> Dimension;
 
   private:
     std::vector<Vector3d> _vertices;

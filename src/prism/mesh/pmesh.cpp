@@ -8,52 +8,6 @@
 #include "prism/log.h"
 
 namespace prism::mesh {
-auto isSameDirection(const Vector3d& v1, const Vector3d& v2) -> bool {
-    return std::abs(std::abs(v1.dot(v2)) - 1) < EPSILON;
-}
-
-auto getMeshDimension(const PMesh& mesh) -> Dimension {
-    // TODO: this is an ugly hack and should be avoided!
-    std::vector<BoundaryPatch> boundary_patches;
-    std::copy_if(mesh.boundaryPatches().begin(),
-                 mesh.boundaryPatches().end(),
-                 std::back_inserter(boundary_patches),
-                 [](const mesh::BoundaryPatch& patch) { return patch.isEmpty(); });
-
-    if (boundary_patches.empty()) {
-        return Dimension::Three;
-    }
-
-    std::vector<std::size_t> all_faces_ids;
-    for (const auto& patch : boundary_patches) {
-        all_faces_ids.insert(
-            all_faces_ids.end(), patch.facesIds().begin(), patch.facesIds().end());
-    }
-
-    Vector3d reference_normal = mesh.face(boundary_patches[0].facesIds().front()).normal();
-    std::size_t n_unique_normals = 1;
-
-    for (const auto& face_id : all_faces_ids) {
-        const auto& face = mesh.face(face_id);
-        if (!isSameDirection(reference_normal, face.normal())) {
-            n_unique_normals++;
-        }
-
-        if (n_unique_normals == 2) {
-            break;
-        }
-    }
-
-    if (n_unique_normals == 1) {
-        return Dimension::Two;
-    }
-    if (n_unique_normals == 2) {
-        return Dimension::One;
-    }
-
-    return Dimension::Three;
-}
-
 namespace iterators {
 FaceIterator::FaceIterator(const std::vector<Face>& faces,
                            const std::vector<std::size_t>& ids,
@@ -143,6 +97,8 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
         _cells_volume[cell.id()] = cell.volume();
     }
 
+    // TODO: can we do this differently? we need to avoid allocating memory for the vector of
+    // non-empty boundary face ids
     std::copy_if(_boundary_faces_ids.begin(),
                  _boundary_faces_ids.end(),
                  std::back_inserter(_nonempty_boundary_faces_ids),
@@ -254,10 +210,6 @@ auto PMesh::nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces {
 
 auto PMesh::fieldsInfo() const noexcept -> const std::vector<FieldInfo>& {
     return _field_infos;
-}
-
-auto PMesh::dimension() const noexcept -> Dimension {
-    return getMeshDimension(*this);
 }
 
 PMeshPtr::PMeshPtr(const PMesh* ptr) : _ptr(ptr) {

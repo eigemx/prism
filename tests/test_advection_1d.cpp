@@ -20,43 +20,6 @@ auto advection_1d(double x, double u) -> double {
     return result;
 }
 
-TEST_CASE("check PMesh dimensionality", "[PMeshDimension]") {
-    using namespace prism;
-
-    const auto* mesh_file = "tests/cases/channel1d_coarse/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
-
-    REQUIRE(mesh.dimension() == mesh::Dimension::One);
-
-    const auto* mesh_file_2d = "tests/cases/duct/mesh.unv";
-    auto boundary_file_2d = std::filesystem::path(mesh_file_2d).parent_path() / "fields.json";
-    auto mesh_2d = mesh::UnvToPMeshConverter(mesh_file_2d, boundary_file_2d).toPMesh();
-
-    REQUIRE(mesh_2d.dimension() == mesh::Dimension::Two);
-
-    const auto* mesh_file_3d = "tests/cases/cylinder/mesh.unv";
-    auto boundary_file_3d = std::filesystem::path(mesh_file_3d).parent_path() / "fields.json";
-    auto mesh_3d = mesh::UnvToPMeshConverter(mesh_file_3d, boundary_file_3d).toPMesh();
-
-    REQUIRE(mesh_3d.dimension() == mesh::Dimension::Three);
-}
-
-TEST_CASE("field::UniformScalar as uniform cell and face values", "[UniformScalar]") {
-    using namespace prism;
-
-    const auto* mesh_file = "tests/cases/duct/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
-
-    auto T = field::UniformScalar("T", mesh, 1.0);
-
-    REQUIRE(T.valueAtCell(0) == 1.0);
-    REQUIRE(T.gradAtFace(mesh.face(0)) == Vector3d {0.0, 0.0, 0.0});
-    REQUIRE(T.gradAtCell(mesh.cell(0)) == Vector3d {0.0, 0.0, 0.0});
-    REQUIRE(T.gradAtCellStored(mesh.cell(0)) == Vector3d {0.0, 0.0, 0.0});
-}
-
 TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     using namespace prism;
 

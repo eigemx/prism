@@ -1,9 +1,10 @@
-#include <fmt/core.h>
 #include <prism/prism.h>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <catch2/catch_test_macros.hpp>
 #include <cmath>
-#include <string>
-#include <vector>
+#include <filesystem>
 
 auto solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
@@ -20,25 +21,15 @@ auto solution(const auto& mesh) -> prism::field::Scalar {
     return prism::field::Scalar("S", mesh, std::move(sol));
 }
 
-auto main(int argc, char* argv[]) -> int {
+TEST_CASE("test poisson equation", "[poisson]") {
     using namespace prism;
     using namespace prism::scheme;
 
-    log::setLevel(log::Level::Debug);
 
-    // silence clang-tidy pointer arithmetic warnings
-    std::vector<std::string> args(argv, argv + argc);
-
-    if (argc < 2) {
-        log::error("Usage: poisson [mesh-file]");
-        return 1;
-    }
-
-    auto unv_file_name = args[1];
+    const auto* unv_file_name = "tests/cases/poisson/mesh.unv";
 
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     auto P = field::Scalar("P", mesh, 0.0);
@@ -70,10 +61,11 @@ auto main(int argc, char* argv[]) -> int {
     // solve
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 100, 1e-5, 1.0);
+    solver.solve(eqn, 100, 1e-9, 1.0);
 
-    prism::export_field_vtu(P, "solution.vtu");
-    prism::export_field_vtu(solution(mesh), "analytical.vtu");
+    VectorXd diff = P.values() - solution(mesh).values();
+    double diff_norm = diff.norm();
 
-    return 0;
+    // TODO: this is a large l2-norm criteria, we need to check if the solution is correct
+    REQUIRE(diff_norm < 0.1);
 }
