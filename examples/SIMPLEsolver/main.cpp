@@ -1,4 +1,5 @@
 #include <fmt/core.h>
+#include <foamJSONToPMesh.h>
 #include <prism/prism.h>
 
 #include <filesystem>
@@ -6,6 +7,9 @@
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
     using namespace prism::scheme;
+
+    sayHello();
+    return -1;
 
     log::setLevel(log::Level::Info);
     if (argc < 2) {

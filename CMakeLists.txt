@@ -83,5 +83,7 @@ if (PRISM_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+add_subdirectory(utilities)
+
 # TODO: tests should be used only when building as main project?
 add_subdirectory(tests)

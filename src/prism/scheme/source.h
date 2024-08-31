@@ -88,12 +88,10 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
     ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh().nCells()) {}
     void apply() override;
     auto inline field() -> Field override { return _phi; }
+    auto inline needsCorrection() const -> bool override { return false; }
 
   private:
-    void inline apply_interior(const mesh::Face& face) override {}
-    void inline apply_boundary(const mesh::Face& face) override {}
-
-    auto inline needsCorrection() const -> bool override { return false; }
+    void inline applyInterior(const mesh::Face& face) override {}
 
     field::Scalar _phi;
 };
@@ -104,7 +102,7 @@ ConstantScalar<Sign, Field>::ConstantScalar(Field phi)
 
 template <SourceSign Sign, field::IScalarBased Field>
 void inline ConstantScalar<Sign, Field>::apply() {
-    const auto& vol_field = _phi.mesh().cellsVolumeVector();
+    const auto& vol_field = _phi.mesh().cellsVolumeVector() / 0.1;
 
     if constexpr (Sign == SourceSign::Positive) {
         rhs() = _phi.values().array() * vol_field.array();
