@@ -102,7 +102,7 @@ ConstantScalar<Sign, Field>::ConstantScalar(Field phi)
 
 template <SourceSign Sign, field::IScalarBased Field>
 void inline ConstantScalar<Sign, Field>::apply() {
-    const auto& vol_field = _phi.mesh().cellsVolumeVector() / 0.1;
+    const auto& vol_field = _phi.mesh().cellsVolumeVector();
 
     if constexpr (Sign == SourceSign::Positive) {
         rhs() = _phi.values().array() * vol_field.array();

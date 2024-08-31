@@ -158,7 +158,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        const Vector3d Sf_prime = kappa.valueAtFace(face) * face.areaVector();
+        const Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
 
         const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
 
