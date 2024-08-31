@@ -6,7 +6,7 @@
             "gradScheme": "leastSquares"
         },
         {
-            "name": "velocity",
+            "name": "U",
             "type": "velocity",
             "gradScheme": "leastSquares"
         },

@@ -22,6 +22,7 @@ auto solution(const auto& mesh) -> prism::field::Scalar {
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
+    using namespace prism::scheme;
 
     log::setLevel(log::Level::Debug);
 
@@ -55,20 +56,22 @@ auto main(int argc, char* argv[]) -> int {
         src_values[cell.id()] = src;
     }
 
-    auto source = field::Scalar("S", mesh, std::move(src_values));
     auto c = field::UniformScalar("c", mesh, 1.0);
+    // auto c = field::Tensor("c", mesh, Matrix3d::Identity());
+
+    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
+    auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(
-        scheme::diffusion::Corrected(c, P),
-        scheme::source::ConstantScalar<scheme::source::SourceSign::Negative, field::Scalar>(
-            source));
+        laplacian(c, P),
+        source::ConstantScalar<source::SourceSign::Negative, field::Scalar>(source));
 
     // solve
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 100, 1e-5, 1);
+    solver.solve(eqn, 100, 1e-5, 1.0);
 
-    prism::export_field_vtu(eqn.field(), "solution.vtu");
+    prism::export_field_vtu(P, "solution.vtu");
     prism::export_field_vtu(solution(mesh), "analytical.vtu");
 
     return 0;

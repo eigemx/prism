@@ -1,12 +1,57 @@
 #include "pmesh.h"
 
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
 
+#include "prism/constants.h"
+#include "prism/log.h"
+
 namespace prism::mesh {
+auto isSameDirection(const Vector3d& v1, const Vector3d& v2) -> bool {
+    return std::abs(std::abs(v1.dot(v2)) - 1) < EPSILON;
+}
+
+auto getMeshDimension(const PMesh& mesh) -> Dimension {
+    std::vector<BoundaryPatch> boundary_patches;
+    std::copy_if(mesh.boundaryPatches().begin(),
+                 mesh.boundaryPatches().end(),
+                 std::back_inserter(boundary_patches),
+                 [](const mesh::BoundaryPatch& patch) { return patch.isEmpty(); });
+
+    if (boundary_patches.empty()) {
+        return Dimension::Three;
+    }
+
+    std::vector<std::size_t> all_faces_ids;
+    for (const auto& patch : boundary_patches) {
+        all_faces_ids.insert(
+            all_faces_ids.end(), patch.facesIds().begin(), patch.facesIds().end());
+    }
+
+    Vector3d reference_normal = mesh.face(boundary_patches[0].facesIds().front()).normal();
+    std::size_t n_unique_normals = 1;
+
+    for (const auto& face_id : all_faces_ids) {
+        const auto& face = mesh.face(face_id);
+        if (!isSameDirection(reference_normal, face.normal())) {
+            n_unique_normals++;
+        }
+
+        if (n_unique_normals == 2) {
+            break;
+        }
+    }
+
+    if (n_unique_normals == 1) {
+        return Dimension::Two;
+    }
+    if (n_unique_normals == 2) {
+        return Dimension::One;
+    }
+
+    return Dimension::Three;
+}
 
 namespace iterators {
 FaceIterator::FaceIterator(const std::vector<Face>& faces,
@@ -84,13 +129,13 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
       _n_cells(_cells.size()),
       _n_faces(_faces.size()) {
     // TODO: Check if inputs constitutes a valid mesh.
-    spdlog::debug("prism::mesh::PMesh() object created with {} cells, {} faces and {} vertices.",
-                  _n_cells,
-                  _n_faces,
-                  _vertices.size());
-    spdlog::debug("prism::mesh::PMesh() object has {} internal faces and {} boundary faces. ",
-                  _interior_faces_ids.size(),
-                  _boundary_faces_ids.size());
+    log::debug("prism::mesh::PMesh() object created with {} cells, {} faces and {} vertices.",
+               _n_cells,
+               _n_faces,
+               _vertices.size());
+    log::debug("prism::mesh::PMesh() object has {} internal faces and {} boundary faces. ",
+               _interior_faces_ids.size(),
+               _boundary_faces_ids.size());
 
     _cells_volume.resize(_n_cells);
     for (const auto& cell : _cells) {
@@ -208,6 +253,10 @@ auto PMesh::nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces {
 
 auto PMesh::fieldsInfo() const noexcept -> const std::vector<FieldInfo>& {
     return _field_infos;
+}
+
+auto PMesh::dimension() const noexcept -> Dimension {
+    return getMeshDimension(*this);
 }
 
 PMeshPtr::PMeshPtr(const PMesh* ptr) : _ptr(ptr) {

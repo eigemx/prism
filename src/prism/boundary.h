@@ -133,8 +133,8 @@ void applyBoundary(const std::string& applier_name, Applier& applier) {
         }
 
         log::debug(
-            "prism::boundary::detail::applyBoundary(): applying boundary condition type {} on "
-            "patch {} applied by {}.",
+            "prism::boundary::detail::applyBoundary(): applying boundary condition type `{}` on "
+            "patch `{}` applied by `{}`.",
             handler->name(),
             patch.name(),
             applier_name);
@@ -155,7 +155,7 @@ void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
         if (handler == nullptr) {
             log::debug(
                 "prism::boundary::detail::applyBoundaryIfExists(): no equation boundary handler "
-                "defined for patch {}, applied by {}, "
+                "defined for patch `{}`, applied by `{}`, "
                 "ignoring...",
                 patch.name(),
                 applier_name);
@@ -164,8 +164,7 @@ void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
 
         log::debug(
             "prism::boundary::detail::applyBoundaryIfExists(): applying boundary condition type "
-            "{} on "
-            "patch {}, applied by {}'.",
+            "`{}` on patch `{}`, applied by `{}`.",
             handler->name(),
             patch.name(),
             applier_name);

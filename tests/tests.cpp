@@ -20,6 +20,28 @@ auto advection_1d(double x, double u) -> double {
     return result;
 }
 
+TEST_CASE("check PMesh dimensionality", "[PMeshDimension]") {
+    using namespace prism;
+
+    const auto* mesh_file = "tests/cases/channel1d_coarse/mesh.unv";
+    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
+    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+
+    REQUIRE(mesh.dimension() == mesh::Dimension::One);
+
+    const auto* mesh_file_2d = "tests/cases/duct/mesh.unv";
+    auto boundary_file_2d = std::filesystem::path(mesh_file_2d).parent_path() / "fields.json";
+    auto mesh_2d = mesh::UnvToPMeshConverter(mesh_file_2d, boundary_file_2d).toPMesh();
+
+    REQUIRE(mesh_2d.dimension() == mesh::Dimension::Two);
+
+    const auto* mesh_file_3d = "tests/cases/cylinder/mesh.unv";
+    auto boundary_file_3d = std::filesystem::path(mesh_file_3d).parent_path() / "fields.json";
+    auto mesh_3d = mesh::UnvToPMeshConverter(mesh_file_3d, boundary_file_3d).toPMesh();
+
+    REQUIRE(mesh_3d.dimension() == mesh::Dimension::Three);
+}
+
 TEST_CASE("field::UniformScalar as uniform cell and face values", "[UniformScalar]") {
     using namespace prism;
 
@@ -53,8 +75,8 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
         });
 
 
-    Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("velocity");
-    auto U = field::Velocity("velocity", mesh, inlet_velocity);
+    Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("U");
+    auto U = field::Velocity("U", mesh, inlet_velocity);
 
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
     auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
