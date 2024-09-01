@@ -1,3 +1,0 @@
-add_library(foamJSONToPMesh foamJSONToPMesh.cpp)
-target_link_libraries(foamJSONToPMesh prism)
-target_include_directories(foamJSONToPMesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

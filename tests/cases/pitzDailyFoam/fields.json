@@ -1,0 +1,12 @@
+{
+    "fields": [
+        {
+            "name": "U",
+            "type": "velocity"
+        },
+        {
+            "name": "T",
+            "type": "scalar"
+        }
+    ]
+}
