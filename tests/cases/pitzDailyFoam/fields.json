@@ -7,6 +7,10 @@
         {
             "name": "T",
             "type": "scalar"
+        },
+        {
+            "name": "P",
+            "type": "pressure"
         }
     ]
 }

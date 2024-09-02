@@ -1,31 +1,31 @@
 {
     "patches": [
     {
-        "name": "inlet",
+        "name":            "inlet",
         "type":            "patch",
         "nFaces":          30,
         "startFace":       24170
     },
     {
-        "name": "outlet",
+        "name":            "outlet",
         "type":            "patch",
         "nFaces":          57,
         "startFace":       24200
     },
     {
-        "name": "upperWall",
+        "name":            "upperWall",
         "type":            "wall",
         "nFaces":          223,
         "startFace":       24257
     },
     {
-        "name": "lowerWall",
+        "name":            "lowerWall",
         "type":            "wall",
         "nFaces":          250,
         "startFace":       24480
     },
     {
-        "name": "frontAndBack",
+        "name":            "frontAndBack",
         "type":            "empty",
         "nFaces":          24450,
         "startFace":       24730
