@@ -4,7 +4,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "prism/constants.h"
 #include "prism/log.h"
 
 namespace prism::mesh {
@@ -149,6 +148,18 @@ auto PMesh::boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>
 auto PMesh::boundaryPatch(const Face& face) const noexcept -> const BoundaryPatch& {
     assert(face.isBoundary() && face.boundaryPatchId().has_value());
     return _boundary_patches[face.boundaryPatchId().value()];
+}
+
+auto PMesh::boundaryPatch(const std::string& name) const -> const BoundaryPatch& {
+    for (const auto& patch : _boundary_patches) {
+        if (patch.name() == name) {
+            return patch;
+        }
+    }
+    throw std::runtime_error(
+        fmt::format("prism::mesh::PMesh::boundaryPatch(): Couldn't find boundary patch with name "
+                    "`{}`",
+                    name));
 }
 
 // TODO: faceBoundaryPatch() methods don't check if face is boundary or not this is to avoid

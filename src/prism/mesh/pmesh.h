@@ -1,7 +1,5 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include <cmath>
 #include <iterator>
 
@@ -12,7 +10,7 @@
 
 namespace prism::mesh {
 
-// TODO: remove const std::vector& members to std::span
+// TODO: replace const std::vector& members with std::span
 namespace iterators {
 struct FaceIterator {
     using iterator_category = std::input_iterator_tag;
@@ -64,6 +62,8 @@ struct InteriorFaces {
 
 } // namespace iterators
 
+// TODO: we don't need boundary_faces_ids and interior_faces_ids, we can just use the
+// boundaryPatches() and faces() methods
 class PMesh {
   public:
     PMesh(std::vector<Vector3d> vertices,
@@ -88,6 +88,7 @@ class PMesh {
 
     auto boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>&;
     auto boundaryPatch(const Face& face) const noexcept -> const BoundaryPatch&;
+    auto boundaryPatch(const std::string& name) const -> const BoundaryPatch&;
 
     auto faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch&;
     auto faceBoundaryPatch(const Face& face) const -> const BoundaryPatch&;

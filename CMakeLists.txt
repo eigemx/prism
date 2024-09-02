@@ -1,10 +1,11 @@
+#TODO: review this file
 cmake_minimum_required(VERSION 3.20)
 
 project(
     prism
     LANGUAGES CXX
     VERSION 0.0.1
-    DESCRIPTION "A C++ CFD library based on finite volume method"
+    DESCRIPTION "A C++ CFD library based on the finite volume method"
 )
 
 set(CMAKE_CXX_STANDARD 20)
