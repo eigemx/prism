@@ -6,6 +6,7 @@
         "spdlog",
         "nlohmann-json",
         "eigen3",
-        "catch2"
+        "catch2",
+        "vtk"
     ]
 }
