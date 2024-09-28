@@ -18,6 +18,8 @@ class Face {
     auto inline areaVector() const noexcept -> Vector3d { return _area * _normal; }
 
     auto inline id() const noexcept -> std::size_t { return _id; }
+
+    // This should be setId() instead of id(), to make the purpose of the operation clear
     auto inline id() noexcept -> std::size_t& { return _id; }
     auto inline verticesIds() const noexcept -> const std::vector<std::size_t>& {
         return _vertices_ids;

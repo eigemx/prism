@@ -1,10 +1,9 @@
 find_package(Catch2 CONFIG REQUIRED)
-find_package(VTK REQUIRED)
 
 #add_library(foam_json_parser foam_json_parser.cpp)
 add_executable(foam_json_parser foam_json_parser.cpp)
 target_link_libraries(foam_json_parser 
-                            PRIVATE nlohmann_json::nlohmann_json prism ${VTK_LIBRARIES})
+                            PRIVATE nlohmann_json::nlohmann_json prism fmt::fmt-header-only)
 
 # Maybe this should be add_test?
 add_executable(tests test_advection_1d.cpp test_poisson.cpp)
