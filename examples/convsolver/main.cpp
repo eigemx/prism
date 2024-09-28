@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <filesystem>
 
+#include "prism/field/scalar.h"
+#include "prism/scheme/convection.h"
+
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -30,7 +33,7 @@ auto main(int argc, char* argv[]) -> int {
     auto T = field::Scalar("temperature", mesh, 300.0);
 
     // density field
-    auto rho = field::Scalar("rho", mesh, 1.18);
+    auto rho = field::UniformScalar("rho", mesh, 1.18);
 
     // set up a unifform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -47,6 +50,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // Set a uniform velocity field, with value equal to inlet velocity;
     Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("U");
+
+    log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
     auto U = field::Velocity("U", mesh, inlet_velocity);
 
     // A zero field, just to demonstrate how to add arbitray constant source terms
@@ -56,10 +61,11 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
-    auto eqn = eqn::Transport(
-        scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
-        scheme::diffusion::NonCorrected(kappa, T)         // - ∇.(κ ∇T)
-        // scheme::source::ConstantScalar(useLessField) // S (sources are always added to the RHS)
+    using div = scheme::convection::SecondOrderUpwind<field::UniformScalar, field::Scalar>;
+    using laplacian = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
+
+    auto eqn = eqn::Transport(div(rho, U, T),     // ∇.(ρUT)
+                              laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
     // solve
@@ -69,8 +75,8 @@ auto main(int argc, char* argv[]) -> int {
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 
-    auto div = ops::div(U);
-    prism::export_field_vtu(div, "div.vtu");
+    auto div_U = ops::div(U);
+    prism::export_field_vtu(div_U, "div.vtu");
 
     return 0;
 }
