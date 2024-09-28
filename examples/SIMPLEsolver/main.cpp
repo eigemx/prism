@@ -8,8 +8,6 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism;
     using namespace prism::scheme;
 
-    sayHello();
-    return -1;
 
     log::setLevel(log::Level::Info);
     if (argc < 2) {
@@ -27,9 +25,9 @@ auto main(int argc, char* argv[]) -> int {
     auto mu = field::UniformScalar("mu", mesh, 1e-3);
     auto U = field::Velocity("U", mesh, {0.01, 0.01, 0});
     auto P = field::Pressure("P", mesh, 0.0);
-    auto rho = field::Scalar("rho", mesh, 1000);
+    auto rho = field::UniformSalar("rho", mesh, 1000);
 
-    using div = convection::Upwind<field::VelocityComponent>;
+    using div = convection::Upwind<field::UniformSalar, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>;
 

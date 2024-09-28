@@ -9,10 +9,6 @@
             "name": "U",
             "type": "velocity",
             "gradScheme": "leastSquares"
-        },
-        {
-            "name": "rho",
-            "type": "scalar"
         }
-    ]
+   ]
 }

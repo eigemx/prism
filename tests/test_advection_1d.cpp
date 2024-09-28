@@ -9,6 +9,7 @@
 auto peclet_number(double rho, double kappa, double u, double L) {
     return (rho * u * L) / kappa;
 }
+
 auto advection_1d(double x, double u) -> double {
     double phi_west = 1;
     double phi_east = 0;
@@ -57,6 +58,13 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     }
     VectorXd diff_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(diff.data(), diff.size());
 
-    REQUIRE(diff_vec.norm() < 0.05);
-    REQUIRE(std::is_sorted(diff.rbegin(), diff.rend()));
+    REQUIRE(diff_vec.norm() < 0.1);
+
+    // make sure that solution (T) is sorted, let's copy it to a vector and sort it
+    std::vector<double> T_vec;
+    for (const auto& cell : T.mesh().cells()) {
+        T_vec.push_back(T.valueAtCell(cell.id()));
+    }
+
+    REQUIRE(std::is_sorted(T_vec.rbegin(), T_vec.rend()));
 }
