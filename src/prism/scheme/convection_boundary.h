@@ -51,8 +51,9 @@ template <typename Rho, typename F>
 class ZeroGradient<convection::IConvection<Rho, F>>
     : public ISchemeBoundaryHandler<convection::IConvection<Rho, F>> {
   public:
+    // we treat zero-gradient boundary condition as outlet condition.
     void apply(convection::IConvection<Rho, F>& scheme,
-               const mesh::BoundaryPatch& patch) override {}
+               const mesh::BoundaryPatch& patch) override; 
     auto inline name() const -> std::string override { return "zero-gradient"; }
 };
 
@@ -96,17 +97,24 @@ void NoSlip<convection::IConvection<Rho, F>>::apply(convection::IConvection<Rho,
 }
 
 template <typename Rho, typename F>
+void ZeroGradient<convection::IConvection<Rho, F>>::apply(convection::IConvection<Rho, F>& scheme,
+                                                    const mesh::BoundaryPatch& patch) {
+    Outlet<convection::IConvection<Rho, F>> outlet;
+    return outlet.apply(scheme, patch);
+}
+
+template <typename Rho, typename F>
 void Outlet<convection::IConvection<Rho, F>>::apply(convection::IConvection<Rho, F>& scheme,
                                                     const mesh::BoundaryPatch& patch) {
     _n_reverse_flow_faces = 0;
 
-    const auto phi = scheme.field();
+    const auto& phi = scheme.field();
     const auto& mesh = phi.mesh();
 
     for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
-        const std::size_t cell_id = owner.id();
+        const std::size_t owner_id = owner.id();
 
         // face area vector
         const Vector3d& S_f = face.areaVector();
@@ -120,7 +128,7 @@ void Outlet<convection::IConvection<Rho, F>>::apply(convection::IConvection<Rho,
             _n_reverse_flow_faces++;
         }
 
-        scheme.insert(cell_id, cell_id, m_dot_f);
+        scheme.insert(owner_id, owner_id, m_dot_f);
     }
 
     if (_n_reverse_flow_faces > 0) {
