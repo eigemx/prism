@@ -38,7 +38,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> 
 }
 
 auto Tensor::valueAtCell(std::size_t cell_id) const -> Matrix3d {
-    assert(cell_id < mesh().nCells());
+    assert(cell_id < mesh().cellCount());
     return _data[cell_id];
 }
 

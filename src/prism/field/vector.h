@@ -17,6 +17,7 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     GeneralVector(std::string name, const mesh::PMesh& mesh, double value);
     GeneralVector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
     GeneralVector(std::string name, const mesh::PMesh& mesh, std::array<Component, 3>& fields);
+    GeneralVector(std::string name, const mesh::PMesh& mesh, std::vector<Vector3d>& data);
 
     auto hasFaceValues() const -> bool override;
 

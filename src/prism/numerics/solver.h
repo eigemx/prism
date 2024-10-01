@@ -1,9 +1,15 @@
 #pragma once
-
 #include <Eigen/IterativeLinearSolvers>
+#include <fstream>
 
 #include "prism/equation/transport.h"
 #include "prism/log.h"
+#include "prism/types.h"
+
+inline void writeToCSVfile(const std::string& name, const auto& matrix) {
+    std::ofstream file(name.c_str());
+    file << matrix;
+}
 
 namespace prism::solver {
 
@@ -53,7 +59,7 @@ void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
     const auto& b = eqn.rhs();
 
     auto& phi = eqn.field();
-    auto& phi_prev = eqn.prevIterField();
+    //auto& phi_prev = eqn.prevIterField();
 
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     Relaxer rx;
@@ -66,14 +72,16 @@ void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
         auto res = (A * phi.values()) - b;
         auto res_norm = res.norm();
 
+        //phi_prev.values() = phi.values();
+        phi.values() = bicg.compute(A).solveWithGuess(b, phi.values());
+
         // check for convergence
+        /*
         if (res_norm < eps) {
             log::info("Converged after {} iterations, Residual: {}", i, res_norm);
             break;
         }
-
-        phi_prev.values() = phi.values();
-        phi.values() = bicg.compute(A).solveWithGuess(b, phi.values());
+        */
 
         rx.postRelax(eqn, lambda);
 
@@ -81,6 +89,7 @@ void BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         // zero out the left & right hand side vector, for the next iteration
         eqn.zeroOutCoeffs();
+
     }
 }
 

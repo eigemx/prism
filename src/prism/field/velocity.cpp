@@ -27,6 +27,7 @@ void VelocityCompBHManagerSetter::set(IScalarBHManager& manager) {
     manager.addHandler<field::boundary::Outlet<VelocityComponent>>();
     manager.addHandler<field::boundary::FixedGradient<VelocityComponent>>();
     manager.addHandler<field::boundary::NoSlip<VelocityComponent>>();
+    manager.addHandler<field::boundary::ZeroGradient<VelocityComponent>>();
 }
 
 } // namespace prism::field

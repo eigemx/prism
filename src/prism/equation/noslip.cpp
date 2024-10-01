@@ -65,8 +65,8 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     const auto& mesh = eqn.field().mesh();
 
     using F = field::VelocityComponent;
-    using scheme::convection::IConvection;
-    auto conv_scheme = castScheme<F, IConvection<F>>(eqn.convectionScheme());
+    using Convection = scheme::convection::IConvection<field::UniformScalar, F>;
+    auto conv_scheme = castScheme<F, Convection>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
 
     // TODO: this is a bit of a hack, what if kappa is not uniform?

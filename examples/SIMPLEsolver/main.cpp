@@ -1,13 +1,48 @@
 #include <fmt/core.h>
-#include <foamJSONToPMesh.h>
 #include <prism/prism.h>
 
 #include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+#include "prism/scheme/nonortho.h"
+
+using json = nlohmann::json;
+using prism::export_field_vtu;
+using namespace prism;
+
+namespace fs = std::filesystem;
+
+struct FoamFields {
+    std::vector<prism::Vector3d> velocity;
+    std::vector<double> pressure;
+    std::vector<double> temperature;
+};
+
+auto fileToJson(const fs::path& path) -> json {
+    if (!std::filesystem::exists(path)) {
+        throw std::runtime_error("File " + path.string() + " does not exist!");
+    }
+    auto file = std::ifstream(path);
+    return json::parse(file);
+}
+
+auto readFields(const std::filesystem::path& fields_file) -> FoamFields {
+    auto doc = fileToJson(fields_file);
+
+    auto velocity = doc["U"];
+    auto pressure = doc["p"].get<std::vector<double>>();
+
+    std::vector<prism::Vector3d> velocity_vec;
+    for (const auto& v : velocity) {
+        velocity_vec.emplace_back(v[0], v[1], v[2]);
+    }
+
+    return {velocity_vec, pressure, {}};
+}
 
 auto main(int argc, char* argv[]) -> int {
-    using namespace prism;
     using namespace prism::scheme;
-
 
     log::setLevel(log::Level::Info);
     if (argc < 2) {
@@ -19,16 +54,23 @@ auto main(int argc, char* argv[]) -> int {
 
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    fmt::println("Loading mesh file `{}`...", unv_file_name);
+    log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto mu = field::UniformScalar("mu", mesh, 1e-3);
-    auto U = field::Velocity("U", mesh, {0.01, 0.01, 0});
-    auto P = field::Pressure("P", mesh, 0.0);
-    auto rho = field::UniformSalar("rho", mesh, 1000);
+    // read pressure field from json file
+    auto fields = readFields(fs::path(unv_file_name).parent_path() / "foam_fields.json");
+    auto pressure_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(fields.pressure.data(),
+                                                                      fields.pressure.size());
 
-    using div = convection::Upwind<field::UniformSalar, field::VelocityComponent>;
-    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
+    // set mesh fields
+    auto mu = field::UniformScalar("mu", mesh, 1e-5);
+    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    auto P = field::Pressure("P", mesh, pressure_vec);
+    auto rho = field::UniformScalar("rho", mesh, 1.0);
+
+    using div = convection::Upwind<field::UniformScalar, field::VelocityComponent>;
+    using laplacian = diffusion::
+        Corrected<field::UniformScalar, nonortho::OverRelaxedCorrector, field::VelocityComponent>;
     using grad = source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>;
 
     auto uEqn = eqn::Momentum(div(rho, U, U.x()),   // ∇.(ρUu)
@@ -36,6 +78,26 @@ auto main(int argc, char* argv[]) -> int {
                               grad(P, Coord::X)     // = -∂p/∂x
     );
 
+    auto vEqn = eqn::Momentum(div(rho, U, U.y()),   // ∇.(ρUv)
+                              laplacian(mu, U.y()), // - ∇.(μ∇v)
+                              grad(P, Coord::Y)     // = -∂p/∂y
+    );
+
+
+    auto U_solver = solver::BiCGSTAB<field::VelocityComponent,
+                                     solver::ImplicitUnderRelaxation<field::VelocityComponent>>();
+    for (auto i = 0; i < 10; ++i) {
+        log::info("Solving y-momentum equation");
+        U_solver.solve(vEqn, 10, 1e-4, 1.0);
+
+        log::info("Solving x-momentum equation");
+        U_solver.solve(uEqn, 10, 1e-4, 1.0);
+    }
+
+    export_field_vtu(uEqn.field(), "solution_x.vtu");
+    export_field_vtu(vEqn.field(), "solution_y.vtu");
+    export_field_vtu(ops::grad(P, Coord::X), "gradP_x.vtu");
+    /*
     auto vEqn = eqn::Momentum(div(rho, U, U.y()),   // ∇.(ρUv)
                               laplacian(mu, U.y()), // - ∇.(μ∇v)
                               grad(P, Coord::Y)     // = -∂p/∂y
@@ -118,5 +180,5 @@ auto main(int argc, char* argv[]) -> int {
 
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();
-    }
+    }*/
 }

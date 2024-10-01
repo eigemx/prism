@@ -8,6 +8,7 @@
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
+#include <set>
 #include <vector>
 
 using CellIdToFaces = std::map<std::size_t, std::vector<std::size_t>>;
@@ -120,16 +121,13 @@ auto readFoamMesh() -> FoamMesh {
 
 auto constructFaces(const FoamMesh& foam_mesh) -> std::vector<prism::mesh::Face> {
     using prism::mesh::Face;
-
     std::vector<Face> faces;
-    faces.reserve(foam_mesh.faces.size());
 
     std::size_t face_id = 0;
-
     for (const auto& face_vertices_ids : foam_mesh.faces) {
         std::vector<prism::Vector3d> face_vertices;
 
-        for (const auto& id : face_vertices_ids) {
+        for (const auto id : face_vertices_ids) {
             const auto& point = foam_mesh.points[id];
             face_vertices.emplace_back(point);
         }
@@ -147,9 +145,94 @@ auto constructFaces(const FoamMesh& foam_mesh) -> std::vector<prism::mesh::Face>
     return faces;
 }
 
-auto getCellVtkVertices(const std::vector<std::size_t>& cell_faces_ids,
-                        const std::vector<prism::mesh::Face>& faces,
-                        const std::vector<prism::Vector3d>& points) -> std::vector<std::size_t> {
+auto getFaceMinMaxPoints(const std::vector<std::size_t>& face_vertices_ids,
+                         const std::vector<prism::Vector3d>& points) -> std::array<double, 8> {
+    double xmin = std::numeric_limits<double>::max();
+    double xmax = std::numeric_limits<double>::min();
+    double ymin = std::numeric_limits<double>::max();
+    double ymax = std::numeric_limits<double>::min();
+    double zmin = std::numeric_limits<double>::max();
+    double zmax = std::numeric_limits<double>::min();
+
+    for (const auto& id : face_vertices_ids) {
+        const auto& point = points[id];
+        xmin = std::min(xmin, point.x());
+        xmax = std::max(xmax, point.x());
+        ymin = std::min(ymin, point.y());
+        ymax = std::max(ymax, point.y());
+        zmin = std::min(zmin, point.z());
+        zmax = std::max(zmax, point.z());
+    }
+    return {xmin, xmax, ymin, ymax, zmin, zmax};
+}
+
+auto getLowerFace(const std::vector<std::size_t>& cell_faces_ids,
+                  const std::vector<prism::mesh::Face>& faces,
+                  const std::vector<prism::Vector3d>& points) -> std::vector<std::size_t> {
+    // Find the minimum z-coordinate among all vertices.
+    double zmin = std::numeric_limits<double>::max();
+    for (const auto& face_id : cell_faces_ids) {
+        const auto& face = faces[face_id];
+        for (const auto& vertex_id : face.verticesIds()) {
+            zmin = std::min(zmin, points[vertex_id].z());
+        }
+    }
+
+    // Create a vector to store the lower face IDs.
+    std::vector<std::size_t> lower_face_ids;
+
+    // Iterate through the cell faces and check if all vertices have z = zmin.
+    for (const auto& face_id : cell_faces_ids) {
+        const auto& face = faces[face_id];
+        bool is_lower_face = true;
+        for (const auto& vertex_id : face.verticesIds()) {
+            if (points[vertex_id].z() != zmin) {
+                is_lower_face = false;
+                break;
+            }
+        }
+        if (is_lower_face) {
+            lower_face_ids.push_back(face_id);
+        }
+    }
+    return lower_face_ids;
+}
+
+auto getUpperFace(const std::vector<std::size_t>& cell_faces_ids,
+                  const std::vector<prism::mesh::Face>& faces,
+                  const std::vector<prism::Vector3d>& points) -> std::vector<std::size_t> {
+    // Find the maximum z-coordinate among all vertices.
+    double zmax = std::numeric_limits<double>::min();
+    for (const auto& face_id : cell_faces_ids) {
+        const auto& face = faces[face_id];
+        for (const auto& vertex_id : face.verticesIds()) {
+            zmax = std::max(zmax, points[vertex_id].z());
+        }
+    }
+
+    // Create a vector to store the upper face IDs.
+    std::vector<std::size_t> upper_face_ids;
+
+    // Iterate through the cell faces and check if all vertices have z = zmax.
+    for (const auto& face_id : cell_faces_ids) {
+        const auto& face = faces[face_id];
+        bool is_upper_face = true;
+        for (const auto& vertex_id : face.verticesIds()) {
+            if (points[vertex_id].z() != zmax) {
+                is_upper_face = false;
+                break;
+            }
+        }
+        if (is_upper_face) {
+            upper_face_ids.push_back(face_id);
+        }
+    }
+    return upper_face_ids;
+}
+
+auto getFaceVtkOrderedVertices(const std::vector<std::size_t>& face_vertices_ids,
+                               const std::vector<prism::Vector3d>& points)
+    -> std::vector<std::size_t> {
     // We need to get the lower face and the upper face of the cell (in x-plane)
     // once we have the lower face, we need to get the following vertices:
     // vertex 1 at (xmin, ymin, zmin)
@@ -157,7 +240,76 @@ auto getCellVtkVertices(const std::vector<std::size_t>& cell_faces_ids,
     // vertex 3 at (xmin, ymin, zmax)
     // vertex 4 at (xmax, ymin, zmax)
     // and do the same for the upper face (vertices 5 to 8)
-    return {};
+    std::vector<std::size_t> vtk_ordered_vertices;
+
+    auto face_min_max_verts = getFaceMinMaxPoints(face_vertices_ids, points);
+    auto xmin = face_min_max_verts[0];
+    auto xmax = face_min_max_verts[1];
+    auto ymin = face_min_max_verts[2];
+    auto ymax = face_min_max_verts[3];
+    auto zmin = face_min_max_verts[4];
+    auto zmax = face_min_max_verts[5];
+
+    // get 1st vertex (xmin, ymin, zmin)
+    auto v = std::find_if(face_vertices_ids.begin(),
+                          face_vertices_ids.end(),
+                          [&points, &xmin, &ymin, &zmin](const auto& id) {
+                              return points[id].x() == xmin && points[id].y() == ymin &&
+                                     points[id].z() == zmin;
+                          });
+    auto v_id = std::distance(face_vertices_ids.begin(), v);
+    vtk_ordered_vertices.emplace_back(v_id);
+
+    // get 2nd vertex (xmax, ymin, zmin)
+    v = std::find_if(face_vertices_ids.begin(),
+                     face_vertices_ids.end(),
+                     [&points, &xmax, &ymin, &zmin](const auto& id) {
+                         return points[id].x() == xmax && points[id].y() == ymin &&
+                                points[id].z() == zmin;
+                     });
+    v_id = std::distance(face_vertices_ids.begin(), v);
+    vtk_ordered_vertices.emplace_back(v_id);
+
+    // get 3rd vertex (xmin, ymin, zmax)
+    v = std::find_if(face_vertices_ids.begin(),
+                     face_vertices_ids.end(),
+                     [&points, &xmin, &ymin, &zmax](const auto& id) {
+                         return points[id].x() == xmin && points[id].y() == ymin &&
+                                points[id].z() == zmax;
+                     });
+    v_id = std::distance(face_vertices_ids.begin(), v);
+    vtk_ordered_vertices.emplace_back(v_id);
+
+    // get 4th vertex (xmax, ymin, zmax)
+    v = std::find_if(face_vertices_ids.begin(),
+                     face_vertices_ids.end(),
+                     [&points, &xmax, &ymin, &zmax](const auto& id) {
+                         return points[id].x() == xmax && points[id].y() == ymin &&
+                                points[id].z() == zmax;
+                     });
+    v_id = std::distance(face_vertices_ids.begin(), v);
+    vtk_ordered_vertices.emplace_back(v_id);
+    return vtk_ordered_vertices;
+}
+
+auto getCellVtkVertices(const std::vector<std::size_t>& cell_faces_ids,
+                        const std::vector<prism::mesh::Face>& faces,
+                        const std::vector<prism::Vector3d>& points) -> std::vector<std::size_t> {
+    auto upper_face_vertices = getUpperFace(cell_faces_ids, faces, points);
+    auto lower_face_vertices = getLowerFace(cell_faces_ids, faces, points);
+
+    auto lower_ordered_ids = getFaceVtkOrderedVertices(lower_face_vertices, points);
+    auto upper_ordered_ids = getFaceVtkOrderedVertices(upper_face_vertices, points);
+
+    // return a combined vector of ordered vertices
+    std::vector<std::size_t> vtk_ordered_vertices;
+    vtk_ordered_vertices.reserve(lower_ordered_ids.size() + upper_ordered_ids.size());
+    vtk_ordered_vertices.insert(
+        vtk_ordered_vertices.end(), lower_ordered_ids.begin(), lower_ordered_ids.end());
+    vtk_ordered_vertices.insert(
+        vtk_ordered_vertices.end(), upper_ordered_ids.begin(), upper_ordered_ids.end());
+
+    return vtk_ordered_vertices;
 }
 
 auto constructCells(const std::vector<prism::mesh::Face>& faces, const FoamMesh& foam_mesh)
@@ -196,29 +348,32 @@ auto constructCells(const std::vector<prism::mesh::Face>& faces, const FoamMesh&
             throw std::runtime_error("Each cell must have exactly 6 faces");
         }
 
+        std::set<std::size_t> vertices_set;
         auto vertices_ids = getCellVtkVertices(faces_ids, faces, foam_mesh.points);
-        // sanity check that each cell has exactly 8 vertices
-        if (vertices_ids.size() != 8) {
-            throw std::runtime_error("Each cell must have exactly 8 vertices");
-        }
         cells.emplace_back(faces, vertices_ids, faces_ids, cell_id);
     }
     return cells;
 }
 
 auto FoamMeshToPMeshConverter::toPMesh() -> prism::mesh::PMesh {
+    std::cout << "Reading foam mesh..." << std::endl;
     auto foam_mesh = readFoamMesh();
+
+    std::cout << "Constructing faces..." << std::endl;
     auto faces = constructFaces(foam_mesh);
+
+    std::cout << "Constructing cells..." << std::endl;
     auto cells = constructCells(faces, foam_mesh);
 
+    std::cout << "Reading boundary patches..." << std::endl;
     prism::mesh::MeshBoundary mesh_boundary("tests/cases/pitzDailyFoam/fields.json");
     auto boundary_patches = mesh_boundary.patches();
     const auto& field_infos = mesh_boundary.fields();
 
     auto foam_boundary = fileToJson("tests/cases/pitzDailyFoam/boundary.json");
-    auto patches = foam_boundary["patches"];
+    auto foam_patches = foam_boundary["patches"];
 
-    for (const auto& patch : patches) {
+    for (const auto& patch : foam_patches) {
         const auto& name = patch["name"].get<std::string>();
         auto pmesh_patch = std::find_if(
             boundary_patches.begin(), boundary_patches.end(), [&name](const auto& patch) {
@@ -235,11 +390,15 @@ auto FoamMeshToPMeshConverter::toPMesh() -> prism::mesh::PMesh {
     }
 
     std::vector<std::size_t> boundary_faces_ids;
+    std::size_t patch_id = 0;
     for (const auto& patch : boundary_patches) {
         std::cout << "patch name: " << patch.name() << std::endl;
         for (const auto& face_id : patch.facesIds()) {
+            auto& face = faces[face_id];
+            face.setBoundaryPatchId(patch_id);
             boundary_faces_ids.push_back(face_id);
         }
+        patch_id++;
     }
 
     std::vector<std::size_t> interior_faces_ids;
@@ -258,22 +417,13 @@ auto FoamMeshToPMeshConverter::toPMesh() -> prism::mesh::PMesh {
             std::move(interior_faces_ids)};
 }
 
-
 auto main() -> int {
     auto fields = readFields();
-    auto foam_mesh = readFoamMesh();
-    auto faces = constructFaces(foam_mesh);
-    auto cells = constructCells(faces, foam_mesh);
-    fmt::print("Cells size: {}", cells.size());
-    /*
-        FoamMeshToPMeshConverter conv;
-        auto pmesh = conv.toPMesh();
+    auto pmesh = FoamMeshToPMeshConverter().toPMesh();
+    auto P = prism::field::Pressure("P",
+                                    pmesh,
+                                    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(
+                                        fields.pressure.data(), fields.pressure.size()));
 
-        auto P = prism::field::Pressure("P",
-                                        pmesh,
-                                        Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(
-                                            fields.pressure.data(), fields.pressure.size()));
-
-        prism::export_field_vtu(P, "P.vtu");
-    */
+    prism::export_field_vtu(P, "P.vtu");
 }

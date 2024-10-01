@@ -1,0 +1,31 @@
+{
+    "patches": [
+        {
+            "name": "front",
+            "type": "empty"
+        },
+        {
+            "name": "back",
+            "type": "empty"
+        },
+        {
+            "name": "inlet",
+            "type": "fixed",
+            "value": [0.0001, 0.0, 0.0]
+        },
+        {
+            "name": "outlet",
+            "type": "outlet"
+        },
+        {
+            "name": "upperWalls",
+            "type": "no-slip",
+            "value": [0.0, 0.0, 0.0]
+        },
+        {
+            "name": "lowerWalls",
+            "type": "no-slip",
+            "value": [0.0, 0.0, 0.0]
+        }
+    ]
+} 
