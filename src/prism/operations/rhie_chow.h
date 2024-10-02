@@ -12,10 +12,10 @@ template <typename Vector>
 void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P);
 
 namespace detail {
-auto correctGrad(const mesh::PMesh& mesh,
-                 const mesh::Face& face,
-                 const field::Pressure& P,
-                 const Vector3d& grad_p_f) -> Vector3d;
+auto pressureGradCalculated(const mesh::PMesh& mesh,
+                            const mesh::Face& face,
+                            const field::Pressure& P,
+                            const Vector3d& grad_p_f) -> Vector3d;
 }
 
 template <typename Vector>
@@ -33,12 +33,11 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
         const std::size_t face_id = face.id();
         const Vector3d& Uf = U.valueAtFace(face);
         const Matrix3d& Df = D.valueAtFace(face);
-        const Vector3d& grad_p_f = P.gradAtFace(face);
-
-        Vector3d grad_p_f_corr = grad_p_f + detail::correctGrad(mesh, face, P, grad_p_f);
+        const Vector3d& grad_p_f_bar = P.gradAtFace(face);
+        const Vector3d grad_p_f = detail::pressureGradCalculated(mesh, face, P, grad_p_f_bar);
 
         // Equation 15.60
-        Vector3d Uf_corrected = Uf - (Df * ((grad_p_f_corr - grad_p_f)));
+        Vector3d Uf_corrected = Uf - (Df * ((grad_p_f - grad_p_f_bar)));
         u_face_data[face_id] = Uf_corrected.x();
         v_face_data[face_id] = Uf_corrected.y();
         w_face_data[face_id] = Uf_corrected.z();
@@ -49,13 +48,13 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
         const auto& owner = mesh.cell(face.owner());
 
         // Equation (15.110)
-        const Vector3d Uc = U.valueAtCell(owner);
-        const Matrix3d& Df = D.valueAtCell(owner);
-        const Vector3d grad_p_f = P.gradAtFace(face);
-        const Vector3d grad_p_C = P.gradAtCell(owner);
+        //const Vector3d Uc = U.valueAtCell(owner);
+        //const Matrix3d& Df = D.valueAtCell(owner);
+        //const Vector3d grad_p_f = P.gradAtFace(face);
+        //const Vector3d grad_p_C = P.gradAtCell(owner);
 
         // Equation (15.111)
-        Vector3d Ub_corrected = Uc - (Df * (grad_p_f - grad_p_C));
+        //Vector3d Ub_corrected = Uc - (Df * (grad_p_f - grad_p_C));
         // u_face_data[face_id] = Ub_corrected.x();
         // v_face_data[face_id] = Ub_corrected.y();
         // w_face_data[face_id] = Ub_corrected.z();

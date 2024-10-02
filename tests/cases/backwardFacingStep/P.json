@@ -14,7 +14,8 @@
         },
         {
             "name": "outlet",
-            "type": "zero-gradient"
+            "type": "fixed",
+            "value": 0.0
         },
         {
             "name": "upperWalls",
