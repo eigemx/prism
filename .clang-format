@@ -2,9 +2,10 @@ BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 98
 AllowShortFunctionsOnASingleLine: Inline
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
 AlignConsecutiveAssignments: false
+AllowShortCaseLabelsOnASingleLine: true
 AlignConsecutiveDeclarations: false
 AlignTrailingComments: true
 SpacesBeforeTrailingComments: 1

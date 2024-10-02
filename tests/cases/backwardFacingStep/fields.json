@@ -9,7 +9,7 @@
         {
             "name": "P",
             "type": "pressure",
-            "gradscheme": "green-gauss"
+            "gradscheme": "least-squares"
         },
         {
             "name": "T",

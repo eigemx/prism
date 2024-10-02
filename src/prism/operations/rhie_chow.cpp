@@ -2,7 +2,7 @@
 
 namespace prism::ops::detail {
 
-auto correctGrad(const mesh::PMesh& mesh,
+auto pressureGradCalculated(const mesh::PMesh& mesh,
                  const mesh::Face& face,
                  const field::Pressure& P,
                  const Vector3d& grad_p_f) -> Vector3d {
