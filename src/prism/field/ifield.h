@@ -70,6 +70,10 @@ class IVector {
     virtual ~IVector() = default;
 };
 
+template <typename T>
+concept IVectorBased = std::derived_from<T, IVector>;
+
+
 template <typename CellValueType>
 IField<CellValueType>::IField(std::string name, const mesh::PMesh& mesh)
     : _name(std::move(name)), _mesh(&mesh) {

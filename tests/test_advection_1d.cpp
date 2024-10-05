@@ -43,13 +43,13 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     auto U = field::Velocity("U", mesh, inlet_velocity);
 
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
-    auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
-                              scheme::diffusion::NonCorrected(kappa, T)         // - ∇.(κ ∇T)
+    auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T),    // ∇.(ρUT)
+                              scheme::diffusion::NonCorrected(kappa, T) // - ∇.(κ ∇T) = 0
     );
 
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 100, 1e-5, 1);
+    solver.solve(eqn, 100, 1e-20, 1);
 
     std::vector<double> diff;
     for (const auto& cell : T.mesh().cells()) {
@@ -60,7 +60,6 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
 
     REQUIRE(diff_vec.norm() < 0.1);
 
-    // make sure that solution (T) is sorted, let's copy it to a vector and sort it
     std::vector<double> T_vec;
     for (const auto& cell : T.mesh().cells()) {
         T_vec.push_back(T.valueAtCell(cell.id()));

@@ -118,6 +118,7 @@ Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh().cellCo
 template <SourceSign Sign, typename Vector>
 void inline Divergence<Sign, Vector>::apply() {
     const auto& vol_field = _U.mesh().cellsVolumeVector();
+
     if constexpr (Sign == SourceSign::Positive) {
         rhs() = ops::div(_U).values().array() * vol_field.array();
         return;

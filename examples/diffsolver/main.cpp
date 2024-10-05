@@ -43,14 +43,17 @@ auto main(int argc, char* argv[]) -> int {
     // assemble the equation
     // solve for temperature diffision: -∇.(κ ∇T) = 0
     // where κ is the diffusion coefficient
-    auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
-    auto eqn = eqn::Transport(
-        scheme::diffusion::Corrected(kappa, T)); //, scheme::source::ConstantScalar(S));
+    // auto kappa = field::UniformScalar("kappa", mesh, 1e-5);
+    auto kappa = field::Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
+
+    auto eqn = eqn::Transport(scheme::diffusion::Corrected<field::Tensor,
+                                                           nonortho::OverRelaxedCorrector,
+                                                           field::Scalar>(kappa, T));
 
     // solve
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 100, 1e-5, 1);
+    solver.solve(eqn, 5, 1e-20, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 

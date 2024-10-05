@@ -58,6 +58,23 @@ auto readVelocityComponents(const std::vector<prism::Vector3d>& velocity)
     return {u, w, v};
 }
 
+void printCellFaceVelocity(const field::Velocity& U, const std::size_t cell_id) {
+    const auto& cell = U.mesh().cell(cell_id);
+    for (const auto face_id : cell.facesIds()) {
+        const auto& face = U.mesh().face(face_id);
+        if (face.isBoundary()) {
+            const auto& patch = U.mesh().boundaryPatch(face);
+            if (patch.isEmpty()) {
+                continue;
+            }
+            fmt::print("[Boundary face]");
+        } else {
+            fmt::print("[Interior face]");
+        }
+        fmt::println(" U_x = {}, U_y = {}", U.x().valueAtFace(face), U.y().valueAtFace(face));
+    }
+}
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
@@ -90,7 +107,7 @@ auto main(int argc, char* argv[]) -> int {
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
     // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
     auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, pressure_vec);
+    auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
@@ -114,15 +131,19 @@ auto main(int argc, char* argv[]) -> int {
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent,
                                      solver::ImplicitUnderRelaxation<field::VelocityComponent>>();
 
-    for (auto nOuterIter = 0; nOuterIter < 0; ++nOuterIter) {
-        log::info("Solving y-momentum equation");
-        U_solver.solve(vEqn, 10, 1e-4, 1.0);
 
-        log::info("Solving x-momentum equation");
-        U_solver.solve(uEqn, 20, 1e-4, 1.0);
+    auto nNonOrthCorrectiors = 3;
+    for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
+        log::info("Outer iteration {}", nOuterIter);
+        /*
+        for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
+            log::info("Solving y-momentum equation");
+            U_solver.solve(vEqn, 10, 1e-12, 0.7);
 
-        uEqn.zeroOutCoeffs();
-        vEqn.zeroOutCoeffs();
+            log::info("Solving x-momentum equation");
+            U_solver.solve(uEqn, 10, 1e-12, 0.7);
+        }
+        */
 
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
@@ -133,7 +154,7 @@ auto main(int argc, char* argv[]) -> int {
         const auto& vEqn_diag = vEqn.matrix().diagonal();
 
         auto D_data = std::vector<Matrix3d>();
-        D_data.reserve(mesh.cellCount());
+        D_data.resize(mesh.cellCount());
 
         auto Du = vol_vec.array() / (uEqn_diag.array() + prism::EPSILON);
         auto Dv = vol_vec.array() / (vEqn_diag.array() + prism::EPSILON);
@@ -144,19 +165,25 @@ auto main(int argc, char* argv[]) -> int {
             Matrix3d Di;
             Di << Du[i], 0,     0,
                   0,     Dv[i], 0,
-                  0,     0,     0;
+                  0,     0,     1;
             // clang-format on
-            D_data.emplace_back(Di);
+            D_data[cell.id()] = Di;
         }
 
-        auto D = prism::field::Tensor("D", mesh, D_data);
+        auto D = field::Tensor("D", mesh, D_data);
+
+        // export div(U) before correction
+        export_field_vtu(ops::div(U), "divU_before.vtu");
 
         // Rhie-Chow interpolation for velocity face values
-        ops::correctRhieChow(U, D, P);
+        auto U_rh = ops::rhieChowCorrect(U, D, P);
 
-        log::info("Exporting rhi-chow velocity field");
-        export_field_vtu(U.x(), "rhi-chow_ux.vtu");
-        export_field_vtu(U.y(), "rhi-chow_uy.vtu");
+        // export div(U) after correction
+        export_field_vtu(ops::div(U_rh), "divU_after.vtu");
+
+        auto diff_abs = (ops::div(U_rh).values().array() - ops::div(U).values().array()).abs();
+        auto diff_abs_field = field::Scalar("diff_abs", mesh, diff_abs);
+        export_field_vtu(diff_abs_field, "divU_diff_abs.vtu");
 
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
@@ -164,125 +191,38 @@ auto main(int argc, char* argv[]) -> int {
 
         using laplacian_p =
             diffusion::Corrected<field::Tensor, nonortho::OverRelaxedCorrector, field::Pressure>;
-        using div_p = source::Divergence<source::SourceSign::Negative, field::Velocity>;
+        using div_U = source::Divergence<source::SourceSign::Negative, field::Velocity>;
 
         // pressure correction equation (density is dropped from both sides of the equation due to
         // incompressibility assumption)
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                    div_p(U)                 // == - (∇.U)
+                                                    div_U(U_rh)              // == - (∇.U)
         );
 
         auto p_solver =
             solver::BiCGSTAB<field::Pressure, solver::ImplicitUnderRelaxation<field::Pressure>>();
 
-
         log::info("Solving pressure correction equation");
-        p_solver.solve(pEqn, 10, 1e-5, 1.0);
+        for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
+            p_solver.solve(pEqn, 5, 1e-10, 1.0);
+        }
+        export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
-        log::info("Exporting pressure correction field");
-        export_field_vtu(P_prime, "P_prime.vtu");
-
+        /*
         // update velocity fields
         for (const auto& cell : mesh.cells()) {
-            auto correction = D.valueAtCell(cell) * P_prime.gradAtCell(cell);
-            U.x()[cell.id()] += -correction[0];
-            U.y()[cell.id()] += -correction[1];
+            auto correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
+            U.x()[cell.id()] += correction[0];
+            U.y()[cell.id()] += correction[1];
         }
+        */
 
-        P.values() = P.values().array() + (0.85 * P_prime.values().array());
-
+        P.values() = P.values().array() + (0.7 * P_prime.values().array());
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();
     }
 
-    export_field_vtu(ops::div(U), "divU.vtu");
-    export_field_vtu(uEqn.field(), "solution_x.vtu");
-    export_field_vtu(vEqn.field(), "solution_y.vtu");
+    export_field_vtu(U.x(), "solution_x.vtu");
+    export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(P, "pressure.vtu");
-    export_field_vtu(ops::grad(P, Coord::X), "gradP_x.vtu");
-
-    /*
-    auto vEqn = eqn::Momentum(div(rho, U, U.y()),   // ∇.(ρUv)
-                              laplacian(mu, U.y()), // - ∇.(μ∇v)
-                              grad(P, Coord::Y)     // = -∂p/∂y
-    );
-
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-
-
-    auto U_solver = solver::BiCGSTAB<field::VelocityComponent,
-                                     solver::ImplicitUnderRelaxation<field::VelocityComponent>>();
-
-    auto p_solver =
-        solver::BiCGSTAB<field::Pressure, solver::ImplicitUnderRelaxation<field::Pressure>>();
-
-    for (auto i = 0; i < 2; ++i) {
-        log::info("Solving x-momentum equation");
-        U_solver.solve(uEqn, 10, 1e-4, 0.8);
-
-        log::info("Solving y-momentum equation");
-        U_solver.solve(vEqn, 10, 1e-4, 0.8);
-
-        uEqn.zeroOutCoeffs();
-        vEqn.zeroOutCoeffs();
-
-        uEqn.updateCoeffs();
-        vEqn.updateCoeffs();
-
-        // calculate coefficients for the pressure equation
-        const auto& vol_vec = mesh.cellsVolumeVector();
-        const auto& uEqn_diag = uEqn.matrix().diagonal();
-        const auto& vEqn_diag = vEqn.matrix().diagonal();
-
-        auto D_data = std::vector<Matrix3d>();
-        D_data.reserve(mesh.cellCount());
-
-        auto Du = vol_vec.array() / (uEqn_diag.array() + prism::EPSILON);
-        auto Dv = vol_vec.array() / (vEqn_diag.array() + prism::EPSILON);
-
-        for (const auto& cell : mesh.cells()) {
-            auto i = cell.id();
-            // clang-format off
-            Matrix3d Di;
-            Di << Du[i], 0,     0,
-                  0,     Dv[i], 0,
-                  0,     0,     0;
-            // clang-format on
-            D_data.emplace_back(Di);
-        }
-
-        auto D = prism::field::Tensor("D", mesh, D_data);
-
-        // Rhie-Chow interpolation for velocity face values
-        ops::correctRhieChow(U, D, P);
-
-        // pressure correction field created with same name as pressure field to get same boundary
-        // conditions without having to define P_prime in fields.json file.
-        auto P_prime = field::Pressure("P", mesh, 0.0);
-
-        using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
-        using div_p = source::Divergence<source::SourceSign::Negative, field::Velocity>;
-
-        // pressure correction equation (density is dropped from both sides of the equation due to
-        // incompressibility assumption)
-        auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                    div_p(U)                 // == - (∇.U)
-        );
-
-        log::info("Solving pressure correction equation");
-        p_solver.solve(pEqn, 5, 1e-5, 1.0);
-
-        // update velocity fields
-        for (const auto& cell : mesh.cells()) {
-            auto correction = D.valueAtCell(cell) * P_prime.gradAtCell(cell);
-            U.x()[cell.id()] += -correction[0];
-            U.y()[cell.id()] += -correction[1];
-        }
-
-        P.values() = P.values().array() + (0.85 * P_prime.values().array());
-
-        uEqn.zeroOutCoeffs();
-        vEqn.zeroOutCoeffs();
-    }*/
 }

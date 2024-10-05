@@ -48,11 +48,15 @@ auto inline coordToIndex(Coord coord) -> std::uint8_t {
 }
 
 template <typename Vector>
-auto divAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double;
+auto fluxSumAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double;
 } // namespace detail
 
 template <typename Vector>
 auto div(const Vector& U) -> field::Scalar {
+    // applying green-gauss theorem to the divergence of a vector field
+    // ∫(∇.U) dV = ∫U.dS
+    // (∇.U) V = Σ U.S
+    // ∇.U = (Σ U.S)/V = ops::div(U)
     std::string name = fmt::format("div({})", U.name());
     const mesh::PMesh& mesh = U.mesh();
 
@@ -60,7 +64,7 @@ auto div(const Vector& U) -> field::Scalar {
     cell_data.resize(mesh.cellCount());
 
     for (const auto& cell : mesh.cells()) {
-        cell_data[cell.id()] = detail::divAtCell(mesh, cell, U) / cell.volume();
+        cell_data[cell.id()] = detail::fluxSumAtCell(mesh, cell, U) / cell.volume();
     }
     return {name, mesh, cell_data};
 }
@@ -98,7 +102,7 @@ auto grad(const Field& field) -> field::Vector {
 
 namespace detail {
 template <typename Vector>
-auto divAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double {
+auto fluxSumAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double {
     double sum = 0.0;
 
     for (auto face_id : cell.facesIds()) {

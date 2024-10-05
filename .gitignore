@@ -2,3 +2,4 @@ build/
 .cache/
 vcpkg_installed/
 *.vtu
+todo.md

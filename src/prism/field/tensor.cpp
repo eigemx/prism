@@ -60,7 +60,6 @@ auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
             "field::Tensor::valueAtFace() was called on a boundary face (face id = {}). "
             "Returning value of the tensor field at owner cell.",
             face.id());
-
         return _data[owner.id()];
     }
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());

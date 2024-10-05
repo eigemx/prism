@@ -1,5 +1,6 @@
 #pragma once
 
+#include "prism/field/ifield.h"
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
 #include "prism/mesh/face.h"
@@ -8,18 +9,18 @@
 
 namespace prism::ops {
 
-template <typename Vector>
-void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P);
+template <field::IVectorBased Vector>
+auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector;
 
 namespace detail {
 auto pressureGradCalculated(const mesh::PMesh& mesh,
                             const mesh::Face& face,
                             const field::Pressure& P,
-                            const Vector3d& grad_p_f) -> Vector3d;
+                            const Vector3d& gradp_avg) -> Vector3d;
 }
 
-template <typename Vector>
-void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P) {
+template <field::IVectorBased Vector>
+auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector {
     const auto& mesh = U.mesh();
     VectorXd u_face_data;
     VectorXd v_face_data;
@@ -28,16 +29,15 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
     v_face_data.resize(mesh.faceCount());
     w_face_data.resize(mesh.faceCount());
 
-
     for (const auto& face : mesh.interiorFaces()) {
         const std::size_t face_id = face.id();
         const Vector3d& Uf = U.valueAtFace(face);
         const Matrix3d& Df = D.valueAtFace(face);
-        const Vector3d& grad_p_f_bar = P.gradAtFace(face);
-        const Vector3d grad_p_f = detail::pressureGradCalculated(mesh, face, P, grad_p_f_bar);
+        const Vector3d gradp_avg = P.gradAtFace(face);
+        const Vector3d gradp = detail::pressureGradCalculated(mesh, face, P, gradp_avg);
 
         // Equation 15.60
-        Vector3d Uf_corrected = Uf - (Df * ((grad_p_f - grad_p_f_bar)));
+       Vector3d Uf_corrected = Uf - (Df * (gradp - gradp_avg));
         u_face_data[face_id] = Uf_corrected.x();
         v_face_data[face_id] = Uf_corrected.y();
         w_face_data[face_id] = Uf_corrected.z();
@@ -45,26 +45,20 @@ void correctRhieChow(Vector& U, const field::Tensor& D, const field::Pressure& P
 
     for (const auto& face : mesh.boundaryFaces()) {
         const std::size_t face_id = face.id();
-        const auto& owner = mesh.cell(face.owner());
-
-        // Equation (15.110)
-        //const Vector3d Uc = U.valueAtCell(owner);
-        //const Matrix3d& Df = D.valueAtCell(owner);
-        //const Vector3d grad_p_f = P.gradAtFace(face);
-        //const Vector3d grad_p_C = P.gradAtCell(owner);
-
-        // Equation (15.111)
-        //Vector3d Ub_corrected = Uc - (Df * (grad_p_f - grad_p_C));
-        // u_face_data[face_id] = Ub_corrected.x();
-        // v_face_data[face_id] = Ub_corrected.y();
-        // w_face_data[face_id] = Ub_corrected.z();
         u_face_data[face_id] = U.x().valueAtFace(face);
         v_face_data[face_id] = U.y().valueAtFace(face);
         w_face_data[face_id] = U.z().valueAtFace(face);
     }
 
-    U.x().setFaceValues(u_face_data);
-    U.y().setFaceValues(v_face_data);
-    U.z().setFaceValues(w_face_data);
+    using Component = typename Vector::ComponentType;
+    auto x_rh = Component(U.x().name(), mesh, U.x().values(), Coord::X);
+    auto y_rh = Component(U.y().name(), mesh, U.y().values(), Coord::Y);
+    auto z_rh = Component(U.z().name(), mesh, U.z().values(), Coord::Z);
+    x_rh.setFaceValues(u_face_data);
+    y_rh.setFaceValues(v_face_data);
+    z_rh.setFaceValues(w_face_data);
+
+    auto components = std::array {x_rh, y_rh, z_rh};
+    return Vector {U.name(), mesh, components};
 }
 } // namespace prism::ops

@@ -31,6 +31,12 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     auto inline y() -> Component& { return _y; }
     auto inline z() -> Component& { return _z; }
 
+    // TODO: add same methods for GeneralScalar
+    auto inline x() const -> const Component& { return _x; }
+    auto inline y() const -> const Component& { return _y; }
+    auto inline z() const -> const Component& { return _z; }
+
+
     auto operator[](std::size_t i) const -> Vector3d;
 
     using ComponentType = Component;
