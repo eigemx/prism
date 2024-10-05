@@ -169,7 +169,8 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
 
         // correct non-orhtogonality
         const double phi_c = phi.valueAtCell(owner);
-        auto grad_f = ((phi_wall - phi_c) / (d_Cf_norm + EPSILON)) * e;
+        auto grad_f = phi.gradAtFace(face);
+
         scheme.rhs(owner.id()) += Tf_prime.dot(grad_f);
     }
 }

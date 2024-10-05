@@ -3,28 +3,24 @@
 namespace prism::ops::detail {
 
 auto pressureGradCalculated(const mesh::PMesh& mesh,
-                 const mesh::Face& face,
-                 const field::Pressure& P,
-                 const Vector3d& grad_p_f) -> Vector3d {
+                            const mesh::Face& face,
+                            const field::Pressure& P,
+                            const Vector3d& gradp_avg) -> Vector3d {
     // This function is based on Eqn (15.62)
-
-    // TODO: owner and neighbor cells finders, and cell centroid distance calculators are all
-    // over the codebase this should be a utility function
     const auto& owner = mesh.cell(face.owner());
     const auto& neighbor = mesh.cell(face.neighbor().value());
-
-    auto P_owner = P.valueAtCell(owner);
-    auto P_neigh = P.valueAtCell(neighbor);
+    auto p_owner = P.valueAtCell(owner);
+    auto p_neigh = P.valueAtCell(neighbor);
 
     auto d_CF = neighbor.center() - owner.center();
     auto d_CF_norm = d_CF.norm();
     Vector3d e_CF = d_CF / d_CF_norm;
 
-    auto P_correction = (P_neigh - P_owner) / d_CF_norm;
-    P_correction -= grad_p_f.dot(e_CF);
+    auto gradp_ortho = (p_neigh - p_owner) / d_CF_norm;
 
-    return P_correction * e_CF;
+    return gradp_avg + ((gradp_ortho - gradp_avg.dot(e_CF)) * e_CF); // book
+    //return gradp_ortho * e_CF; // aidan
+    //return gradp_avg - (gradp_avg.dot(e_CF) * e_CF) + (gradp_ortho * e_CF); // foam
 }
-
 
 } // namespace prism::ops::detail

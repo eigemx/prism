@@ -131,6 +131,9 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::Corrected", *this);
 }
 
+// NOTE: If KappaType is a field::Tensor, then kappa of each face should be transposed before it
+// gets multiplied by face.areaVector(). For now, all the tensor kappas we use are diagonal so it
+// does not matter.
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
 void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
@@ -138,29 +141,29 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::F
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
-    const Vector3d d_CF = neighbor.center() - owner.center();
-    const double d_CF_norm = d_CF.norm();
+    const Vector3d dCF = neighbor.center() - owner.center();
+    const double dCF_norm = dCF.norm();
 
     // unit vector in d_CF direction
-    const Vector3d e = d_CF / d_CF_norm;
+    const Vector3d e = dCF / dCF_norm;
     const Vector3d Sf_prime = this->kappa().valueAtFace(face) * face.areaVector();
 
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
-    const double g_diff = Ef_prime.norm() / (d_CF_norm + EPSILON);
+    const double gdiff = Ef_prime.norm() / (dCF_norm + EPSILON);
 
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
 
-    // g_diff * (Φ_C - Φ_N)
+    // gdiff * (Φ_C - Φ_N)
     // diagonal coefficients
-    this->insert(owner_id, owner_id, g_diff);
-    this->insert(neighbor_id, neighbor_id, g_diff);
+    this->insert(owner_id, owner_id, gdiff);
+    this->insert(neighbor_id, neighbor_id, gdiff);
 
     // off-diagonal coefficients
-    this->insert(owner_id, neighbor_id, -g_diff);
-    this->insert(neighbor_id, owner_id, -g_diff);
+    this->insert(owner_id, neighbor_id, -gdiff);
+    this->insert(neighbor_id, owner_id, -gdiff);
 
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)

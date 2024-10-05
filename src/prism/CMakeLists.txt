@@ -3,6 +3,8 @@ add_library(prism
     
     equation/noslip.cpp
 
+    numerics/solver.cpp
+
     field/ifield.cpp
     field/tensor.cpp
     field/scalar.cpp

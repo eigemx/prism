@@ -318,7 +318,8 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) con
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) const -> double {
     if (hasFaceValues()) {
-        // Face data were calculataed for us, just return the value
+        // Face data were calculataed for us, just return the value (as in Rhie-Chow corrected
+        // face values).
         return (*_face_data)[face_id];
     }
 
