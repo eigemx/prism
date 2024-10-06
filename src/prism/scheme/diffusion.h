@@ -37,8 +37,6 @@ class IAppliedDiffusion : public IFullScheme<Field> {
 class ICorrected : public IDiffusion {};
 class INonCorrected : public IDiffusion {};
 
-// TODO: Simplify the BoundaryHandlerManager declaration mess and find a way to use
-// BHManagerProvider without type clutter
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
           typename Field = field::Scalar>
@@ -52,6 +50,8 @@ class Corrected
 
     auto corrector() const noexcept -> const NonOrthoCorrector& { return _corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
+
+    using NonOrthoCorrectorType = NonOrthoCorrector;
 
   private:
     void applyInterior(const mesh::Face& face) override;
