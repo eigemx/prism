@@ -42,43 +42,39 @@ class INonCorrected : public IDiffusion {};
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
           typename Field = field::Scalar>
-class Corrected : public ICorrected, public IAppliedDiffusion<KappaType, Field> {
+class Corrected
+    : public ICorrected,
+      public IAppliedDiffusion<KappaType, Field>,
+      public prism::boundary::BHManagersProvider<
+          boundary::ISchemeBoundaryHandler<Corrected<KappaType, NonOrthoCorrector, Field>>> {
   public:
     Corrected(KappaType kappa, Field phi);
 
     auto corrector() const noexcept -> const NonOrthoCorrector& { return _corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
 
-    using Scheme = Corrected<KappaType, NonOrthoCorrector, Field>;
-    using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<boundary::ISchemeBoundaryHandler<Scheme>>;
-    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
-
   private:
     void applyInterior(const mesh::Face& face) override;
     void applyBoundary() override;
 
     NonOrthoCorrector _corrector;
-    BoundaryHandlersManager _bc_manager;
 };
 
 template <typename KappaType = field::UniformScalar, typename Field = field::Scalar>
-class NonCorrected : public INonCorrected, public IAppliedDiffusion<KappaType, Field> {
+class NonCorrected : public INonCorrected,
+                     public IAppliedDiffusion<KappaType, Field>,
+                     public prism::boundary::BHManagersProvider<
+                         boundary::ISchemeBoundaryHandler<NonCorrected<KappaType, Field>>> {
   public:
     NonCorrected(KappaType kappa, Field phi);
 
     auto needsCorrection() const noexcept -> bool override { return false; }
 
     using Scheme = NonCorrected<KappaType, Field>;
-    using BoundaryHandlersManager =
-        prism::boundary::BoundaryHandlersManager<boundary::ISchemeBoundaryHandler<Scheme>>;
-    auto boundaryHandlersManager() -> BoundaryHandlersManager& { return _bc_manager; }
 
   private:
     void applyInterior(const mesh::Face& face) override;
     void applyBoundary() override;
-
-    BoundaryHandlersManager _bc_manager;
 };
 
 //
@@ -117,13 +113,13 @@ Corrected<KappaType, NonOrthoCorrector, Field>::Corrected(KappaType kappa, Field
 
     // add default boundary handlers for Corrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template addHandler<boundary::Empty<Scheme>>();
-    _bc_manager.template addHandler<boundary::Fixed<Scheme>>();
-    _bc_manager.template addHandler<boundary::Symmetry<Scheme>>();
-    _bc_manager.template addHandler<boundary::Outlet<Scheme>>();
-    _bc_manager.template addHandler<boundary::FixedGradient<Scheme>>();
-    _bc_manager.template addHandler<boundary::ZeroGradient<Scheme>>();
-    _bc_manager.template addHandler<boundary::NoSlip<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
 }
 
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
@@ -185,13 +181,13 @@ NonCorrected<KappaType, Field>::NonCorrected(KappaType kappa, Field phi)
 
     // add default boundary handlers for NonCorrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    _bc_manager.template addHandler<boundary::Empty<Scheme>>();
-    _bc_manager.template addHandler<boundary::Fixed<Scheme>>();
-    _bc_manager.template addHandler<boundary::Symmetry<Scheme>>();
-    _bc_manager.template addHandler<boundary::Outlet<Scheme>>();
-    _bc_manager.template addHandler<boundary::FixedGradient<Scheme>>();
-    _bc_manager.template addHandler<boundary::ZeroGradient<Scheme>>();
-    _bc_manager.template addHandler<boundary::NoSlip<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
 }
 
 template <typename KappaType, typename Field>
