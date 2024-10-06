@@ -406,6 +406,8 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
         return fi.name() == this->name() && fi.gradScheme().has_value();
     });
 
+    // TODO: this is buggy, it doesn't find the grad scheme defined in fields.json for the field,
+    // also does not consider vector fields.
     if (it == field_infos.end()) {
         log::debug(
             "GeneralScalar::setGradScheme(): couldn't find a specified gradient scheme for field "

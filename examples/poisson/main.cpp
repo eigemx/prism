@@ -70,10 +70,16 @@ auto main(int argc, char* argv[]) -> int {
     // solve
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 100, 1e-5, 1.0);
+    solver.solve(eqn, 25, 1e-20, 1.0);
 
     prism::export_field_vtu(P, "solution.vtu");
     prism::export_field_vtu(solution(mesh), "analytical.vtu");
+
+    VectorXd diff = P.values() - solution(mesh).values();
+    auto diff_field = field::Scalar("diff", mesh, diff);
+    prism::export_field_vtu(diff_field, "diff.vtu");
+
+    fmt::print("diff norm: {}\n", diff.norm());
 
     return 0;
 }

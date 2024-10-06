@@ -51,12 +51,19 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
     solver.solve(eqn, 100, 1e-20, 1);
 
-    std::vector<double> diff;
+    VectorXd analytical_solution;
+    analytical_solution.resize(T.mesh().cellCount());
     for (const auto& cell : T.mesh().cells()) {
-        diff.push_back(T.valueAtCell(cell.id()) -
-                       advection_1d(cell.center().x(), inlet_velocity.x()));
+        analytical_solution[cell.id()] = advection_1d(cell.center().x(), inlet_velocity.x());
     }
-    VectorXd diff_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(diff.data(), diff.size());
+
+    VectorXd diff_vec = analytical_solution.array() - T.values().array();
+    
+
+    // delete this
+    auto analytic_sol_field = field::Scalar("analytical_solution", mesh, analytical_solution);
+    export_field_vtu(T, "T_1d.vtu");
+    export_field_vtu(analytic_sol_field, "analytical_solution.vtu");
 
     REQUIRE(diff_vec.norm() < 0.1);
 

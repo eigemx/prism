@@ -107,7 +107,7 @@ auto main(int argc, char* argv[]) -> int {
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
     // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
     auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, 0.0);
+    auto P = field::Pressure("P", mesh, pressure_vec);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
@@ -131,20 +131,22 @@ auto main(int argc, char* argv[]) -> int {
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent,
                                      solver::ImplicitUnderRelaxation<field::VelocityComponent>>();
 
+    for (const auto& cell : mesh.cells()) {
+        auto _ = P.gradAtCell(cell);
+    }
 
     auto nNonOrthCorrectiors = 3;
-    for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
+    for (auto nOuterIter = 0; nOuterIter < 3; ++nOuterIter) {
         log::info("Outer iteration {}", nOuterIter);
-        /*
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
             log::info("Solving y-momentum equation");
-            U_solver.solve(vEqn, 10, 1e-12, 0.7);
+            U_solver.solve(vEqn, 10, 1e-12, 1.0);
 
             log::info("Solving x-momentum equation");
-            U_solver.solve(uEqn, 10, 1e-12, 0.7);
+            U_solver.solve(uEqn, 10, 1e-12, 1.0);
         }
-        */
 
+        /*
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
 
@@ -172,18 +174,14 @@ auto main(int argc, char* argv[]) -> int {
 
         auto D = field::Tensor("D", mesh, D_data);
 
-        // export div(U) before correction
-        export_field_vtu(ops::div(U), "divU_before.vtu");
-
         // Rhie-Chow interpolation for velocity face values
         auto U_rh = ops::rhieChowCorrect(U, D, P);
 
-        // export div(U) after correction
-        export_field_vtu(ops::div(U_rh), "divU_after.vtu");
+        auto divU_rh = ops::div(U_rh);
 
-        auto diff_abs = (ops::div(U_rh).values().array() - ops::div(U).values().array()).abs();
-        auto diff_abs_field = field::Scalar("diff_abs", mesh, diff_abs);
-        export_field_vtu(diff_abs_field, "divU_diff_abs.vtu");
+        auto divU = ops::div(U);
+        export_field_vtu(divU, "divU.vtu");
+        export_field_vtu(divU_rh, "divU_rh.vtu");
 
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
@@ -204,25 +202,28 @@ auto main(int argc, char* argv[]) -> int {
 
         log::info("Solving pressure correction equation");
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
-            p_solver.solve(pEqn, 5, 1e-10, 1.0);
+            p_solver.solve(pEqn, 10, 1e-16, 1.0);
         }
         export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
-        /*
         // update velocity fields
         for (const auto& cell : mesh.cells()) {
             auto correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
             U.x()[cell.id()] += correction[0];
             U.y()[cell.id()] += correction[1];
         }
-        */
 
-        P.values() = P.values().array() + (0.7 * P_prime.values().array());
+        P.values() = P.values().array() + (0.8 * P_prime.values().array());
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();
+        */
     }
 
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(P, "pressure.vtu");
+
+    auto diff = (U.x().values() - components[0].values()).array().abs();
+    auto diff_field = field::Scalar("diff", mesh, diff);
+    export_field_vtu(diff_field, "diff.vtu");
 }

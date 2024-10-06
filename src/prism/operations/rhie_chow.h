@@ -37,7 +37,7 @@ auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P
         const Vector3d gradp = detail::pressureGradCalculated(mesh, face, P, gradp_avg);
 
         // Equation 15.60
-       Vector3d Uf_corrected = Uf - (Df * (gradp - gradp_avg));
+        Vector3d Uf_corrected = Uf - (Df * (gradp - gradp_avg));
         u_face_data[face_id] = Uf_corrected.x();
         v_face_data[face_id] = Uf_corrected.y();
         w_face_data[face_id] = Uf_corrected.z();
