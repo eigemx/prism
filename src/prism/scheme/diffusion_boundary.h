@@ -74,8 +74,7 @@ class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
 // conserved scalar field)
 
 
-// Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion with a conserved
-// general scalar field (for example: velocity component or temperature).
+// Boundary handler for Fixed bounndary condition defined for CorrectedDiffusion
 template <diffusion::ICorrectedBased Scheme>
 class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
@@ -117,7 +116,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
      * @param cell The cell which owns the boundary face.
      * @param face The boundary face.
      */
-    const auto phi = scheme.field();
+    const auto& phi = scheme.field();
     const auto& kappa = scheme.kappa();
     const auto& mesh = phi.mesh();
 
@@ -148,10 +147,10 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh.face(face_id);
         const mesh::Cell& owner = mesh.cell(face.owner());
+        const std::size_t owner_id = owner.id();
+
         // get the fixed phi variable associated with the face
         const double phi_wall = phi.valueAtFace(face);
-
-        const std::size_t cell_id = owner.id();
 
         // vector joining the centers of the cell and the face
         const Vector3d d_Cf = face.center() - owner.center();
@@ -159,19 +158,11 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const Vector3d e = d_Cf / d_Cf_norm;
 
         const Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
-
         const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
+        const double gdiff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
 
-        const double g_diff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
-
-        scheme.insert(cell_id, cell_id, g_diff);
-        scheme.rhs(cell_id) += g_diff * phi_wall;
-
-        // correct non-orhtogonality
-        const double phi_c = phi.valueAtCell(owner);
-        auto grad_f = phi.gradAtFace(face);
-
-        scheme.rhs(owner.id()) += Tf_prime.dot(grad_f);
+        scheme.insert(owner_id, owner_id, gdiff);
+        scheme.rhs(owner_id) += (gdiff * phi_wall) + Tf_prime.dot(phi.gradAtFace(face));
     }
 }
 
@@ -214,6 +205,4 @@ void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     Fixed<Scheme> fixed;
     return fixed.apply(scheme, patch);
 }
-
-
 } // namespace prism::scheme::boundary

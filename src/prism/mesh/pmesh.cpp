@@ -98,6 +98,10 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
 
     // TODO: can we do this differently? we need to avoid allocating memory for the vector of
     // non-empty boundary face ids
+    // TODO: this is the first thing that well fail for an ill-formed mesh. Here, we try to get
+    // the boundary patch of a face withouth checking validity of the mesh, so most probably we
+    // will get a bad std::optional access. We need to check if given parameters forms a valid
+    // mesh before proceeding with the construction.
     std::copy_if(_boundary_faces_ids.begin(),
                  _boundary_faces_ids.end(),
                  std::back_inserter(_nonempty_boundary_faces_ids),
