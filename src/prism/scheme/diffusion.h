@@ -9,13 +9,16 @@
 #include "prism/field/scalar.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
+#include "prism/mesh/utilities.h"
 #include "prism/types.h"
 #include "scheme.h"
 
 namespace prism::scheme::diffusion {
 
+// Simple base type for all diffusion schemes, without templating clutter.
 class IDiffusion {};
 
+// Base class for all diffusion schemes with a predefined apply() method.
 template <typename Kappa, typename Field>
 class IAppliedDiffusion : public IFullScheme<Field> {
   public:
@@ -34,9 +37,13 @@ class IAppliedDiffusion : public IFullScheme<Field> {
     Kappa _kappa;
 };
 
+// Base class for all diffusion schemes that need non-orthogonal correction.
 class ICorrected : public IDiffusion {};
+
+// Base class for all diffusion schemes that do not need non-orthogonal correction.
 class INonCorrected : public IDiffusion {};
 
+// Implementation of diffusion scheme with non-orthogonal correction.
 template <typename KappaType = field::UniformScalar,
           typename NonOrthoCorrector = nonortho::OverRelaxedCorrector,
           typename Field = field::Scalar>
@@ -60,6 +67,7 @@ class Corrected
     NonOrthoCorrector _corrector;
 };
 
+// Implementation of diffusion scheme without non-orthogonal correction.
 template <typename KappaType = field::UniformScalar, typename Field = field::Scalar>
 class NonCorrected : public INonCorrected,
                      public IAppliedDiffusion<KappaType, Field>,
@@ -67,7 +75,6 @@ class NonCorrected : public INonCorrected,
                          boundary::ISchemeBoundaryHandler<NonCorrected<KappaType, Field>>> {
   public:
     NonCorrected(KappaType kappa, Field phi);
-
     auto needsCorrection() const noexcept -> bool override { return false; }
 
     using Scheme = NonCorrected<KappaType, Field>;
@@ -108,9 +115,6 @@ void IAppliedDiffusion<KappaType, Field>::apply() {
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
 Corrected<KappaType, NonOrthoCorrector, Field>::Corrected(KappaType kappa, Field phi)
     : IAppliedDiffusion<KappaType, Field>(kappa, phi) {
-    assert(this->needsCorrection() == true &&
-           "prism::scheme::diffusion::Corrected::needsCorrection() must return true");
-
     // add default boundary handlers for Corrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
     this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
@@ -135,22 +139,20 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::F
     const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh.cell(face.owner());
     const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
+    const std::size_t owner_id = owner.id();
+    const std::size_t neighbor_id = neighbor.id();
 
     // vector joining the centers of the two cells
     const Vector3d dCF = neighbor.center() - owner.center();
     const double dCF_norm = dCF.norm();
-
-    // unit vector in d_CF direction
     const Vector3d e = dCF / dCF_norm;
-    const Vector3d Sf_prime = this->kappa().valueAtFace(face) * face.areaVector();
 
+    const auto Sf = mesh::outwardAreaVector(face, owner);
+    const Vector3d Sf_prime = this->kappa().valueAtFace(face) * Sf;
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
     const double gdiff = Ef_prime.norm() / (dCF_norm + EPSILON);
-
-    const std::size_t owner_id = owner.id();
-    const std::size_t neighbor_id = neighbor.id();
 
     // gdiff * (Φ_C - Φ_N)
     // diagonal coefficients

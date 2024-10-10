@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+using namespace prism;
+using namespace prism::scheme;
+
 auto solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
     sol.resize(mesh.cellCount());
@@ -20,10 +23,11 @@ auto solution(const auto& mesh) -> prism::field::Scalar {
     return prism::field::Scalar("S", mesh, std::move(sol));
 }
 
-auto main(int argc, char* argv[]) -> int {
-    using namespace prism;
-    using namespace prism::scheme;
+auto l2NormRelative(const Vector3d& x, const Vector3d& x_ref) -> double {
+    return (x - x_ref).norm() / x_ref.norm();
+}
 
+auto main(int argc, char* argv[]) -> int {
     log::setLevel(log::Level::Debug);
 
     // silence clang-tidy pointer arithmetic warnings
@@ -70,7 +74,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 25, 1e-20, 1.0);
+    solver.solve(eqn, 15, 1e-20, 1.0);
 
     prism::export_field_vtu(P, "solution.vtu");
     prism::export_field_vtu(solution(mesh), "analytical.vtu");
@@ -79,7 +83,7 @@ auto main(int argc, char* argv[]) -> int {
     auto diff_field = field::Scalar("diff", mesh, diff);
     prism::export_field_vtu(diff_field, "diff.vtu");
 
-    fmt::print("diff norm: {}\n", diff.norm());
+    fmt::print("relative l2-norm: {}\n", l2NormRelative(P.values(), solution(mesh).values()));
 
     return 0;
 }

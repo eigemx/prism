@@ -61,11 +61,12 @@ TEST_CASE("test poisson equation", "[poisson]") {
     // solve
     auto solver =
         solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
-    solver.solve(eqn, 25, 1e-20, 1.0);
+    solver.solve(eqn, 10, 1e-20, 1.0);
 
     VectorXd diff = P.values() - solution(mesh).values();
     double diff_norm = diff.norm();
 
     // TODO: this is a large l2-norm criteria, we need to check if the solution is correct
+    // TODO: replace this with relative l2-norm (check poisson example)
     REQUIRE(diff_norm < 0.1);
 }

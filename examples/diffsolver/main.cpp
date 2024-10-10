@@ -21,8 +21,8 @@ auto readFields(const std::filesystem::path& fields_file) -> std::vector<double>
     return temp;
 }
 
-auto jsonToPrismField(const fs::path& fields_file,
-                      const prism::mesh::PMesh& mesh) -> prism::field::Scalar {
+auto jsonToPrismField(const fs::path& fields_file, const prism::mesh::PMesh& mesh)
+    -> prism::field::Scalar {
     auto doc = fileToJson(fields_file);
     auto temp = doc["T"].get<std::vector<double>>();
     auto temp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(temp.data(), temp.size());
@@ -36,7 +36,7 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::field;
 
-    log::setLevel(log::Level::Debug);
+    log::setLevel(log::Level::Info);
 
     log::info("diffsolver - A steady state diffusion equation solver");
 
@@ -72,7 +72,11 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar, solver::ImplicitUnderRelaxation<Scalar>>();
-    solver.solve(eqn, 5, 1e-20, 1);
+
+    const auto n_non_ortho_iters = 10;
+    for (std::size_t i = 0; i < n_non_ortho_iters; i++) {
+        solver.solve(eqn, 5, 1e-20, 1);
+    }
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 
