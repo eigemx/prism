@@ -1,14 +1,10 @@
 #pragma once
+
 #include <Eigen/IterativeLinearSolvers>
-#include <fstream>
 
 #include "prism/equation/transport.h"
 #include "prism/log.h"
-
-inline void writeToCSVfile(const std::string& name, const auto& matrix) {
-    std::ofstream file(name.c_str());
-    file << matrix;
-}
+#include "prism/numerics/relax.h"
 
 namespace prism::solver::detail {
 
@@ -43,36 +39,31 @@ template <typename Field>
 class ISolver {
   public:
     virtual auto solve(eqn::Transport<Field>& eq, std::size_t n_iter, double eps, double lambda)
-        -> IterationData = 0;
+        -> IterationData;
+    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+        -> VectorXd = 0;
+
+  private:
+    ImplicitUnderRelaxation<Field> _relaxer;
 };
 
-template <typename Field, typename Relaxer>
+template <typename Field>
 class BiCGSTAB : public ISolver<Field> {
   public:
-    auto solve(eqn::Transport<Field>& eq,
-               std::size_t n_iter = 1000, // number of iterations
-               double eps = 1e-4,         // convergence criteria
-               double lambda = 1.0        // under-relaxation factor
-               ) -> IterationData override;
+    auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd override;
 };
 
-/*
-template <typename Field, typename Relaxer>
+template <typename Field>
 class GaussSeidel : public ISolver<Field> {
   public:
-    void solve(eqn::Transport<Field>& eq,
-               std::size_t n_iter = 1000, // number of iterations
-               double eps = 1e-4,         // convergence criteria
-               double lambda = 1.0        // under-relaxation factor
-               ) override;
+    auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd override;
 };
-*/
 
-template <typename Field, typename Relaxer>
-auto BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
-                                     std::size_t n_iter,
-                                     double eps,
-                                     double lambda) -> IterationData {
+template <typename Field>
+auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
+                           std::size_t n_iter,
+                           double eps,
+                           double lambda) -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
@@ -83,12 +74,9 @@ auto BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
     bool converged = false;
     std::size_t iter = 0;
 
-    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
-    Relaxer rx;
-
     for (; iter < n_iter; iter++) {
         eqn.updateCoeffs();
-        rx.preRelax(eqn, lambda);
+        _relaxer.preRelax(eqn, lambda);
 
         if (iter == 0) {
             init_res = detail::residual(A, phi.values(), b);
@@ -96,8 +84,7 @@ auto BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
 
         // do at least one iteration
         phi_prev.values() = phi.values();
-        phi.values() = bicg.compute(A).solveWithGuess(b, phi.values());
-        rx.postRelax(eqn, lambda);
+        phi.values() = step(A, phi.values(), b);
 
         current_res = detail::residual(A, phi.values(), b);
 
@@ -122,56 +109,27 @@ auto BiCGSTAB<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
     return {n_iter, init_res, current_res};
 }
 
-/*
-template <typename Field, typename Relaxer>
-void GaussSeidel<Field, Relaxer>::solve(eqn::Transport<Field>& eqn,
-                                        std::size_t n_iter,
-                                        double eps,
-                                        double lambda) {
-    const auto& A = eqn.matrix();
-    const auto& b = eqn.rhs();
-
-    auto& phi = eqn.field();
-    auto& phi_prev = eqn.field_prev_iter();
-
-    Relaxer rx;
-
-    for (std::size_t i = 0; i < n_iter; i++) {
-        eqn.updateCoeffs();
-        rx.preRelax(eqn, lambda);
-
-        // calculate the residuals and its norm
-        auto res = (A * phi.values()) - b;
-        auto res_norm = res.norm();
-
-        // check for convergence
-        if (res_norm < eps) {
-            log::info("Converged after {} iterations", i);
-            log::info("Residual: {}", res_norm);
-            break;
-        }
-
-        phi_prev.values() = phi.values();
-
-        // Implementation of Gauss-Seidel
-        for (int j = 0; j < phi.values().size(); j++) {
-            double sum = 0.0;
-            for (int k = 0; k < phi.values().size(); k++) {
-                if (k != j) {
-                    sum += A.coeff(j, k) * phi.values()(k);
-                }
-            }
-            phi.values()(j) = (b(j) - sum) / A.coeff(j, j);
-        }
-
-        rx.postRelax(eqn, lambda);
-
-        log::info("Iteration: {}, Residual: {}", i, res_norm);
-
-        // zero out the left & right hand side vector, for the next iteration
-        eqn.zeroOutCoeffs();
-    }
+template <typename Field>
+auto BiCGSTAB<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+    -> VectorXd {
+    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
+    return bicg.compute(A).solveWithGuess(b, x);
 }
-*/
+
+template <typename Field>
+auto GaussSeidel<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+    -> VectorXd {
+    VectorXd x_new = x;
+    for (int j = 0; j < x.size(); j++) {
+        double sum = 0.0;
+        for (int k = 0; k < x.size(); k++) {
+            if (k != j) {
+                sum += A.coeff(j, k) * x[k];
+            }
+        }
+        x_new[j] = (b[j] - sum) / A.coeff(j, j);
+    }
+    return x_new;
+}
 
 } // namespace prism::solver

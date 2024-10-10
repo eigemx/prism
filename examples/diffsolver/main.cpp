@@ -1,6 +1,7 @@
 #include <fmt/core.h>
 #include <prism/prism.h>
 
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -71,12 +72,8 @@ auto main(int argc, char* argv[]) -> int {
         diffusion::Corrected<Tensor, nonortho::OverRelaxedCorrector, Scalar>(kappa, T));
 
     // solve
-    auto solver = solver::BiCGSTAB<Scalar, solver::ImplicitUnderRelaxation<Scalar>>();
-
-    const auto n_non_ortho_iters = 10;
-    for (std::size_t i = 0; i < n_non_ortho_iters; i++) {
-        solver.solve(eqn, 5, 1e-20, 1);
-    }
+    auto solver = solver::BiCGSTAB<Scalar>();
+    solver.solve(eqn, 20, 1e-20, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 

@@ -59,8 +59,7 @@ TEST_CASE("test poisson equation", "[poisson]") {
     );
 
     // solve
-    auto solver =
-        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    auto solver = solver::BiCGSTAB<field::Scalar>();
     solver.solve(eqn, 10, 1e-20, 1.0);
 
     VectorXd diff = P.values() - solution(mesh).values();

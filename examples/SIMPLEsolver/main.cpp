@@ -92,6 +92,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
+    /*
     // read pressure field
     auto fields = readFields(fs::path(unv_file_name).parent_path() / "foam_fields.json");
     auto pressure_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(fields.pressure.data(),
@@ -102,12 +103,13 @@ auto main(int argc, char* argv[]) -> int {
     auto Uy = field::VelocityComponent("U_y", mesh, raw_velocity_array[1], Coord::Y);
     auto Uz = field::VelocityComponent("U_z", mesh, raw_velocity_array[2], Coord::Z);
     auto components = std::array {Ux, Uy, Uz};
+    */
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, pressure_vec);
+    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    //auto U = field::Velocity("U", mesh, components);
+    auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
@@ -146,7 +148,6 @@ auto main(int argc, char* argv[]) -> int {
             U_solver.solve(uEqn, 10, 1e-12, 1.0);
         }
 
-        /*
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
 
@@ -216,14 +217,9 @@ auto main(int argc, char* argv[]) -> int {
         P.values() = P.values().array() + (0.8 * P_prime.values().array());
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();
-        */
     }
 
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(P, "pressure.vtu");
-
-    auto diff = (U.x().values() - components[0].values()).array().abs();
-    auto diff_field = field::Scalar("diff", mesh, diff);
-    export_field_vtu(diff_field, "diff.vtu");
 }

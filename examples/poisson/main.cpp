@@ -72,8 +72,7 @@ auto main(int argc, char* argv[]) -> int {
     );
 
     // solve
-    auto solver =
-        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    auto solver = solver::BiCGSTAB<field::Scalar>();
     solver.solve(eqn, 15, 1e-20, 1.0);
 
     prism::export_field_vtu(P, "solution.vtu");
