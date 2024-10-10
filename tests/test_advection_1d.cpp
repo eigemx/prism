@@ -43,12 +43,11 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     auto U = field::Velocity("U", mesh, inlet_velocity);
 
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
-    auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T),    // ∇.(ρUT)
-                              scheme::diffusion::NonCorrected(kappa, T) // - ∇.(κ ∇T) = 0
+    auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
+                              scheme::diffusion::NonCorrected(kappa, T)         // - ∇.(κ ∇T) = 0
     );
 
-    auto solver =
-        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    auto solver = solver::BiCGSTAB<field::Scalar>();
     solver.solve(eqn, 100, 1e-20, 1);
 
     VectorXd analytical_solution;
@@ -58,7 +57,7 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     }
 
     VectorXd diff_vec = analytical_solution.array() - T.values().array();
-    
+
 
     // delete this
     auto analytic_sol_field = field::Scalar("analytical_solution", mesh, analytical_solution);

@@ -55,7 +55,7 @@ auto readVelocityComponents(const std::vector<prism::Vector3d>& velocity)
         v[i] = velocity[i].z();
     }
 
-   return {u, w, v};
+    return {u, w, v};
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -87,7 +87,7 @@ auto main(int argc, char* argv[]) -> int {
     auto Ux = field::VelocityComponent("U_x", mesh, raw_velocity_array[0]);
     auto Uy = field::VelocityComponent("U_y", mesh, raw_velocity_array[1]);
     auto Uz = field::VelocityComponent("U_z", mesh, raw_velocity_array[2]);
-    auto components = std::array{Ux, Uy, Uz};
+    auto components = std::array {Ux, Uy, Uz};
     auto U = field::Velocity("U", mesh, components);
 
     // diffusion coefficient
@@ -103,11 +103,10 @@ auto main(int argc, char* argv[]) -> int {
     );
 
     // solve
-    auto solver =
-        solver::BiCGSTAB<field::Scalar, solver::ImplicitUnderRelaxation<field::Scalar>>();
+    auto solver = solver::BiCGSTAB<field::Scalar>();
     solver.solve(eqn, 5, 1e-5, 1);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
     auto div_U = ops::div(U);
     prism::export_field_vtu(div_U, "div.vtu");
-  }
+}

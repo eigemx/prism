@@ -20,8 +20,7 @@
         },
         {
             "name": "insulatedWall",
-            "type": "no-slip",
-            "value": [0.0, 0.0, 0.0]
+            "type": "symmetry"
         },
         {
             "name": "outlet",
