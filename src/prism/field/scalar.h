@@ -109,7 +109,7 @@ class GeneralScalar
 
   private:
     void setGradScheme();
-    void addDefaultHandlers();
+    void addDefaultBoundaryHandlers();
 
     SharedPtr<VectorXd> _data = nullptr;
 
@@ -141,7 +141,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh.cellCount()) * value)),
       _parent(parent) {
     log::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
-    addDefaultHandlers();
+    addDefaultBoundaryHandlers();
     setGradScheme();
 }
 
@@ -159,7 +159,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                this->name(),
                coordToStr(coord),
                value);
-    addDefaultHandlers();
+    addDefaultBoundaryHandlers();
     setGradScheme();
 }
 
@@ -181,7 +181,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
     log::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
                this->name(),
                _data->size());
-    addDefaultHandlers();
+    addDefaultBoundaryHandlers();
     setGradScheme();
 }
 
@@ -207,7 +207,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         this->name(),
         coordToStr(coord),
         _data->size());
-    addDefaultHandlers();
+    addDefaultBoundaryHandlers();
     setGradScheme();
 }
 
@@ -242,7 +242,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         _data->size(),
         _face_data->size());
 
-    addDefaultHandlers();
+    addDefaultBoundaryHandlers();
     setGradScheme();
 }
 
@@ -281,7 +281,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         _data->size(),
         _face_data->size());
 
-    addDefaultHandlers();
+    addDefaultBoundaryHandlers();
     setGradScheme();
 }
 
@@ -384,7 +384,7 @@ void GeneralScalar<Units, BHManagerSetter>::setParent(IVector* parent) {
 }
 
 template <typename Units, typename BHManagerSetter>
-void GeneralScalar<Units, BHManagerSetter>::addDefaultHandlers() {
+void GeneralScalar<Units, BHManagerSetter>::addDefaultBoundaryHandlers() {
     _setter.set(this->boundaryHandlersManager());
 }
 
