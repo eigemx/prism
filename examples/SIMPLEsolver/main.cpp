@@ -92,7 +92,6 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    /*
     // read pressure field
     auto fields = readFields(fs::path(unv_file_name).parent_path() / "foam_fields.json");
     auto pressure_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(fields.pressure.data(),
@@ -103,12 +102,11 @@ auto main(int argc, char* argv[]) -> int {
     auto Uy = field::VelocityComponent("U_y", mesh, raw_velocity_array[1], Coord::Y);
     auto Uz = field::VelocityComponent("U_z", mesh, raw_velocity_array[2], Coord::Z);
     auto components = std::array {Ux, Uy, Uz};
-    */
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    //auto U = field::Velocity("U", mesh, components);
+    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    auto U = field::Velocity("U", mesh, components);
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
@@ -130,21 +128,15 @@ auto main(int argc, char* argv[]) -> int {
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
-    auto U_solver = solver::BiCGSTAB<field::VelocityComponent,
-                                     solver::ImplicitUnderRelaxation<field::VelocityComponent>>();
+    auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
-    for (const auto& cell : mesh.cells()) {
-        auto _ = P.gradAtCell(cell);
-    }
-
-    auto nNonOrthCorrectiors = 3;
-    for (auto nOuterIter = 0; nOuterIter < 3; ++nOuterIter) {
+    auto nNonOrthCorrectiors = 2;
+    for (auto nOuterIter = 0; nOuterIter < 20; ++nOuterIter) {
         log::info("Outer iteration {}", nOuterIter);
-        for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
-            log::info("Solving y-momentum equation");
-            U_solver.solve(vEqn, 10, 1e-12, 1.0);
 
-            log::info("Solving x-momentum equation");
+        log::info("Solving momentum equations");
+        for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
+            U_solver.solve(vEqn, 10, 1e-12, 1.0);
             U_solver.solve(uEqn, 10, 1e-12, 1.0);
         }
 
@@ -197,9 +189,7 @@ auto main(int argc, char* argv[]) -> int {
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
                                                     div_U(U_rh)              // == - (∇.U)
         );
-
-        auto p_solver =
-            solver::BiCGSTAB<field::Pressure, solver::ImplicitUnderRelaxation<field::Pressure>>();
+        auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
         log::info("Solving pressure correction equation");
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
