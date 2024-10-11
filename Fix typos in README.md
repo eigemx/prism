@@ -1,11 +1,9 @@
 # Prism
-A simple finite volume C++20 library for solving partial differential equations.
 
-## What is this?
-Prism a library for solving partial differential equations (PDEs) using finite volume methods. It is designed to be simple and easy to use, with a focus on computational fluid dynamics (CFD). Prism has many capabilities such as:
+Prism is a C++20 library for solving partial differential equations (PDEs) using finite volume methods. It is designed to be simple and easy to use, with a focus on computational fluid dynamics (CFD). Prism has many capabilities such as:
 - Handling unstructured polyhedral meshes (currently only Ideas-UNV meshes are supported).
 - Mesh traversal with ease.
-- Native support for scala, vector and tensor fields.
+- Native support for scalar, vector and tensor fields.
 - Support for non-orthogonal correction for diffusion scheme.
 - Central difference, Upwind, Second-order upwind, and QUICK convection schemes.
 - Support for explicit and implicit source terms.
@@ -33,6 +31,7 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
 Prism is in early development stages and is not yet ready for production use. However, you can check out the examples folder for some simple usage examples.
 
 ## TODO
+- Add documentation.
 - Implement SIMPLE & PISO solvers (basic SIMPLE solver is in example directory, but not yet functional).
 - Implement backward Euler scheme for transient problems.
 - Improve field::Vector and field::Tensor implementations using Eigen reference types.
