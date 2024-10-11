@@ -1,13 +1,14 @@
 #pragma once
 
 #include "prism/boundary.h"
+#include "prism/field/ifield.h"
 #include "prism/field/velocity.h"
 #include "prism/mesh/boundary.h"
 
 namespace prism::eqn {
 
 // forward declaration
-template <typename Field>
+template <field::IScalarBased Field>
 class Transport;
 
 using Momentum = Transport<field::VelocityComponent>;
@@ -36,20 +37,5 @@ class NoSlip<Momentum> : public IEquationBoundaryHandler<Momentum> {
     auto name() const noexcept -> std::string override { return "no-slip"; }
     void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
 };
-
-template <typename Equation>
-class Outlet : public IEquationBoundaryHandler<Equation> {
-  public:
-    auto name() const noexcept -> std::string override { return "outlet"; }
-    void apply(Equation& eqn, const mesh::BoundaryPatch& patch) override;
-};
-
-template <>
-class Outlet<Momentum> : public IEquationBoundaryHandler<Momentum> {
-  public:
-    auto name() const noexcept -> std::string override { return "outlet"; }
-    void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
-};
-
 
 } // namespace prism::eqn::boundary

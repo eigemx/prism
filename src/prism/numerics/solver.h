@@ -67,7 +67,6 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
-    auto& phi_prev = eqn.prevIterField();
 
     auto init_res = 0.0;
     double current_res = 0.0;
@@ -83,9 +82,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
         }
 
         // do at least one iteration
-        phi_prev.values() = phi.values();
         phi.values() = step(A, phi.values(), b);
-
         current_res = detail::residual(A, phi.values(), b);
 
         // check for convergence
