@@ -48,7 +48,8 @@ cd prism
 ./vcpkg/vcpkg install
 cmake --preset=default
 cd build
-make```
+make
+```
 
 ## How to contribute
 If you want to contribute to Prism, please fork the repository and create a pull request. If you have any questions, feel free to open an issue.
