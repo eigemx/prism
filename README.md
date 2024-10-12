@@ -42,13 +42,13 @@ Prism is in early development stages and is not yet ready for production use. Ho
 
 ## Clone and build
 ```bash
-git clone --recurse-submodules https://github.com/eigemx/prism.git
+git clone --recurse-submodules -j8 https://github.com/eigemx/prism.git
 cd prism
-mkdir build
+./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+./vcpkg/vcpkg install
+cmake --preset=default
 cd build
-cmake ..
-make
-```
+make```
 
 ## How to contribute
 If you want to contribute to Prism, please fork the repository and create a pull request. If you have any questions, feel free to open an issue.
