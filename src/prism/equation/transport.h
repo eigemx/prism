@@ -70,7 +70,7 @@ class Transport : public LinearSystem,
 
     std::vector<SharedPtr<scheme::IFullScheme<Field>>> _schemes;
     std::vector<SharedPtr<scheme::source::IExplicitSource>> _sources;
-    Field _phi;     // Conserved field of the equation
+    Field _phi; // Conserved field of the equation
     SharedPtr<scheme::IFullScheme<Field>> _conv_scheme = nullptr;
     SharedPtr<scheme::IFullScheme<Field>> _diff_scheme = nullptr;
     std::size_t _n_corrected_schemes {0};
@@ -80,8 +80,7 @@ class Transport : public LinearSystem,
 template <field::IScalarBased Field>
 template <typename Scheme, typename... Schemes>
 Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
-    : _phi(scheme.field()),
-      LinearSystem(scheme.field().mesh().cellCount()) {
+    : _phi(scheme.field()), LinearSystem(scheme.field().mesh().cellCount()) {
     // add the first mandatory scheme
     addScheme(std::forward<Scheme>(scheme));
 

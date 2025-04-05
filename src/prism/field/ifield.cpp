@@ -22,7 +22,9 @@ void checkFieldName(const std::string& name) {
 
 void checkMesh(const mesh::PMesh& mesh) {
     if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundaryPatches().empty()) {
-        throw std::runtime_error("Cannot create a field over an empty mesh.");
+        throw std::runtime_error(
+            "Cannot create a field over either an empty mesh or a mesh that have no boundary "
+            "patches.");
     }
 }
 } // namespace prism::field::detail
