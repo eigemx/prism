@@ -35,6 +35,7 @@ class IterationData {
     bool _converged {false};
 };
 
+// TODO: ISolver should not be a template, check if we can use eqn::Transport<IScalar> instead
 template <typename Field>
 class ISolver {
   public:
