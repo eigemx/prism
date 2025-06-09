@@ -22,15 +22,14 @@ auto readFields(const std::filesystem::path& fields_file) -> std::vector<double>
     return temp;
 }
 
-auto jsonToPrismField(const fs::path& fields_file, const prism::mesh::PMesh& mesh)
-    -> prism::field::Scalar {
+auto jsonToPrismField(const fs::path& fields_file,
+                      const prism::mesh::PMesh& mesh) -> prism::field::Scalar {
     auto doc = fileToJson(fields_file);
     auto temp = doc["T"].get<std::vector<double>>();
     auto temp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(temp.data(), temp.size());
 
     return {"T", mesh, temp_vec};
 }
-
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -56,15 +55,6 @@ auto main(int argc, char* argv[]) -> int {
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = Scalar("T", mesh, 300.0);
 
-    // define a source term
-    VectorXd source_field_data = VectorXd::Zero(mesh.cellCount());
-    for (const auto& cell : mesh.cells()) {
-        const auto& center = cell.center();
-        if (center.norm() <= 0.15) {
-            source_field_data[cell.id()] = 100000.0;
-        }
-    }
-
     // diffusion coefficient
     auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
@@ -73,7 +63,11 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    solver.solve(eqn, 20, 1e-20, 1);
+    auto nOrthoCorrectors = 3;
+
+    for (int i = 0; i < nOrthoCorrectors; i++) {
+        solver.solve(eqn, 20, 1e-20, 1);
+    }
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 

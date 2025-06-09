@@ -39,10 +39,13 @@ class IterationData {
 template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport<Field>& eq, std::size_t n_iter, double eps, double lambda)
-        -> IterationData;
-    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-        -> VectorXd = 0;
+    virtual auto solve(eqn::Transport<Field>& eq,
+                       std::size_t n_iter,
+                       double eps,
+                       double lambda) -> IterationData;
+    virtual auto step(const SparseMatrix& A,
+                      const VectorXd& x,
+                      const VectorXd& b) -> VectorXd = 0;
 
   private:
     ImplicitUnderRelaxation<Field> _relaxer;
@@ -74,10 +77,10 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     bool has_converged = false;
     std::size_t iter = 0;
 
-    for (; iter < n_iter; iter++) {
-        eqn.updateCoeffs();
-        _relaxer.preRelax(eqn, lambda);
+    eqn.updateCoeffs();
+    _relaxer.preRelax(eqn, lambda);
 
+    for (; iter < n_iter; iter++) {
         if (iter == 0) {
             init_res = detail::residual(A, phi.values(), b);
         }
@@ -89,15 +92,13 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
         // check for convergence
         if (current_res < eps) {
             has_converged = true;
-            // zero out coefficients by default, in case user calls updateCoeffs() later
-            eqn.zeroOutCoeffs();
             iter++;
             break;
         }
-
-        // zero out the left & right hand side vector, for the next iteration
-        eqn.zeroOutCoeffs();
     }
+    // zero out the left & right hand side vector, for the next solve call, or in case user calls
+    // updateCoeffs() later
+    eqn.zeroOutCoeffs();
 
     log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
               init_res,
@@ -108,15 +109,17 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
 }
 
 template <typename Field>
-auto BiCGSTAB<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-    -> VectorXd {
+auto BiCGSTAB<Field>::step(const SparseMatrix& A,
+                           const VectorXd& x,
+                           const VectorXd& b) -> VectorXd {
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     return bicg.compute(A).solveWithGuess(b, x);
 }
 
 template <typename Field>
-auto GaussSeidel<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-    -> VectorXd {
+auto GaussSeidel<Field>::step(const SparseMatrix& A,
+                              const VectorXd& x,
+                              const VectorXd& b) -> VectorXd {
     VectorXd x_new = x;
     for (int j = 0; j < x.size(); j++) {
         double sum = 0.0;
