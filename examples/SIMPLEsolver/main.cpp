@@ -87,16 +87,15 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    //auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, pressure_vec);
+    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    // auto U = field::Velocity("U", mesh, components);
+    auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
-    /*
+
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
-    // using laplacian = diffusion::
-    // Corrected<field::UniformScalar, nonortho::OverRelaxedCorrector, field::VelocityComponent>;
-    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
+    using laplacian = diffusion::
+        Corrected<field::UniformScalar, nonortho::OverRelaxedCorrector, field::VelocityComponent>;
     using grad = source::Gradient<source::SourceSign::Negative, field::Pressure>;
 
     auto uEqn = eqn::Momentum(div(rho, U, U.x()),   // ∇.(ρUu)
@@ -108,35 +107,23 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(mu, U.y()), // - ∇.(μ∇v)
                               grad(P, Coord::Y)     // = -∂p/∂y
     );
-    */
-    auto T = field::Scalar("T", mesh, 300.0);
-    auto kappa = field::UniformScalar("kappa", mesh, 4e-5);
-    auto TEqn = eqn::Transport<field::Scalar>(convection::Upwind(rho, U, T), // ∇.(ρUT)
-                                              diffusion::Corrected(kappa, T) // -∇.(κ∇T)
-    );
-    auto solver = solver::BiCGSTAB<field::Scalar>();
-    solver.solve(TEqn, 100, 1e-5, 1);
-
-    prism::export_field_vtu(TEqn.field(), "solution_T.vtu");
-
-    /*
-
 
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
-    auto nNonOrthCorrectiors = 2;
-    for (auto nOuterIter = 0; nOuterIter < 50; ++nOuterIter) {
+    auto nNonOrthCorrectiors = 5;
+    for (auto nOuterIter = 0; nOuterIter < 25; ++nOuterIter) {
         log::info("Outer iteration {}", nOuterIter);
 
-        log::info("Solving momentum equations");
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
-            U_solver.solve(vEqn, 10, 1e-12, 1.0);
-            U_solver.solve(uEqn, 10, 1e-12, 1.0);
-        }
+            log::info("Solving y-momentum equations");
+            U_solver.solve(vEqn, 25, 1e-16, 0.98);
 
+            log::info("Solving x-momentum equations");
+            U_solver.solve(uEqn, 25, 1e-16, 0.98);
+        }
 
         // calculate coefficients for the pressure equation
         const auto& vol_vec = mesh.cellsVolumeVector();
@@ -188,7 +175,7 @@ auto main(int argc, char* argv[]) -> int {
 
         log::info("Solving pressure correction equation");
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
-            p_solver.solve(pEqn, 10, 1e-16, 1.0);
+            p_solver.solve(pEqn, 25, 1e-16, 1.0);
         }
         export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
@@ -199,8 +186,7 @@ auto main(int argc, char* argv[]) -> int {
             U.y()[cell.id()] += correction[1];
         }
 
-        P.values() = P.values().array() + (0.8 * P_prime.values().array());
-
+        P.values() = P.values().array() + (0.85 * P_prime.values().array());
     }
 
     export_field_vtu(U.x(), "solution_x.vtu");
@@ -210,5 +196,4 @@ auto main(int argc, char* argv[]) -> int {
 
     auto diff = field::Scalar("diff", mesh, components[0].values() - U.x().values());
     export_field_vtu(diff, "diff.vtu");
-*/
 }

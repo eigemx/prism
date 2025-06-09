@@ -60,7 +60,11 @@ TEST_CASE("test poisson equation", "[poisson]") {
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    solver.solve(eqn, 10, 1e-20, 1.0);
+    auto nOrthogonalCorrectors = 5;
+
+    for (int i = 0; i < nOrthogonalCorrectors; ++i) {
+        solver.solve(eqn, 15, 1e-20, 1.0);
+    }
 
     VectorXd diff = P.values() - solution(mesh).values();
     double diff_norm = diff.norm();

@@ -82,6 +82,7 @@ class Laplacian : public IExplicitSource {
 };
 
 // TODO: Test this!
+// compare against john-s-butler-dit.github.io/NumericalAnalysisBook/ Chapter 06
 template <SourceSign Sign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:

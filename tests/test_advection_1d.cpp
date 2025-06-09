@@ -43,7 +43,7 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     auto U = field::Velocity("U", mesh, inlet_velocity);
 
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
-    auto eqn = eqn::Transport(scheme::convection::SecondOrderUpwind(rho, U, T), // ∇.(ρUT)
+    auto eqn = eqn::Transport(scheme::convection::Upwind(rho, U, T),    // ∇.(ρUT)
                               scheme::diffusion::NonCorrected(kappa, T) // - ∇.(κ ∇T) = 0
     );
 
