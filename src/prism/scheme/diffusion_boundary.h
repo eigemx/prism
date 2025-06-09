@@ -5,8 +5,8 @@
 #include "boundary.h"
 #include "prism/constants.h"
 
+// Forward declarations for diffusion scheme classes defined in diffusion.h
 namespace prism::scheme::diffusion {
-
 class IDiffusion;
 
 template <typename T>
@@ -107,11 +107,15 @@ class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
     auto inline name() const -> std::string override { return "no-slip"; }
 };
 
+//
+// Implementation of boundary handlers for diffusion schemes
+//
+
 template <diffusion::IDiffusionBased Scheme>
 void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    /** @brief Applies boundary discretized diffusion equation to the cell,
-     * when the current face is a boundary face, and the boundary condition
-     * is a general Von Neumann boundary condition, or fixed gradient boundary condition.
+    /** @brief Applies boundary discretized diffusion equation to the cell, when the current face
+     * is a boundary face, and the boundary condition is a general Von Neumann boundary condition,
+     * or fixed gradient boundary condition.
      *
      * @param cell The cell which owns the boundary face.
      * @param face The boundary face.
@@ -139,6 +143,13 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
 
 template <scheme::diffusion::ICorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation (with non-orthogonal correction)
+     * to the cell, when the current face is a boundary face, and the boundary condition is a
+     * fixed value boundary condition.
+     *
+     * @param scheme The diffusion scheme.
+     * @param patch The boundary patch containing the faces.
+     */
     const auto phi = scheme.field();
     const auto& mesh = phi.mesh();
     const auto& corrector = scheme.corrector();
@@ -168,12 +179,26 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
 
 template <scheme::diffusion::ICorrectedBased Scheme>
 void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation to the cell, when the current face
+     * is a boundary face, and the boundary condition is a no-slip boundary condition. no-slip
+     * boundary condition in diffusion scheme is a special case of the fixed boundary condition.
+     *
+     * @param scheme The diffusion scheme.
+     * @param patch The boundary patch containing the faces.
+     */
     Fixed<Scheme> fixed;
     return fixed.apply(scheme, patch);
 }
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation (without non-orthogonal correction
+     * ) to the cell, when the current face is a boundary face, and the boundary condition is a
+     * fixed value boundary condition.
+     *
+     * @param scheme The diffusion scheme.
+     * @param patch The boundary patch containing the faces.
+     */
     const auto phi = scheme.field();
     const auto& mesh = phi.mesh();
     const auto& kappa = scheme.kappa();
@@ -202,6 +227,13 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
 
 template <scheme::diffusion::INonCorrectedBased Scheme>
 void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation to the cell, when the current face
+     * is a boundary face, and the boundary condition is a no-slip boundary condition. no-slip
+     * boundary condition in diffusion scheme is a special case of the fixed boundary condition.
+     *
+     * @param scheme The diffusion scheme.
+     * @param patch The boundary patch containing the faces.
+     */
     Fixed<Scheme> fixed;
     return fixed.apply(scheme, patch);
 }

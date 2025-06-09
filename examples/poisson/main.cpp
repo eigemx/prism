@@ -28,7 +28,7 @@ auto l2NormRelative(const Vector3d& x, const Vector3d& x_ref) -> double {
 }
 
 auto main(int argc, char* argv[]) -> int {
-    log::setLevel(log::Level::Debug);
+    log::setLevel(log::Level::Info);
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
@@ -62,9 +62,9 @@ auto main(int argc, char* argv[]) -> int {
 
     auto c = field::Tensor("c", mesh, Matrix3d::Identity());
 
-    // using laplacian =
-    // diffusion::Corrected<field::Tensor, nonortho::OverRelaxedCorrector, field::Scalar>;
-    using laplacian = diffusion::NonCorrected<field::Tensor, field::Scalar>;
+    using laplacian =
+        diffusion::Corrected<field::Tensor, nonortho::OverRelaxedCorrector, field::Scalar>;
+    // using laplacian = diffusion::NonCorrected<field::Tensor, field::Scalar>;
     auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(
@@ -74,7 +74,11 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    solver.solve(eqn, 15, 1e-20, 1.0);
+    auto nNonOrthogonalCorrectors = 5;
+
+    for (int i = 0; i < nNonOrthogonalCorrectors; ++i) {
+        solver.solve(eqn, 15, 1e-20, 1.0);
+    }
 
     prism::export_field_vtu(P, "solution.vtu");
     prism::export_field_vtu(solution(mesh), "analytical.vtu");
