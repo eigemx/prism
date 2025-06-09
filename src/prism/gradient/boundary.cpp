@@ -1,11 +1,6 @@
 #include "boundary.h"
 
 namespace prism::gradient::boundary {
-auto Empty::get(const prism::field::IScalar& field, const prism::mesh::Face& face) // NOLINT
-    -> prism::Vector3d {
-    return {0.0, 0.0, 0.0};
-}
-
 auto Symmetry::get(const prism::field::IScalar& field, const prism::mesh::Face& face) // NOLINT
     -> prism::Vector3d {
     return {0.0, 0.0, 0.0};

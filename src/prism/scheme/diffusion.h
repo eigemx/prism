@@ -117,7 +117,7 @@ Corrected<KappaType, NonOrthoCorrector, Field>::Corrected(KappaType kappa, Field
     : IAppliedDiffusion<KappaType, Field>(kappa, phi) {
     // add default boundary handlers for Corrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    //this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
@@ -183,7 +183,7 @@ NonCorrected<KappaType, Field>::NonCorrected(KappaType kappa, Field phi)
 
     // add default boundary handlers for NonCorrected
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    //this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();

@@ -20,12 +20,12 @@
         {
             "name": "upperWalls",
             "type": "fixed",
-            "value": 200
+            "value": 300
         },
         {
             "name": "lowerWalls",
             "type": "fixed",
-            "value": 500
+            "value": 900
         }
     ]
 } 

@@ -72,7 +72,7 @@ class Outlet<convection::IConvection<Rho, F>>
 template <typename Rho, typename F>
 void Fixed<convection::IConvection<Rho, F>>::apply(convection::IConvection<Rho, F>& scheme,
                                                    const mesh::BoundaryPatch& patch) {
-    const auto phi = scheme.field();
+    const auto& phi = scheme.field();
     const auto& mesh = phi.mesh();
 
     for (const auto face_id : patch.facesIds()) {
@@ -84,7 +84,6 @@ void Fixed<convection::IConvection<Rho, F>>::apply(convection::IConvection<Rho, 
         const Vector3d U_f = scheme.U().valueAtFace(face);
         const double rho_f = scheme.rho().valueAtCell(owner);
         const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
-    
         scheme.rhs(owner.id()) += -m_dot_f * phi_wall;
     }
 }

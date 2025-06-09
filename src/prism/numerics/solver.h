@@ -69,9 +69,9 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
 
-    auto init_res = 0.0;
+    double init_res = 0.0;
     double current_res = 0.0;
-    bool converged = false;
+    bool has_converged = false;
     std::size_t iter = 0;
 
     for (; iter < n_iter; iter++) {
@@ -88,7 +88,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
 
         // check for convergence
         if (current_res < eps) {
-            converged = true;
+            has_converged = true;
             // zero out coefficients by default, in case user calls updateCoeffs() later
             eqn.zeroOutCoeffs();
             iter++;

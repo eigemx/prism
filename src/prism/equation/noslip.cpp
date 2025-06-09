@@ -57,6 +57,10 @@ auto contribution(Coord coord,
             b += wb * (1 - (nz * nz));
             return {ac, b};
         }
+        default: {
+            // Return zeros or throw if invalid Coord
+            return {0.0, 0.0};
+        }
     }
 }
 

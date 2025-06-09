@@ -363,7 +363,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face
     if (handler == nullptr) {
         throw error::NonImplementedBoundaryCondition(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerProvider, "
-                        "BHManagerSetter>::valueAtBoundaryFace() {}",
+                        "BHManagerSetter>::valueAtBoundaryFace() for field `{}`",
                         name()),
             patch.name(),
             bc.kindString());

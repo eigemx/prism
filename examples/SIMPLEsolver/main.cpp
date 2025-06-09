@@ -5,11 +5,10 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-#include "prism/export.h"
-#include "prism/scheme/nonortho.h"
+#include "prism/field/scalar.h"
+
 
 using json = nlohmann::json;
-using prism::export_field_vtu;
 using namespace prism;
 
 namespace fs = std::filesystem;
@@ -58,23 +57,6 @@ auto readVelocityComponents(const std::vector<prism::Vector3d>& velocity)
     return {u, w, v};
 }
 
-void printCellFaceVelocity(const field::Velocity& U, const std::size_t cell_id) {
-    const auto& cell = U.mesh().cell(cell_id);
-    for (const auto face_id : cell.facesIds()) {
-        const auto& face = U.mesh().face(face_id);
-        if (face.isBoundary()) {
-            const auto& patch = U.mesh().boundaryPatch(face);
-            if (patch.isEmpty()) {
-                continue;
-            }
-            fmt::print("[Boundary face]");
-        } else {
-            fmt::print("[Interior face]");
-        }
-        fmt::println(" U_x = {}, U_y = {}", U.x().valueAtFace(face), U.y().valueAtFace(face));
-    }
-}
-
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
@@ -105,15 +87,17 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    //auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
     auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, 0.0);
+    auto P = field::Pressure("P", mesh, pressure_vec);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
+    /*
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
-    using laplacian = diffusion::
-        Corrected<field::UniformScalar, nonortho::OverRelaxedCorrector, field::VelocityComponent>;
-    using grad = source::Gradient<scheme::source::SourceSign::Negative, field::Pressure>;
+    // using laplacian = diffusion::
+    // Corrected<field::UniformScalar, nonortho::OverRelaxedCorrector, field::VelocityComponent>;
+    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
+    using grad = source::Gradient<source::SourceSign::Negative, field::Pressure>;
 
     auto uEqn = eqn::Momentum(div(rho, U, U.x()),   // ∇.(ρUu)
                               laplacian(mu, U.x()), // - ∇.(μ∇u)
@@ -124,6 +108,19 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(mu, U.y()), // - ∇.(μ∇v)
                               grad(P, Coord::Y)     // = -∂p/∂y
     );
+    */
+    auto T = field::Scalar("T", mesh, 300.0);
+    auto kappa = field::UniformScalar("kappa", mesh, 4e-5);
+    auto TEqn = eqn::Transport<field::Scalar>(convection::Upwind(rho, U, T), // ∇.(ρUT)
+                                              diffusion::Corrected(kappa, T) // -∇.(κ∇T)
+    );
+    auto solver = solver::BiCGSTAB<field::Scalar>();
+    solver.solve(TEqn, 100, 1e-5, 1);
+
+    prism::export_field_vtu(TEqn.field(), "solution_T.vtu");
+
+    /*
+
 
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
@@ -131,7 +128,7 @@ auto main(int argc, char* argv[]) -> int {
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
     auto nNonOrthCorrectiors = 2;
-    for (auto nOuterIter = 0; nOuterIter < 20; ++nOuterIter) {
+    for (auto nOuterIter = 0; nOuterIter < 50; ++nOuterIter) {
         log::info("Outer iteration {}", nOuterIter);
 
         log::info("Solving momentum equations");
@@ -140,8 +137,6 @@ auto main(int argc, char* argv[]) -> int {
             U_solver.solve(uEqn, 10, 1e-12, 1.0);
         }
 
-        uEqn.updateCoeffs();
-        vEqn.updateCoeffs();
 
         // calculate coefficients for the pressure equation
         const auto& vol_vec = mesh.cellsVolumeVector();
@@ -205,11 +200,15 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         P.values() = P.values().array() + (0.8 * P_prime.values().array());
-        uEqn.zeroOutCoeffs();
-        vEqn.zeroOutCoeffs();
+
     }
 
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(P, "pressure.vtu");
+    export_field_vtu(components[0], "solution_x_true.vtu");
+
+    auto diff = field::Scalar("diff", mesh, components[0].values() - U.x().values());
+    export_field_vtu(diff, "diff.vtu");
+*/
 }

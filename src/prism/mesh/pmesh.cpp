@@ -149,6 +149,7 @@ auto PMesh::face(std::size_t face_id) noexcept -> Face& {
 auto PMesh::boundaryPatches() const noexcept -> const std::vector<BoundaryPatch>& {
     return _boundary_patches;
 }
+
 auto PMesh::boundaryPatch(const Face& face) const noexcept -> const BoundaryPatch& {
     assert(face.isBoundary() && face.boundaryPatchId().has_value());
     return _boundary_patches[face.boundaryPatchId().value()];

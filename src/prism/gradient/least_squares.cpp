@@ -93,6 +93,11 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
 
         } else {
             // boundary face
+            const auto& patch = mesh.faceBoundaryPatch(face);
+            if (patch.isEmpty()) {
+                continue; // skip empty patches
+            }
+            
             auto bface_phi = this->field()->valueAtFace(face);
             r_CF = face.center() - cell.center();
             delta_phi = bface_phi - phi_cell;
