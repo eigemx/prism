@@ -105,7 +105,12 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
               current_res,
               iter);
 
-    return {n_iter, init_res, current_res};
+    IterationData data(iter, init_res, current_res);
+    if (has_converged) {
+        data.setAsConverged();
+        log::info("Solver converged after {} iterations", iter);
+    }
+    return data;
 }
 
 template <typename Field>
