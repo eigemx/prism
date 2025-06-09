@@ -44,7 +44,10 @@ auto inline coordToIndex(Coord coord) -> std::uint8_t {
         case Coord::X: return 0;
         case Coord::Y: return 1;
         case Coord::Z: return 2;
+        default: break;
     }
+    // Handle unexpected Coord values
+    throw std::invalid_argument("Invalid Coord value in coordToIndex");
 }
 
 template <typename Vector>
@@ -75,21 +78,22 @@ auto grad(const Field& field, Coord coord) -> field::Scalar {
     const auto& mesh = field.mesh();
 
     const auto n_cells = mesh.cellCount();
-    const auto n_faces = mesh.faceCount();
+    //const auto n_faces = mesh.faceCount();
 
     VectorXd grad_values = VectorXd::Zero(n_cells);
-    VectorXd grad_face_values = VectorXd::Zero(n_faces);
-    auto i = detail::coordToIndex(coord);
+    //VectorXd grad_face_values = VectorXd::Zero(n_faces);
+    auto coord_index = detail::coordToIndex(coord);
 
     for (std::size_t cell_i = 0; cell_i < n_cells; ++cell_i) {
-        grad_values[cell_i] = field.gradAtCell(mesh.cell(cell_i))[i];
+        grad_values[cell_i] = field.gradAtCell(mesh.cell(cell_i))[coord_index];
     }
 
+    /*
     for (std::size_t jface_i = 0; jface_i < n_faces; ++jface_i) {
         grad_face_values[jface_i] = field.gradAtFace(mesh.face(jface_i))[i];
     }
-
-    return field::Scalar(grad_field_name, field.mesh(), grad_values, grad_face_values);
+    */
+    return field::Scalar(grad_field_name, field.mesh(), grad_values);//, grad_face_values);
 }
 
 template <field::IScalarBased Field>

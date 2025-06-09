@@ -118,7 +118,7 @@ IConvection<Rho, Field>::IConvection(Rho rho, field::Velocity U, Field phi)
       IFullScheme<Field>(phi.mesh().cellCount()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    //this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();

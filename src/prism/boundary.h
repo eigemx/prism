@@ -121,6 +121,10 @@ void applyBoundary(const std::string& applier_name, Applier& applier) {
     const mesh::PMesh& mesh = _phi.mesh();
 
     for (const auto& patch : mesh.boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue;
+        }
+
         const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
         auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
 
@@ -149,6 +153,10 @@ void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
     const mesh::PMesh& mesh = _phi.mesh();
 
     for (const auto& patch : mesh.boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue;
+        }
+
         const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
         auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
 

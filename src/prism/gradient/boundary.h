@@ -13,13 +13,6 @@ class IGradSchemeBoundaryHandler : public prism::boundary::IBoundaryHandler {
                      const prism::mesh::Face& face) -> prism::Vector3d = 0;
 };
 
-class Empty : public IGradSchemeBoundaryHandler {
-  public:
-    auto name() const -> std::string override { return "empty"; }
-    auto get(const prism::field::IScalar& field,
-             const prism::mesh::Face& face) -> prism::Vector3d override;
-};
-
 class Symmetry : public IGradSchemeBoundaryHandler {
   public:
     auto name() const -> std::string override { return "symmetry"; }

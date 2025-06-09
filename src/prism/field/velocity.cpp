@@ -22,7 +22,6 @@ void VelocityCompBHManagerSetter::set(IScalarBHManager& manager) {
 
     manager.addHandler<field::boundary::Fixed<VelocityComponent>>();
     manager.addHandler<field::boundary::VelocityInlet<VelocityComponent>>();
-    manager.addHandler<field::boundary::Empty<VelocityComponent>>();
     manager.addHandler<field::boundary::Symmetry<VelocityComponent>>();
     manager.addHandler<field::boundary::Outlet<VelocityComponent>>();
     manager.addHandler<field::boundary::FixedGradient<VelocityComponent>>();

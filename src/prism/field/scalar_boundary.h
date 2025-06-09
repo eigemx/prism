@@ -33,13 +33,6 @@ class VelocityInlet : public IScalarBoundaryHandler {
 };
 
 template <IScalarBased Field>
-class Empty : public IScalarBoundaryHandler {
-  public:
-    auto name() const -> std::string override { return "empty"; }
-    auto get(const IScalar& field, const mesh::Face& face) -> double override;
-};
-
-template <IScalarBased Field>
 class Symmetry : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "symmetry"; }
@@ -71,13 +64,6 @@ template <IScalarBased Field>
 auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
     const auto& patch = field.mesh().boundaryPatch(face);
     return patch.getScalarBoundaryCondition(field.name());
-}
-
-template <IScalarBased Field>
-auto Empty<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    // TODO: Empty faces field value should not contribute to the solution, we need to avoid
-    // having an "Empty" handler for fields.
-    return field.valueAtCell(face.owner());
 }
 
 template <IScalarBased Field>

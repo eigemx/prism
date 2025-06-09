@@ -15,13 +15,6 @@ class ISchemeBoundaryHandler : public prism::boundary::IBoundaryHandler {
 };
 
 template <typename Scheme>
-class Empty : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override {};
-    auto inline name() const -> std::string override { return "empty"; }
-};
-
-template <typename Scheme>
 class Fixed : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override = 0;

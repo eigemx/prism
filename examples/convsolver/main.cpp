@@ -35,7 +35,7 @@ auto main(int argc, char* argv[]) -> int {
     // density field
     auto rho = field::UniformScalar("rho", mesh, 1.18);
 
-    // set up a unifform velocity field defined over the mesh
+    // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
     const auto& inlet_patch = std::find_if(
         mesh.boundaryPatches().begin(), mesh.boundaryPatches().end(), [](const auto& patch) {

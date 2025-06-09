@@ -92,6 +92,9 @@ auto inline coordToStr(prism::Coord coord) -> std::string {
         case prism::Coord::Z: {
             return "z";
         }
+        default: {
+            return "";
+        }
     }
 }
 
