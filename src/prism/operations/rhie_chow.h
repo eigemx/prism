@@ -43,8 +43,19 @@ auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P
         w_face_data[face_id] = Uf_corrected.z();
     }
 
+
     for (const auto& face : mesh.boundaryFaces()) {
         const std::size_t face_id = face.id();
+        const auto& patch = mesh.faceBoundaryPatch(face);
+
+        if (patch.isEmpty()) {
+            // TODO: this is a hack to avoid calling valueAtFace() on empty faces. We need to fix
+            // this.
+            u_face_data[face_id] = 0.0;
+            v_face_data[face_id] = 0.0;
+            w_face_data[face_id] = 0.0;
+            continue;
+        }
         u_face_data[face_id] = U.x().valueAtFace(face);
         v_face_data[face_id] = U.y().valueAtFace(face);
         w_face_data[face_id] = U.z().valueAtFace(face);
