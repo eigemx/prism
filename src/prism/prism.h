@@ -9,7 +9,6 @@
 #include "mesh/pmesh.h"
 #include "mesh/reorder.h"
 #include "mesh/unv.h"
-#include "numerics/relax.h"
 #include "numerics/solver.h"
 #include "operations/operations.h"
 #include "operations/rhie_chow.h"

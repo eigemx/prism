@@ -70,7 +70,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    solver.solve(eqn, 100, 1e-5, 1);
+    solver.solve(eqn, 100, 1e-5);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 

@@ -77,7 +77,7 @@ auto main(int argc, char* argv[]) -> int {
     auto nNonOrthogonalCorrectors = 5;
 
     for (int i = 0; i < nNonOrthogonalCorrectors; ++i) {
-        solver.solve(eqn, 15, 1e-20, 1.0);
+        solver.solve(eqn, 15, 1e-20);
     }
 
     prism::export_field_vtu(P, "solution.vtu");
