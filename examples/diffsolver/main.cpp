@@ -66,7 +66,7 @@ auto main(int argc, char* argv[]) -> int {
     auto nOrthoCorrectors = 3;
 
     for (int i = 0; i < nOrthoCorrectors; i++) {
-        solver.solve(eqn, 20, 1e-20, 1);
+        solver.solve(eqn, 20);
     }
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");

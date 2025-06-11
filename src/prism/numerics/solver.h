@@ -4,11 +4,11 @@
 
 #include "prism/equation/transport.h"
 #include "prism/log.h"
-#include "prism/numerics/relax.h"
 
 namespace prism::solver::detail {
 
 auto inline residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double {
+    // TODO: what form of residuals is this? Document according to the book
     auto ac_phic = A.diagonal().cwiseProduct(x);
     auto res_scaled = ((A * x) - b).cwiseAbs() / (ac_phic.maxCoeff() + EPSILON);
 
@@ -40,15 +40,11 @@ template <typename Field>
 class ISolver {
   public:
     virtual auto solve(eqn::Transport<Field>& eq,
-                       std::size_t n_iter,
-                       double eps,
-                       double lambda) -> IterationData;
+                       std::size_t n_iter = 10,
+                       double eps = 1e-7) -> IterationData;
     virtual auto step(const SparseMatrix& A,
                       const VectorXd& x,
                       const VectorXd& b) -> VectorXd = 0;
-
-  private:
-    ImplicitUnderRelaxation<Field> _relaxer;
 };
 
 template <typename Field>
@@ -66,8 +62,7 @@ class GaussSeidel : public ISolver<Field> {
 template <typename Field>
 auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
                            std::size_t n_iter,
-                           double eps,
-                           double lambda) -> IterationData {
+                           double eps) -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
@@ -78,7 +73,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     std::size_t iter = 0;
 
     eqn.updateCoeffs();
-    _relaxer.preRelax(eqn, lambda);
+    eqn.relax();
 
     for (; iter < n_iter; iter++) {
         if (iter == 0) {
@@ -97,7 +92,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
         }
     }
     // zero out the left & right hand side vector, for the next solve call, or in case user calls
-    // updateCoeffs() later
+    // updateCoeffs() later.
     eqn.zeroOutCoeffs();
 
     log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
@@ -108,7 +103,6 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     IterationData data(iter, init_res, current_res);
     if (has_converged) {
         data.setAsConverged();
-        log::info("Solver converged after {} iterations", iter);
     }
     return data;
 }

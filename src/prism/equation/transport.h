@@ -21,6 +21,8 @@ namespace prism::eqn {
 // TODO: Schemes that require no correction shall be updated only once.
 // TODO: Transport should have at most one convection scheme and at most one diffusion
 // scheme
+
+// TODO: This is not used anywhere, remove it?
 template <field::IScalarBased Field, typename BHManagerSetter>
 class GeneralTransport {
   private:
@@ -40,11 +42,15 @@ class Transport : public LinearSystem,
     void updateCoeffs();
     void zeroOutCoeffs();
 
-    auto inline field() const -> const Field& { return _phi; }
-    auto inline field() -> Field& { return _phi; }
-    auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>> { return _conv_scheme; }
+    auto underRelaxFactor() const -> double;
+    void setUnderRelaxFactor(double factor);
+    void relax();
 
-    auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>> { return _diff_scheme; }
+    auto field() const -> const Field&;
+    auto field() -> Field&;
+
+    auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
+    auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
 
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
@@ -74,6 +80,7 @@ class Transport : public LinearSystem,
     SharedPtr<scheme::IFullScheme<Field>> _conv_scheme = nullptr;
     SharedPtr<scheme::IFullScheme<Field>> _diff_scheme = nullptr;
     std::size_t _n_corrected_schemes {0};
+    double _relaxation_factor {1.0};
 };
 
 
@@ -136,6 +143,56 @@ void Transport<Field>::zeroOutCoeffs() {
     // zero out the universal coefficient matrix and RHS vector
     matrix().setZero();
     rhs().setZero();
+}
+
+template <field::IScalarBased Field>
+auto Transport<Field>::underRelaxFactor() const -> double {
+    return _relaxation_factor;
+}
+
+template <field::IScalarBased Field>
+void Transport<Field>::setUnderRelaxFactor(double factor) {
+    if (factor < 0.0 || factor > 1.0) {
+        log::warn(
+            "Transport::setUnderRelaxFactor(): relaxation factor must be in [0, 1] range. "
+            "Ignoring the value {} and using 1.0 instead.",
+            factor);
+        factor = 1.0;
+        return;
+    }
+    _relaxation_factor = factor;
+}
+
+template <field::IScalarBased Field>
+void Transport<Field>::relax() {
+    auto& A = matrix();
+    auto& b = rhs();
+    const auto& phi = field().values();
+
+    // Moukallad et. al, 14.2 Under-Relaxation of the Algebraic Equations
+    // equation 14.9
+    A.diagonal() /= _relaxation_factor;
+    b += (1 - _relaxation_factor) * A.diagonal().cwiseProduct(phi);
+}
+
+template <field::IScalarBased Field>
+auto Transport<Field>::field() const -> const Field& {
+    return _phi;
+}
+
+template <field::IScalarBased Field>
+auto Transport<Field>::field() -> Field& {
+    return _phi;
+}
+
+template <field::IScalarBased Field>
+auto Transport<Field>::convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>> {
+    return _conv_scheme;
+}
+
+template <field::IScalarBased Field>
+auto Transport<Field>::diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>> {
+    return _diff_scheme;
 }
 
 template <field::IScalarBased Field>
