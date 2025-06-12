@@ -68,6 +68,8 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
+    eqn.setUnderRelaxFactor(0.9);
+
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
     solver.solve(eqn, 100, 1e-5);
