@@ -274,8 +274,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 
     log::debug(
         "Creating scalar field: '{}' (as {}-coordinate) with a cell data vector of size = {} and "
-        "face data vector "
-        "of size = {}",
+        "face data vector of size = {}",
         this->name(),
         coordToStr(coord),
         _data->size(),
@@ -296,10 +295,13 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     }
 
     if (hasFaceValues()) {
-        log::debug("Setting new face values to scalar field '{}', discarding old face values.",
-                   name());
+        log::debug(
+            "GeneralScalar<Units, BHManagerSetter>::setFaceValues() was called for field '{}', "
+            "which already has face values set.",
+            name());
     }
 
+    log::debug("Setting face values for field '{}'", name());
     _face_data = std::make_shared<VectorXd>(std::move(values));
 }
 
@@ -318,12 +320,10 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) con
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) const -> double {
     if (hasFaceValues()) {
-        // Face data were calculataed for us, just return the value (as in Rhie-Chow corrected
-        // face values).
+        // Face data were calculataed for us, just return the value (as in Rhie-Chow correction).
         return (*_face_data)[face_id];
     }
 
-    // We need to interpolate the value of the field at the face
     const auto& face = mesh().face(face_id);
 
     if (face.isInterior()) {

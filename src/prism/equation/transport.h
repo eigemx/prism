@@ -171,8 +171,8 @@ void Transport<Field>::relax() {
 
     // Moukallad et. al, 14.2 Under-Relaxation of the Algebraic Equations
     // equation 14.9
+    b += ((1.0 - _relaxation_factor) / _relaxation_factor) * A.diagonal().cwiseProduct(phi);
     A.diagonal() /= _relaxation_factor;
-    b += (1 - _relaxation_factor) * A.diagonal().cwiseProduct(phi);
 }
 
 template <field::IScalarBased Field>
