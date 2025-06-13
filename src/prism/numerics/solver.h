@@ -9,6 +9,7 @@ namespace prism::solver::detail {
 
 auto inline residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double {
     // TODO: what form of residuals is this? Document according to the book
+    // TODO: this returns negative values for some cases, check if this is correct.
     auto ac_phic = A.diagonal().cwiseProduct(x);
     auto res_scaled = ((A * x) - b).cwiseAbs() / (ac_phic.maxCoeff() + EPSILON);
 
@@ -73,7 +74,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     std::size_t iter = 0;
 
     eqn.updateCoeffs();
-    eqn.relax();
+    // eqn.relax();
 
     for (; iter < n_iter; iter++) {
         if (iter == 0) {

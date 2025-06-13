@@ -48,6 +48,7 @@ auto main(int argc, char* argv[]) -> int {
     auto P = field::Scalar("P", mesh, 0.0);
 
     // create source term
+    // TODO: use a more generic way to create source terms using mapped scalar fields
     VectorXd src_values;
     src_values.resize(mesh.cellCount());
 
@@ -64,7 +65,6 @@ auto main(int argc, char* argv[]) -> int {
 
     using laplacian =
         diffusion::Corrected<field::Tensor, nonortho::OverRelaxedCorrector, field::Scalar>;
-    // using laplacian = diffusion::NonCorrected<field::Tensor, field::Scalar>;
     auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(
@@ -74,7 +74,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nNonOrthogonalCorrectors = 5;
+    auto nNonOrthogonalCorrectors = 30;
 
     for (int i = 0; i < nNonOrthogonalCorrectors; ++i) {
         solver.solve(eqn, 15, 1e-20);

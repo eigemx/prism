@@ -10,7 +10,7 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, double value)
     const std::size_t n_cells = this->mesh().cellCount();
     _data.reserve(n_cells);
     for (std::size_t i = 0; i < n_cells; ++i) {
-        _data.emplace_back(Matrix3d::Ones() * value);
+        _data.emplace_back(Matrix3d::Identity() * value);
     }
 }
 
@@ -32,18 +32,19 @@ Tensor::Tensor(std::string name, const mesh::PMesh& mesh, std::vector<Matrix3d> 
     if (_data.size() != mesh.cellCount()) {
         throw std::runtime_error(
             fmt::format("field::Tensor() cannot create a tensor field '{}' given a vector of "
-                        "Matrix3d that has a different size than mesh's cell count.",
+                        "Matrix3d that has a different size than mesh cells count.",
                         this->name()));
     }
 }
 
 auto Tensor::valueAtCell(std::size_t cell_id) const -> Matrix3d {
     assert(cell_id < mesh().cellCount());
+    assert(cell_id < _data.size());
     return _data[cell_id];
 }
 
 auto Tensor::valueAtCell(const mesh::Cell& cell) const -> Matrix3d {
-    return _data[cell.id()];
+    return valueAtCell(cell.id());
 }
 
 auto Tensor::valueAtFace(std::size_t face_id) const -> Matrix3d {
@@ -62,9 +63,10 @@ auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
             face.id());
         return _data[owner.id()];
     }
-    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
+    const mesh::Cell& neighbor = mesh.otherSharingCell(owner, face);
     const double gc = mesh::geometricWeight(owner, neighbor, face);
 
+    // TODO: we should replace this with a more general interpolation function
     return (gc * _data[owner.id()]) + ((1 - gc) * _data[neighbor.id()]);
 }
 
