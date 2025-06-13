@@ -88,14 +88,13 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    // auto U = field::Velocity("U", mesh, components);
+    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    auto U = field::Velocity("U", mesh, components);
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
-    using laplacian = diffusion::
-        Corrected<field::UniformScalar, nonortho::OverRelaxedCorrector, field::VelocityComponent>;
+    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<source::SourceSign::Negative, field::Pressure>;
 
     auto uEqn = eqn::Momentum(div(rho, U, U.x()),   // ∇.(ρUu)
@@ -108,16 +107,14 @@ auto main(int argc, char* argv[]) -> int {
                               grad(P, Coord::Y)     // = -∂p/∂y
     );
 
-    uEqn.setUnderRelaxFactor(0.85);
-    vEqn.setUnderRelaxFactor(0.85);
-
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
     auto nNonOrthCorrectiors = 4;
-    for (auto nOuterIter = 0; nOuterIter < 2; ++nOuterIter) {
+    for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
+        /*
         log::info("Outer iteration {}", nOuterIter);
 
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
@@ -127,11 +124,12 @@ auto main(int argc, char* argv[]) -> int {
             log::info("Solving x-momentum equations");
             U_solver.solve(uEqn, 5, 1e-9);
         }
+        */
 
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
-        uEqn.relax();
-        vEqn.relax();
+        // uEqn.relax();
+        // vEqn.relax();
 
         // calculate coefficients for the pressure equation
         const auto& vol_vec = mesh.cellsVolumeVector();
@@ -152,7 +150,7 @@ auto main(int argc, char* argv[]) -> int {
                   0,     Dv[i], 0,
                   0,     0,     0;
             // clang-format on
-            D_data[cell.id()] = Di;
+            D_data[i] = Di;
         }
 
         auto D = field::Tensor("D", mesh, D_data);
@@ -177,14 +175,12 @@ auto main(int argc, char* argv[]) -> int {
 
         // pressure correction equation (density is dropped from both sides of the equation due to
         // incompressibility assumption)
-        using laplacian_p =
-            diffusion::Corrected<field::Tensor, nonortho::OverRelaxedCorrector, field::Pressure>;
+        using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
         using div_U = source::Divergence<source::SourceSign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
                                                     div_U(U_rh)              // == - (∇.U)
         );
-        // pEqn.setUnderRelaxFactor(0.85);
         auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
         log::info("Solving pressure correction equation");
@@ -194,12 +190,13 @@ auto main(int argc, char* argv[]) -> int {
         export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
         // update velocity fields
+        /*
         for (const auto& cell : mesh.cells()) {
             prism::Vector3d correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
             U.x()[cell.id()] += correction.x();
             U.y()[cell.id()] += correction.y();
         }
-
+        */
         P.values() = P.values().array() + (0.75 * P_prime.values().array());
 
         uEqn.zeroOutCoeffs();
