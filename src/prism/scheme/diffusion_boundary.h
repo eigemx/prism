@@ -137,7 +137,9 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
 
         // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2
-        scheme.rhs(owner.id()) += wall_grad.dot(Sf_prime);
+        // TODO: the sign was changed to negative to make diffusion scheme sign agnostic
+        // and consistent with the rest of the scheme, but this needs to be tested.
+        scheme.rhs(owner.id()) += -wall_grad.dot(Sf_prime);
     }
 }
 
@@ -220,8 +222,8 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
 
         const double g_diff = Sf_prime.norm() / (d_Cf_norm + EPSILON);
 
-        scheme.insert(cell_id, cell_id, g_diff);
-        scheme.rhs(cell_id) += g_diff * phi_wall;
+        scheme.insert(cell_id, cell_id, -g_diff);
+        scheme.rhs(cell_id) += -g_diff * phi_wall;
     }
 }
 

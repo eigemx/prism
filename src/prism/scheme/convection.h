@@ -27,7 +27,7 @@ struct CoeffsTriplet {
 // Finite volume scheme for the discretization of the convection term
 template <typename Rho = field::UniformScalar, typename Field = field::Scalar>
 class IConvection : public IFullScheme<Field>,
-                    public prism::boundary::BHManagersProvider<
+                    public prism::boundary::BHManagerProvider<
                         boundary::ISchemeBoundaryHandler<IConvection<Rho, Field>>> {
   public:
     IConvection(Rho rho, field::Velocity U, Field phi);
@@ -118,7 +118,7 @@ IConvection<Rho, Field>::IConvection(Rho rho, field::Velocity U, Field phi)
       IFullScheme<Field>(phi.mesh().cellCount()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    //this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
+    // this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();

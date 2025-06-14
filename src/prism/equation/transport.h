@@ -31,7 +31,7 @@ class GeneralTransport {
 
 template <field::IScalarBased Field = field::Scalar>
 class Transport : public LinearSystem,
-                  public prism::boundary::BHManagersProvider<
+                  public prism::boundary::BHManagerProvider<
                       eqn::boundary::IEquationBoundaryHandler<Transport<Field>>> {
   public:
     using FieldType = Field;

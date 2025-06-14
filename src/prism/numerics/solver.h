@@ -6,16 +6,7 @@
 #include "prism/log.h"
 
 namespace prism::solver::detail {
-
-auto inline residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double {
-    // TODO: what form of residuals is this? Document according to the book
-    // TODO: this returns negative values for some cases, check if this is correct.
-    auto ac_phic = A.diagonal().cwiseProduct(x);
-    auto res_scaled = ((A * x) - b).cwiseAbs() / (ac_phic.maxCoeff() + EPSILON);
-
-    return res_scaled.maxCoeff();
-}
-
+auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double;
 } // namespace prism::solver::detail
 
 namespace prism::solver {
