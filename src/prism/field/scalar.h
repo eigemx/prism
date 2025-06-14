@@ -34,7 +34,7 @@ template <typename Units, typename BHManagerSetter>
 class GeneralScalar
     : public IScalar,
       public Units,
-      public prism::boundary::BHManagersProvider<boundary::IScalarBoundaryHandler> {
+      public prism::boundary::BHManagerProvider<boundary::IScalarBoundaryHandler> {
   public:
     // Uniform double value constructors
     GeneralScalar(std::string name,

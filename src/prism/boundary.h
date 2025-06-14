@@ -43,7 +43,7 @@ class BoundaryHandlersManager {
 };
 
 template <typename BaseHandler>
-class BHManagersProvider {
+class BHManagerProvider {
   public:
     using ManagerType = BoundaryHandlersManager<BaseHandler>;
     virtual auto boundaryHandlersManager() const noexcept -> const ManagerType& {

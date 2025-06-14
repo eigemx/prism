@@ -56,16 +56,15 @@ auto main(int argc, char* argv[]) -> int {
     auto T = Scalar("T", mesh, 300.0);
 
     // diffusion coefficient
-    auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
+    auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * -1e-5);
 
-    auto eqn = eqn::Transport(
-        diffusion::Corrected<Tensor, nonortho::OverRelaxedCorrector, Scalar>(kappa, T));
+    auto eqn = eqn::Transport(diffusion::NonCorrected<Tensor, Scalar>(kappa, T));
 
     eqn.setUnderRelaxFactor(0.95);
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    auto nOrthoCorrectors = 50;
+    auto nOrthoCorrectors = 6;
 
     for (int i = 0; i < nOrthoCorrectors; i++) {
         solver.solve(eqn, 10, 1e-20);

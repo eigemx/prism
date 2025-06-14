@@ -33,9 +33,10 @@ auto geometricWeight(const Cell& c, const Cell& n, const Face& face) -> double {
     const Vector3d Sf = outwardAreaVector(face, c);
     const Vector3d ef = Sf / Sf.norm();
     auto gc = d_Cf.dot(ef) / (d_Cf.dot(ef) + d_fN.dot(ef));
-    // auto gc = (n.center() - face.center()).norm() / (n.center() - c.center()).norm();
+
     assert(gc > 0 && "geometricWeight() returned a negative weight factor");
     assert(gc <= 1.0 && "geometricWeight() returned a weight factor higher than 1.0");
+
     return gc;
 }
 

@@ -2,6 +2,26 @@
 
 namespace prism::solver {
 
+namespace detail {
+auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double {
+    /** @brief Computes the scaled residual of the linear system Ax = b.
+     *
+     * The scaled residual is defined as:
+     * |Ax - b| / max(|A.diagonal() * x|)
+     * This is based on equations (14.33) and (14.34) from Moukallad et al. (2015).
+     *
+     * @param A The sparse matrix representing the linear system.
+     * @param x The solution vector.
+     * @param b The right-hand side vector.
+     * @return The scaled residual value.
+     */
+    auto ac_phic = A.diagonal().cwiseProduct(x);
+    auto res_scaled = ((A * x) - b).cwiseAbs() / (ac_phic.cwiseAbs().maxCoeff() + EPSILON);
+
+    return res_scaled.maxCoeff();
+}
+} // namespace detail
+
 IterationData::IterationData(std::size_t iteration,
                              double initial_residual,
                              double final_residual)
