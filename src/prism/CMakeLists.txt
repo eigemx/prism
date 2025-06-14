@@ -24,6 +24,7 @@ add_library(prism
     mesh/unv.cpp
     mesh/trie.cpp
     mesh/reorder.cpp
+    mesh/utilities.cpp
 
     scheme/nonortho.cpp
 

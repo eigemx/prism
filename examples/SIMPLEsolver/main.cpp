@@ -88,8 +88,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    auto U = field::Velocity("U", mesh, components);
+    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    // auto U = field::Velocity("U", mesh, components);
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
@@ -114,7 +114,6 @@ auto main(int argc, char* argv[]) -> int {
 
     auto nNonOrthCorrectiors = 4;
     for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
-        /*
         log::info("Outer iteration {}", nOuterIter);
 
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
@@ -124,7 +123,6 @@ auto main(int argc, char* argv[]) -> int {
             log::info("Solving x-momentum equations");
             U_solver.solve(uEqn, 5, 1e-9);
         }
-        */
 
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
@@ -157,13 +155,14 @@ auto main(int argc, char* argv[]) -> int {
 
         // Rhie-Chow interpolation for velocity face values
         log::info("Correcting faces velocities using Rhie-Chow interpolation");
-        auto U_rh = ops::rhieChowCorrect(U, D, P);
+        U = ops::rhieChowCorrect(U, D, P);
 
+        /*
         auto divU_rh = ops::div(U_rh);
         auto divU = ops::div(U);
         export_field_vtu(divU, "divU.vtu");
         export_field_vtu(divU_rh, "divU_rh.vtu");
-
+        */
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
         auto P_prime = field::Pressure("P", mesh, 0.0);
@@ -179,7 +178,7 @@ auto main(int argc, char* argv[]) -> int {
         using div_U = source::Divergence<source::SourceSign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                    div_U(U_rh)              // == - (∇.U)
+                                                    div_U(U)                 // == - (∇.U)
         );
         auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
@@ -190,13 +189,12 @@ auto main(int argc, char* argv[]) -> int {
         export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
         // update velocity fields
-        /*
         for (const auto& cell : mesh.cells()) {
             prism::Vector3d correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
             U.x()[cell.id()] += correction.x();
             U.y()[cell.id()] += correction.y();
         }
-        */
+
         P.values() = P.values().array() + (0.75 * P_prime.values().array());
 
         uEqn.zeroOutCoeffs();

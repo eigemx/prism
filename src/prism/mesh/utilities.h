@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 
 #include "cell.h"
 #include "face.h"
@@ -17,10 +16,7 @@ namespace prism::mesh {
  * @param cell Cell that the face belongs to.
  * @return Vector3d Area vector of the face.
  */
-auto inline outwardAreaVector(const Face& face, const Cell& cell) -> Vector3d {
-    bool is_neighbor = !face.isOwnedBy(cell.id());
-    return face.areaVector() * std::pow(-1., static_cast<int>(is_neighbor));
-}
+auto outwardAreaVector(const Face& face, const Cell& cell) -> Vector3d;
 
 /**
  * @brief Calculates the geometric weighting factor between two cells `c` and `n`
@@ -30,11 +26,5 @@ auto inline outwardAreaVector(const Face& face, const Cell& cell) -> Vector3d {
  * @param f Face that is shared by the two cells.
  * @return double Geometric weighting factor between the two cells.
  */
-auto inline geometricWeight(const Cell& c, const Cell& n, const Face& f) -> double {
-    auto gc = (n.center() - f.center()).norm() / (n.center() - c.center()).norm();
-    assert(gc > 0 && "geometricWeight() returned a negative weight factor");
-    assert(gc <= 1.0 && "geometricWeight() returned a weight factor higher than 1.0");
-    return gc;
-}
-
+auto geometricWeight(const Cell& c, const Cell& n, const Face& f) -> double;
 } // namespace prism::mesh
