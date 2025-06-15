@@ -4,7 +4,7 @@
 #include "prism/constants.h"
 #include "prism/types.h"
 
-namespace prism::nonortho {
+namespace prism::scheme::diffusion::nonortho {
 
 struct NonOrthoPair {
     Vector3d Ef, Tf;
@@ -37,4 +37,4 @@ class OrthogonalCorrector : public INonOrthoCorrector {
     auto decompose(const Vector3d& Sf, const Vector3d& e) const -> NonOrthoPair override;
 };
 
-} // namespace prism::nonortho
+} // namespace prism::scheme::diffusion::nonortho

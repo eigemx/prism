@@ -56,7 +56,7 @@ auto main(int argc, char* argv[]) -> int {
     auto T = Scalar("T", mesh, 300.0);
 
     // diffusion coefficient
-    auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * -1e-5);
+    auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
     auto eqn = eqn::Transport(diffusion::NonCorrected<Tensor, Scalar>(kappa, T));
 

@@ -48,7 +48,7 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     );
 
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    solver.solve(eqn, 100, 1e-20);
+    solver.solve(eqn, 10, 1e-20);
 
     VectorXd analytical_solution;
     analytical_solution.resize(T.mesh().cellCount());

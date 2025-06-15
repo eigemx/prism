@@ -6,6 +6,7 @@
 
 #include "prism/field/scalar.h"
 #include "prism/scheme/convection.h"
+#include "prism/scheme/nonortho.h"
 
 
 auto main(int argc, char* argv[]) -> int {
@@ -62,17 +63,24 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     using div = scheme::convection::SecondOrderUpwind<field::UniformScalar, field::Scalar>;
-    using laplacian = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
+    using laplacian =
+        scheme::diffusion::Corrected<field::UniformScalar,
+                                     scheme::diffusion::nonortho::OverRelaxedCorrector,
+                                     field::Scalar>;
 
     auto eqn = eqn::Transport(div(rho, U, T),     // ∇.(ρUT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    eqn.setUnderRelaxFactor(0.9);
+    // eqn.setUnderRelaxFactor(0.9);
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    solver.solve(eqn, 100, 1e-5);
+    auto nOrthogonalCorrectors = 5;
+
+    for (int i = 0; i < nOrthogonalCorrectors; ++i) {
+        solver.solve(eqn, 10, 1e-20);
+    }
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 

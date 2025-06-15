@@ -47,7 +47,9 @@ class IField {
     std::string _name;
 };
 
-// using IScalar = IField<double>;
+template <typename T>
+concept IFieldBased = std::derived_from<T, IField<typename T::ValueType>>;
+
 class IScalar : public IField<double> {
   public:
     IScalar(std::string name, const mesh::PMesh& mesh);
