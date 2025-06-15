@@ -116,13 +116,12 @@ auto main(int argc, char* argv[]) -> int {
     for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
         log::info("Outer iteration {}", nOuterIter);
 
-        for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
-            log::info("Solving y-momentum equations");
-            U_solver.solve(vEqn, 5, 1e-9);
+        log::info("Solving y-momentum equations");
+        U_solver.solve(vEqn, 5, 1e-9);
 
-            log::info("Solving x-momentum equations");
-            U_solver.solve(uEqn, 5, 1e-9);
-        }
+        log::info("Solving x-momentum equations");
+        U_solver.solve(uEqn, 5, 1e-9);
+
 
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
@@ -174,7 +173,10 @@ auto main(int argc, char* argv[]) -> int {
 
         // pressure correction equation (density is dropped from both sides of the equation due to
         // incompressibility assumption)
-        using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
+        using laplacian_p =
+            diffusion::Corrected<field::Tensor,
+                                 scheme::diffusion::nonortho::OverRelaxedCorrector,
+                                 field::Pressure>;
         using div_U = source::Divergence<source::SourceSign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "prism/scheme/nonortho.h"
+
 using namespace prism;
 using namespace prism::scheme;
 
@@ -63,12 +65,14 @@ auto main(int argc, char* argv[]) -> int {
 
     auto c = field::Tensor("c", mesh, Matrix3d::Identity());
 
-    using laplacian = diffusion::NonCorrected<field::Tensor, field::Scalar>;
+    using laplacian = diffusion::Corrected<field::Tensor,
+                                           scheme::diffusion::nonortho::OverRelaxedCorrector,
+                                           field::Scalar>;
     auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(
-        laplacian(c, P),                                                            // ∇.∇p
-        source::ConstantScalar<source::SourceSign::Negative, field::Scalar>(source) // = -S
+        laplacian(c, P),                                                            // -∇.∇p
+        source::ConstantScalar<source::SourceSign::Positive, field::Scalar>(source) // = S
     );
 
     // solve

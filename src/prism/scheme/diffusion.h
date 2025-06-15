@@ -14,7 +14,6 @@
 #include "scheme.h"
 
 namespace prism::scheme::diffusion {
-
 // Basic base class for all diffusion schemes, without templating clutter.
 class IDiffusion {};
 
@@ -140,9 +139,9 @@ void NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
 
     const Vector3d& Sf = face.areaVector();
 
-    // The following is based on equation (15.93) from Moukallad et al. (2015).
+    // The following is based on equation (8.93) from Moukallad et al. (2015).
     // this handles the general case when kappa is a field::Tensor.
-    Vector3d Sf_prime = this->kappa().valueAtFace(face) * Sf;
+    Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
 
     // geometric diffusion coefficient
     const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
@@ -155,12 +154,12 @@ void NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
     // since we are applying the discretized equation per face basis, not per cell basis,
     // we need to insert the coefficients for both owner and neighbor cells when roles are
     // reversed.
-    this->insert(owner_id, owner_id, -g_diff);
-    this->insert(neighbor_id, neighbor_id, -g_diff);
+    this->insert(owner_id, owner_id, g_diff);
+    this->insert(neighbor_id, neighbor_id, g_diff);
 
     // off-diagonal coefficients
-    this->insert(owner_id, neighbor_id, g_diff);
-    this->insert(neighbor_id, owner_id, g_diff);
+    this->insert(owner_id, neighbor_id, -g_diff);
+    this->insert(neighbor_id, owner_id, -g_diff);
 }
 
 //
@@ -201,13 +200,13 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::F
     const Vector3d e = dCF / dCF_norm;
 
     const auto Sf = mesh::outwardAreaVector(face, owner);
-    const Vector3d Sf_prime = this->kappa().valueAtFace(face) * Sf;
+    const Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
     const double gdiff = Ef_prime.norm() / (dCF_norm + EPSILON);
 
-    // gdiff * (Φ_C - Φ_N)
+    /// g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
     this->insert(owner_id, owner_id, gdiff);
     this->insert(neighbor_id, neighbor_id, gdiff);
@@ -216,12 +215,12 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::F
     this->insert(owner_id, neighbor_id, -gdiff);
     this->insert(neighbor_id, owner_id, -gdiff);
 
+    // update right hand side
     // cross-diffusion term is added to the right hand side of the equation
     // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
     const Vector3d grad_f = this->field().gradAtFace(face);
-
-    // update right hand side
     this->rhs(owner_id) += Tf_prime.dot(grad_f);
     this->rhs(neighbor_id) += -Tf_prime.dot(grad_f);
 }
+
 } // namespace prism::scheme::diffusion

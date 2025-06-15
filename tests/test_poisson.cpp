@@ -49,8 +49,9 @@ TEST_CASE("test poisson equation", "[poisson]") {
 
     auto c = field::Tensor("c", mesh, Matrix3d::Identity());
 
-    using laplacian =
-        diffusion::Corrected<field::Tensor, nonortho::OverRelaxedCorrector, field::Scalar>;
+    using laplacian = diffusion::Corrected<field::Tensor,
+                                           scheme::diffusion::nonortho::OverRelaxedCorrector,
+                                           field::Scalar>;
     auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(

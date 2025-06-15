@@ -4,9 +4,31 @@
 
 #include "boundary.h"
 #include "prism/constants.h"
+#include "prism/field/ifield.h"
+#include "prism/field/tensor.h"
 
 // Forward declarations for diffusion scheme classes defined in diffusion.h
 namespace prism::scheme::diffusion {
+
+namespace detail {
+
+// The following functions are used to get the value of a field at a face or cell.
+// They are specialized for field::Tensor to return a transposed value of the tensor value at the
+// face or cell, to follow equation (8.93) from Moukallad et al. (2015). And for other field
+// types, they return the value directly.
+template <field::IFieldBased Field>
+auto valueAtFace(const Field& field, const mesh::Face& face) -> Field::ValueType;
+
+template <field::IFieldBased Field>
+auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType;
+
+template <>
+auto valueAtFace(const field::Tensor& field, const mesh::Face& face) -> prism::Matrix3d;
+
+template <>
+auto valueAtCell(const field::Tensor& field, const mesh::Cell& cell) -> prism::Matrix3d;
+} // namespace detail
+
 class IDiffusion;
 
 template <typename T>
@@ -61,6 +83,23 @@ class ZeroGradient<Scheme> : public ISchemeBoundaryHandler<Scheme> {
 };
 
 //
+// diffusion::NonCorrected default boundary handlers
+//
+template <diffusion::INonCorrectedBased Scheme>
+class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
+    auto inline name() const -> std::string override { return "fixed"; }
+};
+
+template <diffusion::INonCorrectedBased Scheme>
+class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
+  public:
+    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
+    auto inline name() const -> std::string override { return "no-slip"; }
+};
+
+//
 // diffusion::Corrected default boundary handlers
 //
 // Boundary handler for symmetry boundary condition, or zero gradient boundary condition. This is
@@ -83,24 +122,6 @@ class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
 };
 
 template <scheme::diffusion::ICorrectedBased Scheme>
-class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
-    auto inline name() const -> std::string override { return "no-slip"; }
-};
-
-
-//
-// diffusion::NonCorrected default boundary handlers
-//
-template <diffusion::INonCorrectedBased Scheme>
-class Fixed<Scheme> : public ISchemeBoundaryHandler<Scheme> {
-  public:
-    void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
-    auto inline name() const -> std::string override { return "fixed"; }
-};
-
-template <diffusion::INonCorrectedBased Scheme>
 class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
   public:
     void apply(Scheme& scheme, const mesh::BoundaryPatch& patch) override;
@@ -143,55 +164,6 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
     }
 }
 
-template <scheme::diffusion::ICorrectedBased Scheme>
-void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    /** @brief Applies boundary discretized diffusion equation (with non-orthogonal correction)
-     * to the cell, when the current face is a boundary face, and the boundary condition is a
-     * fixed value boundary condition.
-     *
-     * @param scheme The diffusion scheme.
-     * @param patch The boundary patch containing the faces.
-     */
-    const auto phi = scheme.field();
-    const auto& mesh = phi.mesh();
-    const auto& corrector = scheme.corrector();
-    const auto& kappa = scheme.kappa();
-
-    for (const auto& face_id : patch.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
-        const mesh::Cell& owner = mesh.cell(face.owner());
-        const std::size_t owner_id = owner.id();
-
-        // get the fixed phi variable associated with the face
-        const double phi_wall = phi.valueAtFace(face);
-
-        // vector joining the centers of the cell and the face
-        const Vector3d d_Cf = face.center() - owner.center();
-        const double d_Cf_norm = d_Cf.norm();
-        const Vector3d e = d_Cf / d_Cf_norm;
-
-        const Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
-        const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
-        const double gdiff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
-
-        scheme.insert(owner_id, owner_id, gdiff);
-        scheme.rhs(owner_id) += (gdiff * phi_wall) + Tf_prime.dot(phi.gradAtFace(face));
-    }
-}
-
-template <scheme::diffusion::ICorrectedBased Scheme>
-void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
-    /** @brief Applies boundary discretized diffusion equation to the cell, when the current face
-     * is a boundary face, and the boundary condition is a no-slip boundary condition. no-slip
-     * boundary condition in diffusion scheme is a special case of the fixed boundary condition.
-     *
-     * @param scheme The diffusion scheme.
-     * @param patch The boundary patch containing the faces.
-     */
-    Fixed<Scheme> fixed;
-    return fixed.apply(scheme, patch);
-}
-
 template <scheme::diffusion::INonCorrectedBased Scheme>
 void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     /** @brief Applies boundary discretized diffusion equation (without non-orthogonal correction
@@ -222,8 +194,8 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
 
         const double g_diff = Sf_prime.norm() / (d_Cf_norm + EPSILON);
 
-        scheme.insert(cell_id, cell_id, -g_diff);
-        scheme.rhs(cell_id) += -g_diff * phi_wall;
+        scheme.insert(cell_id, cell_id, g_diff);
+        scheme.rhs(cell_id) += g_diff * phi_wall;
     }
 }
 
@@ -239,4 +211,76 @@ void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     Fixed<Scheme> fixed;
     return fixed.apply(scheme, patch);
 }
+
+template <scheme::diffusion::ICorrectedBased Scheme>
+void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation (with non-orthogonal correction)
+     * to the cell, when the current face is a boundary face, and the boundary condition is a
+     * fixed value boundary condition.
+     *
+     * @param scheme The diffusion scheme.
+     * @param patch The boundary patch containing the faces.
+     */
+    const auto phi = scheme.field();
+    const auto& mesh = phi.mesh();
+    const auto& corrector = scheme.corrector();
+    const auto& kappa = scheme.kappa();
+
+    for (const auto& face_id : patch.facesIds()) {
+        const mesh::Face& face = mesh.face(face_id);
+        const mesh::Cell& owner = mesh.cell(face.owner());
+        const std::size_t owner_id = owner.id();
+
+        // get the fixed phi variable associated with the face
+        const double phi_wall = phi.valueAtFace(face);
+
+        // vector joining the centers of the cell and the face
+        const Vector3d d_Cf = face.center() - owner.center();
+        const double d_Cf_norm = d_Cf.norm();
+        const Vector3d e = d_Cf / d_Cf_norm;
+
+        // const Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
+        Vector3d Sf_prime = diffusion::detail::valueAtCell(kappa, owner) * face.areaVector();
+        const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
+        const double gdiff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
+
+        scheme.insert(owner_id, owner_id, gdiff);
+        scheme.rhs(owner_id) += (gdiff * phi_wall) + Tf_prime.dot(phi.gradAtFace(face));
+    }
+}
+
+template <scheme::diffusion::ICorrectedBased Scheme>
+void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
+    /** @brief Applies boundary discretized diffusion equation to the cell, when the current face
+     * is a boundary face, and the boundary condition is a no-slip boundary condition. no-slip
+     * boundary condition in diffusion scheme is a special case of the fixed boundary condition.
+     *
+     * @param scheme The diffusion scheme.
+     * @param patch The boundary patch containing the faces.
+     */
+    Fixed<Scheme> fixed;
+    return fixed.apply(scheme, patch);
+}
 } // namespace prism::scheme::boundary
+
+namespace prism::scheme::diffusion::detail {
+template <field::IFieldBased Field>
+auto valueAtFace(const Field& field, const mesh::Face& face) -> Field::ValueType {
+    return field.valueAtFace(face.id());
+}
+
+template <field::IFieldBased Field>
+auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType {
+    return field.valueAtCell(cell.id());
+}
+
+template <>
+auto inline valueAtFace(const field::Tensor& field, const mesh::Face& face) -> prism::Matrix3d {
+    return field.valueAtFace(face.id()).transpose();
+}
+
+template <>
+auto inline valueAtCell(const field::Tensor& field, const mesh::Cell& cell) -> prism::Matrix3d {
+    return field.valueAtCell(cell.id()).transpose();
+}
+} // namespace prism::scheme::diffusion::detail
