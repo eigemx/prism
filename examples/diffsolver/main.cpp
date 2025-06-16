@@ -5,6 +5,8 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+#include "prism/scheme/nonortho.h"
+
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
@@ -36,7 +38,7 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::field;
 
-    log::setLevel(log::Level::Info);
+    log::setLevel(log::Level::Debug);
 
     log::info("diffsolver - A steady state diffusion equation solver");
 
@@ -58,13 +60,15 @@ auto main(int argc, char* argv[]) -> int {
     // diffusion coefficient
     auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
-    auto eqn = eqn::Transport(diffusion::NonCorrected<Tensor, Scalar>(kappa, T));
+    auto eqn = eqn::Transport(
+        diffusion::Corrected<Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector, Scalar>(
+            kappa, T));
 
     eqn.setUnderRelaxFactor(0.95);
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    auto nOrthoCorrectors = 6;
+    auto nOrthoCorrectors = 5;
 
     for (int i = 0; i < nOrthoCorrectors; i++) {
         solver.solve(eqn, 10, 1e-20);

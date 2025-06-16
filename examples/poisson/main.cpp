@@ -30,7 +30,7 @@ auto l2NormRelative(const Vector3d& x, const Vector3d& x_ref) -> double {
 }
 
 auto main(int argc, char* argv[]) -> int {
-    log::setLevel(log::Level::Info);
+    log::setLevel(log::Level::Debug);
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
@@ -77,7 +77,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nNonOrthogonalCorrectors = 30;
+    auto nNonOrthogonalCorrectors = 5;
 
     for (int i = 0; i < nNonOrthogonalCorrectors; ++i) {
         solver.solve(eqn, 15, 1e-20);
