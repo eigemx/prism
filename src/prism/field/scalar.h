@@ -421,11 +421,19 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
     auto grad_scheme_name = it->gradScheme().value();
 
     if (grad_scheme_name == "green-gauss" || grad_scheme_name == "greenGauss") {
+        log::debug(
+            "GeneralScalar::setGradScheme(): setting the gradient scheme to Green-Gauss for "
+            "field `{}`",
+            this->name());
         _grad_scheme = std::make_shared<gradient::GreenGauss>(this);
         return;
     }
 
     if (grad_scheme_name == "least-squares" || grad_scheme_name == "leastSquares") {
+        log::debug(
+            "GeneralScalar::setGradScheme(): setting the gradient scheme to Least-Squares for "
+            "field `{}`",
+            this->name());
         _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
         return;
     }

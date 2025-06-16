@@ -2,7 +2,9 @@
     "fields": [
         {
             "name": "P",
-            "type": "pressure"
+            "type": "pressure",
+            "gradScheme": "greenGauss"
+
         },
         {
             "name": "S",
