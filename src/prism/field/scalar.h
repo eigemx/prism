@@ -78,7 +78,7 @@ class GeneralScalar
     auto operator=(GeneralScalar&&) -> GeneralScalar& = default;
     ~GeneralScalar() override = default;
 
-    // TODO: check that _data is not null before returning, and maybe wrap it in an optional type
+    // TODO: check that _data is not null before returning
     auto inline values() const -> const VectorXd& { return *_data; }
     auto inline values() -> VectorXd& { return *_data; }
 
