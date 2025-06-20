@@ -224,10 +224,9 @@ MeshBoundary::MeshBoundary(const std::filesystem::path& path) {
     auto file = std::ifstream(path);
 
     if (!file) {
-        throw std::runtime_error(
-            fmt::format("prism::mesh::readBoundaryFile(): Failed to open "
-                        "boundary conditions file `{}`",
-                        path.string()));
+        throw std::runtime_error(fmt::format(
+            "prism::mesh::readBoundaryFile(): Failed to open boundary conditions file `{}`",
+            path.string()));
     }
 
     std::string json_data = fileToString(path);
@@ -245,8 +244,7 @@ MeshBoundary::MeshBoundary(const std::filesystem::path& path) {
 
     if (!containsFields(doc) || !areFieldsAnArray(doc)) {
         throw std::runtime_error(
-            fmt::format("prism::mesh::readBoundaryFile(): Couldn't find "
-                        "definition for fields in "
+            fmt::format("prism::mesh::readBoundaryFile(): Couldn't find definition for fields in "
                         "boundary conditions file `{}`",
                         path.string()));
     }
@@ -382,12 +380,9 @@ auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double
     const auto& vec_value = getVectorBoundaryCondition(name.substr(0, name.size() - 2));
 
     switch (name.back()) {
-        case 'x':
-            return vec_value[0];
-        case 'y':
-            return vec_value[1];
-        case 'z':
-            return vec_value[2];
+        case 'x': return vec_value[0];
+        case 'y': return vec_value[1];
+        case 'z': return vec_value[2];
         default: {
             throw std::runtime_error(
                 "prism::mesh::BoundaryPatch::getScalarBCSubfield() was given a field with a "

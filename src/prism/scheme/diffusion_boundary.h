@@ -7,7 +7,6 @@
 #include "prism/field/ifield.h"
 #include "prism/field/tensor.h"
 
-// Forward declarations for diffusion scheme classes defined in diffusion.h
 namespace prism::scheme::diffusion {
 
 namespace detail {
@@ -23,12 +22,13 @@ template <field::IFieldBased Field>
 auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType;
 
 template <>
-auto valueAtFace(const field::Tensor& field, const mesh::Face& face) -> prism::Matrix3d;
+auto valueAtFace(const field::Tensor& field, const mesh::Face& face) -> field::Tensor::ValueType;
 
 template <>
-auto valueAtCell(const field::Tensor& field, const mesh::Cell& cell) -> prism::Matrix3d;
+auto valueAtCell(const field::Tensor& field, const mesh::Cell& cell) -> field::Tensor::ValueType;
 } // namespace detail
 
+// Forward declarations for diffusion scheme classes defined in diffusion.h
 class IDiffusion;
 
 template <typename T>
@@ -180,9 +180,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh->face(face_id);
         const mesh::Cell& owner = mesh->cell(face.owner());
-        // get the fixed phi variable associated with the face
         const double phi_wall = phi.valueAtFace(face);
-
         const std::size_t cell_id = owner.id();
 
         // vector joining the centers of the cell and the face
@@ -191,7 +189,6 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const Vector3d e = d_Cf / d_Cf_norm;
 
         Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
-
         const double g_diff = Sf_prime.norm() / (d_Cf_norm + EPSILON);
 
         scheme.insert(cell_id, cell_id, g_diff);
@@ -275,12 +272,14 @@ auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType
 }
 
 template <>
-auto inline valueAtFace(const field::Tensor& field, const mesh::Face& face) -> prism::Matrix3d {
+auto inline valueAtFace(const field::Tensor& field,
+                        const mesh::Face& face) -> field::Tensor::ValueType {
     return field.valueAtFace(face.id()).transpose();
 }
 
 template <>
-auto inline valueAtCell(const field::Tensor& field, const mesh::Cell& cell) -> prism::Matrix3d {
+auto inline valueAtCell(const field::Tensor& field,
+                        const mesh::Cell& cell) -> field::Tensor::ValueType {
     return field.valueAtCell(cell.id()).transpose();
 }
 } // namespace prism::scheme::diffusion::detail

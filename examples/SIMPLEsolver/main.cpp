@@ -65,7 +65,7 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
 
-    log::setLevel(log::Level::Debug);
+    log::setLevel(log::Level::Info);
     if (argc < 2) {
         fmt::println("usage: {} [mesh-file]", argv[1]); // NOLINT
         return 1;
@@ -91,8 +91,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    auto U = field::Velocity("U", mesh, components);
+    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    // auto U = field::Velocity("U", mesh, components);
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
@@ -117,7 +117,7 @@ auto main(int argc, char* argv[]) -> int {
 
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
-    auto nNonOrthCorrectiors = 4;
+    auto nNonOrthCorrectiors = 3;
     for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
         rhoU = rho * U; // update the rhoU field at every outer iteration
         log::info("Outer iteration {}", nOuterIter);

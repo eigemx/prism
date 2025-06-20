@@ -202,11 +202,8 @@ auto Upwind<ConvectiveField, Field>::interpolate(double m_dot,
                                                  const mesh::Cell& neighbor, // NOLINT
                                                  const mesh::Face& face)     // NOLINT
     -> detail::CoeffsTriplet {
-    // in case `cell` is the upstream cell
     const double a_C = std::max(m_dot, 0.0);
-    // in case 'neighbor' is the upstream cell
     const double a_N = -std::max(-m_dot, 0.0);
-
     return {a_C, a_N, 0.0};
 }
 
