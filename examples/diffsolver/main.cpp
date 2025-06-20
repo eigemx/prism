@@ -7,6 +7,9 @@
 
 #include "prism/scheme/nonortho.h"
 
+using namespace prism;
+using namespace prism::scheme;
+using namespace prism::field;
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
@@ -25,7 +28,7 @@ auto readFields(const std::filesystem::path& fields_file) -> std::vector<double>
 }
 
 auto jsonToPrismField(const fs::path& fields_file,
-                      const prism::mesh::PMesh& mesh) -> prism::field::Scalar {
+                      const SharedPtr<mesh::PMesh>& mesh) -> prism::field::Scalar {
     auto doc = fileToJson(fields_file);
     auto temp = doc["T"].get<std::vector<double>>();
     auto temp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(temp.data(), temp.size());
@@ -34,10 +37,6 @@ auto jsonToPrismField(const fs::path& fields_file,
 }
 
 auto main(int argc, char* argv[]) -> int {
-    using namespace prism;
-    using namespace prism::scheme;
-    using namespace prism::field;
-
     log::setLevel(log::Level::Debug);
 
     log::info("diffsolver - A steady state diffusion equation solver");
@@ -64,7 +63,7 @@ auto main(int argc, char* argv[]) -> int {
         diffusion::Corrected<Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector, Scalar>(
             kappa, T));
 
-    eqn.setUnderRelaxFactor(0.95);
+    // eqn.setUnderRelaxFactor(0.95);
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();

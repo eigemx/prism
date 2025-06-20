@@ -28,6 +28,8 @@ class IterationData {
 };
 
 /// TODO: ISolver should not be a template, check if we can use eqn::Transport<IScalar> instead
+/// TODO: each Transport object should have its solve() function, and solvers should be created
+/// from there.
 template <typename Field>
 class ISolver {
   public:
@@ -65,7 +67,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     std::size_t iter = 0;
 
     eqn.updateCoeffs();
-    // eqn.relax();
+    eqn.relax();
 
     for (; iter < n_iter; iter++) {
         if (iter == 0) {
