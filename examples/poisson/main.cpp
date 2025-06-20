@@ -12,9 +12,9 @@ using namespace prism::scheme;
 
 auto solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
-    sol.resize(mesh.cellCount());
+    sol.resize(mesh->cellCount());
 
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         double x = cell.center().x();
         double y = cell.center().y();
         double sol_cell = std::sin(prism::PI * x);
@@ -52,9 +52,9 @@ auto main(int argc, char* argv[]) -> int {
     // create source term
     /// TODO: use a more generic way to create source terms using mapped scalar fields
     VectorXd src_values;
-    src_values.resize(mesh.cellCount());
+    src_values.resize(mesh->cellCount());
 
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         double x = cell.center().x();
         double y = cell.center().y();
         double src = 2 * std::pow(prism::PI, 2);

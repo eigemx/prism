@@ -12,7 +12,7 @@
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
-    log::setLevel(log::Level::Debug);
+    log::setLevel(log::Level::Info);
 
     fmt::println("convsolver - A steady state temperature advection solver");
 
@@ -74,11 +74,11 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    eqn.setUnderRelaxFactor(0.9);
+    eqn.setUnderRelaxFactor(1.0);
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nOrthogonalCorrectors = 5;
+    auto nOrthogonalCorrectors = 40;
 
     for (int i = 0; i < nOrthogonalCorrectors; ++i) {
         solver.solve(eqn, 10, 1e-20);
