@@ -5,11 +5,10 @@
 #include "boundary.h"
 #include "convection_boundary.h"
 #include "prism/boundary.h"
-#include "prism/field/scalar.h"
+#include "prism/field/ifield.h"
 #include "prism/field/velocity.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/utilities.h"
-#include "prism/operations/operations.h"
 #include "prism/types.h"
 #include "scheme.h"
 
@@ -24,22 +23,24 @@ struct CoeffsTriplet {
 };
 } // namespace detail
 
+// Basic base class for all convection schemes, without templating clutter.
+class IConvection {};
+
 // Finite volume scheme for the discretization of the convection term
-template <typename Rho = field::UniformScalar, typename Field = field::Scalar>
-class IConvection : public IFullScheme<Field>,
-                    public prism::boundary::BHManagerProvider<
-                        boundary::ISchemeBoundaryHandler<IConvection<Rho, Field>>> {
+template <field::IVectorBased ConvectiveField, typename Field>
+class IAppliedConvection
+    : public IConvection,
+      public IFullScheme<Field>,
+      public prism::boundary::BHManagerProvider<
+          boundary::ISchemeBoundaryHandler<IAppliedConvection<ConvectiveField, Field>>> {
   public:
-    IConvection(Rho rho, field::Velocity U, Field phi);
+    IAppliedConvection(ConvectiveField U, Field phi);
 
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return true; }
 
     auto inline field() -> Field override { return _phi; }
-    auto inline U() -> const field::Velocity& { return _U; }
-    auto inline rho() -> const Rho& { return _rho; }
-
-    using RhoType = Rho;
+    auto inline U() -> const ConvectiveField& { return _U; }
 
   private:
     virtual auto interpolate(double m_dot,
@@ -50,16 +51,23 @@ class IConvection : public IFullScheme<Field>,
     void applyInterior(const mesh::Face& face);
     void applyBoundary();
 
-    field::Velocity _U;
+    using ConvectiveFieldType = ConvectiveField;
+
+    ConvectiveField _U;
     Field _phi;
-    Rho _rho;
 };
+
+template <typename T>
+concept IAppliedConvectionBased =
+    std::derived_from<T,
+                      IAppliedConvection<typename T::ConvectiveFieldType, typename T::FieldType>>;
 
 // Central difference scheme
-template <typename Rho, typename F>
-class CentralDifference : public IConvection<Rho, F> {
+template <field::IVectorBased ConvectiveField, typename Field>
+class CentralDifference : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    CentralDifference(Rho rho, field::Velocity U, F phi) : IConvection<Rho, F>(rho, U, phi) {}
+    CentralDifference(ConvectiveField U, Field phi)
+        : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -67,13 +75,12 @@ class CentralDifference : public IConvection<Rho, F> {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
-
 
 // Upwind scheme
-template <typename Rho, typename F>
-class Upwind : public IConvection<Rho, F> {
+template <field::IVectorBased ConvectiveField, typename Field>
+class Upwind : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    Upwind(Rho rho, field::Velocity U, F phi) : IConvection<Rho, F>(rho, U, phi) {}
+    Upwind(field::Velocity U, Field phi) : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -81,13 +88,13 @@ class Upwind : public IConvection<Rho, F> {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
-
 
 // Second order upwind (linear upwind) scheme
-template <typename Rho, typename F>
-class SecondOrderUpwind : public IConvection<Rho, F> {
+template <field::IVectorBased ConvectiveField, typename Field>
+class SecondOrderUpwind : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    SecondOrderUpwind(Rho rho, field::Velocity U, F phi) : IConvection<Rho, F>(rho, U, phi) {}
+    SecondOrderUpwind(field::Velocity U, Field phi)
+        : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -95,13 +102,12 @@ class SecondOrderUpwind : public IConvection<Rho, F> {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
-
 
 // QUICK scheme
-template <typename Rho, typename F>
-class QUICK : public IConvection<Rho, F> {
+template <field::IVectorBased ConvectiveField, typename Field>
+class QUICK : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    QUICK(Rho rho, field::Velocity U, F phi) : IConvection<Rho, F>(rho, U, phi) {}
+    QUICK(ConvectiveField U, Field phi) : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -110,15 +116,11 @@ class QUICK : public IConvection<Rho, F> {
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
 };
 
-template <typename Rho, typename Field>
-IConvection<Rho, Field>::IConvection(Rho rho, field::Velocity U, Field phi)
-    : _rho(std::move(rho)),
-      _U(std::move(U)),
-      _phi(std::move(phi)),
-      IFullScheme<Field>(phi.mesh().cellCount()) {
+template <field::IVectorBased ConvectiveField, typename Field>
+IAppliedConvection<ConvectiveField, Field>::IAppliedConvection(ConvectiveField U, Field phi)
+    : _U(std::move(U)), _phi(std::move(phi)), IFullScheme<Field>(phi.mesh()->cellCount()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
-    // this->boundaryHandlersManager().template addHandler<boundary::Empty<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
@@ -126,12 +128,11 @@ IConvection<Rho, Field>::IConvection(Rho rho, field::Velocity U, Field phi)
     this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
 }
 
-
-template <typename Rho, typename Field>
-void IConvection<Rho, Field>::apply() {
+template <field::IVectorBased ConvectiveField, typename Field>
+void IAppliedConvection<ConvectiveField, Field>::apply() {
     applyBoundary();
 
-    const auto& interior_faces = this->field().mesh().interiorFaces();
+    const auto& interior_faces = this->field().mesh()->interiorFaces();
     std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
         applyInterior(face);
     });
@@ -139,19 +140,18 @@ void IConvection<Rho, Field>::apply() {
     this->collect();
 }
 
-template <typename Rho, typename Field>
-void IConvection<Rho, Field>::applyInterior(const mesh::Face& face) {
+template <field::IVectorBased ConvectiveField, typename Field>
+void IAppliedConvection<ConvectiveField, Field>::applyInterior(const mesh::Face& face) {
     const auto& mesh = _phi.mesh();
-    const mesh::Cell& owner = mesh.cell(face.owner());
-    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
+    const mesh::Cell& owner = mesh->cell(face.owner());
+    const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
 
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
 
     const Vector3d& S_f = mesh::outwardAreaVector(face, owner);
     const Vector3d U_f = _U.valueAtFace(face);
-    const double rho_f = _rho.valueAtFace(face);
-    const double m_dot_f = ops::faceFlowRate(rho_f, U_f, S_f);
+    const double m_dot_f = U_f.dot(S_f);
 
     auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
     auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
@@ -166,16 +166,17 @@ void IConvection<Rho, Field>::applyInterior(const mesh::Face& face) {
     this->rhs(neighbor_id) += s;
 }
 
-template <typename Rho, typename Field>
-void IConvection<Rho, Field>::applyBoundary() {
+template <field::IVectorBased ConvectiveField, typename Field>
+void IAppliedConvection<ConvectiveField, Field>::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::convection::IConvection", *this);
 }
 
-template <typename Rho, typename F>
-auto CentralDifference<Rho, F>::interpolate(double m_dot,
-                                            const mesh::Cell& cell,
-                                            const mesh::Cell& neighbor,
-                                            const mesh::Face& face) -> detail::CoeffsTriplet {
+template <field::IVectorBased ConvectiveField, typename Field>
+auto CentralDifference<ConvectiveField, Field>::interpolate(double m_dot,
+                                                            const mesh::Cell& cell,
+                                                            const mesh::Cell& neighbor,
+                                                            const mesh::Face& face)
+    -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->field().gradAtFace(face);
     const Vector3d d_Cf = face.center() - cell.center();
@@ -190,11 +191,11 @@ auto CentralDifference<Rho, F>::interpolate(double m_dot,
     return {a_C, a_N, b};
 }
 
-template <typename Rho, typename F>
-auto Upwind<Rho, F>::interpolate(double m_dot,
-                                 const mesh::Cell& cell,     // NOLINT
-                                 const mesh::Cell& neighbor, // NOLINT
-                                 const mesh::Face& face)     // NOLINT
+template <field::IVectorBased ConvectiveField, typename Field>
+auto Upwind<ConvectiveField, Field>::interpolate(double m_dot,
+                                                 const mesh::Cell& cell,     // NOLINT
+                                                 const mesh::Cell& neighbor, // NOLINT
+                                                 const mesh::Face& face)     // NOLINT
     -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const double a_C = std::max(m_dot, 0.0);
@@ -204,11 +205,12 @@ auto Upwind<Rho, F>::interpolate(double m_dot,
     return {a_C, a_N, 0.0};
 }
 
-template <typename Rho, typename F>
-auto SecondOrderUpwind<Rho, F>::interpolate(double m_dot,
-                                            const mesh::Cell& cell,
-                                            const mesh::Cell& neighbor,
-                                            const mesh::Face& face) -> detail::CoeffsTriplet {
+template <field::IVectorBased ConvectiveField, typename Field>
+auto SecondOrderUpwind<ConvectiveField, Field>::interpolate(double m_dot,
+                                                            const mesh::Cell& cell,
+                                                            const mesh::Cell& neighbor,
+                                                            const mesh::Face& face)
+    -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->field().gradAtFace(face);
     const Vector3d cell_grad_phi = this->field().gradAtCell(cell);
@@ -232,11 +234,11 @@ auto SecondOrderUpwind<Rho, F>::interpolate(double m_dot,
     return {a_C, a_N, b1 + b2};
 }
 
-template <typename Rho, typename F>
-auto QUICK<Rho, F>::interpolate(double m_dot,
-                                const mesh::Cell& cell,
-                                const mesh::Cell& neighbor,
-                                const mesh::Face& face) -> detail::CoeffsTriplet {
+template <field::IVectorBased ConvectiveField, typename Field>
+auto QUICK<ConvectiveField, Field>::interpolate(double m_dot,
+                                                const mesh::Cell& cell,
+                                                const mesh::Cell& neighbor,
+                                                const mesh::Face& face) -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->field().gradAtFace(face);
     const Vector3d cell_grad_phi = this->field().gradAtCell(cell);

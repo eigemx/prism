@@ -7,6 +7,7 @@
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
+#include "prism/types.h"
 
 namespace prism::gradient {
 class IGradient;
@@ -15,13 +16,17 @@ namespace prism::field {
 
 namespace detail {
 void checkFieldName(const std::string& name);
-void checkMesh(const mesh::PMesh& mesh);
+void checkMesh(const SharedPtr<mesh::PMesh>& mesh);
 } // namespace detail
 
 template <typename CellValueType>
 class IField {
   public:
-    IField(std::string name, const mesh::PMesh& mesh);
+    /// TODO: _mesh takes the PMesh pointer, not the PMesh reference, because
+    // PMesh is not copyable. This is a workaround, but it is not ideal
+    // because it can lead to dangling pointers if the PMesh is destroyed.
+    // Consider using a reference wrapper or a shared pointer instead.
+    IField(std::string name, const SharedPtr<mesh::PMesh>& mesh);
     IField(const IField& other) = default;
     IField(IField&& other) noexcept = default;
     auto operator=(const IField& other) -> IField& = default;
@@ -31,7 +36,7 @@ class IField {
     auto inline name() const -> const std::string& { return _name; }
     auto inline name() -> std::string& { return _name; }
 
-    auto inline mesh() const -> const mesh::PMesh& { return *_mesh; }
+    auto inline mesh() const -> const SharedPtr<mesh::PMesh>& { return _mesh; }
 
     virtual auto hasFaceValues() const -> bool { return false; }
     virtual auto valueAtCell(std::size_t cell_id) const -> CellValueType = 0;
@@ -43,7 +48,7 @@ class IField {
     using ValueType = CellValueType;
 
   private:
-    const mesh::PMesh* _mesh = nullptr;
+    SharedPtr<mesh::PMesh> _mesh = nullptr;
     std::string _name;
 };
 
@@ -52,7 +57,7 @@ concept IFieldBased = std::derived_from<T, IField<typename T::ValueType>>;
 
 class IScalar : public IField<double> {
   public:
-    IScalar(std::string name, const mesh::PMesh& mesh);
+    IScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh);
 
     virtual auto gradAtFace(const mesh::Face& face) const -> Vector3d = 0;
     virtual auto gradAtCell(const mesh::Cell& cell) const -> Vector3d = 0;
@@ -77,8 +82,8 @@ concept IVectorBased = std::derived_from<T, IVector>;
 
 
 template <typename CellValueType>
-IField<CellValueType>::IField(std::string name, const mesh::PMesh& mesh)
-    : _name(std::move(name)), _mesh(&mesh) {
+IField<CellValueType>::IField(std::string name, const SharedPtr<mesh::PMesh>& mesh)
+    : _name(std::move(name)), _mesh(mesh) {
     detail::checkFieldName(_name);
     detail::checkMesh(mesh);
 }

@@ -34,7 +34,7 @@ class CuthillMckee {
     };
 
 
-    // TODO: use PMeshPtr instead of PMesh&
+    /// TODO: use PMeshPtr instead of PMesh&
     PMesh& _mesh;
     std::vector<Node> _nodes;
 };

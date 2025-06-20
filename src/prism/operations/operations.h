@@ -51,7 +51,7 @@ auto inline coordToIndex(Coord coord) -> std::uint8_t {
 }
 
 template <typename Vector>
-auto fluxSumAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double;
+auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double;
 } // namespace detail
 
 template <typename Vector>
@@ -61,13 +61,13 @@ auto div(const Vector& U) -> field::Scalar {
     // (∇.U) V = Σ U.S
     // ∇.U = (Σ U.S)/V = ops::div(U)
     std::string name = fmt::format("div({})", U.name());
-    const mesh::PMesh& mesh = U.mesh();
+    const auto& mesh = U.mesh();
 
     VectorXd cell_data;
-    cell_data.resize(mesh.cellCount());
+    cell_data.resize(mesh->cellCount());
 
-    for (const auto& cell : mesh.cells()) {
-        cell_data[cell.id()] = detail::fluxSumAtCell(mesh, cell, U) / cell.volume();
+    for (const auto& cell : mesh->cells()) {
+        cell_data[cell.id()] = detail::fluxSumAtCell(cell, U) / cell.volume();
     }
     return {name, mesh, cell_data};
 }
@@ -76,24 +76,15 @@ template <field::IScalarBased Field>
 auto grad(const Field& field, Coord coord) -> field::Scalar {
     auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
-
-    const auto n_cells = mesh.cellCount();
-    //const auto n_faces = mesh.faceCount();
-
+    const auto n_cells = mesh->cellCount();
     VectorXd grad_values = VectorXd::Zero(n_cells);
-    //VectorXd grad_face_values = VectorXd::Zero(n_faces);
     auto coord_index = detail::coordToIndex(coord);
 
     for (std::size_t cell_i = 0; cell_i < n_cells; ++cell_i) {
-        grad_values[cell_i] = field.gradAtCell(mesh.cell(cell_i))[coord_index];
+        grad_values[cell_i] = field.gradAtCell(mesh->cell(cell_i))[coord_index];
     }
 
-    /*
-    for (std::size_t jface_i = 0; jface_i < n_faces; ++jface_i) {
-        grad_face_values[jface_i] = field.gradAtFace(mesh.face(jface_i))[i];
-    }
-    */
-    return field::Scalar(grad_field_name, field.mesh(), grad_values);//, grad_face_values);
+    return field::Scalar(grad_field_name, field.mesh(), grad_values);
 }
 
 template <field::IScalarBased Field>
@@ -106,15 +97,16 @@ auto grad(const Field& field) -> field::Vector {
 
 namespace detail {
 template <typename Vector>
-auto fluxSumAtCell(const mesh::PMesh& mesh, const mesh::Cell& cell, const Vector& U) -> double {
+auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double {
     double sum = 0.0;
+    const auto& mesh = U.mesh();
 
     for (auto face_id : cell.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
+        const mesh::Face& face = mesh->face(face_id);
 
         // Skip empty faces
         if (face.isBoundary()) {
-            const auto& boundary_patch = mesh.boundaryPatch(face);
+            const auto& boundary_patch = mesh->boundaryPatch(face);
             if (boundary_patch.isEmpty()) {
                 continue;
             }

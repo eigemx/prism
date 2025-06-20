@@ -8,7 +8,7 @@
 #include <variant>
 #include <vector>
 
-// TODO: shouldn't this be prism::mesh::boundary ?
+/// TODO: shouldn't this be prism::mesh::boundary ?
 namespace prism::mesh {
 
 /** @brief Enum class for boundary condition value types
@@ -85,7 +85,7 @@ class FieldInfo {
  */
 class BoundaryCondition {
   public:
-    // TODO: _value should be a std::option<BoundaryConditionValue>, to avoid having to construct
+    /// TODO: _value should be a std::option<BoundaryConditionValue>, to avoid having to construct
     // Nil-valued boundary conditions with double value 0.0;
     BoundaryCondition(BoundaryConditionValueKind type,
                       BoundaryConditionValue value,

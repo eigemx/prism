@@ -36,6 +36,11 @@ class IAppliedDiffusion : public IFullScheme<Field> {
     Kappa _kappa;
 };
 
+// Concept for diffusion schemes that are based on IDiffusion.
+template <typename T>
+concept IAppliedDiffusionBased =
+    std::derived_from<T, IAppliedDiffusion<typename T::KappaType, typename T::FieldType>>;
+
 // Base class for all diffusion schemes that do not need non-orthogonal correction.
 class INonCorrected : public IDiffusion {};
 
@@ -86,18 +91,18 @@ class Corrected
 //
 template <typename KappaType, typename Field>
 IAppliedDiffusion<KappaType, Field>::IAppliedDiffusion(KappaType kappa, Field phi)
-    : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh().cellCount()) {}
+    : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()) {}
 
 template <typename KappaType, typename Field>
 void IAppliedDiffusion<KappaType, Field>::apply() {
-    /** @brief Applies discretized diffusion equation to the mesh.
+    /** @brief Applies discretized diffusion equation to the mesh->
      * The discretized equation is applied using applyInterior() (per face basis) and
      * applyBoundary() functions.
      *
      */
     applyBoundary();
 
-    const auto& interior_faces = this->field().mesh().interiorFaces();
+    const auto& interior_faces = this->field().mesh()->interiorFaces();
     std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
         applyInterior(face);
     });
@@ -130,8 +135,8 @@ void NonCorrected<KappaType, Field>::applyBoundary() {
 template <typename KappaType, typename Field>
 void NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
-    const mesh::Cell& owner = mesh.cell(face.owner());
-    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
+    const mesh::Cell& owner = mesh->cell(face.owner());
+    const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
 
     // vector joining the centers of the two cells
     auto d_CF = neighbor.center() - owner.center();
@@ -189,8 +194,8 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyBoundary() {
 template <typename KappaType, typename NonOrthoCorrector, typename Field>
 void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field().mesh();
-    const mesh::Cell& owner = mesh.cell(face.owner());
-    const mesh::Cell& neighbor = mesh.cell(face.neighbor().value());
+    const mesh::Cell& owner = mesh->cell(face.owner());
+    const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
 

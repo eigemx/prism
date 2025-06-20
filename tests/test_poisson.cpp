@@ -70,7 +70,7 @@ TEST_CASE("test poisson equation", "[poisson]") {
     VectorXd diff = P.values() - solution(mesh).values();
     double diff_norm = diff.norm();
 
-    // TODO: this is a large l2-norm criteria, we need to check if the solution is correct
-    // TODO: replace this with relative l2-norm (check poisson example)
+    /// TODO: this is a large l2-norm criteria, we need to check if the solution is correct
+    /// TODO: replace this with relative l2-norm (check poisson example)
     REQUIRE(diff_norm < 0.1);
 }

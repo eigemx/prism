@@ -10,7 +10,7 @@
 
 namespace prism::mesh {
 
-// TODO: replace const std::vector& members with std::span
+/// TODO: replace const std::vector& members with std::span
 namespace iterators {
 struct FaceIterator {
     using iterator_category = std::input_iterator_tag;
@@ -62,7 +62,7 @@ struct InteriorFaces {
 
 } // namespace iterators
 
-// TODO: we don't need boundary_faces_ids and interior_faces_ids, we can just use the
+/// TODO: we don't need boundary_faces_ids and interior_faces_ids, we can just use the
 // boundaryPatches() and faces() methods
 class PMesh {
   public:
@@ -147,7 +147,7 @@ class ToPMeshConverter {
     auto operator=(ToPMeshConverter&&) -> ToPMeshConverter& = default;
     virtual ~ToPMeshConverter() = default;
 
-    virtual auto toPMesh() -> PMesh = 0;
+    virtual auto toPMesh() -> SharedPtr<PMesh> = 0;
 };
 
 } // namespace prism::mesh

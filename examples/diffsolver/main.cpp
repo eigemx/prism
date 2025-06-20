@@ -79,7 +79,7 @@ auto main(int argc, char* argv[]) -> int {
     auto gradT_x = ops::grad(T, Coord::X);
     prism::export_field_vtu(gradT_x, "gradT_x_ls.vtu");
 
-    // TODO: remove this, it's just for comparison with the FOAM solver
+    /// TODO: remove this, it's just for comparison with the FOAM solver
     // this is just for diagnostics, using torus_2d test case
     auto foam_temp = jsonToPrismField(fs::path(unv_file_name).parent_path() / "foam.json", mesh);
     VectorXd diff_abs = (foam_temp.values().array() - T.values().array()).abs();

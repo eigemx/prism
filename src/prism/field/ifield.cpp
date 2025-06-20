@@ -7,7 +7,7 @@
 
 namespace prism::field {
 
-IScalar::IScalar(std::string name, const mesh::PMesh& mesh)
+IScalar::IScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh)
     : IField<double>(std::move(name), mesh) {}
 
 } // namespace prism::field
@@ -20,8 +20,8 @@ void checkFieldName(const std::string& name) {
     }
 }
 
-void checkMesh(const mesh::PMesh& mesh) {
-    if (mesh.cells().empty() || mesh.faces().empty() || mesh.boundaryPatches().empty()) {
+void checkMesh(const SharedPtr<mesh::PMesh>& mesh) {
+    if (mesh->cells().empty() || mesh->faces().empty() || mesh->boundaryPatches().empty()) {
         throw std::runtime_error(
             "Cannot create a field over either an empty mesh or a mesh that have no boundary "
             "patches.");

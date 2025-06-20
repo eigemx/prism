@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "prism/constants.h"
+#include "prism/export.h"
 #include "prism/field/scalar.h"
 
 using json = nlohmann::json;
@@ -88,10 +89,16 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    // auto U = field::Velocity("U", mesh, components);
+    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    auto U = field::Velocity("U", mesh, components);
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
+    auto rhoU = rho * U;
+
+    export_field_vtu(rhoU.x(), "rhoU_x.vtu");
+
+    throw std::runtime_error(
+        "This example is not ready yet, it needs to be updated to use the new field API");
 
     using div = Upwind<field::UniformScalar, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;

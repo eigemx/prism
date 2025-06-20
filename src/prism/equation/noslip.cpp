@@ -69,20 +69,20 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     const auto& mesh = eqn.field().mesh();
 
     using F = field::VelocityComponent;
-    using Convection = scheme::convection::IConvection<field::UniformScalar, F>;
+    using Convection = scheme::convection::IAppliedConvection<field::Vector, F>;
     auto conv_scheme = castScheme<F, Convection>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
 
-    // TODO: this is a bit of a hack, what if kappa is not uniform?
+    /// TODO: this is a bit of a hack, what if kappa is not uniform?
     using Diffusion = scheme::diffusion::IAppliedDiffusion<field::UniformScalar, F>;
     auto diff_scheme = castScheme<F, Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
-    LinearSystem sys(mesh.cellCount());
+    LinearSystem sys(mesh->cellCount());
 
     for (std::size_t face_id : patch.facesIds()) {
-        const auto& face = mesh.face(face_id);
-        const auto& owner = mesh.cell(face.owner());
+        const auto& face = mesh->face(face_id);
+        const auto& owner = mesh->cell(face.owner());
         const auto owner_id = owner.id();
 
         // we need to calculate the normal distance from the centroid of the boundary element to

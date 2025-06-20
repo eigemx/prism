@@ -4,7 +4,7 @@
 
 namespace prism::field {
 
-UniformScalar::UniformScalar(std::string name, const mesh::PMesh& mesh, double value)
+UniformScalar::UniformScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, double value)
     : IScalar(std::move(name), mesh), _value(value) {
     log::debug("Creating uniform scalar field: '{}' with double value = {}", this->name(), value);
 }

@@ -109,16 +109,16 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
     _unv_mesh.release();
 }
 
-auto UnvToPMeshConverter::toPMesh() -> PMesh {
-    // TODO: This makes UnvToPMeshConverter usable only once, but the user is not aware (fix).
+auto UnvToPMeshConverter::toPMesh() -> SharedPtr<PMesh> {
+    /// TODO: This makes UnvToPMeshConverter usable only once, but the user is not aware (fix).
     // move all resources to PMesh object, UnvToPMeshConverter is no longer needed
-    return {std::move(_vertices),
-            std::move(_cells),
-            std::move(_faces),
-            std::move(_boundary_patches),
-            std::move(_field_infos),
-            std::move(_boundary_faces),
-            std::move(_interior_faces)};
+    return std::make_shared<PMesh>(std::move(_vertices),
+                                   std::move(_cells),
+                                   std::move(_faces),
+                                   std::move(_boundary_patches),
+                                   std::move(_field_infos),
+                                   std::move(_boundary_faces),
+                                   std::move(_interior_faces));
 }
 
 void UnvToPMeshConverter::processCells() {
@@ -127,8 +127,7 @@ void UnvToPMeshConverter::processCells() {
     for (const auto& element : _unv_mesh->elements().value()) {
         switch (element.type()) {
             // we don't care about lines
-            case unvpp::ElementType::Line:
-                break;
+            case unvpp::ElementType::Line: break;
 
             // boundary faces
             case unvpp::ElementType::Quad:
@@ -146,9 +145,7 @@ void UnvToPMeshConverter::processCells() {
             // cells
             case unvpp::ElementType::Hex:
             case unvpp::ElementType::Tetra:
-            case unvpp::ElementType::Wedge:
-                processCell(element);
-                break;
+            case unvpp::ElementType::Wedge: processCell(element); break;
 
             // We shouldn't reach this, because we should've exhausted all possible element types
             default:
@@ -203,8 +200,7 @@ void UnvToPMeshConverter::processCell(const unvpp::Element& element) {
             break;
         }
 
-        default:
-            break;
+        default: break;
     }
 
     _cells.emplace_back(

@@ -22,7 +22,7 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
 
 GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) { // NOLINT
     const auto& mesh = field->mesh();
-    _cell_gradients.resize(mesh.cellCount(), prism::Vector3d::Zero());
+    _cell_gradients.resize(mesh->cellCount(), prism::Vector3d::Zero());
 }
 
 auto GreenGauss ::gradAtCellStored(const mesh::Cell& cell) -> Vector3d {
@@ -34,7 +34,7 @@ auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     const auto& mesh = this->field()->mesh();
 
     for (auto face_id : cell.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
+        const mesh::Face& face = mesh->face(face_id);
 
         if (face.isBoundary()) {
             grad += boundaryFaceIntegral(face);
@@ -42,7 +42,7 @@ auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
         }
 
         auto Sf = mesh::outwardAreaVector(face, cell);
-        const auto& nei = this->field()->mesh().otherSharingCell(cell, face);
+        const auto& nei = this->field()->mesh()->otherSharingCell(cell, face);
         auto face_phi =
             0.5 * (this->field()->valueAtCell(cell) + this->field()->valueAtCell(nei));
 
@@ -60,7 +60,7 @@ auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
 }
 
 auto GreenGauss::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d {
-    const auto& boundary_patch = this->field()->mesh().boundaryPatch(face);
+    const auto& boundary_patch = this->field()->mesh()->boundaryPatch(face);
     if (boundary_patch.isEmpty()) {
         return {0.0, 0.0, 0.0};
     }

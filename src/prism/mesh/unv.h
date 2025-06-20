@@ -13,6 +13,7 @@
 #include "face.h"
 #include "pmesh.h"
 #include "prism/mesh/boundary.h"
+#include "prism/types.h"
 #include "trie.h"
 
 namespace prism::mesh {
@@ -22,7 +23,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     UnvToPMeshConverter(const std::filesystem::path& mesh_path,
                         const std::filesystem::path& boundary_path);
 
-    auto toPMesh() -> PMesh override;
+    auto toPMesh() -> SharedPtr<PMesh> override;
 
   private:
     // BoundaryFaceData (we need a better name) is a pair of:

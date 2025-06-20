@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+//// TODO: create units.cpp and move the implementation of SystemOfUnits there
 namespace prism::field::units {
 struct SystemOfUnits {
   public:
@@ -20,6 +21,13 @@ struct SystemOfUnits {
     auto temperature() const noexcept -> int8_t { return _temperature; }
     auto substanceAmount() const noexcept -> int8_t { return _substance_amount; }
     auto luminousIntensity() const noexcept -> int8_t { return _luminous_intensity; }
+
+    auto operator==(const SystemOfUnits& other) const noexcept -> bool {
+        return _time == other._time && _length == other._length && _mass == other._mass &&
+               _current == other._current && _temperature == other._temperature &&
+               _substance_amount == other._substance_amount &&
+               _luminous_intensity == other._luminous_intensity;
+    }
 
   private:
     int8_t _time {0};
