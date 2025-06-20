@@ -74,7 +74,7 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    // eqn.setUnderRelaxFactor(0.9);
+    eqn.setUnderRelaxFactor(0.9);
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();

@@ -80,18 +80,10 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
     log::debug("Creating vector field: '{}'", this->name());
     // check mesh consistency
     for (auto& field : fields) {
-        if (&mesh != &field.mesh()) {
-            throw std::runtime_error(
-                fmt::format("field::Vector constructor was given a sub-field component with name "
-                            "`{}` that is defined over a different mesh",
-                            field.name()));
-        }
-
         if (field.parent()) {
             log::warn(
                 "field::Vector '{}' constructor was given a sub-field '{}' that already has a "
-                "parent "
-                "field::Vector",
+                "parent field::Vector",
                 this->name(),
                 field.name());
         }
@@ -104,8 +96,7 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
         throw std::runtime_error(
             fmt::format("All field::Vector components names should end with '_x', '_y' or '_z'. "
                         "field::Vector constructor for `{}` vector field was given the following "
-                        "field::Scalar names: '{}', "
-                        "'{}', '{}",
+                        "field::Scalar names: '{}', '{}', '{}",
                         this->name(),
                         _x.name(),
                         _y.name(),

@@ -1,13 +1,14 @@
 #include <utility>
 
 #include "boundary.h"
+#include "prism/equation/transport.h"
+#include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
 #include "prism/types.h"
-#include "transport.h"
 
 namespace prism::eqn::boundary {
 
-template <typename Field, typename To>
+template <typename To>
 auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
     return std::dynamic_pointer_cast<To>(ptr);
 }
@@ -68,14 +69,15 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     field::VelocityComponent field = eqn.field();
     const auto& mesh = eqn.field().mesh();
 
+    // Momentum's conserved field is always a VelocityComponent
     using F = field::VelocityComponent;
-    using Convection = scheme::convection::IAppliedConvection<field::Vector, F>;
-    auto conv_scheme = castScheme<F, Convection>(eqn.convectionScheme());
+    using Convection = scheme::convection::IAppliedConvection<field::Velocity, F>;
+    auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
 
     /// TODO: this is a bit of a hack, what if kappa is not uniform?
     using Diffusion = scheme::diffusion::IAppliedDiffusion<field::UniformScalar, F>;
-    auto diff_scheme = castScheme<F, Diffusion>(eqn.diffusionScheme());
+    auto diff_scheme = castScheme<Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
     LinearSystem sys(mesh->cellCount());
@@ -85,8 +87,8 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
         const auto& owner = mesh->cell(face.owner());
         const auto owner_id = owner.id();
 
-        // we need to calculate the normal distance from the centroid of the boundary element to
-        // the face (wall patch)
+        // we need to calculate the normal distance from the centroid of the boundary
+        // element to the face (wall patch)
         Vector3d n = face.normal();
         Vector3d d_CB = face.center() - owner.center();
         double d_normal = d_CB.dot(n);
@@ -95,7 +97,10 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
         Vector3d Ub = U.valueAtFace(face);
 
         double g = mu.valueAtFace(face) * face.area() / d_normal;
+        /// TODO: at a test round, ac & b seems to be zero and this apply() function does not do
+        /// anything. Check this again.
         auto [ac, b] = contribution(field.coord().value(), Uc, Ub, n);
+
         sys.insert(owner_id, owner_id, g * ac);
         sys.rhs(owner_id) += g * b;
     }

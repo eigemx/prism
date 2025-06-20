@@ -9,6 +9,8 @@
 #include "prism/constants.h"
 #include "prism/export.h"
 #include "prism/field/scalar.h"
+#include "prism/field/velocity.h"
+#include "prism/log.h"
 
 using json = nlohmann::json;
 using namespace prism;
@@ -63,7 +65,7 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
 
-    log::setLevel(log::Level::Info);
+    log::setLevel(log::Level::Debug);
     if (argc < 2) {
         fmt::println("usage: {} [mesh-file]", argv[1]); // NOLINT
         return 1;
@@ -93,23 +95,19 @@ auto main(int argc, char* argv[]) -> int {
     auto U = field::Velocity("U", mesh, components);
     auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
-    auto rhoU = rho * U;
 
-    export_field_vtu(rhoU.x(), "rhoU_x.vtu");
-
-    throw std::runtime_error(
-        "This example is not ready yet, it needs to be updated to use the new field API");
-
-    using div = Upwind<field::UniformScalar, field::VelocityComponent>;
+    using div = Upwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<source::SourceSign::Negative, field::Pressure>;
 
-    auto uEqn = eqn::Momentum(div(rho, U, U.x()),   // ∇.(ρUu)
+    auto rhoU = rho * U;
+
+    auto uEqn = eqn::Momentum(div(rhoU, U.x()),     // ∇.(ρUu)
                               laplacian(mu, U.x()), // - ∇.(μ∇u)
                               grad(P, Coord::X)     // = -∂p/∂x
     );
 
-    auto vEqn = eqn::Momentum(div(rho, U, U.y()),   // ∇.(ρUv)
+    auto vEqn = eqn::Momentum(div(rhoU, U.y()),     // ∇.(ρUv)
                               laplacian(mu, U.y()), // - ∇.(μ∇v)
                               grad(P, Coord::Y)     // = -∂p/∂y
     );
@@ -121,6 +119,7 @@ auto main(int argc, char* argv[]) -> int {
 
     auto nNonOrthCorrectiors = 4;
     for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
+        rhoU = rho * U; // update the rhoU field at every outer iteration
         log::info("Outer iteration {}", nOuterIter);
 
         log::info("Solving y-momentum equations");
@@ -129,24 +128,21 @@ auto main(int argc, char* argv[]) -> int {
         log::info("Solving x-momentum equations");
         U_solver.solve(uEqn, 5, 1e-9);
 
-
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
-        // uEqn.relax();
-        // vEqn.relax();
 
         // calculate coefficients for the pressure equation
-        const auto& vol_vec = mesh.cellsVolumeVector();
+        const auto& vol_vec = mesh->cellsVolumeVector();
         const auto& uEqn_diag = uEqn.matrix().diagonal();
         const auto& vEqn_diag = vEqn.matrix().diagonal();
 
         auto D_data = std::vector<Matrix3d>();
-        D_data.resize(mesh.cellCount());
+        D_data.resize(mesh->cellCount());
 
         auto Du = vol_vec.array() / (uEqn_diag.array() + EPSILON);
         auto Dv = vol_vec.array() / (vEqn_diag.array() + EPSILON);
 
-        for (const auto& cell : mesh.cells()) {
+        for (const auto& cell : mesh->cells()) {
             auto i = cell.id();
             // clang-format off
             Matrix3d Di;
@@ -198,7 +194,7 @@ auto main(int argc, char* argv[]) -> int {
         export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
         // update velocity fields
-        for (const auto& cell : mesh.cells()) {
+        for (const auto& cell : mesh->cells()) {
             prism::Vector3d correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
             U.x()[cell.id()] += correction.x();
             U.y()[cell.id()] += correction.y();
@@ -218,6 +214,6 @@ auto main(int argc, char* argv[]) -> int {
     auto diff = field::Scalar("diff", mesh, components[0].values() - U.x().values());
     export_field_vtu(diff, "diff.vtu");
 
-    auto vol_field = field::Scalar("volume", mesh, mesh.cellsVolumeVector());
+    auto vol_field = field::Scalar("volume", mesh, mesh->cellsVolumeVector());
     export_field_vtu(vol_field, "volume.vtu");
 }

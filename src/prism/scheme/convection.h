@@ -42,6 +42,9 @@ class IAppliedConvection
     auto inline field() -> Field override { return _phi; }
     auto inline U() -> const ConvectiveField& { return _U; }
 
+    using ConvectiveFieldType = ConvectiveField;
+    using FieldType = Field;
+
   private:
     virtual auto interpolate(double m_dot,
                              const mesh::Cell& cell,
@@ -51,12 +54,11 @@ class IAppliedConvection
     void applyInterior(const mesh::Face& face);
     void applyBoundary();
 
-    using ConvectiveFieldType = ConvectiveField;
-
     ConvectiveField _U;
     Field _phi;
 };
 
+// Concept for diffusion schemes that are based on IAppliedConvection.
 template <typename T>
 concept IAppliedConvectionBased =
     std::derived_from<T,
@@ -118,6 +120,9 @@ class QUICK : public IAppliedConvection<ConvectiveField, Field> {
 
 template <field::IVectorBased ConvectiveField, typename Field>
 IAppliedConvection<ConvectiveField, Field>::IAppliedConvection(ConvectiveField U, Field phi)
+    /// TODO: check why _phi.mesh()->cellCount() is not working, as phi should be in a moved
+    /// state. Also, we need to avoid std::move and just make the constructor take a const
+    /// reference.
     : _U(std::move(U)), _phi(std::move(phi)), IFullScheme<Field>(phi.mesh()->cellCount()) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
