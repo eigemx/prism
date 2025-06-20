@@ -149,6 +149,7 @@ void NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
     Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
 
     // geometric diffusion coefficient
+    /// NOTE: Taking the norm of Sf_prime loses the sign of kappa.
     const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
 
     const std::size_t owner_id = owner.id();

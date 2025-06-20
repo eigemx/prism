@@ -8,7 +8,11 @@
 #include <variant>
 #include <vector>
 
-/// TODO: shouldn't this be prism::mesh::boundary ?
+/// TODO: When a fields json file contains a wrong patch name (versteeg1DAdvection case when Front
+/// in T.json was mistakenly named as Rront), we got a std::out_of_range exception. Fix this.
+
+/// TODO: in fields.json, it seems that we are not doing any thing with field "type", check this.
+
 namespace prism::mesh {
 
 /** @brief Enum class for boundary condition value types

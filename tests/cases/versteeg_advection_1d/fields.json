@@ -1,0 +1,14 @@
+{
+    "fields": [
+        {
+            "name": "T",
+            "type": "scalar",
+            "gradScheme": "greenGauss"
+        },
+        {
+            "name": "U",
+            "type": "velocity",
+            "gradScheme": "greenGauss"
+        }
+    ]
+}

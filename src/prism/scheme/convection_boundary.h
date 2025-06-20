@@ -20,6 +20,7 @@ class Fixed<convection::IAppliedConvection<ConvectiveField, F>>
     auto inline name() const -> std::string override { return "fixed"; }
 };
 
+/// TODO: Should we have a separate class for velocity inlet? Or should we just use fixed?
 template <field::IVectorBased ConvectiveField, typename F>
 class VelocityInlet<convection::IAppliedConvection<ConvectiveField, F>>
     : public ISchemeBoundaryHandler<convection::IAppliedConvection<ConvectiveField, F>> {
@@ -84,7 +85,10 @@ void Fixed<convection::IAppliedConvection<ConvectiveField, F>>::apply(
         const Vector3d& S_f = face.areaVector();
         const Vector3d U_f = scheme.U().valueAtFace(face);
         const double m_dot_f = U_f.dot(S_f);
-        scheme.rhs(owner.id()) += -m_dot_f * phi_wall;
+
+        /// TODO: Check if this is correct.
+        scheme.insert(owner.id(), owner.id(), std::max(m_dot_f, 0.0));
+        scheme.rhs(owner.id()) += std::max(-m_dot_f, 0.0) * phi_wall;
     }
 }
 
@@ -129,6 +133,7 @@ void Outlet<convection::IAppliedConvection<ConvectiveField, F>>::apply(
             _n_reverse_flow_faces++;
         }
 
+        /// TODO: is this correct?
         scheme.insert(owner_id, owner_id, m_dot_f);
     }
 
