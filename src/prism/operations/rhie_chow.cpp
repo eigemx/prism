@@ -2,13 +2,13 @@
 
 namespace prism::ops::detail {
 
-auto pressureGradCalculated(const mesh::PMesh& mesh,
-                            const mesh::Face& face,
+auto pressureGradCalculated(const mesh::Face& face,
                             const field::Pressure& P,
                             const Vector3d& gradp_avg) -> Vector3d {
     // This function is based on Eqn (15.62)
-    const auto& owner = mesh.cell(face.owner());
-    const auto& neighbor = mesh.cell(face.neighbor().value());
+    const auto& mesh = P.mesh();
+    const auto& owner = mesh->cell(face.owner());
+    const auto& neighbor = mesh->cell(face.neighbor().value());
     auto p_owner = P.valueAtCell(owner);
     auto p_neigh = P.valueAtCell(neighbor);
 

@@ -36,7 +36,7 @@ class IAppliedDiffusion : public IFullScheme<Field> {
     Kappa _kappa;
 };
 
-// Concept for diffusion schemes that are based on IDiffusion.
+// Concept for diffusion schemes that are based on IAppliedDiffusion.
 template <typename T>
 concept IAppliedDiffusionBased =
     std::derived_from<T, IAppliedDiffusion<typename T::KappaType, typename T::FieldType>>;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "prism/field/ifield.h"
 #include "prism/field/scalar.h"
 #include "prism/log.h"
 #include "prism/operations/operations.h"
@@ -86,7 +87,7 @@ class Laplacian : public IExplicitSource {
 template <SourceSign Sign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:
-    ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh().nCells()) {}
+    ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh()->nCells()) {}
     void apply() override;
     auto inline field() -> Field override { return _phi; }
     auto inline needsCorrection() const -> bool override { return false; }
@@ -99,11 +100,11 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
 
 template <SourceSign Sign, field::IScalarBased Field>
 ConstantScalar<Sign, Field>::ConstantScalar(Field phi)
-    : _phi(phi), IExplicitSource(phi.mesh().cellCount()) {}
+    : _phi(phi), IExplicitSource(phi.mesh()->cellCount()) {}
 
 template <SourceSign Sign, field::IScalarBased Field>
 void inline ConstantScalar<Sign, Field>::apply() {
-    const auto& vol_field = _phi.mesh().cellsVolumeVector();
+    const auto& vol_field = _phi.mesh()->cellsVolumeVector();
 
     if constexpr (Sign == SourceSign::Positive) {
         rhs() = _phi.values().array() * vol_field.array();
@@ -113,12 +114,12 @@ void inline ConstantScalar<Sign, Field>::apply() {
 }
 
 template <SourceSign Sign, typename Vector>
-Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh().cellCount()), _U(U) {}
+Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh()->cellCount()), _U(U) {}
 
 
 template <SourceSign Sign, typename Vector>
 void inline Divergence<Sign, Vector>::apply() {
-    const auto& vol_field = _U.mesh().cellsVolumeVector();
+    const auto& vol_field = _U.mesh()->cellsVolumeVector();
 
     if constexpr (Sign == SourceSign::Positive) {
         rhs() = ops::div(_U).values().array() * vol_field.array();
@@ -129,14 +130,17 @@ void inline Divergence<Sign, Vector>::apply() {
 
 template <SourceSign Sign, typename Field>
 Gradient<Sign, Field>::Gradient(Field phi, Coord coord)
-    : _phi(phi), _coord(coord), IExplicitSource(phi.mesh().cellCount()) {
-    log::debug("prism::scheme::source::Gradient(): Creating gradient source for field '{}'",
-               phi.name());
+    : _phi(phi), _coord(coord), IExplicitSource(phi.mesh()->cellCount()) {
+    log::debug(
+        "prism::scheme::source::Gradient(): Creating {}-coordinate gradient source for field "
+        "'{}'",
+        field::coordToStr(coord),
+        phi.name());
 }
 
 template <SourceSign Sign, typename Field>
 void Gradient<Sign, Field>::apply() {
-    const auto& vol_field = _phi.mesh().cellsVolumeVector();
+    const auto& vol_field = _phi.mesh()->cellsVolumeVector();
 
     switch (_coord) {
         case Coord::X: {
@@ -161,7 +165,7 @@ void Gradient<Sign, Field>::apply() {
 
 template <SourceSign Sign, typename Kappa, typename Field>
 Laplacian<Sign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
-    : IExplicitSource(phi.mesh().nCells()), _kappa(kappa), _phi(phi) {}
+    : IExplicitSource(phi.mesh()->nCells()), _kappa(kappa), _phi(phi) {}
 
 template <SourceSign Sign, typename Kappa, typename Field>
 void inline Laplacian<Sign, Kappa, Field>::apply() {

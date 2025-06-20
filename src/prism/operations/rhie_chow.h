@@ -3,7 +3,6 @@
 #include "prism/field/ifield.h"
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
-#include "prism/field/velocity.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/pmesh.h"
 #include "prism/types.h"
@@ -14,8 +13,7 @@ template <field::IVectorBased Vector>
 auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector;
 
 namespace detail {
-auto pressureGradCalculated(const mesh::PMesh& mesh,
-                            const mesh::Face& face,
+auto pressureGradCalculated(const mesh::Face& face,
                             const field::Pressure& P,
                             const Vector3d& gradp_avg) -> Vector3d;
 }
@@ -27,17 +25,16 @@ auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P
     VectorXd u_face_data;
     VectorXd v_face_data;
     VectorXd w_face_data;
-    u_face_data.resize(mesh.faceCount());
-    v_face_data.resize(mesh.faceCount());
-    w_face_data.resize(mesh.faceCount());
+    u_face_data.resize(mesh->faceCount());
+    v_face_data.resize(mesh->faceCount());
+    w_face_data.resize(mesh->faceCount());
 
-    for (const auto& face : mesh.interiorFaces()) {
+    for (const auto& face : mesh->interiorFaces()) {
         const std::size_t face_id = face.id();
         const Vector3d& Uf = U.valueAtFace(face);
         const Matrix3d& Df = D.valueAtFace(face);
         const Vector3d gradp_avg = P.gradAtFace(face);
-        const Vector3d gradp_calculated =
-            detail::pressureGradCalculated(mesh, face, P, gradp_avg);
+        const Vector3d gradp_calculated = detail::pressureGradCalculated(face, P, gradp_avg);
 
         // Equation 15.60
         Vector3d Uf_corrected = Uf - (Df * (gradp_calculated - gradp_avg));
@@ -47,9 +44,9 @@ auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P
     }
 
 
-    for (const auto& face : mesh.boundaryFaces()) {
+    for (const auto& face : mesh->boundaryFaces()) {
         const std::size_t face_id = face.id();
-        const auto& patch = mesh.faceBoundaryPatch(face);
+        const auto& patch = mesh->faceBoundaryPatch(face);
 
         if (patch.isEmpty()) {
             /// TODO: this is a hack to avoid calling valueAtFace() on empty faces. We need to fix

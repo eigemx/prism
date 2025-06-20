@@ -6,6 +6,9 @@
 #include <cmath>
 #include <filesystem>
 
+#include "prism/field/scalar.h"
+#include "prism/field/velocity.h"
+
 auto peclet_number(double rho, double kappa, double u, double L) {
     return (rho * u * L) / kappa;
 }
@@ -31,10 +34,10 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
     auto T = field::Scalar("temperature", mesh, 0.5);
-    auto rho = field::Scalar("rho", mesh, 1.18);
+    auto rho = field::UniformScalar("rho", mesh, 1.18);
 
     const auto& inlet_patch = std::find_if(
-        mesh.boundaryPatches().begin(), mesh.boundaryPatches().end(), [](const auto& patch) {
+        mesh->boundaryPatches().begin(), mesh->boundaryPatches().end(), [](const auto& patch) {
             return patch.name() == "inlet";
         });
 
@@ -43,16 +46,17 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     auto U = field::Velocity("U", mesh, inlet_velocity);
 
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
-    auto eqn = eqn::Transport(scheme::convection::Upwind(rho, U, T),    // ∇.(ρUT)
-                              scheme::diffusion::NonCorrected(kappa, T) // - ∇.(κ ∇T) = 0
+    auto eqn = eqn::Transport(
+        scheme::convection::Upwind<field::Velocity, field::Scalar>(rho * U, T), // ∇.(ρUT)
+        scheme::diffusion::NonCorrected(kappa, T) // - ∇.(κ ∇T) = 0
     );
 
     auto solver = solver::BiCGSTAB<field::Scalar>();
     solver.solve(eqn, 10, 1e-20);
 
     VectorXd analytical_solution;
-    analytical_solution.resize(T.mesh().cellCount());
-    for (const auto& cell : T.mesh().cells()) {
+    analytical_solution.resize(T.mesh()->cellCount());
+    for (const auto& cell : T.mesh()->cells()) {
         analytical_solution[cell.id()] = advection_1d(cell.center().x(), inlet_velocity.x());
     }
 
@@ -67,7 +71,7 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     REQUIRE(diff_vec.norm() < 0.1);
 
     std::vector<double> T_vec;
-    for (const auto& cell : T.mesh().cells()) {
+    for (const auto& cell : T.mesh()->cells()) {
         T_vec.push_back(T.valueAtCell(cell.id()));
     }
 

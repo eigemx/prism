@@ -56,7 +56,7 @@ class Transport : public LinearSystem,
     void addScheme(Scheme&& scheme);
 
   private:
-    //// TODO: Should this be IConvectionBased and IDiffusionBased instead?
+    /// TODO: Should this be IConvectionBased and IDiffusionBased instead?
     template <scheme::convection::IAppliedConvectionBased Convection>
     void addScheme(Convection&& convection);
 
@@ -165,6 +165,8 @@ void Transport<Field>::relax() {
 
     // Moukallad et. al, 14.2 Under-Relaxation of the Algebraic Equations
     // equation 14.9
+    log::debug("Transport::relax(): applying implicit under-relaxation with factor = {}",
+               _relaxation_factor);
     b += ((1.0 - _relaxation_factor) / _relaxation_factor) * A.diagonal().cwiseProduct(phi);
     A.diagonal() /= _relaxation_factor;
 }

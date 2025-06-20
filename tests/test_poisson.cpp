@@ -8,9 +8,9 @@
 
 auto solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
-    sol.resize(mesh.cellCount());
+    sol.resize(mesh->cellCount());
 
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         double x = cell.center().x();
         double y = cell.center().y();
         double sol_cell = std::sin(prism::PI * x);
@@ -36,9 +36,9 @@ TEST_CASE("test poisson equation", "[poisson]") {
 
     // create source term
     VectorXd src_values;
-    src_values.resize(mesh.cellCount());
+    src_values.resize(mesh->cellCount());
 
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         double x = cell.center().x();
         double y = cell.center().y();
         double src = 2 * std::pow(prism::PI, 2);

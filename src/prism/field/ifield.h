@@ -88,6 +88,7 @@ IField<CellValueType>::IField(std::string name, const SharedPtr<mesh::PMesh>& me
     detail::checkMesh(mesh);
 }
 
+/// TODO: This function should be moved to a more appropriate place, like a utility file.
 auto inline coordToStr(prism::Coord coord) -> std::string {
     switch (coord) {
         case prism::Coord::X: {

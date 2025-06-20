@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-//// TODO: create units.cpp and move the implementation of SystemOfUnits there
+/// TODO: create units.cpp and move the implementation of SystemOfUnits there
 namespace prism::field::units {
 struct SystemOfUnits {
   public:

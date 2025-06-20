@@ -87,7 +87,7 @@ class GeneralScalar
     auto operator=(GeneralScalar&&) -> GeneralScalar& = default;
     ~GeneralScalar() override = default;
 
-    //// TODO: check that _data is not null before returning
+    /// TODO: check that _data is not null before returning
     auto inline values() const -> const VectorXd& { return *_data; }
     auto inline values() -> VectorXd& { return *_data; }
 
@@ -143,16 +143,15 @@ using Scalar = GeneralScalar<units::Measurable, ScalarBHManagerSetter>;
 
 template <IScalarBased ScalarField>
 auto UniformScalar::operator*(const ScalarField& other) -> ScalarField {
-    //// TODO: this is not a good way to compare meshes, we should use a mesh equality operator.
+    /// TODO: this is not a good way to compare meshes, we should use a mesh equality operator.
     if (this->mesh()->cellCount() != other.mesh()->cellCount()) {
         throw std::runtime_error(
             fmt::format("UniformScalar::operator*(): cannot multiply scalar field '{}' with "
-                        "scalar field '{}', "
-                        "because they are defined on different meshes.",
+                        "scalar field '{}', because they are defined on different meshes.",
                         this->name(),
                         other.name()));
     }
-    //// TODO: this ignores the units of the scalar field
+    /// TODO: this ignores the units of the scalar field
     return ScalarField(fmt::format("{}{}", this->name(), other.name()),
                        this->mesh(),
                        this->_value * other.values());
@@ -160,25 +159,53 @@ auto UniformScalar::operator*(const ScalarField& other) -> ScalarField {
 
 template <IVectorBased VectorField>
 auto UniformScalar::operator*(const VectorField& other) -> VectorField {
+    /// TODO: this function ignores the units of the scalar field, which is not ideal, and returns
+    /// a vector of components that preserves `other`'s units. We need to fix this.
     if (this->mesh()->cellCount() != other.mesh()->cellCount()) {
         throw std::runtime_error(
             fmt::format("UniformScalar::operator*(): cannot multiply scalar field '{}' with "
-                        "vector field '{}', "
-                        "because they are defined on different meshes.",
+                        "vector field '{}', because they are defined on different meshes.",
                         this->name(),
                         other.name()));
     }
 
     auto output_name = fmt::format("{}{}", this->name(), other.name());
+    VectorXd face_values_x = VectorXd::Zero(other.mesh()->faceCount());
+    VectorXd face_values_y = VectorXd::Zero(other.mesh()->faceCount());
+    VectorXd face_values_z = VectorXd::Zero(other.mesh()->faceCount());
 
-    //// TODO: this ignores the units of the scalar field, which is not ideal, and returns a
-    ///vector
-    /// of components that preserves `other`'s units. We need to fix this.
+    for (const auto& face : this->mesh()->interiorFaces()) {
+        Vector3d result = other.valueAtFace(face) * this->_value;
+        face_values_x[face.id()] = result.x();
+        face_values_y[face.id()] = result.y();
+        face_values_z[face.id()] = result.z();
+    }
+    for (const auto& patch : this->mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue; // skip empty patches
+        }
+        for (const auto& face_id : patch.facesIds()) {
+            Vector3d result = other.valueAtFace(face_id) * this->_value;
+            face_values_x[face_id] = result.x();
+            face_values_y[face_id] = result.y();
+            face_values_z[face_id] = result.z();
+        }
+    }
+
     using Component = typename VectorField::ComponentType;
-    auto components = std::array<Component, 3>(
-        {Component(output_name + "_x", this->mesh(), this->_value * other.x().values().array()),
-         Component(output_name + "_y", this->mesh(), this->_value * other.y().values().array()),
-         Component(output_name + "_z", this->mesh(), this->_value * other.z().values().array())});
+    auto components =
+        std::array<Component, 3>({Component(output_name + "_x",
+                                            this->mesh(),
+                                            this->_value * other.x().values().array(),
+                                            face_values_x),
+                                  Component(output_name + "_y",
+                                            this->mesh(),
+                                            this->_value * other.y().values().array(),
+                                            face_values_y),
+                                  Component(output_name + "_z",
+                                            this->mesh(),
+                                            this->_value * other.z().values().array(),
+                                            face_values_z)});
 
     return VectorField(fmt::format("{}{}", this->name(), other.name()), this->mesh(), components);
 }
@@ -210,6 +237,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                this->name(),
                coordToStr(coord),
                value);
+
     addDefaultBoundaryHandlers();
     setGradScheme();
 }
@@ -223,15 +251,17 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
       _data(std::make_shared<VectorXd>(std::move(data))),
       _parent(parent) {
     if (_data->size() != mesh->cellCount()) {
-        throw std::runtime_error(fmt::format(
-            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
-            "different size than mesh's cell count.",
-            this->name()));
+        throw std::runtime_error(
+            fmt::format("field::GeneralScalar() cannot create a scalar field '{}' given a "
+                        "vector that has a "
+                        "different size than mesh's cell count.",
+                        this->name()));
     }
 
     log::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
                this->name(),
                _data->size());
+
     addDefaultBoundaryHandlers();
     setGradScheme();
 }
@@ -288,8 +318,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 
     log::debug(
         "Creating scalar field: '{}' with a cell data vector of size = {} and face data "
-        "vector "
-        "of size = {}",
+        "vector of size = {}",
         this->name(),
         _data->size(),
         _face_data->size());
@@ -351,8 +380,7 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     if (hasFaceValues()) {
         log::debug(
             "GeneralScalar<Units, BHManagerSetter>::setFaceValues() was called for field "
-            "'{}', "
-            "which already has face values set.",
+            "'{}', which already has face values set.",
             name());
     }
 
@@ -375,7 +403,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) con
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) const -> double {
     if (hasFaceValues()) {
-        // Face data were calculataed for us, just return the value (as in Rhie-Chow
+        // Face data were calculated already, just return the value (as in Rhie-Chow
         // correction).
         return (*_face_data)[face_id];
     }

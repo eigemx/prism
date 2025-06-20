@@ -16,9 +16,9 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
 
     std::size_t n_wrong_normals = 0;
 
-    for (const auto& face : mesh.interiorFaces()) {
-        const auto& owner = mesh.cell(face.owner());
-        const auto& neighbor = mesh.cell(face.neighbor().value());
+    for (const auto& face : mesh->interiorFaces()) {
+        const auto& owner = mesh->cell(face.owner());
+        const auto& neighbor = mesh->cell(face.neighbor().value());
 
         // Check if the face normal is pointing from owner to neighbor
         const auto& face_normal = face.normal();
@@ -39,7 +39,7 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
     REQUIRE(n_wrong_normals == 0);
 
     double volume = 0.0;
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         volume += cell.volume();
     }
 
@@ -47,7 +47,7 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
     REQUIRE(std::abs(volume - 31.375) < 1e-4);
 
     double surface_area = 0.0;
-    for (const auto& face : mesh.boundaryFaces()) {
+    for (const auto& face : mesh->boundaryFaces()) {
         surface_area += face.area();
     }
     // "cylinder" mesh should have a surface area of 69.0842
