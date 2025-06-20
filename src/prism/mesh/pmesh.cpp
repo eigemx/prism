@@ -82,7 +82,7 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
       _interior_faces_ids(std::move(interior_faces_ids)),
       _n_cells(_cells.size()),
       _n_faces(_faces.size()) {
-    // TODO: Check if inputs constitutes a valid mesh.
+    /// TODO: Check if inputs constitutes a valid mesh.
     log::debug("prism::mesh::PMesh() object created with {} cells, {} faces and {} vertices.",
                _n_cells,
                _n_faces,
@@ -96,9 +96,9 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
         _cells_volume[cell.id()] = cell.volume();
     }
 
-    // TODO: can we do this differently? we need to avoid allocating memory for the vector of
+    /// TODO: can we do this differently? we need to avoid allocating memory for the vector of
     // non-empty boundary face ids
-    // TODO: this is the first thing that well fail for an ill-formed mesh. Here, we try to get
+    /// TODO: this is the first thing that well fail for an ill-formed mesh. Here, we try to get
     // the boundary patch of a face withouth checking validity of the mesh, so most probably we
     // will get a bad std::optional access. We need to check if given parameters forms a valid
     // mesh before proceeding with the construction.
@@ -167,7 +167,7 @@ auto PMesh::boundaryPatch(const std::string& name) const -> const BoundaryPatch&
                     name));
 }
 
-// TODO: faceBoundaryPatch() methods don't check if face is boundary or not this is to avoid
+/// TODO: faceBoundaryPatch() methods don't check if face is boundary or not this is to avoid
 // branching in the code, but it might be better to check think this over
 auto PMesh::faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch& {
     assert(face_id < _faces.size() &&
@@ -213,7 +213,7 @@ auto PMesh::interiorFaces() const -> iterators::InteriorFaces {
     return {_faces, _interior_faces_ids};
 }
 
-// TODO: for boundaryFaces() and nonEmptyBoundaryFaces() we could iterate over the boundary
+/// TODO: for boundaryFaces() and nonEmptyBoundaryFaces() we could iterate over the boundary
 // patches instead, this allows us to get rid of _boundary_faces_ids and
 // _nonempty_boundary_faces_ids vectors.
 auto PMesh::boundaryFaces() const -> iterators::BoundaryFaces {
@@ -226,12 +226,6 @@ auto PMesh::nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces {
 
 auto PMesh::fieldsInfo() const noexcept -> const std::vector<FieldInfo>& {
     return _field_infos;
-}
-
-PMeshPtr::PMeshPtr(const PMesh* ptr) : _ptr(ptr) {
-    if (ptr == nullptr) {
-        throw std::runtime_error("prism::mesh::PMeshPtr() was given a null pointer");
-    }
 }
 
 

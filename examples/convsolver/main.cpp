@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include "prism/field/scalar.h"
+#include "prism/field/velocity.h"
 #include "prism/scheme/convection.h"
 #include "prism/scheme/nonortho.h"
 
@@ -39,11 +40,11 @@ auto main(int argc, char* argv[]) -> int {
     // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
     const auto& inlet_patch = std::find_if(
-        mesh.boundaryPatches().begin(), mesh.boundaryPatches().end(), [](const auto& patch) {
+        mesh->boundaryPatches().begin(), mesh->boundaryPatches().end(), [](const auto& patch) {
             return patch.name() == "inlet";
         });
 
-    if (inlet_patch == mesh.boundaryPatches().end()) {
+    if (inlet_patch == mesh->boundaryPatches().end()) {
         fmt::println(
             "Error: No boundary patch with name `inlet` was found, cannot set velocity field.");
         return 1;
@@ -54,6 +55,7 @@ auto main(int argc, char* argv[]) -> int {
 
     log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
     auto U = field::Velocity("U", mesh, inlet_velocity);
+    field::Velocity rhoU = rho * U;
 
     // A zero field, just to demonstrate how to add arbitray constant source terms
     // auto useLessField = field::Scalar("zero", mesh, 0.0);
@@ -62,13 +64,13 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
-    using div = scheme::convection::SecondOrderUpwind<field::UniformScalar, field::Scalar>;
+    using div = scheme::convection::SecondOrderUpwind<field::Velocity, field::Scalar>;
     using laplacian =
         scheme::diffusion::Corrected<field::UniformScalar,
                                      scheme::diffusion::nonortho::OverRelaxedCorrector,
                                      field::Scalar>;
 
-    auto eqn = eqn::Transport(div(rho, U, T),     // ∇.(ρUT)
+    auto eqn = eqn::Transport(div(rhoU, T),       // ∇.(ρUT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 

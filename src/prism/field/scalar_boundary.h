@@ -62,7 +62,7 @@ class ZeroGradient : public IScalarBoundaryHandler {
 
 template <IScalarBased Field>
 auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    const auto& patch = field.mesh().boundaryPatch(face);
+    const auto& patch = field.mesh()->boundaryPatch(face);
     return patch.getScalarBoundaryCondition(field.name());
 }
 
@@ -81,10 +81,10 @@ auto Outlet<Field>::get(const IScalar& field, const mesh::Face& face) -> double 
 template <IScalarBased Field>
 auto FixedGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
     const auto& mesh = field.mesh();
-    const auto& patch = mesh.boundaryPatch(face);
+    const auto& patch = mesh->boundaryPatch(face);
 
     Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(field.name());
-    const auto& owner = mesh.cell(face.owner());
+    const auto& owner = mesh->cell(face.owner());
 
     Vector3d e = face.center() - owner.center();
     double d_Cf = e.norm();

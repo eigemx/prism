@@ -146,11 +146,11 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
     const auto& mesh = phi.mesh();
 
     for (const auto& face_id : patch.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
-        const mesh::Cell& owner = mesh.cell(face.owner());
+        const mesh::Face& face = mesh->face(face_id);
+        const mesh::Cell& owner = mesh->cell(face.owner());
 
         // get the fixed gradient (flux) value associated with the face
-        const auto& boundary_patch = mesh.faceBoundaryPatch(face);
+        const auto& boundary_patch = mesh->faceBoundaryPatch(face);
         const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
 
         const Vector3d& Sf = face.areaVector();
@@ -158,7 +158,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
 
         // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2
-        // TODO: the sign was changed to negative to make diffusion scheme sign agnostic
+        /// TODO: the sign was changed to negative to make diffusion scheme sign agnostic
         // and consistent with the rest of the scheme, but this needs to be tested.
         scheme.rhs(owner.id()) += -wall_grad.dot(Sf_prime);
     }
@@ -178,8 +178,8 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     const auto& kappa = scheme.kappa();
 
     for (const auto& face_id : patch.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
-        const mesh::Cell& owner = mesh.cell(face.owner());
+        const mesh::Face& face = mesh->face(face_id);
+        const mesh::Cell& owner = mesh->cell(face.owner());
         // get the fixed phi variable associated with the face
         const double phi_wall = phi.valueAtFace(face);
 
@@ -227,8 +227,8 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     const auto& kappa = scheme.kappa();
 
     for (const auto& face_id : patch.facesIds()) {
-        const mesh::Face& face = mesh.face(face_id);
-        const mesh::Cell& owner = mesh.cell(face.owner());
+        const mesh::Face& face = mesh->face(face_id);
+        const mesh::Cell& owner = mesh->cell(face.owner());
         const std::size_t owner_id = owner.id();
 
         // get the fixed phi variable associated with the face

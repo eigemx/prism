@@ -6,7 +6,7 @@
 #include "prism/types.h"
 
 namespace prism::mesh {
-// TODO: move definitions to .cpp file
+/// TODO: move definitions to .cpp file
 /**
  * @brief Calculates the area vector of a face, pointing out of the cell.
  * The area vector is calculated as the area of the face times the unit normal

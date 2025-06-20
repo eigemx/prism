@@ -5,7 +5,7 @@
 namespace prism::field::boundary {
 template <>
 auto NoSlip<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
-    const auto& owner = field.mesh().cell(face.owner());
+    const auto& owner = field.mesh()->cell(face.owner());
     const Vector3d d_Cb = face.center() - owner.center();
 
     // we use gradAtCellStored instead of gradAtCell, because gradAtCell invokes gradAtFace for

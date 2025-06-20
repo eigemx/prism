@@ -118,9 +118,9 @@ namespace detail {
 template <typename Applier>
 void applyBoundary(const std::string& applier_name, Applier& applier) {
     auto _phi = applier.field();
-    const mesh::PMesh& mesh = _phi.mesh();
+    const auto& mesh = _phi.mesh();
 
-    for (const auto& patch : mesh.boundaryPatches()) {
+    for (const auto& patch : mesh->boundaryPatches()) {
         if (patch.isEmpty()) {
             continue;
         }
@@ -150,9 +150,9 @@ void applyBoundary(const std::string& applier_name, Applier& applier) {
 template <typename Applier>
 void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
     auto _phi = applier.field();
-    const mesh::PMesh& mesh = _phi.mesh();
+    const auto& mesh = _phi.mesh();
 
-    for (const auto& patch : mesh.boundaryPatches()) {
+    for (const auto& patch : mesh->boundaryPatches()) {
         if (patch.isEmpty()) {
             continue;
         }

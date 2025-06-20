@@ -21,9 +21,11 @@ using VelocityComponent = GeneralScalar<units::VelocityUnit, VelocityCompBHManag
 
 class Velocity : public GeneralVector<VelocityComponent>, public units::VelocityUnit {
   public:
-    Velocity(std::string name, const mesh::PMesh& mesh, double value);
-    Velocity(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
-    Velocity(std::string name, const mesh::PMesh& mesh, std::array<VelocityComponent, 3>& fields);
+    Velocity(std::string name, const SharedPtr<mesh::PMesh>&, double value);
+    Velocity(std::string name, const SharedPtr<mesh::PMesh>&, const Vector3d& data);
+    Velocity(std::string name,
+             const SharedPtr<mesh::PMesh>&,
+             std::array<VelocityComponent, 3>& fields);
 
     using ComponentType = VelocityComponent;
 };

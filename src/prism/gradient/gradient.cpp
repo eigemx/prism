@@ -24,10 +24,10 @@ auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
     if (face.isInterior()) {
         // interior face
         const auto& mesh = _field->mesh();
-        const auto& owner_cell = mesh.cell(face.owner());
+        const auto& owner_cell = mesh->cell(face.owner());
         auto owner_grad = gradAtCell(owner_cell);
 
-        const auto& neighbor_cell = mesh.cell(face.neighbor().value());
+        const auto& neighbor_cell = mesh->cell(face.neighbor().value());
         auto neighbor_grad = gradAtCell(neighbor_cell);
 
         auto gc = mesh::geometricWeight(owner_cell, neighbor_cell, face);
@@ -41,7 +41,7 @@ auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
 }
 
 auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
-    const auto& boundary_patch = _field->mesh().boundaryPatch(face);
+    const auto& boundary_patch = _field->mesh()->boundaryPatch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field->name());
 
     auto handler = this->boundaryHandlersManager().getHandler(boundary_condition.kindString());

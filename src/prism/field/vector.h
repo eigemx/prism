@@ -14,10 +14,16 @@ namespace prism::field {
 template <typename Component>
 class GeneralVector : public IField<Vector3d>, public IVector, public units::Measurable {
   public:
-    GeneralVector(std::string name, const mesh::PMesh& mesh, double value);
-    GeneralVector(std::string name, const mesh::PMesh& mesh, const Vector3d& data);
-    GeneralVector(std::string name, const mesh::PMesh& mesh, std::array<Component, 3>& fields);
-    GeneralVector(std::string name, const mesh::PMesh& mesh, std::vector<Vector3d>& data);
+    GeneralVector(std::string name, const SharedPtr<mesh::PMesh>& mesh, double value);
+    GeneralVector(std::string name, const SharedPtr<mesh::PMesh>& mesh, const Vector3d& data);
+
+    /// TODO: replace with std::array<Component, 3> and use std::move in the constructor
+    GeneralVector(std::string name,
+                  const SharedPtr<mesh::PMesh>& mesh,
+                  std::array<Component, 3>& fields);
+    GeneralVector(std::string name,
+                  const SharedPtr<mesh::PMesh>& mesh,
+                  std::vector<Vector3d>& data);
 
     auto hasFaceValues() const -> bool override;
 
@@ -30,12 +36,9 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     auto inline x() -> Component& { return _x; }
     auto inline y() -> Component& { return _y; }
     auto inline z() -> Component& { return _z; }
-
-    // TODO: add same methods for GeneralScalar
     auto inline x() const -> const Component& { return _x; }
     auto inline y() const -> const Component& { return _y; }
     auto inline z() const -> const Component& { return _z; }
-
 
     auto operator[](std::size_t i) const -> Vector3d;
 
@@ -49,7 +52,7 @@ using Vector = GeneralVector<Scalar>;
 
 template <typename ComponentType>
 GeneralVector<ComponentType>::GeneralVector(std::string name,
-                                            const mesh::PMesh& mesh,
+                                            const SharedPtr<mesh::PMesh>& mesh,
                                             double value)
     : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, value, Coord::X, static_cast<IVector*>(this)),
@@ -60,7 +63,7 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
 
 template <typename ComponentType>
 GeneralVector<ComponentType>::GeneralVector(std::string name,
-                                            const mesh::PMesh& mesh,
+                                            const SharedPtr<mesh::PMesh>& mesh,
                                             const Vector3d& data)
     : IField(std::move(name), mesh),
       _x(this->name() + "_x", mesh, data[0], Coord::X, static_cast<IVector*>(this)),
@@ -71,7 +74,7 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
 
 template <typename ComponentType>
 GeneralVector<ComponentType>::GeneralVector(std::string name,
-                                            const mesh::PMesh& mesh,
+                                            const SharedPtr<mesh::PMesh>& mesh,
                                             std::array<ComponentType, 3>& fields)
     : IField(std::move(name), mesh), _x(fields[0]), _y(fields[1]), _z(fields[2]) {
     log::debug("Creating vector field: '{}'", this->name());

@@ -28,7 +28,7 @@ class IExplicitSource : public ISource, public IPartialScheme {
 // coefficients are calculated during (and only during) initialization,
 // no corrections are required afterwards
 
-// TODO: ConstantScalar constructor should accept just a scalar value, and we should do the
+/// TODO: ConstantScalar constructor should accept just a scalar value, and we should do the
 // remaining housekeeping with creating the needed ScalarField
 template <SourceSign Sign = SourceSign::Positive, field::IScalarBased Field = field::Scalar>
 class ConstantScalar : public IExplicitSource {
@@ -81,7 +81,7 @@ class Laplacian : public IExplicitSource {
     Field _phi;
 };
 
-// TODO: Test this!
+/// TODO: Test this!
 // compare against john-s-butler-dit.github.io/NumericalAnalysisBook/ Chapter 06
 template <SourceSign Sign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {

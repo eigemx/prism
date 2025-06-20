@@ -20,7 +20,7 @@ auto pressureGradCalculated(const mesh::PMesh& mesh,
                             const Vector3d& gradp_avg) -> Vector3d;
 }
 
-// TODO: Vector should be replaced with Velocity.
+/// TODO: Vector should be replaced with Velocity.
 template <field::IVectorBased Vector>
 auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector {
     const auto& mesh = U.mesh();
@@ -52,7 +52,7 @@ auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P
         const auto& patch = mesh.faceBoundaryPatch(face);
 
         if (patch.isEmpty()) {
-            // TODO: this is a hack to avoid calling valueAtFace() on empty faces. We need to fix
+            /// TODO: this is a hack to avoid calling valueAtFace() on empty faces. We need to fix
             // this.
             u_face_data[face_id] = 0.0;
             v_face_data[face_id] = 0.0;

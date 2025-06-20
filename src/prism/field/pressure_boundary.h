@@ -3,6 +3,8 @@
 #include "pressure.h"
 
 namespace prism::field::boundary {
+//// TODO: remove this as we don't need a NoSlip boundary condition for pressure fields. NoSlip is
+/// applicable for velocity fields, where pressure in such boundaries is set as zero gradient.
 template <>
 class NoSlip<Pressure> : public IScalarBoundaryHandler {
   public:

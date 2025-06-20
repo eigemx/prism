@@ -112,7 +112,7 @@ void CuthillMckee::reorder(bool reverse) {
 
     std::vector<Cell> new_cells = cells;
 
-    // TODO: replace this with std::transform
+    /// TODO: replace this with std::transform
     for (auto& cell : cells) {
         auto new_id = old_to_new[cell.id()];
         cell.id() = new_id;

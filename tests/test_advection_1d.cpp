@@ -59,7 +59,7 @@ TEST_CASE("solve advection equation at u = 0.05 m/s, Pe ~= 5", "[advection]") {
     VectorXd diff_vec = analytical_solution.array() - T.values().array();
 
 
-    // TODO: delete this
+    /// TODO: delete this
     auto analytic_sol_field = field::Scalar("analytical_solution", mesh, analytical_solution);
     export_field_vtu(T, "T_1d.vtu");
     export_field_vtu(analytic_sol_field, "analytical_solution.vtu");

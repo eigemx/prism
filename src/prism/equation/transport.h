@@ -15,14 +15,14 @@
 
 namespace prism::eqn {
 
-// TODO: Make Transport check consistincey of the  conserved transport ScalarField meaning
+/// TODO: Make Transport check consistincey of the  conserved transport ScalarField meaning
 // that a transport equation shall have only one transport field.
 
-// TODO: Schemes that require no correction shall be updated only once.
-// TODO: Transport should have at most one convection scheme and at most one diffusion
+/// TODO: Schemes that require no correction shall be updated only once.
+/// TODO: Transport should have at most one convection scheme and at most one diffusion
 // scheme
 
-// TODO: This is not used anywhere, remove it?
+/// TODO: This is not used anywhere, remove it?
 template <field::IScalarBased Field, typename BHManagerSetter>
 class GeneralTransport {
   private:
@@ -56,17 +56,11 @@ class Transport : public LinearSystem,
     void addScheme(Scheme&& scheme);
 
   private:
-    template <typename Convection>
-        requires std::derived_from<
-            Convection,
-            scheme::convection::IConvection<typename Convection::RhoType, Field>>
+    //// TODO: Should this be IConvectionBased and IDiffusionBased instead?
+    template <scheme::convection::IAppliedConvectionBased Convection>
     void addScheme(Convection&& convection);
 
-    template <typename Diffusion>
-        requires std::derived_from<
-            Diffusion,
-            scheme::diffusion::IAppliedDiffusion<typename Diffusion::KappaType,
-                                                 typename Diffusion::FieldType>>
+    template <scheme::diffusion::IAppliedDiffusionBased Diffusion>
     void addScheme(Diffusion&& diffusion);
 
     template <typename Source>
@@ -87,7 +81,7 @@ class Transport : public LinearSystem,
 template <field::IScalarBased Field>
 template <typename Scheme, typename... Schemes>
 Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
-    : _phi(scheme.field()), LinearSystem(scheme.field().mesh().cellCount()) {
+    : _phi(scheme.field()), LinearSystem(scheme.field().mesh()->cellCount()) {
     // add the first mandatory scheme
     addScheme(std::forward<Scheme>(scheme));
 
@@ -118,7 +112,7 @@ void Transport<Field>::updateCoeffs() {
         rhs() += scheme->rhs();
     }
 
-    // TODO: this does not consider implicit sources
+    /// TODO: this does not consider implicit sources
     for (auto& source : _sources) {
         source->apply();
         rhs() += source->rhs();
@@ -135,7 +129,7 @@ void Transport<Field>::zeroOutCoeffs() {
         scheme->rhs().setZero();
     }
 
-    // TODO: this does not consider implicit sources
+    /// TODO: this does not consider implicit sources
     for (auto& source : _sources) {
         source->rhs().setZero();
     }
@@ -206,10 +200,7 @@ void Transport<Field>::addScheme(Scheme&& scheme) {
 }
 
 template <field::IScalarBased Field>
-template <typename Convection>
-    requires std::derived_from<
-        Convection,
-        scheme::convection::IConvection<typename Convection::RhoType, Field>>
+template <scheme::convection::IAppliedConvectionBased Convection>
 void Transport<Field>::addScheme(Convection&& convection) {
     if (convection.needsCorrection()) {
         _n_corrected_schemes++;
@@ -221,11 +212,7 @@ void Transport<Field>::addScheme(Convection&& convection) {
 }
 
 template <field::IScalarBased Field>
-template <typename Diffusion>
-    requires std::derived_from<
-        Diffusion,
-        scheme::diffusion::IAppliedDiffusion<typename Diffusion::KappaType,
-                                             typename Diffusion::FieldType>>
+template <scheme::diffusion::IAppliedDiffusionBased Diffusion>
 void Transport<Field>::addScheme(Diffusion&& diffusion) {
     if (diffusion.needsCorrection()) {
         _n_corrected_schemes++;

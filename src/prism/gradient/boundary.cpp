@@ -13,7 +13,7 @@ auto Outlet::get(const prism::field::IScalar& field, const prism::mesh::Face& fa
 
 auto Fixed::get(const prism::field::IScalar& field,
                 const prism::mesh::Face& face) -> prism::Vector3d {
-    const auto& owner = field.mesh().cell(face.owner());
+    const auto& owner = field.mesh()->cell(face.owner());
     prism::Vector3d d_Cf = face.center() - owner.center();
     double d_Cf_norm = d_Cf.norm();
     prism::Vector3d e = d_Cf / d_Cf_norm;
@@ -36,7 +36,7 @@ auto VelocityInlet::get(const prism::field::IScalar& field,
 
 auto FixedGradient::get(const prism::field::IScalar& field,
                         const prism::mesh::Face& face) -> prism::Vector3d {
-    const auto& boundary_patch = field.mesh().boundaryPatch(face);
+    const auto& boundary_patch = field.mesh()->boundaryPatch(face);
     return boundary_patch.getVectorBoundaryCondition(field.name());
 }
 } // namespace prism::gradient::boundary

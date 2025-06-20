@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int {
     auto P = field::Scalar("P", mesh, 0.0);
 
     // create source term
-    // TODO: use a more generic way to create source terms using mapped scalar fields
+    /// TODO: use a more generic way to create source terms using mapped scalar fields
     VectorXd src_values;
     src_values.resize(mesh.cellCount());
 

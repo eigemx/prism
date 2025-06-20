@@ -7,7 +7,7 @@ namespace prism::gradient {
 
 LeastSquares::LeastSquares(field::IScalar* field) : IGradient(field) {
     const auto& mesh = this->field()->mesh();
-    _cell_gradients.reserve(mesh.cellCount());
+    _cell_gradients.reserve(mesh->cellCount());
 
     std::transform(_cell_gradients.begin(),
                    _cell_gradients.end(),
@@ -22,16 +22,16 @@ void LeastSquares::setPseudoInvMatrices() {
     const auto& mesh = this->field()->mesh();
 
     // resize the pseudo-inverse matrices vector
-    _pinv_matrices.resize(mesh.cellCount());
+    _pinv_matrices.resize(mesh->cellCount());
 
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         // A 3x3 matrix of the left hand side of equation (9.27)
         // for the k-th cell, we calculate this distance matrix D
         // and push the pseudo-inverse [(D * D^T)^{-1} * D^T] to _pinv_matrix vector
         Matrix3d d_matrix = Matrix3d::Zero();
 
         for (auto face_id : cell.facesIds()) {
-            const auto& face = mesh.face(face_id);
+            const auto& face = mesh->face(face_id);
 
             // This will hold the distance vector from neighbor cell center to k-th cell
             // center, or in case we have a boundary face, r_CF will be the distance vector
@@ -41,7 +41,7 @@ void LeastSquares::setPseudoInvMatrices() {
 
             if (face.isInterior()) {
                 // interior face
-                const auto neighbor = mesh.otherSharingCell(cell, face);
+                const auto neighbor = mesh->otherSharingCell(cell, face);
                 r_CF = neighbor.center() - cell.center();
             } else {
                 // boundary face
@@ -78,7 +78,7 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     Vector3d b {0.0, 0.0, 0.0};
 
     for (auto face_id : cell.facesIds()) {
-        const auto& face = mesh.face(face_id);
+        const auto& face = mesh->face(face_id);
 
         double delta_phi = 0.0;
         auto phi_cell = this->field()->valueAtCell(cell);
@@ -86,18 +86,18 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
 
         if (face.isInterior()) {
             // interior face
-            const auto neighbor = mesh.otherSharingCell(cell, face);
+            const auto neighbor = mesh->otherSharingCell(cell, face);
             r_CF = neighbor.center() - cell.center();
             auto nei_phi = this->field()->valueAtCell(neighbor);
             delta_phi = nei_phi - phi_cell;
 
         } else {
             // boundary face
-            const auto& patch = mesh.faceBoundaryPatch(face);
+            const auto& patch = mesh->faceBoundaryPatch(face);
             if (patch.isEmpty()) {
                 continue; // skip empty patches
             }
-            
+
             auto bface_phi = this->field()->valueAtFace(face);
             r_CF = face.center() - cell.center();
             delta_phi = bface_phi - phi_cell;
