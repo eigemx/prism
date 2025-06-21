@@ -36,9 +36,7 @@ class IAppliedConvection
   public:
     IAppliedConvection(ConvectiveField U, Field phi);
 
-    void apply() override;
     auto needsCorrection() const noexcept -> bool override { return true; }
-
     auto inline field() -> Field override { return _phi; }
     auto inline U() -> const ConvectiveField& { return _U; }
 
@@ -50,12 +48,11 @@ class IAppliedConvection
                              const mesh::Cell& cell,
                              const mesh::Cell& neighbor,
                              const mesh::Face& face) -> detail::CoeffsTriplet = 0;
-
-    void applyInterior(const mesh::Face& face);
-    void applyBoundary();
-
     ConvectiveField _U;
     Field _phi;
+
+    void applyInterior(const mesh::Face& face) override;
+    void applyBoundary() override;
 };
 
 // Concept for diffusion schemes that are based on IAppliedConvection.
@@ -131,18 +128,6 @@ IAppliedConvection<ConvectiveField, Field>::IAppliedConvection(ConvectiveField U
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
-}
-
-template <field::IVectorBased ConvectiveField, typename Field>
-void IAppliedConvection<ConvectiveField, Field>::apply() {
-    applyBoundary();
-
-    const auto& interior_faces = this->field().mesh()->interiorFaces();
-    std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
-        applyInterior(face);
-    });
-
-    this->collect();
 }
 
 template <field::IVectorBased ConvectiveField, typename Field>

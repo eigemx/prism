@@ -22,7 +22,6 @@ template <typename Kappa, typename Field>
 class IAppliedDiffusion : public IFullScheme<Field> {
   public:
     IAppliedDiffusion(Kappa kappa, Field phi);
-    void apply() override;
     auto field() -> Field override { return _phi; }
     auto kappa() -> Kappa { return _kappa; }
 
@@ -30,8 +29,6 @@ class IAppliedDiffusion : public IFullScheme<Field> {
     using KappaType = Kappa;
 
   private:
-    virtual void applyInterior(const mesh::Face& face) = 0;
-    virtual void applyBoundary() = 0;
     Field _phi;
     Kappa _kappa;
 };
@@ -92,24 +89,6 @@ class Corrected
 template <typename KappaType, typename Field>
 IAppliedDiffusion<KappaType, Field>::IAppliedDiffusion(KappaType kappa, Field phi)
     : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()) {}
-
-template <typename KappaType, typename Field>
-void IAppliedDiffusion<KappaType, Field>::apply() {
-    /** @brief Applies discretized diffusion equation to the mesh->
-     * The discretized equation is applied using applyInterior() (per face basis) and
-     * applyBoundary() functions.
-     *
-     */
-    applyBoundary();
-
-    const auto& interior_faces = this->field().mesh()->interiorFaces();
-    std::for_each(interior_faces.begin(), interior_faces.end(), [this](const mesh::Face& face) {
-        applyInterior(face);
-    });
-
-    // we've inserted all the triplets, now we can collect them into the matrix
-    this->collect();
-}
 
 ///
 /// diffusion::NonCorrected implementation
