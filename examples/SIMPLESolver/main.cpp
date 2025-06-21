@@ -93,7 +93,7 @@ auto main(int argc, char* argv[]) -> int {
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
     // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
     auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, pressure_vec);
+    auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::Velocity, field::VelocityComponent>;
@@ -103,7 +103,7 @@ auto main(int argc, char* argv[]) -> int {
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
     auto nNonOrthCorrectiors = 3;
-    for (auto nOuterIter = 0; nOuterIter < 50; ++nOuterIter) {
+    for (auto nOuterIter = 0; nOuterIter < 20; ++nOuterIter) {
         auto rhoU = rho * U;
 
         auto uEqn = eqn::Momentum(div(rhoU, U.x()),     // ∇.(ρUu)
@@ -116,6 +116,7 @@ auto main(int argc, char* argv[]) -> int {
                                   grad(P, Coord::Y)     // = -∂P/∂y
         );
 
+        /*
         uEqn.setUnderRelaxFactor(0.9);
         vEqn.setUnderRelaxFactor(0.9);
         uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
@@ -129,6 +130,7 @@ auto main(int argc, char* argv[]) -> int {
 
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
+        */
 
         // calculate coefficients for the pressure equation
         const auto& vol_vec = mesh->cellsVolumeVector();
@@ -185,12 +187,14 @@ auto main(int argc, char* argv[]) -> int {
         }
         export_field_vtu(pEqn.field(), "pressure_correction.vtu");
 
+        /*
         // update velocity fields
         for (const auto& cell : mesh->cells()) {
             prism::Vector3d correction = -D.valueAtCell(cell) * P_prime.gradAtCell(cell);
             U.x()[cell.id()] += correction.x();
             U.y()[cell.id()] += correction.y();
         }
+        */
 
         P.values() = P.values().array() + (0.75 * P_prime.values().array());
 
