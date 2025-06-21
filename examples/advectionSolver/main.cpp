@@ -56,13 +56,9 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
     auto U = field::Velocity("U", mesh, inlet_velocity);
     field::Velocity rhoU = rho * U;
-
-    // A zero field, just to demonstrate how to add arbitray constant source terms
-    // auto useLessField = field::Scalar("zero", mesh, 0.0);
-
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
 
-    // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = S
+    // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     using div = scheme::convection::SecondOrderUpwind<field::Velocity, field::Scalar>;
     using laplacian =
@@ -74,13 +70,13 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    eqn.setUnderRelaxFactor(1.0);
+    eqn.setUnderRelaxFactor(0.95);
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nOrthogonalCorrectors = 40;
+    auto nOuterIterations = 150;
 
-    for (int i = 0; i < nOrthogonalCorrectors; ++i) {
+    for (int i = 0; i < nOuterIterations; ++i) {
         solver.solve(eqn, 10, 1e-20);
     }
 

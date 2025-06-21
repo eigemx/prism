@@ -91,42 +91,41 @@ auto main(int argc, char* argv[]) -> int {
 
     // set mesh fields
     auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    // auto U = field::Velocity("U", mesh, components);
-    auto P = field::Pressure("P", mesh, 0.0);
+    // auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    auto U = field::Velocity("U", mesh, components);
+    auto P = field::Pressure("P", mesh, pressure_vec);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<source::SourceSign::Negative, field::Pressure>;
 
-    auto rhoU = rho * U;
-
-    auto uEqn = eqn::Momentum(div(rhoU, U.x()),     // ∇.(ρUu)
-                              laplacian(mu, U.x()), // - ∇.(μ∇u)
-                              grad(P, Coord::X)     // = -∂p/∂x
-    );
-
-    auto vEqn = eqn::Momentum(div(rhoU, U.y()),     // ∇.(ρUv)
-                              laplacian(mu, U.y()), // - ∇.(μ∇v)
-                              grad(P, Coord::Y)     // = -∂p/∂y
-    );
-
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
     auto nNonOrthCorrectiors = 3;
-    for (auto nOuterIter = 0; nOuterIter < 10; ++nOuterIter) {
-        rhoU = rho * U; // update the rhoU field at every outer iteration
+    for (auto nOuterIter = 0; nOuterIter < 50; ++nOuterIter) {
+        auto rhoU = rho * U;
+
+        auto uEqn = eqn::Momentum(div(rhoU, U.x()),     // ∇.(ρUu)
+                                  laplacian(mu, U.x()), // - ∇.(μ∇u)
+                                  grad(P, Coord::X)     // = -∂P/∂x
+        );
+
+        auto vEqn = eqn::Momentum(div(rhoU, U.y()),     // ∇.(ρUv)
+                                  laplacian(mu, U.y()), // - ∇.(μ∇v)
+                                  grad(P, Coord::Y)     // = -∂P/∂y
+        );
+
+        uEqn.setUnderRelaxFactor(0.9);
+        vEqn.setUnderRelaxFactor(0.9);
+        uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+        vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+
         log::info("Outer iteration {}", nOuterIter);
-
         log::info("Solving y-momentum equations");
-        U_solver.solve(vEqn, 5, 1e-9);
-
+        U_solver.solve(vEqn, 5, 1e-19);
         log::info("Solving x-momentum equations");
-        U_solver.solve(uEqn, 5, 1e-9);
+        U_solver.solve(uEqn, 5, 1e-19);
 
         uEqn.updateCoeffs();
         vEqn.updateCoeffs();
@@ -159,12 +158,6 @@ auto main(int argc, char* argv[]) -> int {
         log::info("Correcting faces velocities using Rhie-Chow interpolation");
         U = ops::rhieChowCorrect(U, D, P);
 
-        /*
-        auto divU_rh = ops::div(U_rh);
-        auto divU = ops::div(U);
-        export_field_vtu(divU, "divU.vtu");
-        export_field_vtu(divU_rh, "divU_rh.vtu");
-        */
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
         auto P_prime = field::Pressure("P", mesh, 0.0);
@@ -172,7 +165,6 @@ auto main(int argc, char* argv[]) -> int {
         // NOTE: The corrector should reset to zero the correction ﬁeld at every iteration and
         // should also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
         // condition is used for the pressure.
-
 
         // pressure correction equation (density is dropped from both sides of the equation due to
         // incompressibility assumption)

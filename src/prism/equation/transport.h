@@ -63,10 +63,11 @@ class Transport : public LinearSystem,
     template <scheme::diffusion::IAppliedDiffusionBased Diffusion>
     void addScheme(Diffusion&& diffusion);
 
-    template <typename Source>
-        requires std::derived_from<Source, scheme::source::IExplicitSource>
+    template <scheme::source::IExplicitSourceBased Source>
     void addScheme(Source&& source);
 
+    template <scheme::source::IImplicitSourceBased Source>
+    void addScheme(Source&& source);
 
     std::vector<SharedPtr<scheme::IFullScheme<Field>>> _schemes;
     std::vector<SharedPtr<scheme::source::IExplicitSource>> _sources;
@@ -87,14 +88,6 @@ Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
 
     // add the rest of the schemes, if any
     (addScheme(std::forward<Schemes>(schemes)), ...);
-
-    if (_diff_scheme) {
-        log::debug("Transport::addScheme() found a diffusion scheme.");
-    }
-
-    if (_conv_scheme) {
-        log::debug("Transport::addScheme() found a convection scheme.");
-    }
 }
 
 
@@ -204,6 +197,7 @@ void Transport<Field>::addScheme(Scheme&& scheme) {
 template <field::IScalarBased Field>
 template <scheme::convection::IAppliedConvectionBased Convection>
 void Transport<Field>::addScheme(Convection&& convection) {
+    log::debug("Transport::addScheme() found a convection scheme.");
     if (convection.needsCorrection()) {
         _n_corrected_schemes++;
     }
@@ -216,6 +210,7 @@ void Transport<Field>::addScheme(Convection&& convection) {
 template <field::IScalarBased Field>
 template <scheme::diffusion::IAppliedDiffusionBased Diffusion>
 void Transport<Field>::addScheme(Diffusion&& diffusion) {
+    log::debug("Transport::addScheme() found a diffusion scheme.");
     if (diffusion.needsCorrection()) {
         _n_corrected_schemes++;
     }
@@ -226,15 +221,27 @@ void Transport<Field>::addScheme(Diffusion&& diffusion) {
 }
 
 template <field::IScalarBased Field>
-template <typename Source>
-    requires std::derived_from<Source, scheme::source::IExplicitSource>
+template <scheme::source::IExplicitSourceBased Source>
 void Transport<Field>::addScheme(Source&& source) {
+    log::debug("Transport::addScheme() found an explicit source scheme.");
     if (source.needsCorrection()) {
         _n_corrected_schemes++;
     }
 
     auto src_scheme = std::make_shared<Source>(std::forward<Source>(source));
     _sources.emplace_back(src_scheme);
+}
+
+template <field::IScalarBased Field>
+template <scheme::source::IImplicitSourceBased Source>
+void Transport<Field>::addScheme(Source&& source) {
+    log::debug("Transport::addScheme() found an implicit source scheme.");
+    if (source.needsCorrection()) {
+        _n_corrected_schemes++;
+    }
+
+    auto src_scheme = std::make_shared<Source>(std::forward<Source>(source));
+    _schemes.emplace_back(src_scheme);
 }
 
 } // namespace prism::eqn

@@ -1,13 +1,8 @@
 {
     "fields": [
         {
-            "name": "temperature",
+            "name": "y",
             "type": "scalar",
-            "gradScheme": "leastSquares"
-        },
-        {
-            "name": "U",
-            "type": "velocity",
             "gradScheme": "leastSquares"
         }
    ]

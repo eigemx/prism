@@ -16,6 +16,9 @@ class ISource {};
 
 class IImplicitSource : public ISource {};
 
+template <typename T>
+concept IImplicitSourceBased = std::derived_from<T, IImplicitSource>;
+
 // We inherit from FVScheme with field::Scalar as template specialization because for explicit
 // sources the type of the field won't matter, because we are not contributing to the matrix of
 // coefficients for the linear system of the conserved equation.
@@ -23,6 +26,9 @@ class IExplicitSource : public ISource, public IPartialScheme {
   public:
     IExplicitSource(std::size_t n_cells) : IPartialScheme(n_cells) {}
 };
+
+template <typename T>
+concept IExplicitSourceBased = std::derived_from<T, IExplicitSource>;
 
 // Discretized constant source/sink term (like gravity), takes a scalar field
 // and adds it to the right hand side of the system of equation
@@ -87,15 +93,20 @@ class Laplacian : public IExplicitSource {
 template <SourceSign Sign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:
-    ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh()->nCells()) {}
+    ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()) {}
+    ImplicitField(double coeff, Field& phi)
+        : _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()), _coeff(coeff) {}
+
     void apply() override;
     auto inline field() -> Field override { return _phi; }
-    auto inline needsCorrection() const -> bool override { return false; }
+    auto inline needsCorrection() const noexcept -> bool override { return false; }
 
   private:
     void inline applyInterior(const mesh::Face& face) override {}
+    void inline applyBoundary() override {}
 
     field::Scalar _phi;
+    double _coeff {1.0};
 };
 
 template <SourceSign Sign, field::IScalarBased Field>
@@ -182,6 +193,7 @@ void inline Laplacian<Sign, Kappa, Field>::apply() {
 template <SourceSign Sign, field::IScalarBased Field>
 void inline ImplicitField<Sign, Field>::apply() {
     this->matrix().setIdentity();
+    this->matrix() *= _coeff;
 
     if constexpr (Sign == SourceSign::Positive) {
         this->matrix() *= -1;
