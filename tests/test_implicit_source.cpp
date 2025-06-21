@@ -1,3 +1,10 @@
+/*
+ *
+ * This test case is based on Numerical Analysis with Applications in Python book
+ * by John S Butler (john.s.butler@tudublin.ie)
+ * https://john-s-butler-dit.github.io/NumericalAnalysisBook/index.html
+ *
+ */
 #include <prism/prism.h>
 
 #include <catch2/catch_test_macros.hpp>
