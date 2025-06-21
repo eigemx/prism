@@ -189,7 +189,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const Vector3d e = d_Cf / d_Cf_norm;
 
         Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
-        const double g_diff = Sf_prime.norm() / (d_Cf_norm + EPSILON);
+        const double g_diff = Sf_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
 
         scheme.insert(cell_id, cell_id, g_diff);
         scheme.rhs(cell_id) += g_diff * phi_wall;
@@ -239,10 +239,10 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         // const Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
         Vector3d Sf_prime = diffusion::detail::valueAtCell(kappa, owner) * face.areaVector();
         const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
-        const double gdiff = Ef_prime.norm() / (d_Cf_norm + EPSILON);
+        const double g_diff = Ef_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
 
-        scheme.insert(owner_id, owner_id, gdiff);
-        scheme.rhs(owner_id) += (gdiff * phi_wall) + Tf_prime.dot(phi.gradAtFace(face));
+        scheme.insert(owner_id, owner_id, g_diff);
+        scheme.rhs(owner_id) += (g_diff * phi_wall) + Tf_prime.dot(phi.gradAtFace(face));
     }
 }
 

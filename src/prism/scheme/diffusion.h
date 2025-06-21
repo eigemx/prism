@@ -128,8 +128,8 @@ void NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
     Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
 
     // geometric diffusion coefficient
-    /// NOTE: Taking the norm of Sf_prime loses the sign of kappa.
-    const double g_diff = Sf_prime.norm() / (d_CF_norm + EPSILON);
+    // Taking the norm of Sf_prime discards the sign of kappa, so we use the following instead
+    const double g_diff = Sf_prime.dot(d_CF) / (d_CF_norm * d_CF_norm + EPSILON);
 
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
@@ -180,25 +180,25 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::F
     const std::size_t neighbor_id = neighbor.id();
 
     // vector joining the centers of the two cells
-    const Vector3d dCF = neighbor.center() - owner.center();
-    const double dCF_norm = dCF.norm();
-    const Vector3d e = dCF / dCF_norm;
+    const Vector3d d_CF = neighbor.center() - owner.center();
+    const double d_CF_norm = d_CF.norm();
+    const Vector3d e = d_CF / d_CF_norm;
 
     const auto Sf = mesh::outwardAreaVector(face, owner);
     const Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
     const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
-    const double gdiff = Ef_prime.norm() / (dCF_norm + EPSILON);
+    const double g_diff = Ef_prime.dot(d_CF) / (d_CF_norm * d_CF_norm + EPSILON);
 
     /// g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
-    this->insert(owner_id, owner_id, gdiff);
-    this->insert(neighbor_id, neighbor_id, gdiff);
+    this->insert(owner_id, owner_id, g_diff);
+    this->insert(neighbor_id, neighbor_id, g_diff);
 
     // off-diagonal coefficients
-    this->insert(owner_id, neighbor_id, -gdiff);
-    this->insert(neighbor_id, owner_id, -gdiff);
+    this->insert(owner_id, neighbor_id, -g_diff);
+    this->insert(neighbor_id, owner_id, -g_diff);
 
     // update right hand side
     // cross-diffusion term is added to the right hand side of the equation

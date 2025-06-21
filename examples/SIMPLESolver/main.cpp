@@ -98,7 +98,7 @@ auto main(int argc, char* argv[]) -> int {
 
     using div = Upwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
-    using grad = source::Gradient<source::SourceSign::Negative, field::Pressure>;
+    using grad = source::Gradient<Sign::Negative, field::Pressure>;
 
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
@@ -172,7 +172,7 @@ auto main(int argc, char* argv[]) -> int {
             diffusion::Corrected<field::Tensor,
                                  scheme::diffusion::nonortho::OverRelaxedCorrector,
                                  field::Pressure>;
-        using div_U = source::Divergence<source::SourceSign::Negative, field::Velocity>;
+        using div_U = source::Divergence<Sign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
                                                     div_U(U)                 // == - (∇.U)
