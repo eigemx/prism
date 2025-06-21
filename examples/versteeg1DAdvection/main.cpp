@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
 
 #include "prism/export.h"
 #include "prism/field/scalar.h"

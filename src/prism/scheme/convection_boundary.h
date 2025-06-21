@@ -27,7 +27,7 @@ class VelocityInlet<convection::IAppliedConvection<ConvectiveField, F>>
   public:
     void apply(convection::IAppliedConvection<ConvectiveField, F>& scheme,
                const mesh::BoundaryPatch& patch) override;
-    auto inline name() const -> std::string override { return "fixed"; }
+    auto inline name() const -> std::string override { return "velocity-inlet"; }
 };
 
 template <field::IVectorBased ConvectiveField, typename F>
