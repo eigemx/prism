@@ -63,11 +63,11 @@ auto main(int argc, char* argv[]) -> int {
         diffusion::Corrected<Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector, Scalar>(
             kappa, T));
 
-    // eqn.setUnderRelaxFactor(0.95);
+    eqn.setUnderRelaxFactor(0.95);
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    auto nOrthoCorrectors = 5;
+    auto nOrthoCorrectors = 40;
 
     for (int i = 0; i < nOrthoCorrectors; i++) {
         solver.solve(eqn, 10, 1e-20);

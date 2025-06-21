@@ -7,12 +7,12 @@
         {
             "name": "inlet",
             "type": "fixed",
-            "value": 1
+            "value": 1.1752
         },
         {
             "name": "outlet",
             "type": "fixed",
-            "value": 0
+            "value": 10.0179
         }
     ]
 }
