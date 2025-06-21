@@ -9,8 +9,7 @@
 
 namespace prism::scheme::source {
 // source term is assumed to be always on the right hand side of the conserved equation.
-// we can control the sign of the source term by using the SourceSign template parameter.
-enum class SourceSign { Positive, Negative };
+// we can control the sign of the source term by using the Sign template parameter.
 
 class ISource {};
 
@@ -37,7 +36,7 @@ concept IExplicitSourceBased = std::derived_from<T, IExplicitSource>;
 
 /// TODO: ConstantScalar constructor should accept just a scalar value, and we should do the
 // remaining housekeeping with creating the needed ScalarField
-template <SourceSign Sign = SourceSign::Positive, field::IScalarBased Field = field::Scalar>
+template <Sign SourceSign = Sign::Positive, field::IScalarBased Field = field::Scalar>
 class ConstantScalar : public IExplicitSource {
   public:
     ConstantScalar(Field phi);
@@ -48,7 +47,7 @@ class ConstantScalar : public IExplicitSource {
     Field _phi;
 };
 
-template <SourceSign Sign = SourceSign::Positive, typename Vector = field::Vector>
+template <Sign SourceSign = Sign::Positive, typename Vector = field::Vector>
 class Divergence : public IExplicitSource {
   public:
     Divergence(Vector U);
@@ -62,7 +61,7 @@ class Divergence : public IExplicitSource {
 
 // Adds a source for a gradient of a scalar field, in a specific coordinate
 // for example the gradient of the pressure in the x-direction: ∂p/∂x
-template <SourceSign Sign = SourceSign::Positive, typename Field = field::Scalar>
+template <Sign SourceSign = Sign::Positive, typename Field = field::Scalar>
 class Gradient : public IExplicitSource {
   public:
     Gradient(Field phi, Coord coord);
@@ -74,7 +73,7 @@ class Gradient : public IExplicitSource {
     Coord _coord;
 };
 
-template <SourceSign Sign = SourceSign::Positive,
+template <Sign SourceSign = Sign::Positive,
           typename Kappa = field::UniformScalar,
           typename Field = field::Scalar>
 class Laplacian : public IExplicitSource {
@@ -88,9 +87,7 @@ class Laplacian : public IExplicitSource {
     Field _phi;
 };
 
-/// TODO: Test this!
-// compare against john-s-butler-dit.github.io/NumericalAnalysisBook/ Chapter 06
-template <SourceSign Sign, field::IScalarBased Field>
+template <Sign SourceSign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:
     ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()) {}
@@ -109,38 +106,39 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
     double _coeff {1.0};
 };
 
-template <SourceSign Sign, field::IScalarBased Field>
-ConstantScalar<Sign, Field>::ConstantScalar(Field phi)
+template <Sign SourceSign, field::IScalarBased Field>
+ConstantScalar<SourceSign, Field>::ConstantScalar(Field phi)
     : _phi(phi), IExplicitSource(phi.mesh()->cellCount()) {}
 
-template <SourceSign Sign, field::IScalarBased Field>
-void inline ConstantScalar<Sign, Field>::apply() {
+template <Sign SourceSign, field::IScalarBased Field>
+void inline ConstantScalar<SourceSign, Field>::apply() {
     const auto& vol_field = _phi.mesh()->cellsVolumeVector();
 
-    if constexpr (Sign == SourceSign::Positive) {
+    if constexpr (SourceSign == Sign::Positive) {
         rhs() = _phi.values().array() * vol_field.array();
         return;
     }
     rhs() = -_phi.values().array() * vol_field.array();
 }
 
-template <SourceSign Sign, typename Vector>
-Divergence<Sign, Vector>::Divergence(Vector U) : IExplicitSource(U.mesh()->cellCount()), _U(U) {}
+template <Sign SourceSign, typename Vector>
+Divergence<SourceSign, Vector>::Divergence(Vector U)
+    : IExplicitSource(U.mesh()->cellCount()), _U(U) {}
 
 
-template <SourceSign Sign, typename Vector>
-void inline Divergence<Sign, Vector>::apply() {
+template <Sign SourceSign, typename Vector>
+void inline Divergence<SourceSign, Vector>::apply() {
     const auto& vol_field = _U.mesh()->cellsVolumeVector();
 
-    if constexpr (Sign == SourceSign::Positive) {
+    if constexpr (SourceSign == Sign::Positive) {
         rhs() = ops::div(_U).values().array() * vol_field.array();
         return;
     }
     rhs() = -ops::div(_U).values().array() * vol_field.array();
 }
 
-template <SourceSign Sign, typename Field>
-Gradient<Sign, Field>::Gradient(Field phi, Coord coord)
+template <Sign SourceSign, typename Field>
+Gradient<SourceSign, Field>::Gradient(Field phi, Coord coord)
     : _phi(phi), _coord(coord), IExplicitSource(phi.mesh()->cellCount()) {
     log::debug(
         "prism::scheme::source::Gradient(): Creating {}-coordinate gradient source for field "
@@ -149,8 +147,8 @@ Gradient<Sign, Field>::Gradient(Field phi, Coord coord)
         phi.name());
 }
 
-template <SourceSign Sign, typename Field>
-void Gradient<Sign, Field>::apply() {
+template <Sign SourceSign, typename Field>
+void Gradient<SourceSign, Field>::apply() {
     const auto& vol_field = _phi.mesh()->cellsVolumeVector();
 
     switch (_coord) {
@@ -162,40 +160,38 @@ void Gradient<Sign, Field>::apply() {
             rhs() = ops::grad(_phi, Coord::Y).values().array() * vol_field.array();
             break;
         }
-
         case Coord::Z: {
             rhs() = ops::grad(_phi, Coord::Z).values().array() * vol_field.array();
             break;
         }
     }
-
-    if constexpr (Sign == SourceSign::Negative) {
+    if constexpr (SourceSign == Sign::Negative) {
         rhs() = -rhs();
     }
 }
 
-template <SourceSign Sign, typename Kappa, typename Field>
-Laplacian<Sign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
+template <Sign SourceSign, typename Kappa, typename Field>
+Laplacian<SourceSign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
     : IExplicitSource(phi.mesh()->nCells()), _kappa(kappa), _phi(phi) {}
 
-template <SourceSign Sign, typename Kappa, typename Field>
-void inline Laplacian<Sign, Kappa, Field>::apply() {
+template <Sign SourceSign, typename Kappa, typename Field>
+void inline Laplacian<SourceSign, Kappa, Field>::apply() {
     auto grad_phi = ops::grad(_phi);
     auto div = ops::div(grad_phi);
 
-    if constexpr (Sign == SourceSign::Positive) {
+    if constexpr (SourceSign == Sign::Positive) {
         rhs() = div.values();
         return;
     }
     rhs() = -div.values();
 }
 
-template <SourceSign Sign, field::IScalarBased Field>
-void inline ImplicitField<Sign, Field>::apply() {
+template <Sign SourceSign, field::IScalarBased Field>
+void inline ImplicitField<SourceSign, Field>::apply() {
     this->matrix().setIdentity();
-    this->matrix() *= _coeff;
+    this->matrix().diagonal() *= _coeff * this->field().mesh()->cellsVolumeVector();
 
-    if constexpr (Sign == SourceSign::Positive) {
+    if constexpr (SourceSign == Sign::Positive) {
         this->matrix() *= -1;
         return;
     }

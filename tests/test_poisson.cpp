@@ -55,8 +55,8 @@ TEST_CASE("test poisson equation", "[poisson]") {
     auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(
-        laplacian(c, P),                                                            // -∇.∇p
-        source::ConstantScalar<source::SourceSign::Positive, field::Scalar>(source) // = S
+        laplacian(c, P),                                              // -∇.∇p
+        source::ConstantScalar<Sign::Positive, field::Scalar>(source) // = S
     );
 
     // solve

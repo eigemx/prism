@@ -67,7 +67,7 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
     std::size_t iter = 0;
 
     eqn.updateCoeffs();
-    // eqn.relax();
+    eqn.relax();
 
     for (; iter < n_iter; iter++) {
         if (iter == 0) {

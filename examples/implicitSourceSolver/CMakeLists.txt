@@ -1,3 +1,0 @@
-add_executable(implicitSourceSolver main.cpp)
-
-target_link_libraries(implicitSourceSolver prism)

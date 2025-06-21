@@ -48,7 +48,7 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
 
     auto U = field::Velocity("U", mesh, inlet_velocity);
     field::Velocity rhoU = rho * U;
-    auto kappa = field::UniformScalar("kappa", mesh, -0.1);
+    auto kappa = field::UniformScalar("kappa", mesh, 0.1);
 
     using div = scheme::convection::Upwind<field::Velocity, field::Scalar>;
     using laplacian = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
