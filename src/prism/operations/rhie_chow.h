@@ -4,7 +4,6 @@
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
 #include "prism/mesh/face.h"
-#include "prism/mesh/pmesh.h"
 #include "prism/types.h"
 
 namespace prism::ops {
@@ -12,13 +11,35 @@ namespace prism::ops {
 template <field::IVectorBased Vector>
 auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector;
 
+template <field::IVectorBased Vector>
+auto rhieChowCorrect(const mesh::Face& face,
+                     Vector& U,
+                     const field::Tensor& D,
+                     const field::Pressure& P) -> Vector;
+
 namespace detail {
 auto pressureGradCalculated(const mesh::Face& face,
                             const field::Pressure& P,
                             const Vector3d& gradp_avg) -> Vector3d;
 }
 
-/// TODO: Vector should be replaced with Velocity.
+template <field::IVectorBased Vector>
+auto rhieChowCorrect(const mesh::Face& face,
+                     Vector& U,
+                     const field::Tensor& D,
+                     const field::Pressure& P) -> Vector {
+    const std::size_t face_id = face.id();
+    const Vector3d& Uf = U.valueAtFace(face);
+    const Matrix3d& Df = D.valueAtFace(face);
+    const Vector3d gradp_avg = P.gradAtFace(face);
+    const Vector3d gradp_calculated = detail::pressureGradCalculated(face, P, gradp_avg);
+
+    // Equation 15.60
+    Vector3d Uf_corrected = Uf - (Df * (gradp_calculated - gradp_avg));
+    return Uf_corrected;
+}
+
+/// TODO: delete this
 template <field::IVectorBased Vector>
 auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector {
     const auto& mesh = U.mesh();
@@ -62,13 +83,9 @@ auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P
     }
 
     using Component = typename Vector::ComponentType;
-    auto x_rh = Component(U.x().name(), mesh, U.x().values(), Coord::X);
-    auto y_rh = Component(U.y().name(), mesh, U.y().values(), Coord::Y);
-    auto z_rh = Component(U.z().name(), mesh, U.z().values(), Coord::Z);
-    x_rh.setFaceValues(u_face_data);
-    y_rh.setFaceValues(v_face_data);
-    z_rh.setFaceValues(w_face_data);
-
+    auto x_rh = Component(U.x().name(), mesh, U.x().values(), u_face_data, Coord::X);
+    auto y_rh = Component(U.y().name(), mesh, U.y().values(), v_face_data, Coord::Y);
+    auto z_rh = Component(U.z().name(), mesh, U.z().values(), w_face_data, Coord::Z);
     auto components = std::array {x_rh, y_rh, z_rh};
     return Vector {U.name(), mesh, components};
 }

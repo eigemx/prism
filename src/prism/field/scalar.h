@@ -100,14 +100,21 @@ class GeneralScalar
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
-    auto parent() -> IVector*;
-    void setParent(IVector* parent);
+    auto parent() const -> const IVector*;
+    void setParent(const IVector* parent);
 
     auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
     auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
+    template <typename Func, typename... Args>
+    void updateInteriorFaces(Func func, Args&&... args);
+
+    template <typename Func, typename... Args>
+    void updateFaces(Func func, Args&&... args);
+
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
+    auto clone() const -> GeneralScalar;
 
     auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
     auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
@@ -124,9 +131,9 @@ class GeneralScalar
 
     /// TODO: _face_data should not include empty faces
     SharedPtr<VectorXd> _face_data = nullptr;
-    SharedPtr<gradient::IGradient> _grad_scheme;
+    SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
 
-    IVector* _parent = nullptr;
+    const IVector* _parent = nullptr;
     std::optional<Coord> _coord = std::nullopt;
     BHManagerSetter _setter;
 };
@@ -457,12 +464,12 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face
 }
 
 template <typename Units, typename BHManagerSetter>
-auto GeneralScalar<Units, BHManagerSetter>::parent() -> IVector* {
+auto GeneralScalar<Units, BHManagerSetter>::parent() const -> const IVector* {
     return _parent;
 }
 
 template <typename Units, typename BHManagerSetter>
-void GeneralScalar<Units, BHManagerSetter>::setParent(IVector* parent) {
+void GeneralScalar<Units, BHManagerSetter>::setParent(const IVector* parent) {
     _parent = parent;
     /// TODO: check parent and component names consistency
 }
@@ -540,6 +547,63 @@ template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::gradAtCellStored(const mesh::Cell& cell) const
     -> Vector3d {
     return _grad_scheme->gradAtCellStored(cell);
+}
+
+template <typename Units, typename BHManagerSetter>
+template <typename Func, typename... Args>
+void GeneralScalar<Units, BHManagerSetter>::updateInteriorFaces(Func func, Args&&... args) {
+    if (!hasFaceValues()) {
+        VectorXd face_values(this->mesh()->faceCount());
+        face_values.setZero();
+
+        for (const auto& patch : this->mesh()->boundaryPatches()) {
+            if (patch.isEmpty()) {
+                continue; // skip empty patches
+            }
+            for (const auto& face_id : patch.facesIds()) {
+                face_values[face_id] = valueAtFace(face_id);
+            }
+        }
+        _face_data = std::make_shared<VectorXd>(std::move(face_values));
+    }
+
+    for (const auto& face : this->mesh()->interiorFaces()) {
+        (*_face_data)[face.id()] = func(face, std::forward<Args>(args)...);
+    }
+}
+
+template <typename Units, typename BHManagerSetter>
+template <typename Func, typename... Args>
+void GeneralScalar<Units, BHManagerSetter>::updateFaces(Func func, Args&&... args) {
+    updateInteriorFaces(func, std::forward<Args>(args)...);
+
+    for (const auto& patch : this->mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue; // skip empty patches
+        }
+        for (const auto& face_id : patch.facesIds()) {
+            const auto& face = this->mesh()->face(face_id);
+            (*_face_data)[face_id] = func(face, std::forward<Args>(args)...);
+        }
+    }
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::clone() const -> GeneralScalar {
+    /// NOTE: cloned field is parentless.
+    if (this->coord().has_value()) {
+        auto clone =
+            GeneralScalar(this->name(), this->mesh(), this->values(), this->coord().value());
+        if (hasFaceValues()) {
+            clone.setFaceValues(*_face_data);
+        }
+        return clone;
+    }
+    auto clone = GeneralScalar(this->name(), this->mesh(), this->values());
+    if (hasFaceValues()) {
+        clone.setFaceValues(*_face_data);
+    }
+    return clone;
 }
 
 } // namespace prism::field

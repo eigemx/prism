@@ -18,8 +18,8 @@ auto pressureGradCalculated(const mesh::Face& face,
 
     auto gradp_ortho = (p_neigh - p_owner) / d_CF_norm;
 
-    // return gradp_avg + ((gradp_ortho - gradp_avg.dot(e_CF)) * e_CF); // book
-    return gradp_ortho * e_CF; // aidan
+    return gradp_avg + ((gradp_ortho - gradp_avg.dot(e_CF)) * e_CF); // book
+    // return gradp_ortho * e_CF; // aidan
     // return gradp_avg - (gradp_avg.dot(e_CF) * e_CF) + (gradp_ortho * e_CF); // foam
 }
 

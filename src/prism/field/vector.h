@@ -40,12 +40,22 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     auto inline y() const -> const Component& { return _y; }
     auto inline z() const -> const Component& { return _z; }
 
+    template <typename Func, typename... Args>
+    void updateInteriorFaces(Func func, Args&&... args);
+
+    template <typename Func, typename... Args>
+    void updateFaces(Func func, Args&&... args);
+
+    auto clone() const -> GeneralVector;
+
     auto operator[](std::size_t i) const -> Vector3d;
 
     using ComponentType = Component;
 
   private:
+    void setFaceValues(std::vector<Vector3d> values);
     Component _x, _y, _z;
+    SharedPtr<std::vector<Vector3d>> _face_data = nullptr;
 };
 
 using Vector = GeneralVector<Scalar>;
@@ -80,7 +90,7 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
     log::debug("Creating vector field: '{}'", this->name());
     // check mesh consistency
     for (auto& field : fields) {
-        if (field.parent()) {
+        if (field.parent() != nullptr) {
             log::warn(
                 "field::Vector '{}' constructor was given a sub-field '{}' that already has a "
                 "parent field::Vector",
@@ -116,6 +126,9 @@ auto GeneralVector<ComponentType>::valueAtCell(const mesh::Cell& cell) const -> 
 
 template <typename ComponentType>
 auto GeneralVector<ComponentType>::valueAtFace(std::size_t face_id) const -> Vector3d {
+    if (hasFaceValues()) {
+        return _face_data->at(face_id);
+    }
     return {_x.valueAtFace(face_id), _y.valueAtFace(face_id), _z.valueAtFace(face_id)};
 }
 
@@ -126,12 +139,87 @@ auto GeneralVector<ComponentType>::valueAtFace(const mesh::Face& face) const -> 
 
 template <typename ComponentType>
 auto GeneralVector<ComponentType>::hasFaceValues() const -> bool {
-    return _x.hasFaceValues() && _y.hasFaceValues() && _z.hasFaceValues();
+    return _face_data != nullptr;
 }
 
 template <typename ComponentType>
 auto GeneralVector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
     return {_x.values()[i], _y.values()[i], _z.values()[i]};
+}
+
+template <typename Component>
+template <typename Func, typename... Args>
+void GeneralVector<Component>::updateInteriorFaces(Func func, Args&&... args) {
+    if (!hasFaceValues()) {
+        std::vector<Vector3d> face_values(this->mesh()->faceCount(), Vector3d::Zero());
+
+        // For boundary patches, we initialize the corresponding face entries.
+        for (const auto& patch : this->mesh()->boundaryPatches()) {
+            if (patch.isEmpty()) {
+                continue; // Skip empty patches.
+            }
+            for (const auto& face_id : patch.facesIds()) {
+                face_values[face_id] = valueAtFace(face_id);
+            }
+        }
+        _face_data = std::make_shared<std::vector<Vector3d>>(std::move(face_values));
+    }
+
+    for (const auto& face : this->mesh()->interiorFaces()) {
+        (*_face_data)[face.id()] = func(face, std::forward<Args>(args)...);
+    }
+}
+
+template <typename Component>
+template <typename Func, typename... Args>
+void GeneralVector<Component>::updateFaces(Func func, Args&&... args) {
+    updateInteriorFaces(func, std::forward<Args>(args)...);
+
+    for (const auto& patch : this->mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue; // Skip empty patches.
+        }
+        for (const auto& face_id : patch.facesIds()) {
+            const auto& face = this->mesh()->face(face_id);
+            (*_face_data)[face_id] = func(face, std::forward<Args>(args)...);
+        }
+    }
+}
+
+template <typename Component>
+auto GeneralVector<Component>::clone() const -> GeneralVector {
+    auto components = std::array<Component, 3> {
+        this->x().clone(),
+        this->y().clone(),
+        this->z().clone(),
+    };
+
+    auto clone = GeneralVector(this->name(), this->mesh(), components);
+    if (hasFaceValues()) {
+        clone.setFaceValues(*_face_data);
+    }
+    return clone;
+}
+
+template <typename Component>
+void GeneralVector<Component>::setFaceValues(std::vector<Vector3d> values) {
+    if (values.size() != mesh()->faceCount()) {
+        throw std::runtime_error(fmt::format(
+            "prism::field::GeneralVector::setFaceValues(): cannot set face values for "
+            "vector field {}, to a face data vector having a different size that field's faces "
+            "count.",
+            name()));
+    }
+
+    if (hasFaceValues()) {
+        log::debug(
+            "GeneralVector::setFaceValues() was called for field '{}', which already has face "
+            "values set.",
+            name());
+    }
+
+    log::debug("Setting face values for field '{}'", name());
+    _face_data = std::make_shared<std::vector<Vector3d>>(std::move(values));
 }
 
 } // namespace prism::field
