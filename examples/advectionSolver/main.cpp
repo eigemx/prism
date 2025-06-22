@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <filesystem>
 
+#include "prism/export.h"
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
 #include "prism/scheme/convection.h"
@@ -74,7 +75,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nOuterIterations = 150;
+    auto nOuterIterations = 10;
 
     for (int i = 0; i < nOuterIterations; ++i) {
         solver.solve(eqn, 10, 1e-20);
@@ -85,5 +86,7 @@ auto main(int argc, char* argv[]) -> int {
     auto div_U = ops::div(U);
     prism::export_field_vtu(div_U, "div.vtu");
 
+    export_field_vtu(U.x().clone(), "U_x.vtu");
+    export_field_vtu(U.clone().y(), "U_y.vtu");
     return 0;
 }

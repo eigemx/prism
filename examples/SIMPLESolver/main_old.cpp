@@ -1,8 +1,10 @@
-#include <fmt/base.h>
+#include <fmt/core.h>
 #include <prism/prism.h>
 
 #include <filesystem>
-#include <iostream>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <stdexcept>
 
 #include "prism/constants.h"
 #include "prism/export.h"
@@ -10,7 +12,54 @@
 #include "prism/field/velocity.h"
 #include "prism/log.h"
 
+using json = nlohmann::json;
 using namespace prism;
+
+namespace fs = std::filesystem;
+
+struct FoamFields {
+    std::vector<prism::Vector3d> velocity;
+    std::vector<double> pressure;
+    std::vector<double> temperature;
+};
+
+auto fileToJson(const fs::path& path) -> json {
+    if (!std::filesystem::exists(path)) {
+        throw std::runtime_error("File " + path.string() + " does not exist!");
+    }
+    auto file = std::ifstream(path);
+    return json::parse(file);
+}
+
+auto readFields(const std::filesystem::path& fields_file) -> FoamFields {
+    auto doc = fileToJson(fields_file);
+
+    auto velocity = doc["U"];
+    auto pressure = doc["p"].get<std::vector<double>>();
+
+    std::vector<prism::Vector3d> velocity_vec;
+    for (const auto& v : velocity) {
+        velocity_vec.emplace_back(v[0], v[1], v[2]);
+    }
+
+    return {velocity_vec, pressure, {}};
+}
+
+auto readVelocityComponents(const std::vector<prism::Vector3d>& velocity)
+    -> std::array<VectorXd, 3> {
+    VectorXd u, v, w; // NOLINT
+    u.resize(velocity.size());
+    v.resize(velocity.size());
+    w.resize(velocity.size());
+
+    for (size_t i = 0; i < velocity.size(); i++) {
+        u[i] = velocity[i].x();
+        v[i] = velocity[i].y();
+        w[i] = velocity[i].z();
+    }
+
+    return {u, v, w};
+}
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
@@ -29,11 +78,22 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    // set mesh fields
-    auto mu = field::UniformScalar("mu", mesh, 1e-5);
-    auto U = field::Velocity("U", mesh, {23.0, 0.0, 0.0});
-    auto P = field::Pressure("P", mesh, 0.0);
+    // read pressure field
+    // auto fields = readFields(fs::path(unv_file_name).parent_path() / "foam_fields.json");
+    // auto pressure_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(fields.pressure.data(),
+    //                                                                  fields.pressure.size());
+    // read velocity field
+    // auto raw_velocity_array = readVelocityComponents(fields.velocity);
+    // auto Ux = field::VelocityComponent("U_x", mesh, raw_velocity_array[0], Coord::X);
+    // auto Uy = field::VelocityComponent("U_y", mesh, raw_velocity_array[1], Coord::Y);
+    // auto Uz = field::VelocityComponent("U_z", mesh, raw_velocity_array[2], Coord::Z);
+    // auto components = std::array {Ux, Uy, Uz};
 
+    // set mesh fields
+    auto mu = field::UniformScalar("mu", mesh, 1e-3);
+    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
+    // auto U = field::Velocity("U", mesh, components);
+    auto P = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
 
     using div = Upwind<field::Velocity, field::VelocityComponent>;
@@ -43,8 +103,7 @@ auto main(int argc, char* argv[]) -> int {
     auto U_solver = solver::BiCGSTAB<field::VelocityComponent>();
 
     auto nNonOrthCorrectiors = 3;
-
-    for (auto nOuterIter = 0; nOuterIter < 20; ++nOuterIter) {
+    for (auto nOuterIter = 0; nOuterIter < 2; ++nOuterIter) {
         auto rhoU = rho * U;
 
         auto uEqn = eqn::Momentum(div(rhoU, U.x()),     // ∇.(ρUu)
@@ -69,9 +128,7 @@ auto main(int argc, char* argv[]) -> int {
         U_solver.solve(uEqn, 5, 1e-19);
 
         uEqn.updateCoeffs();
-        uEqn.relax();
         vEqn.updateCoeffs();
-        vEqn.relax();
 
         // calculate coefficients for the pressure equation
         const auto& vol_vec = mesh->cellsVolumeVector();
@@ -99,7 +156,7 @@ auto main(int argc, char* argv[]) -> int {
 
         // Rhie-Chow interpolation for velocity face values
         log::info("Correcting faces velocities using Rhie-Chow interpolation");
-        auto U_corrected = ops::rhieChowCorrect(U, D, P);
+        U = ops::rhieChowCorrect(U, D, P);
 
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
@@ -118,7 +175,7 @@ auto main(int argc, char* argv[]) -> int {
         using div_U = source::Divergence<Sign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                    div_U(U_corrected)       // == - (∇.U)
+                                                    div_U(U)                 // == - (∇.U)
         );
         auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
@@ -146,4 +203,11 @@ auto main(int argc, char* argv[]) -> int {
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(P, "pressure.vtu");
+    // export_field_vtu(components[0], "solution_x_true.vtu");
+
+    // auto diff = field::Scalar("diff", mesh, components[0].values() - U.x().values());
+    // export_field_vtu(diff, "diff.vtu");
+
+    auto vol_field = field::Scalar("volume", mesh, mesh->cellsVolumeVector());
+    export_field_vtu(vol_field, "volume.vtu");
 }

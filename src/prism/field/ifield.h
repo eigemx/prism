@@ -22,10 +22,6 @@ void checkMesh(const SharedPtr<mesh::PMesh>& mesh);
 template <typename CellValueType>
 class IField {
   public:
-    /// TODO: _mesh takes the PMesh pointer, not the PMesh reference, because
-    // PMesh is not copyable. This is a workaround, but it is not ideal
-    // because it can lead to dangling pointers if the PMesh is destroyed.
-    // Consider using a reference wrapper or a shared pointer instead.
     IField(std::string name, const SharedPtr<mesh::PMesh>& mesh);
     IField(const IField& other) = default;
     IField(IField&& other) noexcept = default;
