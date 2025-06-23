@@ -12,10 +12,10 @@ template <field::IVectorBased Vector>
 auto rhieChowCorrect(Vector& U, const field::Tensor& D, const field::Pressure& P) -> Vector;
 
 template <field::IVectorBased Vector>
-auto rhieChowCorrect(const mesh::Face& face,
-                     Vector& U,
-                     const field::Tensor& D,
-                     const field::Pressure& P) -> Vector;
+auto rhieChowCorrectFace(const mesh::Face& face,
+                         Vector& U,
+                         const field::Tensor& D,
+                         const field::Pressure& P) -> Vector3d;
 
 namespace detail {
 auto pressureGradCalculated(const mesh::Face& face,
@@ -24,10 +24,10 @@ auto pressureGradCalculated(const mesh::Face& face,
 }
 
 template <field::IVectorBased Vector>
-auto rhieChowCorrect(const mesh::Face& face,
-                     Vector& U,
-                     const field::Tensor& D,
-                     const field::Pressure& P) -> Vector {
+auto rhieChowCorrectFace(const mesh::Face& face,
+                         Vector& U,
+                         const field::Tensor& D,
+                         const field::Pressure& P) -> Vector3d {
     const std::size_t face_id = face.id();
     const Vector3d& Uf = U.valueAtFace(face);
     const Matrix3d& Df = D.valueAtFace(face);

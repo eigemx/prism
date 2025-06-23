@@ -54,25 +54,30 @@ class GeneralScalar
                   const SharedPtr<mesh::PMesh>& mesh,
                   double value,
                   IVector* parent = nullptr);
+
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   double value,
                   Coord coord,
                   IVector* parent = nullptr);
+
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
                   IVector* parent = nullptr);
+
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
                   Coord coord,
                   IVector* parent = nullptr);
+
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
                   VectorXd face_data,
                   IVector* parent = nullptr);
+
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
@@ -200,19 +205,18 @@ auto UniformScalar::operator*(const VectorField& other) -> VectorField {
     }
 
     using Component = typename VectorField::ComponentType;
-    auto components =
-        std::array<Component, 3>({Component(output_name + "_x",
-                                            this->mesh(),
-                                            this->_value * other.x().values().array(),
-                                            face_values_x),
-                                  Component(output_name + "_y",
-                                            this->mesh(),
-                                            this->_value * other.y().values().array(),
-                                            face_values_y),
-                                  Component(output_name + "_z",
-                                            this->mesh(),
-                                            this->_value * other.z().values().array(),
-                                            face_values_z)});
+    std::array<Component, 3> components = {Component(output_name + "_x",
+                                                     this->mesh(),
+                                                     this->_value * other.x().values().array(),
+                                                     face_values_x),
+                                           Component(output_name + "_y",
+                                                     this->mesh(),
+                                                     this->_value * other.y().values().array(),
+                                                     face_values_y),
+                                           Component(output_name + "_z",
+                                                     this->mesh(),
+                                                     this->_value * other.z().values().array(),
+                                                     face_values_z)};
 
     return VectorField(fmt::format("{}{}", this->name(), other.name()), this->mesh(), components);
 }

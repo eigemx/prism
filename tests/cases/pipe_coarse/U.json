@@ -25,7 +25,7 @@
         },
         {
             "name": "Outlet",
-            "type": "outlet"
+            "type": "zero-gradient"
         }
     ]
 }
