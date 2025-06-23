@@ -46,6 +46,9 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     template <typename Func, typename... Args>
     void updateFaces(Func func, Args&&... args);
 
+    template <typename Func, typename... Args>
+    void updateCells(Func func, Args&&... args);
+
     auto clone() const -> GeneralVector;
 
     auto operator[](std::size_t i) const -> Vector3d;
@@ -220,6 +223,17 @@ void GeneralVector<Component>::setFaceValues(std::vector<Vector3d> values) {
 
     log::debug("Setting face values for field '{}'", name());
     _face_data = std::make_shared<std::vector<Vector3d>>(std::move(values));
+}
+
+template <typename Component>
+template <typename Func, typename... Args>
+void GeneralVector<Component>::updateCells(Func func, Args&&... args) {
+    for (const auto& cell : this->mesh()->cells()) {
+        auto update = func(cell, std::forward<Args>(args)...);
+        this->x()[cell.id()] = update.x();
+        this->y()[cell.id()] = update.y();
+        this->z()[cell.id()] = update.z();
+    }
 }
 
 } // namespace prism::field
