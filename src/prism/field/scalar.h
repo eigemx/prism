@@ -377,14 +377,15 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
     setGradScheme();
 }
 
+/// TODO: delete this in favor of updateFaceValues()
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     if (values.size() != mesh()->faceCount()) {
         throw std::runtime_error(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerProvider, "
-                        "BHManagerSetter>::setFaceValues(): cannot set face values for "
-                        "scalar field {}, to a "
-                        "face data vector having a different size that field's faces count.",
+                        "BHManagerSetter>::setFaceValues(): cannot set face values for scalar "
+                        "field {}, to a face data vector having a different size that "
+                        "field's faces count.",
                         name()));
     }
 

@@ -10,6 +10,7 @@
 #include "prism/field/velocity.h"
 #include "prism/log.h"
 #include "prism/operations/rhie_chow.h"
+#include "prism/scheme/convection.h"
 
 using namespace prism;
 
@@ -42,9 +43,9 @@ auto main(int argc, char* argv[]) -> int {
     auto components = std::array {Ux, Uy, Uz};
 
     // set mesh fields
-    auto nu = field::UniformScalar("mu", mesh, 1e-5);
-    auto U = field::Velocity("U", mesh, {0.0, 0.0, 0.0});
-    auto p = field::Pressure("P", mesh, pressure_vec);
+    auto nu = field::UniformScalar("nu", mesh, 1e-3);
+    auto U = field::Velocity("U", mesh, components);
+    auto p = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
     // rhoU = rho * U;
 
@@ -52,13 +53,13 @@ auto main(int argc, char* argv[]) -> int {
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<Sign::Negative, field::Pressure>;
 
-    auto momentumSolver = solver::BiCGSTAB<field::VelocityComponent>();
+    auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
+    auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
-    auto nNonOrthCorrectiors = 3;
+    auto nNonOrthCorrectiors = 0;
+    auto mDot = rho * U;
 
     for (auto nOuterIter = 0; nOuterIter < 1; ++nOuterIter) {
-        auto mDot = rho * U; // remove this in true run
-
         auto uEqn = eqn::Momentum(div(mDot, U.x()),     // ∇.(Uu)
                                   laplacian(nu, U.x()), // -∇.(ν∇u)
                                   grad(p, Coord::X)     // = -∂p/∂x
@@ -69,29 +70,15 @@ auto main(int argc, char* argv[]) -> int {
                                   grad(p, Coord::Y)     // = -∂p/∂y
         );
 
-        // uEqn.setUnderRelaxFactor(0.9);
-        // vEqn.setUnderRelaxFactor(0.9);
-        // uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-        // vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+        uEqn.setUnderRelaxFactor(0.9);
+        vEqn.setUnderRelaxFactor(0.9);
+        uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+        vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
-        log::info("Outer iteration {}", nOuterIter);
         log::info("Solving y-momentum equations");
-        momentumSolver.solve(vEqn, 5, 1e-16);
+        momentum_solver.solve(vEqn, 15, 1e-20);
         log::info("Solving x-momentum equations");
-        momentumSolver.solve(uEqn, 5, 1e-16);
-
-        uEqn.updateCoeffs();
-        vEqn.updateCoeffs();
-
-        writeToCSVfile("A.csv", Eigen::MatrixXd(uEqn.matrix()));
-        writeToCSVfile("B.csv", Eigen::MatrixXd(vEqn.matrix()));
-        writeToCSVfile("diffusion_matrix.csv", Eigen::MatrixXd(uEqn.diffusionScheme()->matrix()));
-        writeToCSVfile("convection_matrix.csv",
-                       Eigen::MatrixXd(vEqn.convectionScheme()->matrix()));
-
-        /*
-        export_field_vtu(U.x(), "solution_x_b.vtu");
-        export_field_vtu(U.y(), "solution_y_b.vtu");
+        momentum_solver.solve(uEqn, 15, 1e-20);
 
         uEqn.updateCoeffs();
         uEqn.relax();
@@ -124,9 +111,8 @@ auto main(int argc, char* argv[]) -> int {
 
         // Rhie-Chow interpolation for velocity face values
         log::info("Correcting faces velocities using Rhie-Chow interpolation");
-        auto U_corrected = U.clone();
-        U_corrected.updateInteriorFaces(
-            [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, U, D, P); });
+        mDot.updateInteriorFaces(
+            [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, U, D, p); });
 
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
@@ -136,25 +122,18 @@ auto main(int argc, char* argv[]) -> int {
         // should also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
         // condition is used for the pressure.
 
-        // pressure correction equation (density is dropped from both sides of the equation due to
-        // incompressibility assumption)
-        using laplacian_p =
-            diffusion::Corrected<field::Tensor,
-                                 scheme::diffusion::nonortho::OverRelaxedCorrector,
-                                 field::Pressure>;
+        using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
         using div_U = source::Divergence<Sign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                    div_U(U_corrected)       // == - (∇.U)
+                                                    div_U(mDot)              // == - (∇.U)
         );
-        auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
         log::info("Solving pressure correction equation");
+        p_solver.solve(pEqn, 3, 1e-16);
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
             p_solver.solve(pEqn, 3, 1e-16);
         }
-        export_field_vtu(pEqn.field(), "pressure_correction.vtu");
-
 
         // update velocity fields
         U.updateCells([&](const mesh::Cell& cell) {
@@ -162,19 +141,15 @@ auto main(int argc, char* argv[]) -> int {
         });
 
         // update mass flow rate at faces
-        U_corrected.updateInteriorFaces([&](const mesh::Face& face) {
-            return U_corrected.valueAtFace(face) -
-                   (D.valueAtFace(face) * P_prime.gradAtFace(face));
+        mDot.updateInteriorFaces([&](const mesh::Face& face) {
+            return mDot.valueAtFace(face) - (D.valueAtFace(face) * P_prime.gradAtFace(face));
         });
 
         // update pressure
-        P.values() = P.values().array() + (0.75 * P_prime.values().array());
-
-        rhoU = rho * U_corrected;
+        p.values() = p.values().array() + (0.3 * P_prime.values().array());
 
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();
-        */
     }
 
     export_field_vtu(U.x(), "solution_x.vtu");

@@ -62,6 +62,8 @@ class ZeroGradient : public IScalarBoundaryHandler {
 
 template <IScalarBased Field>
 auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    /// TODO: store result of getScalarBoundaryCondition in a member variable to avoid calling it
+    /// for each face.
     const auto& patch = field.mesh()->boundaryPatch(face);
     return patch.getScalarBoundaryCondition(field.name());
 }

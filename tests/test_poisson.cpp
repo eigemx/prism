@@ -25,7 +25,6 @@ TEST_CASE("test poisson equation", "[poisson]") {
     using namespace prism;
     using namespace prism::scheme;
 
-
     const auto* unv_file_name = "tests/cases/poisson/mesh.unv";
 
     // read mesh

@@ -22,7 +22,7 @@
         },
         {
             "name": "Outlet",
-            "type": "outlet",
+            "type": "fixed",
             "value": 0.0
         }
     ]
