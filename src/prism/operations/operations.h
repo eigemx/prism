@@ -2,6 +2,8 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
+
 #include "prism/field/scalar.h"
 #include "prism/field/vector.h"
 #include "prism/mesh/cell.h"
@@ -76,13 +78,12 @@ template <field::IScalarBased Field>
 auto grad(const Field& field, Coord coord) -> field::Scalar {
     auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
-    const auto n_cells = mesh->cellCount();
-    VectorXd grad_values = VectorXd::Zero(n_cells);
+    VectorXd grad_values = VectorXd::Zero(mesh->cellCount());
     auto coord_index = detail::coordToIndex(coord);
 
-    for (std::size_t cell_i = 0; cell_i < n_cells; ++cell_i) {
-        grad_values[cell_i] = field.gradAtCell(mesh->cell(cell_i))[coord_index];
-    }
+    std::for_each(mesh->cells().begin(), mesh->cells().end(), [&](const auto& cell) {
+        grad_values[cell.id()] = field.gradAtCell(cell)[coord_index];
+    });
 
     return field::Scalar(grad_field_name, field.mesh(), grad_values);
 }

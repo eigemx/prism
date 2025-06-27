@@ -71,8 +71,8 @@ auto main(int argc, char* argv[]) -> int {
     auto source = field::Scalar("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport<field::Scalar>(
-        laplacian(c, P),                                                            // -∇.∇p
-        source::ConstantScalar<source::SourceSign::Positive, field::Scalar>(source) // = S
+        laplacian(c, P),                                              // -∇.∇p
+        source::ConstantScalar<Sign::Positive, field::Scalar>(source) // = S
     );
 
     // solve
@@ -91,6 +91,28 @@ auto main(int argc, char* argv[]) -> int {
     prism::export_field_vtu(diff_field, "diff.vtu");
 
     fmt::print("relative l2-norm: {}\n", l2NormRelative(P.values(), solution(mesh).values()));
+
+    auto grad_p_anal_x = field::Scalar("grad_p_anal", mesh, 0.0);
+    auto grad_p_anal_y = field::Scalar("grad_p_anal", mesh, 0.0);
+
+    for (const auto& cell : mesh->cells()) {
+        auto x = cell.center().x();
+        auto y = cell.center().y();
+        auto PI = prism::PI;
+        grad_p_anal_x.values()[cell.id()] = PI * std::cos(x * PI) * std::cos(y * PI);
+        grad_p_anal_y.values()[cell.id()] = -PI * std::sin(x * PI) * std::sin(y * PI);
+    }
+
+    prism::export_field_vtu(grad_p_anal_x, "grad_p_anal_x.vtu");
+    prism::export_field_vtu(grad_p_anal_y, "grad_p_anal_y.vtu");
+    prism::export_field_vtu(ops::grad(P, Coord::X), "grad_p_x.vtu");
+    prism::export_field_vtu(ops::grad(P, Coord::Y), "grad_p_y.vtu");
+
+    // print relative l2-norm of the analytical solution for each pressure gradient component
+    fmt::print("relative l2-norm of the analytical solution for grad_p_x: {}\n",
+               l2NormRelative(grad_p_anal_x.values(), ops::grad(P, Coord::X).values()));
+    fmt::print("relative l2-norm of the analytical solution for grad_p_y: {}\n",
+               l2NormRelative(grad_p_anal_y.values(), ops::grad(P, Coord::Y).values()));
 
     return 0;
 }

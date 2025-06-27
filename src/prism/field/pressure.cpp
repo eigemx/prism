@@ -12,7 +12,7 @@ void PressureBHManagerSetter::set(IScalarBHManager& manager) {
     manager.addHandler<field::boundary::Outlet<Pressure>>();
     manager.addHandler<field::boundary::FixedGradient<Pressure>>();
     manager.addHandler<field::boundary::ZeroGradient<Pressure>>();
-    manager.addHandler<field::boundary::NoSlip<Pressure>>();
+    // manager.addHandler<field::boundary::NoSlip<Pressure>>();
 }
 
 } // namespace prism::field

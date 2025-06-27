@@ -21,7 +21,6 @@ void LeastSquares::setPseudoInvMatrices() {
     // This function is based on section 9.3 'Least-Square Gradient'
     const auto& mesh = this->field()->mesh();
 
-    // resize the pseudo-inverse matrices vector
     _pinv_matrices.resize(mesh->cellCount());
 
     for (const auto& cell : mesh->cells()) {

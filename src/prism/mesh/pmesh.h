@@ -10,6 +10,7 @@
 
 namespace prism::mesh {
 
+/// TODO: when loading a unv mesh with two patches having the same name, we get an exception.
 /// TODO: replace const std::vector& members with std::span
 namespace iterators {
 struct FaceIterator {
