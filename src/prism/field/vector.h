@@ -43,6 +43,7 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     template <typename Func, typename... Args>
     void updateInteriorFaces(Func func, Args&&... args);
 
+
     template <typename Func, typename... Args>
     void updateFaces(Func func, Args&&... args);
 
@@ -56,7 +57,9 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     using ComponentType = Component;
 
   private:
+    void initFaceDataVector();
     void setFaceValues(std::vector<Vector3d> values);
+
     Component _x, _y, _z;
     SharedPtr<std::vector<Vector3d>> _face_data = nullptr;
 };
@@ -150,22 +153,29 @@ auto GeneralVector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
     return {_x.values()[i], _y.values()[i], _z.values()[i]};
 }
 
+template <typename ComponentType>
+void GeneralVector<ComponentType>::initFaceDataVector() {
+    std::vector<Vector3d> face_values(this->mesh()->faceCount(), Vector3d::Zero());
+    for (const auto& face : this->mesh()->interiorFaces()) {
+        face_values[face.id()] = valueAtFace(face);
+    }
+
+    for (const auto& patch : this->mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue; // Skip empty patches.
+        }
+        for (const auto& face_id : patch.facesIds()) {
+            face_values[face_id] = valueAtFace(face_id);
+        }
+    }
+    _face_data = std::make_shared<std::vector<Vector3d>>(std::move(face_values));
+}
+
 template <typename Component>
 template <typename Func, typename... Args>
 void GeneralVector<Component>::updateInteriorFaces(Func func, Args&&... args) {
     if (!hasFaceValues()) {
-        std::vector<Vector3d> face_values(this->mesh()->faceCount(), Vector3d::Zero());
-
-        // For boundary patches, we initialize the corresponding face entries.
-        for (const auto& patch : this->mesh()->boundaryPatches()) {
-            if (patch.isEmpty()) {
-                continue; // Skip empty patches.
-            }
-            for (const auto& face_id : patch.facesIds()) {
-                face_values[face_id] = valueAtFace(face_id);
-            }
-        }
-        _face_data = std::make_shared<std::vector<Vector3d>>(std::move(face_values));
+        initFaceDataVector();
     }
 
     for (const auto& face : this->mesh()->interiorFaces()) {
@@ -182,6 +192,8 @@ void GeneralVector<Component>::updateFaces(Func func, Args&&... args) {
         if (patch.isEmpty()) {
             continue; // Skip empty patches.
         }
+        /// TODO: this is not efficient, because updateInteriorFaces() already iterates over
+        /// boundary faces to initialize them. We need to fix.
         for (const auto& face_id : patch.facesIds()) {
             const auto& face = this->mesh()->face(face_id);
             (*_face_data)[face_id] = func(face, std::forward<Args>(args)...);
@@ -229,7 +241,7 @@ template <typename Component>
 template <typename Func, typename... Args>
 void GeneralVector<Component>::updateCells(Func func, Args&&... args) {
     for (const auto& cell : this->mesh()->cells()) {
-        auto update = func(cell, std::forward<Args>(args)...);
+        Vector3d update = func(cell, std::forward<Args>(args)...);
         this->x()[cell.id()] = update.x();
         this->y()[cell.id()] = update.y();
         this->z()[cell.id()] = update.z();
