@@ -47,7 +47,6 @@ auto main(int argc, char* argv[]) -> int {
     auto U = field::Velocity("U", mesh, components);
     auto p = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
-    // rhoU = rho * U;
 
     using div = Upwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
@@ -57,9 +56,11 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 0;
+    auto momentumURF = 0.95;
+    auto pressureURF = 0.3;
     auto mDot = rho * U;
 
-    for (auto nOuterIter = 0; nOuterIter < 1; ++nOuterIter) {
+    for (auto nOuterIter = 0; nOuterIter < 1000; ++nOuterIter) {
         auto uEqn = eqn::Momentum(div(mDot, U.x()),     // ∇.(Uu)
                                   laplacian(nu, U.x()), // -∇.(ν∇u)
                                   grad(p, Coord::X)     // = -∂p/∂x
@@ -70,15 +71,19 @@ auto main(int argc, char* argv[]) -> int {
                                   grad(p, Coord::Y)     // = -∂p/∂y
         );
 
-        uEqn.setUnderRelaxFactor(0.9);
-        vEqn.setUnderRelaxFactor(0.9);
+        uEqn.setUnderRelaxFactor(momentumURF);
+        vEqn.setUnderRelaxFactor(momentumURF);
         uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
         vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
-        log::info("Solving y-momentum equations");
-        momentum_solver.solve(vEqn, 15, 1e-20);
         log::info("Solving x-momentum equations");
         momentum_solver.solve(uEqn, 15, 1e-20);
+
+        log::info("Solving y-momentum equations");
+        momentum_solver.solve(vEqn, 15, 1e-20);
+
+        export_field_vtu(U.x(), "U_x.vtu");
+        export_field_vtu(U.y(), "U_y.vtu");
 
         uEqn.updateCoeffs();
         uEqn.relax();
@@ -112,7 +117,13 @@ auto main(int argc, char* argv[]) -> int {
         // Rhie-Chow interpolation for velocity face values
         log::info("Correcting faces velocities using Rhie-Chow interpolation");
         mDot.updateInteriorFaces(
-            [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, U, D, p); });
+            [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, mDot, D, p); });
+
+        auto diff = ops::div(mDot).values() - ops::div(mDot).values();
+        auto diff_field = field::Scalar("diff", mesh, diff);
+        /// TODO: this should return zero field everywhere, but it does not from some cells.
+        export_field_vtu(diff_field, "diff_mDot.vtu");
+
 
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
@@ -135,18 +146,24 @@ auto main(int argc, char* argv[]) -> int {
             p_solver.solve(pEqn, 3, 1e-16);
         }
 
-        // update velocity fields
+        export_field_vtu(P_prime, "pressure_correction.vtu");
+
+        // update velocity field
         U.updateCells([&](const mesh::Cell& cell) {
-            return U.valueAtCell(cell) - (D.valueAtCell(cell) * P_prime.gradAtCell(cell));
+            auto U_cell = U.valueAtCell(cell);
+            auto correction = -(D.valueAtCell(cell) * P_prime.gradAtCell(cell));
+            return U_cell + correction;
         });
 
         // update mass flow rate at faces
         mDot.updateInteriorFaces([&](const mesh::Face& face) {
-            return mDot.valueAtFace(face) - (D.valueAtFace(face) * P_prime.gradAtFace(face));
+            auto mDot_face = mDot.valueAtFace(face);
+            auto correction = -(D.valueAtFace(face) * P_prime.gradAtFace(face));
+            return mDot_face + correction;
         });
 
         // update pressure
-        p.values() = p.values().array() + (0.3 * P_prime.values().array());
+        p.values() = p.values().array() + (pressureURF * P_prime.values().array());
 
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();
@@ -157,4 +174,5 @@ auto main(int argc, char* argv[]) -> int {
     export_field_vtu(p, "pressure.vtu");
     auto diff = field::Scalar("diff", mesh, components[0].values() - U.x().values());
     export_field_vtu(diff, "diff.vtu");
+    export_field_vtu(ops::div(U), "div_U.vtu");
 }
