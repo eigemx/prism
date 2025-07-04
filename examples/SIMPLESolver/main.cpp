@@ -85,14 +85,13 @@ auto main(int argc, char* argv[]) -> int {
             auto i = cell.id();
             // clang-format off
             Matrix3d Di;
-            Di << Du[i], 0,     0,
-                  0,     Dv[i], 0,
-                  0,     0,     1;
+            D_data[i]  << Du[i], 0,     0,
+                          0,     Dv[i], 0,
+                          0,     0,     1;
             // clang-format on
-            D_data[i] = Di;
         }
 
-        auto D = field::Tensor("D", mesh, D_data);
+        auto D = field::Tensor("D", mesh, std::move(D_data));
 
         // Rhie-Chow interpolation for velocity face values
         log::debug("Correcting faces velocities using Rhie-Chow interpolation");
