@@ -1,11 +1,8 @@
-#include <fmt/core.h>
 #include <prism/prism.h>
 
 #include <cmath>
 #include <string>
 #include <vector>
-
-#include "prism/scheme/nonortho.h"
 
 using namespace prism;
 using namespace prism::scheme;
