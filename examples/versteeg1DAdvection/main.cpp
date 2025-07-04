@@ -3,11 +3,6 @@
 #include <algorithm>
 #include <filesystem>
 
-#include "prism/export.h"
-#include "prism/field/scalar.h"
-#include "prism/numerics/solver.h"
-#include "prism/types.h"
-
 // This example is based on section 5.6 from "An Introduction to Computational Fluid Dynamics -The
 // Finite Volume Method" - Second Edition by H K Versteeg and W Malalasekera
 // it's also implemented as a test case.
