@@ -39,8 +39,8 @@ auto main(int argc, char* argv[]) -> int {
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
-    auto nNonOrthCorrectiors = 0;
-    auto nOuterIter = 20;
+    auto nNonOrthCorrectiors = 2;
+    auto nOuterIter = 50;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -105,7 +105,8 @@ auto main(int argc, char* argv[]) -> int {
         // conditions without having to define P_prime in fields.json file.
         auto P_prime = field::Pressure("P", mesh, 0.0);
 
-        using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
+        using laplacian_p = diffusion::
+            Corrected<field::Tensor, diffusion::nonortho::OverRelaxedCorrector, field::Pressure>;
         using div_U = source::Divergence<Sign::Negative, field::Velocity>;
 
         auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
@@ -118,28 +119,16 @@ auto main(int argc, char* argv[]) -> int {
             p_solver.solve(pEqn, 3, 1e-16);
         }
 
-        export_field_vtu(P_prime, "pressure_correction.vtu");
-
-        /*
-        // For some reason, the following code produces a different result for each return
-        // statement below. And neither of them is correct makes the solution converges. For now,
-        // the next block is used to update velocity fields at cell centers.
-        U.updateCells([&](const mesh::Cell& cell) {
-            auto U_cell = U.valueAtCell(cell);
-            auto correction = -(D.valueAtCell(cell) * P_prime.gradAtCell(cell));
-            return U_cell + correction;
-            // return U.valueAtCell(cell) - (D.valueAtCell(cell) * P_prime.gradAtCell(cell));
-        });
-        */
+        // For some reason, the following code produces a different result (and wrong) if we used
+        // U.valueAtCell directly after the return statement. It seems that we must first evaluate
+        // the value of U at the cell then use it.
+        /// TODO: fix this.
 
         // update velocity field
-        for (const auto& cell : mesh->cells()) {
+        U.updateCells([&](const mesh::Cell& cell) {
             auto U_cell = U.valueAtCell(cell);
-            auto correction = -(D.valueAtCell(cell) * P_prime.gradAtCell(cell));
-            auto U_corrected = U_cell + correction;
-            U.x()[cell.id()] = U_corrected.x();
-            U.y()[cell.id()] = U_corrected.y();
-        }
+            return U_cell - (D.valueAtCell(cell) * P_prime.gradAtCell(cell));
+        });
 
         // update mass flow rate at faces
         mDot.updateInteriorFaces([&](const mesh::Face& face) {

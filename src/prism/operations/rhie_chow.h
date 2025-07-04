@@ -52,7 +52,6 @@ auto rhieChowCorrectFace(const mesh::Face& face,
     if (face.isBoundary()) {
         return rhieChowCorrectBoundaryFace(face, U, D, P);
     }
-    const std::size_t face_id = face.id();
     const Vector3d& Uf = U.valueAtFace(face);
     const Matrix3d& Df = D.valueAtFace(face);
     const Vector3d gradp_avg = P.gradAtFace(face);

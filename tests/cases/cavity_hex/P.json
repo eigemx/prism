@@ -2,7 +2,7 @@
     "patches": [
         {
             "name": "top",
-            "type": "no-slip"
+            "type": "zero-gradient"
         },
         {
             "name": "bottom",
