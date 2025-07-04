@@ -1,16 +1,12 @@
 {
-    "fields": [
-        {
-            "name": "U",
-            "type": "velocity"
-        },
-        {
-            "name": "P",
-            "type": "pressure"
-        },
-        {
-            "name": "rho",
-            "type": "scalar"
-        }
-    ]
+  "fields": [
+    {
+      "name": "U",
+      "type": "velocity"
+    },
+    {
+      "name": "P",
+      "type": "pressure"
+    }
+  ]
 }
