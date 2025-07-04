@@ -21,7 +21,7 @@
         {
             "name": "Inlet",
             "type": "fixed",
-            "value": [1.0, 0.0, 0.0]
+            "value": [0.01, 0.0, 0.0]
         },
         {
             "name": "Outlet",

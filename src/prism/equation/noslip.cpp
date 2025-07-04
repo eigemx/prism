@@ -8,6 +8,11 @@
 
 namespace prism::eqn::boundary {
 
+/// TODO: when applying no-slip boundary condition, using
+/// uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>(), we get
+/// different results than OpenFOAM (specially near the boundary). Look into this.
+/// TODO: implement a vectorized version of no-slip as per the book.
+
 template <typename To>
 auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
     return std::dynamic_pointer_cast<To>(ptr);

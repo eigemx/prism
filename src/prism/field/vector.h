@@ -15,12 +15,14 @@ template <typename Component>
 class GeneralVector : public IField<Vector3d>, public IVector, public units::Measurable {
   public:
     GeneralVector(std::string name, const SharedPtr<mesh::PMesh>& mesh, double value);
+
     GeneralVector(std::string name, const SharedPtr<mesh::PMesh>& mesh, const Vector3d& data);
 
     /// TODO: replace with std::array<Component, 3> and use std::move in the constructor
     GeneralVector(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   std::array<Component, 3>& fields);
+
     GeneralVector(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   std::vector<Vector3d>& data);
@@ -40,15 +42,15 @@ class GeneralVector : public IField<Vector3d>, public IVector, public units::Mea
     auto inline y() const -> const Component& { return _y; }
     auto inline z() const -> const Component& { return _z; }
 
-    template <typename Func, typename... Args>
-    void updateInteriorFaces(Func func, Args&&... args);
+    template <typename Func>
+    void updateInteriorFaces(Func func);
 
 
-    template <typename Func, typename... Args>
-    void updateFaces(Func func, Args&&... args);
+    template <typename Func>
+    void updateFaces(Func func);
 
-    template <typename Func, typename... Args>
-    void updateCells(Func func, Args&&... args);
+    template <typename Func>
+    void updateCells(Func func);
 
     auto clone() const -> GeneralVector;
 
@@ -85,7 +87,11 @@ GeneralVector<ComponentType>::GeneralVector(std::string name,
       _x(this->name() + "_x", mesh, data[0], Coord::X, static_cast<IVector*>(this)),
       _y(this->name() + "_y", mesh, data[1], Coord::Y, static_cast<IVector*>(this)),
       _z(this->name() + "_z", mesh, data[2], Coord::Z, static_cast<IVector*>(this)) {
-    log::debug("Creating vector field: '{}' with uniform vector value", this->name());
+    log::debug("Creating vector field: '{}' with uniform vector value [{}, {}, {}]",
+               this->name(),
+               data.x(),
+               data.y(),
+               data.z());
 }
 
 template <typename ComponentType>
@@ -133,7 +139,7 @@ auto GeneralVector<ComponentType>::valueAtCell(const mesh::Cell& cell) const -> 
 template <typename ComponentType>
 auto GeneralVector<ComponentType>::valueAtFace(std::size_t face_id) const -> Vector3d {
     if (hasFaceValues()) {
-        return _face_data->at(face_id);
+        return (*_face_data)[face_id];
     }
     return {_x.valueAtFace(face_id), _y.valueAtFace(face_id), _z.valueAtFace(face_id)};
 }
@@ -150,7 +156,7 @@ auto GeneralVector<ComponentType>::hasFaceValues() const -> bool {
 
 template <typename ComponentType>
 auto GeneralVector<ComponentType>::operator[](std::size_t i) const -> Vector3d {
-    return {_x.values()[i], _y.values()[i], _z.values()[i]};
+    return {_x.valueAtCell(i), _y.valueAtCell(i), _z.valueAtCell(i)};
 }
 
 template <typename ComponentType>
@@ -172,21 +178,21 @@ void GeneralVector<ComponentType>::initFaceDataVector() {
 }
 
 template <typename Component>
-template <typename Func, typename... Args>
-void GeneralVector<Component>::updateInteriorFaces(Func func, Args&&... args) {
+template <typename Func>
+void GeneralVector<Component>::updateInteriorFaces(Func func) {
     if (!hasFaceValues()) {
         initFaceDataVector();
     }
 
     for (const auto& face : this->mesh()->interiorFaces()) {
-        (*_face_data)[face.id()] = func(face, std::forward<Args>(args)...);
+        (*_face_data)[face.id()] = func(face);
     }
 }
 
 template <typename Component>
-template <typename Func, typename... Args>
-void GeneralVector<Component>::updateFaces(Func func, Args&&... args) {
-    updateInteriorFaces(func, std::forward<Args>(args)...);
+template <typename Func>
+void GeneralVector<Component>::updateFaces(Func func) {
+    updateInteriorFaces(func);
 
     for (const auto& patch : this->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -196,7 +202,7 @@ void GeneralVector<Component>::updateFaces(Func func, Args&&... args) {
         /// boundary faces to initialize them. We need to fix.
         for (const auto& face_id : patch.facesIds()) {
             const auto& face = this->mesh()->face(face_id);
-            (*_face_data)[face_id] = func(face, std::forward<Args>(args)...);
+            (*_face_data)[face_id] = func(face);
         }
     }
 }
@@ -238,10 +244,10 @@ void GeneralVector<Component>::setFaceValues(std::vector<Vector3d> values) {
 }
 
 template <typename Component>
-template <typename Func, typename... Args>
-void GeneralVector<Component>::updateCells(Func func, Args&&... args) {
+template <typename Func>
+void GeneralVector<Component>::updateCells(Func func) {
     for (const auto& cell : this->mesh()->cells()) {
-        Vector3d update = func(cell, std::forward<Args>(args)...);
+        Vector3d update = func(cell);
         this->x()[cell.id()] = update.x();
         this->y()[cell.id()] = update.y();
         this->z()[cell.id()] = update.z();

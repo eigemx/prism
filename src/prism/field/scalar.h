@@ -112,11 +112,11 @@ class GeneralScalar
     auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
-    template <typename Func, typename... Args>
-    void updateInteriorFaces(Func func, Args&&... args);
+    template <typename Func>
+    void updateInteriorFaces(Func func);
 
-    template <typename Func, typename... Args>
-    void updateFaces(Func func, Args&&... args);
+    template <typename Func>
+    void updateFaces(Func func);
 
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
     auto clone() const -> GeneralScalar;
@@ -555,8 +555,8 @@ auto GeneralScalar<Units, BHManagerSetter>::gradAtCellStored(const mesh::Cell& c
 }
 
 template <typename Units, typename BHManagerSetter>
-template <typename Func, typename... Args>
-void GeneralScalar<Units, BHManagerSetter>::updateInteriorFaces(Func func, Args&&... args) {
+template <typename Func>
+void GeneralScalar<Units, BHManagerSetter>::updateInteriorFaces(Func func) {
     if (!hasFaceValues()) {
         VectorXd face_values(this->mesh()->faceCount());
         face_values.setZero();
@@ -573,14 +573,14 @@ void GeneralScalar<Units, BHManagerSetter>::updateInteriorFaces(Func func, Args&
     }
 
     for (const auto& face : this->mesh()->interiorFaces()) {
-        (*_face_data)[face.id()] = func(face, std::forward<Args>(args)...);
+        (*_face_data)[face.id()] = func(face);
     }
 }
 
 template <typename Units, typename BHManagerSetter>
-template <typename Func, typename... Args>
-void GeneralScalar<Units, BHManagerSetter>::updateFaces(Func func, Args&&... args) {
-    updateInteriorFaces(func, std::forward<Args>(args)...);
+template <typename Func>
+void GeneralScalar<Units, BHManagerSetter>::updateFaces(Func func) {
+    updateInteriorFaces(func);
 
     for (const auto& patch : this->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -588,7 +588,7 @@ void GeneralScalar<Units, BHManagerSetter>::updateFaces(Func func, Args&&... arg
         }
         for (const auto& face_id : patch.facesIds()) {
             const auto& face = this->mesh()->face(face_id);
-            (*_face_data)[face_id] = func(face, std::forward<Args>(args)...);
+            (*_face_data)[face_id] = func(face);
         }
     }
 }

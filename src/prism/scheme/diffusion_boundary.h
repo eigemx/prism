@@ -188,7 +188,8 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
+        // Vector3d Sf_prime = kappa.valueAtCell(owner) * face.areaVector();
+        Vector3d Sf_prime = diffusion::detail::valueAtCell(kappa, owner) * face.areaVector();
         const double g_diff = Sf_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
 
         scheme.insert(cell_id, cell_id, g_diff);

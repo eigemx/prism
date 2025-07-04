@@ -1,17 +1,10 @@
-#include <fmt/base.h>
 #include <prism/prism.h>
 
 #include <filesystem>
 
-#include "helpers.h"
-#include "prism/constants.h"
-#include "prism/export.h"
-#include "prism/field/scalar.h"
-#include "prism/field/velocity.h"
-#include "prism/log.h"
-#include "prism/operations/rhie_chow.h"
-#include "prism/scheme/convection.h"
-
+/// TODO: The corrector should reset to zero the correction ﬁeld at every iteration and
+/// should also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
+/// condition is used for the pressure.
 using namespace prism;
 
 auto main(int argc, char* argv[]) -> int {
@@ -19,36 +12,27 @@ auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme::convection;
 
     log::setLevel(log::Level::Info);
+
     if (argc < 2) {
-        fmt::println("usage: {} [mesh-file]", argv[1]); // NOLINT
+        log::error("usage: {} [mesh-file]", argv[1]); // NOLINT
         return 1;
     }
 
     const auto* unv_file_name = argv[1]; // NOLINT
 
     // read mesh
+    log::info("Reading `fields.json` file...");
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    // read pressure field
-    auto fields = readFields(fs::path(unv_file_name).parent_path() / "foam_fields.json");
-    auto pressure_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(fields.pressure.data(),
-                                                                      fields.pressure.size());
-    // read velocity field
-    auto raw_velocity_array = readVelocityComponents(fields.velocity);
-    auto Ux = field::VelocityComponent("U_x", mesh, raw_velocity_array[0], Coord::X);
-    auto Uy = field::VelocityComponent("U_y", mesh, raw_velocity_array[1], Coord::Y);
-    auto Uz = field::VelocityComponent("U_z", mesh, raw_velocity_array[2], Coord::Z);
-    auto components = std::array {Ux, Uy, Uz};
-
     // set mesh fields
-    auto nu = field::UniformScalar("nu", mesh, 1e-3);
-    auto U = field::Velocity("U", mesh, components);
+    auto U = field::Velocity("U", mesh, {.0, .0, .0});
     auto p = field::Pressure("P", mesh, 0.0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
+    auto nu = field::UniformScalar("nu", mesh, 1e-3);
 
-    using div = Upwind<field::Velocity, field::VelocityComponent>;
+    using div = LinearUpwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
     using grad = source::Gradient<Sign::Negative, field::Pressure>;
 
@@ -56,11 +40,13 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 0;
-    auto momentumURF = 0.95;
+    auto nOuterIter = 20;
+    auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
 
-    for (auto nOuterIter = 0; nOuterIter < 1000; ++nOuterIter) {
+    for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
+        log::info("Outer iteration: {}", outer_iteration);
         auto uEqn = eqn::Momentum(div(mDot, U.x()),     // ∇.(Uu)
                                   laplacian(nu, U.x()), // -∇.(ν∇u)
                                   grad(p, Coord::X)     // = -∂p/∂x
@@ -73,8 +59,6 @@ auto main(int argc, char* argv[]) -> int {
 
         uEqn.setUnderRelaxFactor(momentumURF);
         vEqn.setUnderRelaxFactor(momentumURF);
-        uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-        vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
 
         log::info("Solving x-momentum equations");
         momentum_solver.solve(uEqn, 15, 1e-20);
@@ -82,21 +66,17 @@ auto main(int argc, char* argv[]) -> int {
         log::info("Solving y-momentum equations");
         momentum_solver.solve(vEqn, 15, 1e-20);
 
-        export_field_vtu(U.x(), "U_x.vtu");
-        export_field_vtu(U.y(), "U_y.vtu");
-
         uEqn.updateCoeffs();
         uEqn.relax();
         vEqn.updateCoeffs();
         vEqn.relax();
 
         // calculate coefficients for the pressure equation
-        const auto& vol_vec = mesh->cellsVolumeVector();
-        const auto& uEqn_diag = uEqn.matrix().diagonal();
-        const auto& vEqn_diag = vEqn.matrix().diagonal();
+        const VectorXd& vol_vec = mesh->cellsVolumeVector();
+        const VectorXd& uEqn_diag = uEqn.matrix().diagonal();
+        const VectorXd& vEqn_diag = vEqn.matrix().diagonal();
 
-        auto D_data = std::vector<Matrix3d>();
-        D_data.resize(mesh->cellCount());
+        auto D_data = std::vector<Matrix3d>(mesh->cellCount(), Matrix3d::Zero());
 
         auto Du = vol_vec.array() / (uEqn_diag.array() + EPSILON);
         auto Dv = vol_vec.array() / (vEqn_diag.array() + EPSILON);
@@ -115,23 +95,15 @@ auto main(int argc, char* argv[]) -> int {
         auto D = field::Tensor("D", mesh, D_data);
 
         // Rhie-Chow interpolation for velocity face values
-        log::info("Correcting faces velocities using Rhie-Chow interpolation");
+        log::debug("Correcting faces velocities using Rhie-Chow interpolation");
+        mDot = rho * U; // update mDot with the new U values
+
         mDot.updateInteriorFaces(
             [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, mDot, D, p); });
-
-        auto diff = ops::div(mDot).values() - ops::div(mDot).values();
-        auto diff_field = field::Scalar("diff", mesh, diff);
-        /// TODO: this should return zero field everywhere, but it does not from some cells.
-        export_field_vtu(diff_field, "diff_mDot.vtu");
-
 
         // pressure correction field created with same name as pressure field to get same boundary
         // conditions without having to define P_prime in fields.json file.
         auto P_prime = field::Pressure("P", mesh, 0.0);
-
-        // NOTE: The corrector should reset to zero the correction ﬁeld at every iteration and
-        // should also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
-        // condition is used for the pressure.
 
         using laplacian_p = diffusion::NonCorrected<field::Tensor, field::Pressure>;
         using div_U = source::Divergence<Sign::Negative, field::Velocity>;
@@ -148,18 +120,30 @@ auto main(int argc, char* argv[]) -> int {
 
         export_field_vtu(P_prime, "pressure_correction.vtu");
 
-        // update velocity field
+        /*
+        // For some reason, the following code produces a different result for each return
+        // statement below. And neither of them is correct makes the solution converges. For now,
+        // the next block is used to update velocity fields at cell centers.
         U.updateCells([&](const mesh::Cell& cell) {
             auto U_cell = U.valueAtCell(cell);
             auto correction = -(D.valueAtCell(cell) * P_prime.gradAtCell(cell));
             return U_cell + correction;
+            // return U.valueAtCell(cell) - (D.valueAtCell(cell) * P_prime.gradAtCell(cell));
         });
+        */
+
+        // update velocity field
+        for (const auto& cell : mesh->cells()) {
+            auto U_cell = U.valueAtCell(cell);
+            auto correction = -(D.valueAtCell(cell) * P_prime.gradAtCell(cell));
+            auto U_corrected = U_cell + correction;
+            U.x()[cell.id()] = U_corrected.x();
+            U.y()[cell.id()] = U_corrected.y();
+        }
 
         // update mass flow rate at faces
         mDot.updateInteriorFaces([&](const mesh::Face& face) {
-            auto mDot_face = mDot.valueAtFace(face);
-            auto correction = -(D.valueAtFace(face) * P_prime.gradAtFace(face));
-            return mDot_face + correction;
+            return mDot.valueAtFace(face) - (D.valueAtFace(face) * P_prime.gradAtFace(face));
         });
 
         // update pressure
@@ -172,7 +156,4 @@ auto main(int argc, char* argv[]) -> int {
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(p, "pressure.vtu");
-    auto diff = field::Scalar("diff", mesh, components[0].values() - U.x().values());
-    export_field_vtu(diff, "diff.vtu");
-    export_field_vtu(ops::div(U), "div_U.vtu");
 }

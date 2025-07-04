@@ -2,7 +2,7 @@ import pandas as pd
 import json
 
 if __name__ == "__main__":
-    df = pd.read_csv("foam_solution_fine.csv")
+    df = pd.read_csv("foam_solution.csv")
 
     p_list = df['p'].tolist()
     u_components = df[['U_0', 'U_1']].values.tolist()
@@ -13,9 +13,6 @@ if __name__ == "__main__":
         "U": u_vectors,
         "p": p_list
     }
-
-    print(len(p_list))
-    print(len(u_vectors))
 
     json_string = json.dumps(output, indent=2)
 

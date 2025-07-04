@@ -70,7 +70,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
     auto U = field::Velocity("U", mesh, inlet_velocity);
     field::Velocity rhoU = rho * U;
-    auto kappa = field::UniformScalar("kappa", mesh, -0.1);
+    auto kappa = field::UniformScalar("kappa", mesh, 0.1);
 
     log::info("Peclet number = {}", inlet_velocity.x() * 0.2 / 0.1);
 
@@ -82,19 +82,14 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    eqn.setUnderRelaxFactor(1.0);
-
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nOrthogonalCorrectors = 5;
 
-    for (int i = 0; i < nOrthogonalCorrectors; ++i) {
-        solver.solve(eqn, 5, 1e-20);
-        VectorXd diff = eqn.field().values().array() -
-                        analytical_solution(inlet_velocity.x(), mesh).values().array();
-        auto diff_norm = diff.norm();
-        log::info("iteration {}, diff norm = {}", i, diff_norm);
-    }
+    solver.solve(eqn, 5, 1e-20);
+    VectorXd diff = eqn.field().values().array() -
+                    analytical_solution(inlet_velocity.x(), mesh).values().array();
+    auto diff_norm = diff.norm();
+    log::info("diff norm = {}", diff_norm);
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
 

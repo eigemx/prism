@@ -90,9 +90,9 @@ class Upwind : public IAppliedConvection<ConvectiveField, Field> {
 
 // Second order upwind (linear upwind) scheme
 template <field::IVectorBased ConvectiveField, typename Field>
-class SecondOrderUpwind : public IAppliedConvection<ConvectiveField, Field> {
+class LinearUpwind : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    SecondOrderUpwind(field::Velocity U, Field phi)
+    LinearUpwind(field::Velocity U, Field phi)
         : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:
@@ -193,10 +193,10 @@ auto Upwind<ConvectiveField, Field>::interpolate(double m_dot,
 }
 
 template <field::IVectorBased ConvectiveField, typename Field>
-auto SecondOrderUpwind<ConvectiveField, Field>::interpolate(double m_dot,
-                                                            const mesh::Cell& cell,
-                                                            const mesh::Cell& neighbor,
-                                                            const mesh::Face& face)
+auto LinearUpwind<ConvectiveField, Field>::interpolate(double m_dot,
+                                                       const mesh::Cell& cell,
+                                                       const mesh::Cell& neighbor,
+                                                       const mesh::Face& face)
     -> detail::CoeffsTriplet {
     // in case `cell` is the upstream cell
     const Vector3d face_grad_phi = this->field().gradAtFace(face);
