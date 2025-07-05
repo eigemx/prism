@@ -31,10 +31,24 @@ class NoSlip : public IEquationBoundaryHandler<Equation> {
     void apply(Equation& eqn, const mesh::BoundaryPatch& patch) override;
 };
 
+template <typename Equation>
+class Symmetry : public IEquationBoundaryHandler<Equation> {
+  public:
+    auto name() const noexcept -> std::string override { return "symmetry"; }
+    void apply(Equation& eqn, const mesh::BoundaryPatch& patch) override;
+};
+
 template <>
 class NoSlip<Momentum> : public IEquationBoundaryHandler<Momentum> {
   public:
     auto name() const noexcept -> std::string override { return "no-slip"; }
+    void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
+};
+
+template <>
+class Symmetry<Momentum> : public IEquationBoundaryHandler<Momentum> {
+  public:
+    auto name() const noexcept -> std::string override { return "symmetry"; }
     void apply(Momentum& eqn, const mesh::BoundaryPatch& patch) override;
 };
 
