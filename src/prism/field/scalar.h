@@ -10,6 +10,9 @@
 #include "scalar_boundary.h"
 #include "units.h"
 
+/// TODO: we need to make sure that constructors are not leaving _data uninitialized, and we can
+/// avoid checks for it later in member functions.
+
 namespace prism::field {
 
 // forward declaration for GeneralScalar
@@ -41,7 +44,6 @@ class UniformScalar : public IScalar {
 
   private:
     double _value {0.0};
-    SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
 };
 
 template <typename Units, typename BHManagerSetter>
@@ -92,12 +94,11 @@ class GeneralScalar
     auto operator=(GeneralScalar&&) -> GeneralScalar& = default;
     ~GeneralScalar() override = default;
 
-    /// TODO: check that _data is not null before returning
-    auto inline values() const -> const VectorXd& { return *_data; }
-    auto inline values() -> VectorXd& { return *_data; }
+    auto values() const -> const VectorXd&;
+    auto values() -> VectorXd&;
 
-    auto inline coord() const noexcept -> std::optional<Coord> override { return _coord; }
-    auto inline hasFaceValues() const -> bool override { return _face_data != nullptr; }
+    auto coord() const noexcept -> std::optional<Coord> override;
+    auto hasFaceValues() const -> bool override;
     void setFaceValues(VectorXd values);
 
     auto valueAtCell(std::size_t cell_id) const -> double override;
@@ -118,11 +119,14 @@ class GeneralScalar
     template <typename Func>
     void updateFaces(Func func);
 
+    template <typename Func>
+    void updateCells(Func func);
+
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
     auto clone() const -> GeneralScalar;
 
-    auto inline operator[](std::size_t i) const -> double { return (*_data)[i]; }
-    auto inline operator[](std::size_t i) -> double& { return (*_data)[i]; }
+    auto operator[](std::size_t i) const -> double;
+    auto operator[](std::size_t i) -> double&;
 
   protected:
     auto valueAtInteriorFace(const mesh::Face& face) const -> double;
@@ -401,6 +405,38 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
 }
 
 template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::values() const -> const VectorXd& {
+    if (_data == nullptr) {
+        throw std::runtime_error(
+            fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::values() was "
+                        "called for field `{}`, but the data is not initialized.",
+                        name()));
+    }
+    return *_data;
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::values() -> VectorXd& {
+    if (_data == nullptr) {
+        throw std::runtime_error(
+            fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::values() was "
+                        "called for field `{}`, but the data is not initialized.",
+                        name()));
+    }
+    return *_data;
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::coord() const noexcept -> std::optional<Coord> {
+    return _coord;
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::hasFaceValues() const -> bool {
+    return _face_data != nullptr;
+}
+
+template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(const mesh::Cell& cell) const -> double {
     return valueAtCell(cell.id());
 }
@@ -594,6 +630,15 @@ void GeneralScalar<Units, BHManagerSetter>::updateFaces(Func func) {
 }
 
 template <typename Units, typename BHManagerSetter>
+template <typename Func>
+void GeneralScalar<Units, BHManagerSetter>::updateCells(Func func) {
+    /// TODO: test this.
+    for (const auto& cell : this->mesh()->cells()) {
+        (*_data)[cell.id()] = func(cell);
+    }
+}
+
+template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::clone() const -> GeneralScalar {
     /// NOTE: cloned field is parentless.
     if (this->coord().has_value()) {
@@ -609,6 +654,45 @@ auto GeneralScalar<Units, BHManagerSetter>::clone() const -> GeneralScalar {
         clone.setFaceValues(*_face_data);
     }
     return clone;
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::operator[](std::size_t i) const -> double {
+    if (_data == nullptr) {
+        throw std::runtime_error(
+            fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
+                        "called for field `{}`, but the data is not initialized.",
+                        name()));
+    }
+    if (i >= _data->size()) {
+        throw std::out_of_range(
+            fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
+                        "called for field `{}`, but the index {} is out of range (size = {}).",
+                        name(),
+                        i,
+                        _data->size()));
+    }
+    return (*_data)[i];
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::operator[](std::size_t i) -> double& {
+    if (_data == nullptr) {
+        throw std::runtime_error(
+            fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
+                        "called for field `{}`, but the data is not initialized.",
+                        name()));
+    }
+
+    if (i >= _data->size()) {
+        throw std::out_of_range(
+            fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
+                        "called for field `{}`, but the index {} is out of range (size = {}).",
+                        name(),
+                        i,
+                        _data->size()));
+    }
+    return (*_data)[i];
 }
 
 } // namespace prism::field
