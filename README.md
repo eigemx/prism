@@ -14,17 +14,6 @@ Prism is a C++20 library for solving partial differential equations (PDEs) using
 - Exporting results to VTU format (right now supporting meshes with hexahedral, tetrahedral and pyramidal cells only).
 - and much more...
 
-### Examples
-Heat equation:
-<p align="center">
-    <img alt="laplacianSolver" src="https://github.com/eigemx/prism/blob/main/screenshots/torus_diffusion.png?raw=true" width="60%">
-</p>
-
-Backward facing step (SIMPLE algorithm):
-<p align="center">
-    <img alt="laplacianSolver" src="https://github.com/eigemx/prism/blob/main/screenshots/backward_facing_SIMPLE.png?raw=true" width="90%">
-</p>
-
 Prism's main goal is to be simple, modular and easy to use. The following example shows how to solve steady state advection equation:
 ```cpp
     // solve for temperature advection: ∇.(UT) - ∇.(κ ∇T) = 0
@@ -55,7 +44,7 @@ Prism is in early development stages and is not yet ready for production use. Ho
 - Add documentation.
 - Implement SIMPLEC, PRIME, PISO and PIMPLE solvers (currently only SIMPLE solver is implemented in example directory).
 - Implement backward Euler scheme for transient problems.
-- Improve field::Vector and field::Tensor implementations using Eigen reference types.
+- Improve field::Vector and field::Tensor implementations using Eigen reference/map types.
 - Implement k-epsilon and k-omega turbulence models.
 - Implement vectorized operations overall in the codebase.
 
