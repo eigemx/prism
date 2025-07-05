@@ -100,6 +100,7 @@ class GeneralScalar
     auto coord() const noexcept -> std::optional<Coord> override;
     auto hasFaceValues() const -> bool override;
     void setFaceValues(VectorXd values);
+    void clearFaceValues();
 
     auto valueAtCell(std::size_t cell_id) const -> double override;
     auto valueAtCell(const mesh::Cell& cell) const -> double override;
@@ -405,6 +406,11 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
 }
 
 template <typename Units, typename BHManagerSetter>
+void GeneralScalar<Units, BHManagerSetter>::clearFaceValues() {
+    _face_data = nullptr;
+}
+
+template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::values() const -> const VectorXd& {
     if (_data == nullptr) {
         throw std::runtime_error(
@@ -594,6 +600,7 @@ template <typename Units, typename BHManagerSetter>
 template <typename Func>
 void GeneralScalar<Units, BHManagerSetter>::updateInteriorFaces(Func func) {
     if (!hasFaceValues()) {
+        /// TODO: implement initFaceDataVector() to initialize face data vector
         VectorXd face_values(this->mesh()->faceCount());
         face_values.setZero();
 

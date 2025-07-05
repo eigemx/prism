@@ -2,6 +2,7 @@ add_library(prism
     linear.cpp
     
     equation/noslip.cpp
+    equation/symmetry.cpp
 
     numerics/solver.cpp
 

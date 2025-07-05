@@ -7,7 +7,8 @@
 #include "prism/types.h"
 
 namespace prism::eqn::boundary {
-
+/// TODO: many logic here is copied from the NoSlip boundary condition, we should refactor it to
+/// avoid code duplication.
 template <typename To>
 auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
     return std::dynamic_pointer_cast<To>(ptr);
@@ -15,7 +16,6 @@ auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
 
 auto contribution(Coord coord,
                   const Vector3d& Uc,
-                  const Vector3d& Ub,
                   const Vector3d& n) -> std::pair<double, double> {
     // n
     double nx = n.x();
@@ -27,45 +27,32 @@ auto contribution(Coord coord,
     double vc = Uc.y();
     double wc = Uc.z();
 
-    // Ub
-    double ub = Ub.x();
-    double vb = Ub.y();
-    double wb = Ub.z();
-
     switch (coord) {
         case Coord::X: {
-            // Eqn (15.124)
-            double ac = 1 - (nx * nx);
-            double b = ub * (1 - (nx * nx));
-            b += (vc - vb) * ny * nx;
-            b += -(wc - wb) * nz * nx;
+            // Eqn (15.154)
+            double ac = nx * nx;
+            double b = ((vc * ny) + (wc * nz) * nx);
             return {ac, b};
         }
-
         case Coord::Y: {
-            // Eqn (15.125)
-            double ac = 1 - (ny * ny);
-            double b = (uc - ub) * nx * ny;
-            b += vb * (1 - (ny * ny));
-            b += (wc - wb) * nz * ny;
+            // Eqn (15.1545)
+            double ac = ny * ny;
+            double b = ((uc * nx) + (wc * nz) * ny);
             return {ac, b};
         }
         case Coord::Z: {
-            // Eqn (15.126)
-            double ac = 1 - (nz * nz);
-            double b = (uc - ub) * nx * nz;
-            b += (vc - vb) * ny * nz;
-            b += wb * (1 - (nz * nz));
+            // Eqn (15.156)
+            double ac = nz * nz;
+            double b = ((uc * nx) + (vc * ny) * nz);
             return {ac, b};
         }
         default: {
-            // Return zeros or throw if invalid Coord
             return {0.0, 0.0};
         }
     }
 }
 
-void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
+void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     field::VelocityComponent field = eqn.field();
     const auto& mesh = eqn.field().mesh();
 
@@ -87,26 +74,20 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
         const auto& owner = mesh->cell(face.owner());
         const auto owner_id = owner.id();
 
-        // we need to calculate the normal distance from the centroid of the boundary
-        // element to the face (wall patch)
         Vector3d n = face.normal();
         Vector3d d_CB = face.center() - owner.center();
         double d_normal = d_CB.dot(n);
 
         Vector3d Uc = U.valueAtCell(owner);
-        Vector3d Ub = U.valueAtFace(face);
 
-        double g = mu.valueAtFace(face) * face.area() / d_normal;
-        /// TODO: at a test round, ac & b seems to be zero and this apply() function does not do
-        /// anything. Check this again.
-        auto [ac, b] = contribution(field.coord().value(), Uc, Ub, n);
+        double g = 2 * mu.valueAtFace(face) * face.area() / d_normal;
+        auto [ac, b] = contribution(field.coord().value(), Uc, n);
 
         sys.insert(owner_id, owner_id, g * ac);
-        sys.rhs(owner_id) += g * b;
+        sys.rhs(owner_id) += -g * b;
     }
 
     sys.collect();
-
     eqn.matrix() += sys.matrix();
     eqn.rhs() += sys.rhs();
 }

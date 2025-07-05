@@ -2,10 +2,9 @@
 
 #include <filesystem>
 
-/// TODO: The corrector should reset to zero the correction ﬁeld at every iteration and
-/// should also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
-/// condition is used for the pressure.
 using namespace prism;
+
+void correctPPrimeBoundaryConditions(field::Pressure& P_prime);
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
@@ -40,7 +39,7 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 2;
-    auto nOuterIter = 50;
+    auto nOuterIter = 150;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -56,6 +55,11 @@ auto main(int argc, char* argv[]) -> int {
                                   laplacian(nu, U.y()), // -∇.(ν∇v)
                                   grad(p, Coord::Y)     // = -∂p/∂y
         );
+
+        uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+        uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
+        vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+        vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
 
         uEqn.setUnderRelaxFactor(momentumURF);
         vEqn.setUnderRelaxFactor(momentumURF);
@@ -104,6 +108,11 @@ auto main(int argc, char* argv[]) -> int {
         // conditions without having to define P_prime in fields.json file.
         auto P_prime = field::Pressure("P", mesh, 0.0);
 
+        // The corrector should reset to zero the correction field at every iteration and should
+        // also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
+        // condition is used for the pressure.
+        correctPPrimeBoundaryConditions(P_prime);
+
         using laplacian_p = diffusion::
             Corrected<field::Tensor, diffusion::nonortho::OverRelaxedCorrector, field::Pressure>;
         using div_U = source::Divergence<Sign::Negative, field::Velocity>;
@@ -117,6 +126,9 @@ auto main(int argc, char* argv[]) -> int {
         for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
             p_solver.solve(pEqn, 3, 1e-16);
         }
+
+        // we need to clear face values of P_prime and let solver calculate them again
+        P_prime.clearFaceValues();
 
         // For some reason, the following code produces a different result (and wrong) if we used
         // U.valueAtCell directly after the return statement. It seems that we must first evaluate
@@ -144,4 +156,33 @@ auto main(int argc, char* argv[]) -> int {
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     export_field_vtu(p, "pressure.vtu");
+}
+
+void correctPPrimeBoundaryConditions(field::Pressure& P_prime) {
+    // we need to reset the P_prime field to zero at the boundaries where a Dirichlet condition is
+    // applied.
+    VectorXd face_values;
+    face_values.resize(P_prime.mesh()->faceCount());
+    face_values.setZero();
+
+    for (const auto& patch : P_prime.mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue; // skip empty patches
+        }
+
+        const auto& bc = patch.getBoundaryCondition("P");
+        if (bc.kindString() == "fixed" || bc.kindString() == "symmetry") {
+            // update
+            for (const auto& face_id : patch.facesIds()) {
+                face_values[face_id] = 0.0;
+            }
+        }
+
+        // keep the values at the faces for other boundary conditions
+        for (const auto& face_id : patch.facesIds()) {
+            const auto& face = P_prime.mesh()->face(face_id);
+            face_values[face_id] = P_prime.valueAtFace(face);
+        }
+    }
+    P_prime.setFaceValues(face_values);
 }

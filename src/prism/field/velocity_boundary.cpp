@@ -1,6 +1,7 @@
 #include "velocity_boundary.h"
 
 namespace prism::field::boundary {
+/// TODO: is this needed?
 
 auto NoSlip<VelocityComponent>::get(const IScalar& field, const mesh::Face& face) -> double {
     Fixed<VelocityComponent> fixed;
