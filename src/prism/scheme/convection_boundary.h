@@ -86,7 +86,6 @@ void Fixed<convection::IAppliedConvection<ConvectiveField, F>>::apply(
         const Vector3d U_f = scheme.U().valueAtFace(face);
         const double m_dot_f = U_f.dot(S_f);
 
-        /// TODO: Check if this is correct.
         scheme.insert(owner.id(), owner.id(), std::max(m_dot_f, 0.0));
         scheme.rhs(owner.id()) += std::max(-m_dot_f, 0.0) * phi_wall;
     }
