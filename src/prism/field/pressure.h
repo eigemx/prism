@@ -7,7 +7,7 @@ namespace prism::field {
 class PressureBHManagerSetter {
   public:
     using IScalarBHManager =
-        prism::boundary::BoundaryHandlersManager<boundary::IScalarBoundaryHandler>;
+        prism::boundary::BoundaryHandlersManager<boundary::scalar::IScalarBoundaryHandler>;
 
     static void set(IScalarBHManager& manager);
 };

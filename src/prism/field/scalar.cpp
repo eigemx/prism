@@ -41,11 +41,11 @@ void ScalarBHManagerSetter::set(IScalarBHManager& manager) {
     log::debug(
         "prism::field::ScalarBHManagerSetter::set(): adding default boundary handlers for a "
         "scalar field instance");
-    manager.addHandler<field::boundary::Fixed<Scalar>>();
-    manager.addHandler<field::boundary::Symmetry<Scalar>>();
-    manager.addHandler<field::boundary::Outlet<Scalar>>();
-    manager.addHandler<field::boundary::FixedGradient<Scalar>>();
-    manager.addHandler<field::boundary::ZeroGradient<Scalar>>();
+    manager.addHandler<field::boundary::scalar::Fixed<Scalar>>();
+    manager.addHandler<field::boundary::scalar::Symmetry<Scalar>>();
+    manager.addHandler<field::boundary::scalar::Outlet<Scalar>>();
+    manager.addHandler<field::boundary::scalar::FixedGradient<Scalar>>();
+    manager.addHandler<field::boundary::scalar::ZeroGradient<Scalar>>();
 }
 
 } // namespace prism::field

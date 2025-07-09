@@ -9,7 +9,8 @@
 
 #include "prism/exceptions.h"
 #include "prism/log.h"
-#include "prism/mesh/pmesh.h"
+#include "prism/mesh/boundary.h"
+#include "prism/types.h"
 
 namespace prism::boundary {
 

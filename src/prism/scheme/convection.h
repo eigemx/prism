@@ -6,7 +6,6 @@
 #include "convection_boundary.h"
 #include "prism/boundary.h"
 #include "prism/field/ifield.h"
-#include "prism/field/velocity.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/utilities.h"
 #include "prism/types.h"
@@ -79,7 +78,7 @@ class CentralDifference : public IAppliedConvection<ConvectiveField, Field> {
 template <field::IVectorBased ConvectiveField, typename Field>
 class Upwind : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    Upwind(field::Velocity U, Field phi) : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
+    Upwind(ConvectiveField U, Field phi) : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:
     auto interpolate(double m_dot,
@@ -92,7 +91,7 @@ class Upwind : public IAppliedConvection<ConvectiveField, Field> {
 template <field::IVectorBased ConvectiveField, typename Field>
 class LinearUpwind : public IAppliedConvection<ConvectiveField, Field> {
   public:
-    LinearUpwind(field::Velocity U, Field phi)
+    LinearUpwind(ConvectiveField U, Field phi)
         : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
   private:

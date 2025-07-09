@@ -10,7 +10,7 @@
         },
         {
             "name": "heatedWall",
-            "type": "no-slip",
+            "type": "fixed",
             "value": [0.0, 1.0, 0.0]
         },
         {

@@ -9,13 +9,13 @@ void VelocityCompBHManagerSetter::set(IScalarBHManager& manager) {
         "prism::field::VelocityCompBHManagerSetter::set(): adding default boundary handlers for "
         "a VelocityComponent field instance");
 
-    manager.addHandler<field::boundary::Fixed<VelocityComponent>>();
-    manager.addHandler<field::boundary::VelocityInlet<VelocityComponent>>();
-    manager.addHandler<field::boundary::Symmetry<VelocityComponent>>();
-    manager.addHandler<field::boundary::Outlet<VelocityComponent>>();
-    manager.addHandler<field::boundary::FixedGradient<VelocityComponent>>();
-    manager.addHandler<field::boundary::NoSlip<VelocityComponent>>();
-    manager.addHandler<field::boundary::ZeroGradient<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::Fixed<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::VelocityInlet<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::Symmetry<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::Outlet<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::FixedGradient<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::NoSlip<VelocityComponent>>();
+    manager.addHandler<field::boundary::scalar::ZeroGradient<VelocityComponent>>();
 }
 
 } // namespace prism::field

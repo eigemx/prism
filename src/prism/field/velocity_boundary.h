@@ -3,7 +3,7 @@
 #include "scalar_boundary.h"
 #include "velocity.h"
 
-namespace prism::field::boundary {
+namespace prism::field::boundary::scalar {
 template <>
 class NoSlip<VelocityComponent> : public IScalarBoundaryHandler {
   public:
@@ -17,4 +17,4 @@ class VelocityInlet<VelocityComponent> : public IScalarBoundaryHandler {
     auto name() const -> std::string override { return "velocity-inlet"; }
     auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
-} // namespace prism::field::boundary
+} // namespace prism::field::boundary::scalar
