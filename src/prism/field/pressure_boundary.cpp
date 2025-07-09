@@ -2,7 +2,7 @@
 
 #include "pressure.h"
 
-namespace prism::field::boundary {
+namespace prism::field::boundary::scalar {
 template <>
 auto NoSlip<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
     const auto& owner = field.mesh()->cell(face.owner());
@@ -14,4 +14,4 @@ auto NoSlip<Pressure>::get(const IScalar& field, const mesh::Face& face) -> doub
     // gradient of the field at the cell calculated from the previous run of gradAtCell function.
     return field.valueAtCell(owner) + field.gradAtCellStored(owner).dot(d_Cb);
 }
-} // namespace prism::field::boundary
+} // namespace prism::field::boundary::scalar

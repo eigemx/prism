@@ -63,14 +63,9 @@ class IScalar : public IField<double> {
 template <typename T>
 concept IScalarBased = std::derived_from<T, IScalar>;
 
-class IVector {
+class IVector : public IField<Vector3d> {
   public:
-    IVector() = default;
-    IVector(IVector&) = default;
-    IVector(IVector&&) noexcept = default;
-    auto operator=(const IVector&) -> IVector& = default;
-    auto operator=(IVector&&) noexcept -> IVector& = default;
-    virtual ~IVector() = default;
+    IVector(std::string name, const SharedPtr<mesh::PMesh>& mesh);
 };
 
 template <typename T>

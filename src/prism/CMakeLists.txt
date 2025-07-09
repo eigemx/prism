@@ -9,6 +9,7 @@ add_library(prism
     field/ifield.cpp
     field/tensor.cpp
     field/scalar.cpp
+    field/vector.cpp
     field/velocity.cpp
     field/velocity_boundary.cpp
     field/pressure.cpp

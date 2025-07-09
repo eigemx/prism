@@ -112,9 +112,13 @@ auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double {
                 continue;
             }
         }
-        const Vector3d Uf = U.valueAtFace(face);
-        const Vector3d& Sf = mesh::outwardAreaVector(face, cell);
-        sum += Uf.dot(Sf);
+        double flux = U.fluxAtFace(face);
+        if (!face.isOwnedBy(cell.id())) {
+            // fluxAtFace returns flux in face normal direction from owner to face center, we need
+            // to reverse this value when `face` is not owned by `cell`
+            flux = -flux;
+        }
+        sum += flux;
     }
 
     return sum;

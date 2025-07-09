@@ -4,11 +4,12 @@
 #include "prism/boundary.h"
 #include "prism/mesh/face.h"
 
-namespace prism::field::boundary {
+namespace prism::field::boundary::scalar {
 class IScalarBoundaryHandler : public prism::boundary::IBoundaryHandler {
   public:
     virtual auto name() const -> std::string = 0;
     virtual auto get(const IScalar& field, const mesh::Face& face) -> double = 0;
+    virtual auto isDirichlet() const noexcept -> bool;
 };
 
 template <IScalarBased Field>
@@ -16,6 +17,7 @@ class Fixed : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "fixed"; }
     auto get(const IScalar& field, const mesh::Face& face) -> double override;
+    auto isDirichlet() const noexcept -> bool override { return true; }
 };
 
 template <IScalarBased Field>
@@ -23,6 +25,7 @@ class NoSlip : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "no-slip"; }
     auto get(const IScalar& field, const mesh::Face& face) -> double override;
+    auto isDirichlet() const noexcept -> bool override { return true; }
 };
 
 template <IScalarBased Field>
@@ -30,6 +33,7 @@ class VelocityInlet : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "velocity-inlet"; }
     auto get(const IScalar& field, const mesh::Face& face) -> double override;
+    auto isDirichlet() const noexcept -> bool override { return true; }
 };
 
 template <IScalarBased Field>
@@ -59,6 +63,10 @@ class ZeroGradient : public IScalarBoundaryHandler {
     auto name() const -> std::string override { return "zero-gradient"; }
     auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
+
+auto inline IScalarBoundaryHandler::isDirichlet() const noexcept -> bool {
+    return false;
+}
 
 template <IScalarBased Field>
 auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
@@ -101,4 +109,4 @@ auto ZeroGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> d
     return field.valueAtCell(face.owner());
 }
 
-} // namespace prism::field::boundary
+} // namespace prism::field::boundary::scalar

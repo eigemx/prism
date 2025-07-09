@@ -20,7 +20,7 @@ template <typename Units, typename BHManagerSetter>
 class GeneralScalar;
 
 // forward declaration for GeneralVector
-template <typename Component>
+template <typename Component, typename BHManagerSetter>
 class GeneralVector;
 
 class UniformScalar : public IScalar {
@@ -50,7 +50,7 @@ template <typename Units, typename BHManagerSetter>
 class GeneralScalar
     : public IScalar,
       public Units,
-      public prism::boundary::BHManagerProvider<boundary::IScalarBoundaryHandler> {
+      public prism::boundary::BHManagerProvider<boundary::scalar::IScalarBoundaryHandler> {
   public:
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
@@ -151,7 +151,7 @@ class GeneralScalar
 class ScalarBHManagerSetter {
   public:
     using IScalarBHManager =
-        prism::boundary::BoundaryHandlersManager<boundary::IScalarBoundaryHandler>;
+        prism::boundary::BoundaryHandlersManager<boundary::scalar::IScalarBoundaryHandler>;
 
     static void set(IScalarBHManager& manager);
 };
@@ -187,15 +187,14 @@ auto UniformScalar::operator*(const VectorField& other) -> VectorField {
     }
 
     auto output_name = fmt::format("{}{}", this->name(), other.name());
-    VectorXd face_values_x = VectorXd::Zero(other.mesh()->faceCount());
-    VectorXd face_values_y = VectorXd::Zero(other.mesh()->faceCount());
-    VectorXd face_values_z = VectorXd::Zero(other.mesh()->faceCount());
+    std::vector<Vector3d> face_values(other.mesh()->faceCount(), Vector3d::Zero());
+    VectorXd face_flux_values = VectorXd::Zero(other.mesh()->faceCount());
 
     for (const auto& face : this->mesh()->interiorFaces()) {
-        Vector3d result = other.valueAtFace(face) * this->_value;
-        face_values_x[face.id()] = result.x();
-        face_values_y[face.id()] = result.y();
-        face_values_z[face.id()] = result.z();
+        const Vector3d face_value = other.valueAtFace(face) * this->_value;
+        face_values[face.id()] = face_value;
+        face_flux_values[face.id()] = face_value.dot(face.areaVector());
+        ;
     }
     for (const auto& patch : this->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -203,27 +202,23 @@ auto UniformScalar::operator*(const VectorField& other) -> VectorField {
         }
         for (const auto& face_id : patch.facesIds()) {
             Vector3d result = other.valueAtFace(face_id) * this->_value;
-            face_values_x[face_id] = result.x();
-            face_values_y[face_id] = result.y();
-            face_values_z[face_id] = result.z();
+            const auto& face = this->mesh()->face(face_id);
+            face_values[face_id] = result;
+            face_flux_values[face_id] = result.dot(face.areaVector());
         }
     }
 
     using Component = typename VectorField::ComponentType;
-    std::array<Component, 3> components = {Component(output_name + "_x",
-                                                     this->mesh(),
-                                                     this->_value * other.x().values().array(),
-                                                     face_values_x),
-                                           Component(output_name + "_y",
-                                                     this->mesh(),
-                                                     this->_value * other.y().values().array(),
-                                                     face_values_y),
-                                           Component(output_name + "_z",
-                                                     this->mesh(),
-                                                     this->_value * other.z().values().array(),
-                                                     face_values_z)};
+    std::array<Component, 3> components = {
+        Component(output_name + "_x", this->mesh(), this->_value * other.x().values().array()),
+        Component(output_name + "_y", this->mesh(), this->_value * other.y().values().array()),
+        Component(output_name + "_z", this->mesh(), this->_value * other.z().values().array())};
 
-    return VectorField(fmt::format("{}{}", this->name(), other.name()), this->mesh(), components);
+    auto U =
+        VectorField(fmt::format("{}{}", this->name(), other.name()), this->mesh(), components);
+    U.setFaceValues(std::move(face_values));
+    U.setFaceFluxValues(std::move(face_flux_values));
+    return U;
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -269,8 +264,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
     if (_data->size() != mesh->cellCount()) {
         throw std::runtime_error(
             fmt::format("field::GeneralScalar() cannot create a scalar field '{}' given a "
-                        "vector that has a "
-                        "different size than mesh's cell count.",
+                        "vector that has a different size than mesh's cell count.",
                         this->name()));
     }
 
@@ -549,8 +543,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
     if (it == field_infos.end()) {
         log::debug(
             "GeneralScalar::setGradScheme(): couldn't find a specified gradient scheme for "
-            "field "
-            "`{}` in `fields.json`, setting the gradient scheme to least squares.",
+            "field `{}` in `fields.json`, setting the gradient scheme to least squares.",
             this->name());
 
         _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
@@ -571,8 +564,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
     if (grad_scheme_name == "least-squares" || grad_scheme_name == "leastSquares") {
         log::debug(
             "GeneralScalar::setGradScheme(): setting the gradient scheme to Least-Squares "
-            "for "
-            "field `{}`",
+            "for field `{}`",
             this->name());
         _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
         return;

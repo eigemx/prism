@@ -39,7 +39,7 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 2;
-    auto nOuterIter = 150;
+    auto nOuterIter = 75;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -88,7 +88,6 @@ auto main(int argc, char* argv[]) -> int {
         for (const auto& cell : mesh->cells()) {
             auto i = cell.id();
             // clang-format off
-            Matrix3d Di;
             D_data[i]  << Du[i], 0,     0,
                           0,     Dv[i], 0,
                           0,     0,     1;
@@ -161,9 +160,7 @@ auto main(int argc, char* argv[]) -> int {
 void correctPPrimeBoundaryConditions(field::Pressure& P_prime) {
     // we need to reset the P_prime field to zero at the boundaries where a Dirichlet condition is
     // applied.
-    VectorXd face_values;
-    face_values.resize(P_prime.mesh()->faceCount());
-    face_values.setZero();
+    VectorXd face_values = VectorXd::Zero(P_prime.mesh()->faceCount());
 
     for (const auto& patch : P_prime.mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -171,8 +168,9 @@ void correctPPrimeBoundaryConditions(field::Pressure& P_prime) {
         }
 
         const auto& bc = patch.getBoundaryCondition("P");
-        if (bc.kindString() == "fixed" || bc.kindString() == "symmetry") {
-            // update
+        const auto& handler = P_prime.boundaryHandlersManager().getHandler(bc.kindString());
+
+        if (handler->isDirichlet() || handler->name() == "symmetry") {
             for (const auto& face_id : patch.facesIds()) {
                 face_values[face_id] = 0.0;
             }
