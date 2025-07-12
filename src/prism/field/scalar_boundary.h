@@ -77,6 +77,12 @@ auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
 }
 
 template <IScalarBased Field>
+auto NoSlip<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    Fixed<Field> fixed;
+    return fixed.get(field, face);
+}
+
+template <IScalarBased Field>
 auto Symmetry<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
     ZeroGradient<Field> zg;
     return zg.get(field, face);
@@ -90,6 +96,7 @@ auto Outlet<Field>::get(const IScalar& field, const mesh::Face& face) -> double 
 
 template <IScalarBased Field>
 auto FixedGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
+    /// TODO: test this, `grad_at_boundary = grad_at_boundary * d_Cf` does not make sense.
     const auto& mesh = field.mesh();
     const auto& patch = mesh->boundaryPatch(face);
 

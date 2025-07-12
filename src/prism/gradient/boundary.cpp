@@ -39,4 +39,9 @@ auto FixedGradient::get(const prism::field::IScalar& field,
     const auto& boundary_patch = field.mesh()->boundaryPatch(face);
     return boundary_patch.getVectorBoundaryCondition(field.name());
 }
+
+auto ZeroGradient::get(const prism::field::IScalar& field,                 // NOLINT
+                       const prism::mesh::Face& face) -> prism::Vector3d { // NOLINT
+    return {0.0, 0.0, 0.0};
+}
 } // namespace prism::gradient::boundary

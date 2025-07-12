@@ -127,11 +127,11 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(std::string name,
 template <typename Component, typename BHManagerSetter>
 GeneralVector<Component, BHManagerSetter>::GeneralVector(std::string name,
                                                          const SharedPtr<mesh::PMesh>& mesh,
-                                                         std::array<Component, 3>& fields)
-    : IVector(std::move(name), mesh), m_x(fields[0]), m_y(fields[1]), m_z(fields[2]) {
+                                                         std::array<Component, 3>& components)
+    : IVector(std::move(name), mesh), m_x(components[0]), m_y(components[1]), m_z(components[2]) {
     log::debug("Creating vector field: '{}'", this->name());
     // check mesh consistency
-    for (auto& field : fields) {
+    for (auto& field : components) {
         if (field.parent() != nullptr) {
             log::warn(
                 "field::Vector '{}' constructor was given a sub-field '{}' that already has a "

@@ -28,6 +28,7 @@ class RHSProvider {
   private:
     VectorXd _b;
 };
+
 // A linear system of equations of the form Ax = b
 class LinearSystem : public RHSProvider {
   public:
@@ -37,11 +38,10 @@ class LinearSystem : public RHSProvider {
     auto inline matrix() const -> const SparseMatrix& { return _A; }
     auto inline matrix() -> SparseMatrix& { return _A; }
 
-    // insert() updates the matrix coefficient at (i, j), with value v
-    // the value v does not overwrite existing value at that location but gets
-    // accumulated. inser() does not actually insert directly into matrix A,
-    // but actually inserts to a vector of triplets `_triplets` until collect()
-    // is called, which does the actual insertion to the matrix.
+    // insert() updates the matrix coefficient at (i, j), with value v the value v does not
+    // overwrite existing value at that location but gets accumulated. insert() does not actually
+    // insert directly into matrix A, but inserts to a vector of triplets `_triplets` until
+    // collect() is called, which does the actual insertion to the matrix.
     void insert(std::size_t i, std::size_t j, double v);
 
     // collect() should be called after inserting all the matrix coefficients

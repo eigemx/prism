@@ -134,16 +134,15 @@ void IAppliedConvection<ConvectiveField, Field>::applyInterior(const mesh::Face&
     const auto& mesh = _phi.mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
-
     const std::size_t owner_id = owner.id();
     const std::size_t neighbor_id = neighbor.id();
 
-    const Vector3d& S_f = mesh::outwardAreaVector(face, owner);
-    const Vector3d U_f = _U.valueAtFace(face);
-    const double m_dot_f = U_f.dot(S_f);
+    // since face is owned by `owner`, the flux will be in the intended way, as the face normal
+    // points from cell center to face center, so no need to flup the sign of the flux.
+    const double mdot_f = _U.fluxAtFace(face);
 
-    auto [a_C, a_N, b] = interpolate(m_dot_f, owner, neighbor, face);
-    auto [x_C, x_N, s] = interpolate(-m_dot_f, neighbor, owner, face); // NOLINT
+    auto [a_C, a_N, b] = interpolate(mdot_f, owner, neighbor, face);
+    auto [x_C, x_N, s] = interpolate(-mdot_f, neighbor, owner, face); // NOLINT
 
     this->insert(owner_id, owner_id, a_C);
     this->insert(owner_id, neighbor_id, a_N);
@@ -157,7 +156,8 @@ void IAppliedConvection<ConvectiveField, Field>::applyInterior(const mesh::Face&
 
 template <field::IVectorBased ConvectiveField, typename Field>
 void IAppliedConvection<ConvectiveField, Field>::applyBoundary() {
-    prism::boundary::detail::applyBoundary("prism::scheme::convection::IConvection", *this);
+    prism::boundary::detail::applyBoundary("prism::scheme::convection::IAppliedConvection",
+                                           *this);
 }
 
 template <field::IVectorBased ConvectiveField, typename Field>
@@ -203,16 +203,16 @@ auto LinearUpwind<ConvectiveField, Field>::interpolate(double m_dot,
     const Vector3d neighbor_grad_phi = this->field().gradAtCell(neighbor);
 
     const Vector3d d_Cf = face.center() - cell.center();
-    // auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
-    auto correction = cell_grad_phi.dot(d_Cf);
+    auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
+    // auto correction = cell_grad_phi.dot(d_Cf);
 
     const double a_C = std::max(m_dot, 0.0);
     const double b1 = -std::max(m_dot, 0.0) * correction;
 
     // in case 'neighbor' is the upstream cell
     const Vector3d d_Nf = face.center() - neighbor.center();
-    // correction = d_Nf.dot((2 * neighbor_grad_phi) - face_grad_phi);
-    correction = neighbor_grad_phi.dot(d_Nf);
+    correction = d_Nf.dot((2 * neighbor_grad_phi) - face_grad_phi);
+    // correction = neighbor_grad_phi.dot(d_Nf);
 
     const double a_N = -std::max(-m_dot, 0.0);
     const double b2 = std::max(-m_dot, 0.0) * correction;

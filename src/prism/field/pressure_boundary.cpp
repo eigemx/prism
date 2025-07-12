@@ -4,14 +4,18 @@
 
 namespace prism::field::boundary::scalar {
 template <>
-auto NoSlip<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
+auto ZeroGradient<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
+    // This function is based on equations (15.151), (15.152) and (15.153) from Moukallad et. al.
+    // gradient in normal direction is zero, ∇T.n = 0, so the value of the field should be
+    // extrapolated. To make sure that we have a zero normal gradient, the field gradient at the
+    // boundary is computed as:
+    // ∇pb = ∇pc - (∇pc.n)n
     const auto& owner = field.mesh()->cell(face.owner());
-    const Vector3d d_Cb = face.center() - owner.center();
+    const Vector3d grad_c = field.gradAtCellStored(owner);
+    const Vector3d grad_b = grad_c - grad_c.dot(face.normal()) * face.normal();
 
-    // we use gradAtCellStored instead of gradAtCell, because gradAtCell invokes gradAtFace for
-    // the boundary face at some point, which in turn will invoke NoSlip<Pressure>::get(), and
-    // this will cause an infinite loop, to avoid this we use gradAtCellStored which uses the
-    // gradient of the field at the cell calculated from the previous run of gradAtCell function.
-    return field.valueAtCell(owner) + field.gradAtCellStored(owner).dot(d_Cb);
+    // pb = pc + ∇pb.dCb
+    const Vector3d dCb = face.center() - owner.center();
+    return field.valueAtCell(face.owner()) + grad_b.dot(dCb);
 }
 } // namespace prism::field::boundary::scalar
