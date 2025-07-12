@@ -561,14 +561,15 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
         return;
     }
 
-    if (grad_scheme_name == "least-squares" || grad_scheme_name == "leastSquares") {
-        log::debug(
-            "GeneralScalar::setGradScheme(): setting the gradient scheme to Least-Squares "
-            "for field `{}`",
-            this->name());
-        _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
-        return;
-    }
+    /// TODO: if scalar field is a component of a vector field, prism should get the grad scheme
+    /// type from it's parent field, and we should also implement setGradScheme(scheme) for vector
+    /// field type.
+
+    log::debug(
+        "GeneralScalar::setGradScheme(): setting the gradient scheme to Least-Squares "
+        "for field `{}`",
+        this->name());
+
     _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
 }
 

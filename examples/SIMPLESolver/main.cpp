@@ -3,6 +3,7 @@
 #include <filesystem>
 
 using namespace prism;
+namespace fs = std::filesystem;
 
 void correctPPrimeBoundaryConditions(field::Pressure& P_prime);
 
@@ -21,7 +22,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // read mesh
     log::info("Reading `fields.json` file...");
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
+    auto boundary_file = fs::path(unv_file_name).parent_path() / "fields.json";
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
@@ -39,7 +40,7 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 2;
-    auto nOuterIter = 75;
+    auto nOuterIter = 100;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -100,7 +101,7 @@ auto main(int argc, char* argv[]) -> int {
         log::debug("Correcting faces velocities using Rhie-Chow interpolation");
         mDot = rho * U; // update mDot with the new U values
 
-        mDot.updateInteriorFaces(
+        mDot.updateFaces(
             [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, mDot, D, p); });
 
         // pressure correction field created with same name as pressure field to get same boundary
@@ -126,7 +127,8 @@ auto main(int argc, char* argv[]) -> int {
             p_solver.solve(pEqn, 3, 1e-16);
         }
 
-        // we need to clear face values of P_prime and let solver calculate them again
+        // we need to clear face values of P_prime and let solver calculate them again, because we
+        // set all Dirichlet boundaries to zero when correctPPrimeBoundaryConditions was called
         P_prime.clearFaceValues();
 
         // For some reason, the following code produces a different result (and wrong) if we used

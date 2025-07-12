@@ -63,11 +63,11 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    eqn.setUnderRelaxFactor(0.95);
+    // eqn.setUnderRelaxFactor(0.95);
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nOuterIterations = 10;
+    auto nOuterIterations = 25;
 
     for (int i = 0; i < nOuterIterations; ++i) {
         solver.solve(eqn, 10, 1e-20);

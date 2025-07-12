@@ -10,7 +10,7 @@ LinearSystem::LinearSystem(std::size_t n_cells) : _A(n_cells, n_cells), RHSProvi
     // this is the minimum number of triplets, but it is not the exact number
     // In the general case of a polyhedral mesh, this number is not correct
     // but can be treated as a warm-up for allocations.
-    /// TODO: check if this is making any difference, and remove it if not.
+    /// TODO: check if this is making any difference.
     _triplets.reserve(4 * n_cells);
 }
 

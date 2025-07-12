@@ -52,4 +52,24 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
     }
     // "cylinder" mesh should have a surface area of 69.0842
     REQUIRE(std::abs(surface_area - 69.0842) < 1e-4);
+
+    std::size_t bad_interior_faces = 0;
+    std::for_each(mesh->interiorFaces().begin(),
+                  mesh->interiorFaces().end(),
+                  [&bad_interior_faces](const mesh::Face& face) {
+                      if (face.isBoundary()) {
+                          bad_interior_faces++;
+                      }
+                  });
+    REQUIRE(bad_interior_faces == 0);
+
+    std::size_t bad_boundary_faces = 0;
+    std::for_each(mesh->boundaryFaces().begin(),
+                  mesh->boundaryFaces().end(),
+                  [&bad_boundary_faces](const mesh::Face& face) {
+                      if (!face.isBoundary()) {
+                          bad_boundary_faces++;
+                      }
+                  });
+    REQUIRE(bad_boundary_faces == 0);
 }

@@ -58,9 +58,7 @@ class FixedGradient : public IGradSchemeBoundaryHandler {
 class ZeroGradient : public IGradSchemeBoundaryHandler {
   public:
     auto name() const -> std::string override { return "zero-gradient"; }
-    auto inline get(const prism::field::IScalar& field,                          // NOLINT
-                    const prism::mesh::Face& face) -> prism::Vector3d override { // NOLINT
-        return {0.0, 0.0, 0.0};
-    }
+    auto get(const prism::field::IScalar& field,
+             const prism::mesh::Face& face) -> prism::Vector3d override;
 };
 } // namespace prism::gradient::boundary

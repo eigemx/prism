@@ -100,12 +100,11 @@ void Transport<Field>::updateCoeffs() {
         // apply the scheme
         scheme->apply();
 
-        // update quation's universal coefficient matrix and RHS vector
+        // update equation's universal coefficient matrix and RHS vector
         matrix() += scheme->matrix();
         rhs() += scheme->rhs();
     }
 
-    /// TODO: this does not consider implicit sources
     for (auto& source : _sources) {
         source->apply();
         rhs() += source->rhs();
