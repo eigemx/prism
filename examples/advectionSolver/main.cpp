@@ -53,7 +53,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
-    using div = scheme::convection::LinearUpwind<field::Velocity, field::Scalar>;
+    using div = scheme::convection::QUICK<field::Velocity, field::Scalar>;
     using laplacian =
         scheme::diffusion::Corrected<field::UniformScalar,
                                      scheme::diffusion::nonortho::OverRelaxedCorrector,

@@ -40,7 +40,7 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 2;
-    auto nOuterIter = 100;
+    auto nOuterIter = 150;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -101,7 +101,7 @@ auto main(int argc, char* argv[]) -> int {
         log::debug("Correcting faces velocities using Rhie-Chow interpolation");
         mDot = rho * U; // update mDot with the new U values
 
-        mDot.updateFaces(
+        mDot.updateInteriorFaces(
             [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, mDot, D, p); });
 
         // pressure correction field created with same name as pressure field to get same boundary

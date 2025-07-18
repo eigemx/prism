@@ -116,26 +116,24 @@ auto main(int argc, char* argv[]) -> int {
     auto rho = field::UniformScalar("rho", mesh, 1.0);
     auto nu = field::UniformScalar("nu", mesh, 1e-3);
 
-    using div = LinearUpwind<field::Velocity, field::VelocityComponent>;
-    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
+    using div = QUICK<field::Velocity, field::VelocityComponent>;
+    using laplacian = diffusion::Corrected<field::UniformScalar,
+                                           diffusion::nonortho::OverRelaxedCorrector,
+                                           field::VelocityComponent>;
     using grad = source::Gradient<Sign::Negative, field::Pressure>;
 
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 2;
-    auto nOuterIter = 1;
+    auto nOuterIter = 15;
     auto momentumURF = 1.0;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
 
     auto kappa = field::UniformScalar("kappa", mesh, 4e-5);
-    using div2 = scheme::convection::Upwind<field::Velocity, field::Scalar>;
+    using div2 = scheme::convection::MINMOD<field::Velocity, field::Scalar>;
     using laplacian2 = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
-
-    auto eqn = eqn::Transport(div2(U, T) // ∇.(ρUT)
-                                         // laplacian2(kappa, T) // - ∇.(κ ∇T)
-    );
 
 
     /*
@@ -150,6 +148,9 @@ auto main(int argc, char* argv[]) -> int {
     auto solver = solver::BiCGSTAB<field::Scalar>();
 
     for (auto iter = 0; iter < nOuterIter; ++iter) {
+        auto eqn = eqn::Transport(div2(U, T),          // ∇.(ρUT)
+                                  laplacian2(kappa, T) // - ∇.(κ ∇T)
+        );
         /*
         mDot = rho * U; // update mDot with the new U values
 

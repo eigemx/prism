@@ -10,12 +10,13 @@
         },
         {
             "name": "UpperWall",
-            "type": "symmetry"
+            "type": "no-slip",
+            "value": [0.0, 0.0, 0.0]
         },
         {
             "name": "LowerWall",
             "type": "no-slip",
-            "value": [0.01, 0.0, 0.0]
+            "value": [0.0, 0.0, 0.0]
         },
         {
             "name": "Inlet",
