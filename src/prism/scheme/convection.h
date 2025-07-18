@@ -4,11 +4,10 @@
 
 #include "boundary.h"
 #include "convection_boundary.h"
+#include "convection_hr.h"
 #include "prism/boundary.h"
 #include "prism/field/ifield.h"
 #include "prism/mesh/cell.h"
-#include "prism/mesh/utilities.h"
-#include "prism/types.h"
 #include "scheme.h"
 
 namespace prism::scheme::convection {
@@ -60,58 +59,100 @@ concept IAppliedConvectionBased =
     std::derived_from<T,
                       IAppliedConvection<typename T::ConvectiveFieldType, typename T::FieldType>>;
 
-// Central difference scheme
-template <field::IVectorBased ConvectiveField, typename Field>
-class CentralDifference : public IAppliedConvection<ConvectiveField, Field> {
-  public:
-    CentralDifference(ConvectiveField U, Field phi)
-        : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
-
-  private:
-    auto interpolate(double m_dot,
-                     const mesh::Cell& cell,
-                     const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> detail::CoeffsTriplet override;
-};
-
 // Upwind scheme
 template <field::IVectorBased ConvectiveField, typename Field>
 class Upwind : public IAppliedConvection<ConvectiveField, Field> {
   public:
     Upwind(ConvectiveField U, Field phi) : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
 
-  private:
+  protected:
+    struct WeightsNVF {
+        double l {0.0};
+        double k {0.0};
+    };
+
     auto interpolate(double m_dot,
                      const mesh::Cell& cell,
                      const mesh::Cell& neighbor,
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
+    virtual auto weightsNVF(double phi_tilde) const noexcept -> WeightsNVF;
+};
+
+// Central difference scheme
+template <field::IVectorBased ConvectiveField, typename Field>
+class CentralDifference : public Upwind<ConvectiveField, Field> {
+  public:
+    CentralDifference(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
+
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
 };
 
 // Second order upwind (linear upwind) scheme
 template <field::IVectorBased ConvectiveField, typename Field>
-class LinearUpwind : public IAppliedConvection<ConvectiveField, Field> {
+class LinearUpwind : public Upwind<ConvectiveField, Field> {
   public:
-    LinearUpwind(ConvectiveField U, Field phi)
-        : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
+    LinearUpwind(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
 
-  private:
-    auto interpolate(double m_dot,
-                     const mesh::Cell& cell,
-                     const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> detail::CoeffsTriplet override;
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
 };
 
 // QUICK scheme
 template <field::IVectorBased ConvectiveField, typename Field>
-class QUICK : public IAppliedConvection<ConvectiveField, Field> {
+class QUICK : public Upwind<ConvectiveField, Field> {
   public:
-    QUICK(ConvectiveField U, Field phi) : IAppliedConvection<ConvectiveField, Field>(U, phi) {}
+    QUICK(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
 
-  private:
-    auto interpolate(double m_dot,
-                     const mesh::Cell& cell,
-                     const mesh::Cell& neighbor,
-                     const mesh::Face& face) -> detail::CoeffsTriplet override;
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
+};
+
+// FROMM scheme
+template <field::IVectorBased ConvectiveField, typename Field>
+class FROMM : public Upwind<ConvectiveField, Field> {
+  public:
+    FROMM(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
+
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
+};
+
+// MINMOD scheme
+template <field::IVectorBased ConvectiveField, typename Field>
+class MINMOD : public Upwind<ConvectiveField, Field> {
+  public:
+    MINMOD(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
+
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
+};
+
+// MUSCL scheme
+template <field::IVectorBased ConvectiveField, typename Field>
+class MUSCL : public Upwind<ConvectiveField, Field> {
+  public:
+    MUSCL(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
+
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
+};
+
+// SMART scheme
+template <field::IVectorBased ConvectiveField, typename Field>
+class SMART : public Upwind<ConvectiveField, Field> {
+  public:
+    SMART(ConvectiveField U, Field phi) : Upwind<ConvectiveField, Field>(U, phi) {}
+
+  protected:
+    auto weightsNVF(double phi_tilde) const noexcept
+        -> Upwind<ConvectiveField, Field>::WeightsNVF override;
 };
 
 template <field::IVectorBased ConvectiveField, typename Field>
@@ -161,88 +202,100 @@ void IAppliedConvection<ConvectiveField, Field>::applyBoundary() {
 }
 
 template <field::IVectorBased ConvectiveField, typename Field>
-auto CentralDifference<ConvectiveField, Field>::interpolate(double m_dot,
-                                                            const mesh::Cell& cell,
-                                                            const mesh::Cell& neighbor,
-                                                            const mesh::Face& face)
-    -> detail::CoeffsTriplet {
-    // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->field().gradAtFace(face);
-    const Vector3d d_Cf = face.center() - cell.center();
-    const double a_C = std::max(m_dot, 0.0);
-    double b = -std::max(m_dot, 0.0) * d_Cf.dot(face_grad_phi);
-
-    // in case 'neighbor' is the upstream cell
-    const Vector3d d_Nf = face.center() - neighbor.center();
-    const double a_N = -std::max(-m_dot, 0.0);
-    b += std::max(-m_dot, 0.0) * d_Nf.dot(face_grad_phi);
-
-    return {a_C, a_N, b};
-}
-
-template <field::IVectorBased ConvectiveField, typename Field>
 auto Upwind<ConvectiveField, Field>::interpolate(double m_dot,
                                                  const mesh::Cell& cell,     // NOLINT
                                                  const mesh::Cell& neighbor, // NOLINT
                                                  const mesh::Face& face)     // NOLINT
     -> detail::CoeffsTriplet {
-    const double a_C = std::max(m_dot, 0.0);
-    const double a_N = -std::max(-m_dot, 0.0);
-    return {a_C, a_N, 0.0};
+    // when `cell` is the upwind cell
+    double phi_tilde = phiTilde(this->field(), cell, neighbor);
+    double phi_upwind = phiAtDummyUpwind(this->field(), cell, neighbor);
+    const auto [l_plus, k_plus] = weightsNVF(phi_tilde);
+    double a_C = std::max(m_dot, 0.0) * l_plus;
+    double a_N = std::max(m_dot, 0.0) * k_plus;
+    double b = -std::max(m_dot, 0.0) * (1 - l_plus - k_plus) * phi_upwind;
+
+    // when `neighbor` is the upwind cell
+    phi_tilde = phiTilde(this->field(), neighbor, cell);
+    phi_upwind = phiAtDummyUpwind(this->field(), neighbor, cell);
+    const auto [l_minus, k_minus] = weightsNVF(phi_tilde);
+    a_C += -std::max(-m_dot, 0.0) * k_minus;
+    a_N += -std::max(-m_dot, 0.0) * l_minus;
+    b += std::max(-m_dot, 0.0) * (1 - l_minus - k_minus) * phi_upwind;
+    return {a_C, a_N, b};
 }
 
 template <field::IVectorBased ConvectiveField, typename Field>
-auto LinearUpwind<ConvectiveField, Field>::interpolate(double m_dot,
-                                                       const mesh::Cell& cell,
-                                                       const mesh::Cell& neighbor,
-                                                       const mesh::Face& face)
-    -> detail::CoeffsTriplet {
-    // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->field().gradAtFace(face);
-    const Vector3d cell_grad_phi = this->field().gradAtCell(cell);
-    const Vector3d neighbor_grad_phi = this->field().gradAtCell(neighbor);
-
-    const Vector3d d_Cf = face.center() - cell.center();
-    auto correction = d_Cf.dot((2 * cell_grad_phi) - face_grad_phi);
-    // auto correction = cell_grad_phi.dot(d_Cf);
-
-    const double a_C = std::max(m_dot, 0.0);
-    const double b1 = -std::max(m_dot, 0.0) * correction;
-
-    // in case 'neighbor' is the upstream cell
-    const Vector3d d_Nf = face.center() - neighbor.center();
-    correction = d_Nf.dot((2 * neighbor_grad_phi) - face_grad_phi);
-    // correction = neighbor_grad_phi.dot(d_Nf);
-
-    const double a_N = -std::max(-m_dot, 0.0);
-    const double b2 = std::max(-m_dot, 0.0) * correction;
-
-    return {a_C, a_N, b1 + b2};
+auto Upwind<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept // NOLINT
+    -> WeightsNVF {
+    return {1.0, 0.0};
 }
 
 template <field::IVectorBased ConvectiveField, typename Field>
-auto QUICK<ConvectiveField, Field>::interpolate(double m_dot,
-                                                const mesh::Cell& cell,
-                                                const mesh::Cell& neighbor,
-                                                const mesh::Face& face) -> detail::CoeffsTriplet {
-    // in case `cell` is the upstream cell
-    const Vector3d face_grad_phi = this->field().gradAtFace(face);
-    const Vector3d cell_grad_phi = this->field().gradAtCell(cell);
-    const Vector3d neighbor_grad_phi = this->field().gradAtCell(neighbor);
-
-    const Vector3d d_Cf = face.center() - cell.center();
-    auto correction = 0.5 * d_Cf.dot(cell_grad_phi + face_grad_phi);
-
-    const double a_C = std::max(m_dot, 0.0);
-    const double b1 = -std::max(m_dot, 0.0) * correction;
-
-    // in case 'neighbor' is the upstream cell
-    const Vector3d d_Nf = face.center() - neighbor.center();
-    correction = 0.5 * d_Nf.dot(neighbor_grad_phi + face_grad_phi);
-
-    const double a_N = -std::max(-m_dot, 0.0);
-    const double b2 = std::max(-m_dot, 0.0) * correction;
-
-    return {a_C, a_N, b1 + b2};
+auto CentralDifference<ConvectiveField, Field>::weightsNVF(
+    double phi_tilde) const noexcept // NOLINT
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    return {0.5, 0.5};
 }
+
+template <field::IVectorBased ConvectiveField, typename Field>
+auto LinearUpwind<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept // NOLINT
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    return {1.5, 0.0};
+}
+
+template <field::IVectorBased ConvectiveField, typename Field>
+auto QUICK<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept // NOLINT
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    return {0.75, 3.0 / 8.0};
+}
+
+template <field::IVectorBased ConvectiveField, typename Field>
+auto FROMM<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept // NOLINT
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    return {1.0, 0.25};
+}
+
+template <field::IVectorBased ConvectiveField, typename Field>
+auto MINMOD<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    if (phi_tilde > 0.0 && phi_tilde < 0.5) {
+        return {1.5, 0.0};
+    }
+    if (phi_tilde >= 0.5 && phi_tilde < 1.0) {
+        return {0.5, 0.5};
+    }
+    return {1.0, 0};
+}
+
+template <field::IVectorBased ConvectiveField, typename Field>
+auto MUSCL<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    if (phi_tilde > 0.0 && phi_tilde < 0.25) {
+        return {2, 0.0};
+    }
+    if (phi_tilde >= 0.25 && phi_tilde < 0.75) {
+        return {1, 0.25};
+    }
+    if (phi_tilde >= 0.75 && phi_tilde < 1.0) {
+        return {0, 1.0};
+    }
+    return {1.0, 0};
+}
+
+template <field::IVectorBased ConvectiveField, typename Field>
+auto SMART<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept
+    -> Upwind<ConvectiveField, Field>::WeightsNVF {
+    if (phi_tilde > 0.0 && phi_tilde < 1 / 6) {
+        return {4, 0.0};
+    }
+    if (phi_tilde >= 1 / 6 && phi_tilde < 5 / 6) {
+        return {0.75, 3 / 8};
+    }
+    if (phi_tilde >= 5 / 6 && phi_tilde < 1.0) {
+        return {0, 1.0};
+    }
+    return {1.0, 0};
+}
+
 } // namespace prism::scheme::convection

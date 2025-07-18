@@ -90,6 +90,7 @@ template <field::IVectorBased ConvectiveField, typename F>
 void ZeroGradient<convection::IAppliedConvection<ConvectiveField, F>>::apply(
     convection::IAppliedConvection<ConvectiveField, F>& scheme,
     const mesh::BoundaryPatch& patch) {
+    /// TODO: implement ZeroGradient separate from Outlet
     Outlet<convection::IAppliedConvection<ConvectiveField, F>> outlet;
     return outlet.apply(scheme, patch);
 }

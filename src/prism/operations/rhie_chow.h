@@ -33,6 +33,7 @@ auto rhieChowCorrectBoundaryFace(const mesh::Face& face,
                                  Vector& U,
                                  const field::Tensor& D,
                                  const field::Pressure& P) -> Vector3d {
+    /// TODO: correcting boundary faces returns wrong solution near boundaries.
     const std::size_t face_id = face.id();
     const std::size_t owner_id = face.owner();
     const Vector3d& Uc = U.valueAtCell(owner_id);
