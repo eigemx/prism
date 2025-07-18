@@ -13,13 +13,20 @@ auto Outlet::get(const prism::field::IScalar& field, const prism::mesh::Face& fa
 
 auto Fixed::get(const prism::field::IScalar& field,
                 const prism::mesh::Face& face) -> prism::Vector3d {
-    const auto& owner = field.mesh()->cell(face.owner());
-    prism::Vector3d d_Cf = face.center() - owner.center();
-    double d_Cf_norm = d_Cf.norm();
-    prism::Vector3d e = d_Cf / d_Cf_norm;
+    /*
+const auto& owner = field.mesh()->cell(face.owner());
+prism::Vector3d d_Cf = face.center() - owner.center();
+double d_Cf_norm = d_Cf.norm();
+prism::Vector3d e = d_Cf / d_Cf_norm;
 
-    double delta_phi = field.valueAtFace(face) - field.valueAtCell(owner);
-    return (delta_phi / d_Cf_norm) * e;
+double delta_phi = field.valueAtFace(face) - field.valueAtCell(owner);
+return (delta_phi / d_Cf_norm) * e;
+*/
+    const auto& owner = field.mesh()->cell(face.owner());
+    const Vector3d grad_c = field.gradAtCellStored(owner);
+    const Vector3d grad_b = grad_c - grad_c.dot(face.normal()) * face.normal();
+
+    return grad_b;
 }
 
 auto NoSlip::get(const prism::field::IScalar& field,

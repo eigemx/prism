@@ -3,22 +3,22 @@
         {
             "name": "top",
             "type": "fixed",
-            "value": [1, 1.0, 0.0]
+            "value": 1.0
         },
         {
             "name": "bottom",
             "type": "fixed",
-            "value": [1.0, 1.0, 0.0]
+            "value": 0.0
         },
         {
             "name": "left",
             "type": "fixed",
-            "value": [1.0, 1.0, 0.0]
+            "value": 1.0
         },
         {
             "name": "right",
             "type": "fixed",
-            "value": [1.0, 1.0, 0.0]
+            "value": 0.0
         },
         {
             "name": "front",
