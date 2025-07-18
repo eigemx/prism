@@ -20,8 +20,14 @@ template <typename Field>
 void inspectCell(const mesh::Cell& cell, eqn::Transport<Field>& eqn, const field::Velocity& U) {
     log::info("Inspecting cell: {}", cell.id());
     log::info("Inspecting convection coefficients...");
-    auto ac = eqn.convectionScheme()->matrix().coeff(cell.id(), cell.id());
-    auto b = eqn.convectionScheme()->rhs().coeff(cell.id());
+    auto ac_conv = eqn.convectionScheme()->matrix().coeff(cell.id(), cell.id());
+    auto b_conv = eqn.convectionScheme()->rhs().coeff(cell.id());
+    auto ac_diff = eqn.diffusionScheme()->matrix().coeff(cell.id(), cell.id());
+    auto b_diff = eqn.diffusionScheme()->rhs().coeff(cell.id());
+    auto ac = eqn.matrix().coeff(cell.id(), cell.id());
+    auto b = eqn.rhs().coeff(cell.id());
+    log::info("ac_conv: {}, b_conv: {}", ac_conv, b_conv);
+    log::info("ac_diff: {}, b_diff: {}", ac_diff, b_diff);
     log::info("ac: {}, b: {}", ac, b);
 
     double ac_mine = 0.0;
@@ -45,6 +51,8 @@ void inspectCell(const mesh::Cell& cell, eqn::Transport<Field>& eqn, const field
 
         } else {
             auto sf = mesh::outwardAreaVector(face, cell);
+            auto neig = U.mesh()->otherSharingCell(cell, face);
+            auto dx = (cell.center() - neig.center()).norm();
             auto uf = U.valueAtFace(face);
             auto mdot = uf.dot(sf);
             log::info("***************************************");
@@ -54,13 +62,23 @@ void inspectCell(const mesh::Cell& cell, eqn::Transport<Field>& eqn, const field
                       face.neighbor().value());
             log::info("uf = [{}, {}, {}]", uf.x(), uf.y(), uf.z());
             log::info("mdot: {}", mdot);
+            log::info("sf = [{}, {}, {}]", sf.x(), sf.y(), sf.z());
+            log::info("dx: {}", dx);
 
             if (mdot > 0) {
+                log::info("ac = {}", mdot);
                 ac_mine += mdot;
+            } else {
+                log::info("an = {}", -mdot);
             }
+
+            log::info("an_diffusion = {}",
+                      eqn.diffusionScheme()->matrix().coeff(cell.id(), neig.id()));
+            log::info("an_convection = {}",
+                      eqn.convectionScheme()->matrix().coeff(cell.id(), neig.id()));
+            log::info("an_eqn = {}", eqn.matrix().coeff(cell.id(), neig.id()));
         }
     }
-    log::info("ac_mine: {}, b_mine: {}", ac_mine, b_mine);
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -79,6 +97,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
+    /*
     auto foam_fields =
         readFields(std::filesystem::path(unv_file_name).parent_path() / "foam_fields.json");
 
@@ -91,8 +110,9 @@ auto main(int argc, char* argv[]) -> int {
     // convert pressure from std::vector<double> to Eigen::VectorXd
     auto p_vec = VectorXd::Map(foam_fields.pressure.data(), foam_fields.pressure.size());
     auto p = field::Pressure("P", mesh, p_vec);
-    auto U = field::Velocity("U", mesh, components);
-    auto T = field::Scalar("T", mesh, 0.0);
+    */
+    auto U = field::Velocity("U", mesh, {1.0, 1.0, 0.0});
+    auto T = field::Scalar("T", mesh, 0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
     auto nu = field::UniformScalar("nu", mesh, 1e-3);
 
@@ -113,34 +133,33 @@ auto main(int argc, char* argv[]) -> int {
     using div2 = scheme::convection::Upwind<field::Velocity, field::Scalar>;
     using laplacian2 = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
 
-    auto eqn = eqn::Transport(div2(mDot, T),       // ∇.(ρUT)
-                              laplacian2(kappa, T) // - ∇.(κ ∇T)
+    auto eqn = eqn::Transport(div2(U, T) // ∇.(ρUT)
+                                         // laplacian2(kappa, T) // - ∇.(κ ∇T)
     );
 
 
+    /*
     eqn.updateCoeffs();
-    writeToCSVfile("conv_matrix.csv", Eigen::MatrixXd(eqn.convectionScheme()->matrix()));
-    writeToCSVfile("conv_b.csv", eqn.convectionScheme()->rhs());
-    auto b_field = field::Scalar("b", mesh, eqn.convectionScheme()->rhs());
-    export_field_vtu(b_field, "b.vtu");
-    inspectCell(mesh->cell(110), eqn, U);
+    writeToCSVfile("conv_matrix.csv", Eigen::MatrixXd(eqn.matrix()));
+    writeToCSVfile("conv_b.csv", eqn.rhs());
+    inspectCell(mesh->cell(901), eqn, U);
     eqn.zeroOutCoeffs();
-
+    */
 
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
 
-    for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
+    for (auto iter = 0; iter < nOuterIter; ++iter) {
         /*
         mDot = rho * U; // update mDot with the new U values
 
-        log::info("Outer iteration: {}", outer_iteration);
-        auto uEqn = eqn::Momentum(div(mDot, U.x()),     // ∇.(Uu)
+        log::info("Outer iteration: {}", iter);
+        auto uEqn = eqn::Momentum(div(U, U.x()),        // ∇.(Uu)
                                   laplacian(nu, U.x()), // -∇.(ν∇u)
                                   grad(p, Coord::X)     // = -∂p/∂x
         );
 
-        auto vEqn = eqn::Momentum(div(mDot, U.y()),     // ∇.(Uv)
+        auto vEqn = eqn::Momentum(div(U, U.y()),        // ∇.(Uv)
                                   laplacian(nu, U.y()), // -∇.(ν∇v)
                                   grad(p, Coord::Y)     // = -∂p/∂y
         );
@@ -159,14 +178,21 @@ auto main(int argc, char* argv[]) -> int {
         log::info("Solving y-momentum equations");
         momentum_solver.solve(vEqn, 15, 1e-20);
         */
-
-
         solver.solve(eqn, 10, 1e-20);
     }
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     prism::export_field_vtu(T, "T.vtu");
 
-    export_field_vtu(ops::grad(p, Coord::X), "gradP_x.vtu");
-    export_field_vtu(ops::grad(p, Coord::Y), "gradP_y.vtu");
+    // export_field_vtu(ops::grad(p, Coord::X), "gradP_x.vtu");
+    // export_field_vtu(ops::grad(p, Coord::Y), "gradP_y.vtu");
+
+    auto Pe = field::Scalar("Pe", mesh, 0.0);
+    Pe.updateCells([&](const mesh::Cell& cell) {
+        auto Uc = U.valueAtCell(cell);
+        auto kappa_c = kappa.valueAtCell(cell);
+        auto dx = (cell.center() - mesh->face(cell.facesIds().front()).center()).norm() * 2;
+        return Uc.norm() * kappa_c / dx;
+    });
+    export_field_vtu(Pe, "Pe.vtu");
 }

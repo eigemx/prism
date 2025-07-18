@@ -9,6 +9,11 @@
             "name": "U",
             "type": "velocity",
             "gradScheme": "greenGauss"
+        },
+        {
+            "name": "temperature",
+            "type": "scalar",
+            "gradScheme": "greenGauss"
         }
     ]
 }
