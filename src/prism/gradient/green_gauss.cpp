@@ -6,13 +6,13 @@ namespace prism::gradient {
 auto GreenGauss::correctSkewness(const mesh::Face& face,
                                  const mesh::Cell& cell,
                                  const mesh::Cell& nei) const -> double {
-    // This correction is based on option 1 from "Gradient Compuation" in Moukallad et al. (2015)
+    // This correction is based on option 1 from "Gradient Compuation" in Moukalled et al. (2016)
     // auto gc = mesh::geometricWeight(cell, nei, face);
     // double correction = gc * _cell_gradients[cell.id()].dot(face.center() - cell.center());
     // correction += (1.0 - gc) * _cell_gradients[nei.id()].dot(face.center() - nei.center());
     // return correction;
 
-    // This correction is based on option 2 from "Gradient Compuation" in Moukallad et al. (2015)
+    // This correction is based on option 2 from "Gradient Compuation" in Moukalled et al. (2016)
     auto grad_sum = _cell_gradients[cell.id()] + _cell_gradients[nei.id()];
     auto vec = face.center() - (0.5 * (cell.center() + nei.center()));
 
@@ -20,7 +20,7 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
 }
 
 
-GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) { // NOLINT
+GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) {
     const auto& mesh = field->mesh();
     _cell_gradients.resize(mesh->cellCount(), prism::Vector3d::Zero());
 }
@@ -32,6 +32,7 @@ auto GreenGauss ::gradAtCellStored(const mesh::Cell& cell) -> Vector3d {
 auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = this->field()->mesh();
+    const auto& phi = this->field();
 
     for (auto face_id : cell.facesIds()) {
         const mesh::Face& face = mesh->face(face_id);
@@ -43,8 +44,7 @@ auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
 
         auto Sf = mesh::outwardAreaVector(face, cell);
         const auto& nei = this->field()->mesh()->otherSharingCell(cell, face);
-        auto face_phi =
-            0.5 * (this->field()->valueAtCell(cell) + this->field()->valueAtCell(nei));
+        auto face_phi = 0.5 * (phi->valueAtCell(cell) + phi->valueAtCell(nei));
 
         // skewness correction
         face_phi += correctSkewness(face, cell, nei);

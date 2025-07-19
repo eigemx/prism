@@ -3,7 +3,7 @@
         {
             "name": "P",
             "type": "scalar",
-            "gradScheme": "greenGauss"
+            "gradScheme": "leastSquares"
         },
         {
             "name": "T",

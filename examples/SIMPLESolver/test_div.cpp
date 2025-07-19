@@ -1,3 +1,4 @@
+#include <fmt/base.h>
 #include <prism/prism.h>
 
 #include <filesystem>
@@ -17,69 +18,29 @@ using namespace prism;
 using namespace prism::scheme;
 using namespace prism::scheme::convection;
 
-template <typename Field>
-void inspectCell(const mesh::Cell& cell, eqn::Transport<Field>& eqn, const field::Velocity& U) {
-    log::info("Inspecting cell: {}", cell.id());
-    log::info("Inspecting convection coefficients...");
-    auto ac_conv = eqn.convectionScheme()->matrix().coeff(cell.id(), cell.id());
-    auto b_conv = eqn.convectionScheme()->rhs().coeff(cell.id());
-    auto ac_diff = eqn.diffusionScheme()->matrix().coeff(cell.id(), cell.id());
-    auto b_diff = eqn.diffusionScheme()->rhs().coeff(cell.id());
-    auto ac = eqn.matrix().coeff(cell.id(), cell.id());
-    auto b = eqn.rhs().coeff(cell.id());
-    log::info("ac_conv: {}, b_conv: {}", ac_conv, b_conv);
-    log::info("ac_diff: {}, b_diff: {}", ac_diff, b_diff);
-    log::info("ac: {}, b: {}", ac, b);
 
-    double ac_mine = 0.0;
-    double b_mine = 0.0;
+void inspectGradient(const mesh::Cell& cell, const field::Pressure& P) {
+    Vector3d grad {.0, .0, .0};
+    fmt::println("Value of P at this cell = {}", P.valueAtCell(cell));
     for (const auto face_id : cell.facesIds()) {
-        const auto& face = U.mesh()->face(face_id);
+        const auto& face = P.mesh()->face(face_id);
 
         if (face.isBoundary()) {
-            auto patch = U.mesh()->boundaryPatch(face);
+            const auto& patch = P.mesh()->boundaryPatch(face);
             if (patch.isEmpty()) {
                 continue;
             }
 
-            if (patch.name() == "UpperWall") {
-                continue;
-            }
-            auto mdot_f = U.fluxAtFace(face);
-            auto phi_wall = patch.getScalarBoundaryCondition("T");
-            ac_mine += std::max(mdot_f, 0.0);
-            b_mine += std::max(-mdot_f, 0.0) * phi_wall;
-
+            fmt::println("Face {} is a boundary face on patch {}", face_id, patch.name());
+            fmt::println("Value of face at this boundary = {}", P.valueAtFace(face));
+            grad += P.valueAtFace(face) * face.areaVector();
         } else {
-            auto sf = mesh::outwardAreaVector(face, cell);
-            auto neig = U.mesh()->otherSharingCell(cell, face);
-            auto dx = (cell.center() - neig.center()).norm();
-            auto uf = U.valueAtFace(face);
-            auto mdot = uf.dot(sf);
-            log::info("***************************************");
-            log::info("face: {} is an interior face, owner to= {}, neighbor to {}",
-                      face.id(),
-                      face.owner(),
-                      face.neighbor().value());
-            log::info("uf = [{}, {}, {}]", uf.x(), uf.y(), uf.z());
-            log::info("mdot: {}", mdot);
-            log::info("sf = [{}, {}, {}]", sf.x(), sf.y(), sf.z());
-            log::info("dx: {}", dx);
-
-            if (mdot > 0) {
-                log::info("ac = {}", mdot);
-                ac_mine += mdot;
-            } else {
-                log::info("an = {}", -mdot);
-            }
-
-            log::info("an_diffusion = {}",
-                      eqn.diffusionScheme()->matrix().coeff(cell.id(), neig.id()));
-            log::info("an_convection = {}",
-                      eqn.convectionScheme()->matrix().coeff(cell.id(), neig.id()));
-            log::info("an_eqn = {}", eqn.matrix().coeff(cell.id(), neig.id()));
+            grad += P.valueAtFace(face) * mesh::outwardAreaVector(face, cell);
+            fmt::println("Value of face at this interior = {}", P.valueAtFace(face));
         }
     }
+    grad /= cell.volume();
+    fmt::println("grad at cell = [{}, {}, {}]", grad.x(), grad.y(), grad.z());
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -116,7 +77,7 @@ auto main(int argc, char* argv[]) -> int {
     auto rho = field::UniformScalar("rho", mesh, 1.0);
     auto nu = field::UniformScalar("nu", mesh, 1e-3);
 
-    using div = Upwind<field::Velocity, field::VelocityComponent>;
+    using div = LinearUpwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::Corrected<field::UniformScalar,
                                            diffusion::nonortho::OverRelaxedCorrector,
                                            field::VelocityComponent>;
@@ -125,7 +86,7 @@ auto main(int argc, char* argv[]) -> int {
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
-    auto nNonOrthCorrectiors = 2;
+    auto nNonOrthCorrectors = 3;
     auto nOuterIter = 15;
     auto momentumURF = 1.0;
     auto pressureURF = 0.3;
@@ -150,16 +111,22 @@ auto main(int argc, char* argv[]) -> int {
 
         uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
         uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
+        uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
+
         vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
         vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
+        vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
         // uEqn.setUnderRelaxFactor(momentumURF);
         // vEqn.setUnderRelaxFactor(momentumURF);
-        log::info("Solving x-momentum equations");
-        momentum_solver.solve(uEqn, 15, 1e-20);
 
-        log::info("Solving y-momentum equations");
-        momentum_solver.solve(vEqn, 15, 1e-20);
+        for (auto n = 0; n < nNonOrthCorrectors; ++n) {
+            log::info("Solving x-momentum equations");
+            momentum_solver.solve(uEqn, 15, 1e-20);
+
+            log::info("Solving y-momentum equations");
+            momentum_solver.solve(vEqn, 15, 1e-20);
+        }
 
         // auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
         // using div2 = scheme::convection::Upwind<field::Velocity, field::Scalar>;
@@ -173,7 +140,10 @@ auto main(int argc, char* argv[]) -> int {
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
     prism::export_field_vtu(T, "T.vtu");
+    prism::export_field_vtu(p, "p.vtu");
 
-    // export_field_vtu(ops::grad(p, Coord::X), "gradP_x.vtu");
-    // export_field_vtu(ops::grad(p, Coord::Y), "gradP_y.vtu");
+    export_field_vtu(ops::grad(p, Coord::X), "gradP_x.vtu");
+    export_field_vtu(ops::grad(p, Coord::Y), "gradP_y.vtu");
+
+    inspectGradient(mesh->cell(900), p);
 }

@@ -45,7 +45,6 @@ void ScalarBHManagerSetter::set(IScalarBHManager& manager) {
     manager.addHandler<field::boundary::scalar::NoSlip<Scalar>>();
     manager.addHandler<field::boundary::scalar::Symmetry<Scalar>>();
     manager.addHandler<field::boundary::scalar::Outlet<Scalar>>();
-    manager.addHandler<field::boundary::scalar::FixedGradient<Scalar>>();
     manager.addHandler<field::boundary::scalar::ZeroGradient<Scalar>>();
 }
 

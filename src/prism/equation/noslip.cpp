@@ -8,11 +8,6 @@
 
 namespace prism::eqn::boundary {
 
-template <typename To>
-auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
-    return std::dynamic_pointer_cast<To>(ptr);
-}
-
 auto contribution(Coord coord,
                   const Vector3d& Uc,
                   const Vector3d& Ub,
