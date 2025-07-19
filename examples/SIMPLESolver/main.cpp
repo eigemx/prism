@@ -41,7 +41,7 @@ auto main(int argc, char* argv[]) -> int {
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
-    auto nNonOrthCorrectiors = 2;
+    auto nNonOrthCorrectors = 2;
     auto nOuterIter = 100;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
@@ -125,7 +125,7 @@ auto main(int argc, char* argv[]) -> int {
 
         log::info("Solving pressure correction equation");
         p_solver.solve(pEqn, 3, 1e-16);
-        for (auto i = 0; i < nNonOrthCorrectiors; ++i) {
+        for (auto i = 0; i < nNonOrthCorrectors; ++i) {
             p_solver.solve(pEqn, 3, 1e-16);
         }
 

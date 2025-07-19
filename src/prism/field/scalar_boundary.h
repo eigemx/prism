@@ -9,7 +9,7 @@ class IScalarBoundaryHandler : public prism::boundary::IBoundaryHandler {
   public:
     virtual auto name() const -> std::string = 0;
     virtual auto get(const IScalar& field, const mesh::Face& face) -> double = 0;
-    virtual auto isDirichlet() const noexcept -> bool;
+    virtual auto isDirichlet() const noexcept -> bool { return false; }
 };
 
 template <IScalarBased Field>
@@ -51,27 +51,14 @@ class Outlet : public IScalarBoundaryHandler {
 };
 
 template <IScalarBased Field>
-class FixedGradient : public IScalarBoundaryHandler {
-  public:
-    auto name() const -> std::string override { return "fixed-gradient"; }
-    auto get(const IScalar& field, const mesh::Face& face) -> double override;
-};
-
-template <IScalarBased Field>
 class ZeroGradient : public IScalarBoundaryHandler {
   public:
     auto name() const -> std::string override { return "zero-gradient"; }
     auto get(const IScalar& field, const mesh::Face& face) -> double override;
 };
 
-auto inline IScalarBoundaryHandler::isDirichlet() const noexcept -> bool {
-    return false;
-}
-
 template <IScalarBased Field>
 auto Fixed<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    /// TODO: store result of getScalarBoundaryCondition in a member variable to avoid calling it
-    /// for each face.
     const auto& patch = field.mesh()->boundaryPatch(face);
     return patch.getScalarBoundaryCondition(field.name());
 }
@@ -84,36 +71,32 @@ auto NoSlip<Field>::get(const IScalar& field, const mesh::Face& face) -> double 
 
 template <IScalarBased Field>
 auto Symmetry<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    ZeroGradient<Field> zg;
-    return zg.get(field, face);
+    // This function is based on equations (15.151), (15.152) and (15.153) from Moukallad et. al.
+    // gradient in normal direction is zero, ∇pb.n = 0, so the value of the field should be
+    // extrapolated. To make sure that we have a zero normal gradient, the field gradient at the
+    // boundary is computed as:
+    // ∇pb = ∇pc - (∇pc.n)n
+    const auto& owner = field.mesh()->cell(face.owner());
+    const Vector3d grad_c = field.gradAtCellStored(owner);
+    const Vector3d grad_b = grad_c - grad_c.dot(face.normal()) * face.normal();
+
+    // pb = pc + ∇pb.dCb
+    const Vector3d dCb = face.center() - owner.center();
+    return field.valueAtCell(face.owner()) + grad_b.dot(dCb);
 }
 
 template <IScalarBased Field>
 auto Outlet<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    ZeroGradient<Field> zg;
-    return zg.get(field, face);
-}
-
-template <IScalarBased Field>
-auto FixedGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    /// TODO: test this, `grad_at_boundary = grad_at_boundary * d_Cf` does not make sense.
-    const auto& mesh = field.mesh();
-    const auto& patch = mesh->boundaryPatch(face);
-
-    Vector3d grad_at_boundary = patch.getVectorBoundaryCondition(field.name());
-    const auto& owner = mesh->cell(face.owner());
-
-    Vector3d e = face.center() - owner.center();
-    double d_Cf = e.norm();
-    e = e / e.norm();
-    grad_at_boundary = grad_at_boundary * d_Cf;
-
-    return grad_at_boundary.dot(e) + field.valueAtCell(owner);
+    return field.valueAtCell(face.owner());
 }
 
 template <IScalarBased Field>
 auto ZeroGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    return field.valueAtCell(face.owner());
+    /// TODO: is this correct? this is based on 15.160, but I am note sure if it's valid for zero
+    /// gradient boundary condition.
+    const auto& owner = field.mesh()->cell(face.owner());
+    const Vector3d d_Cb = face.center() - owner.center();
+    return field.valueAtCell(owner); // + field.gradAtCellStored(owner).dot(d_Cb);
 }
 
 } // namespace prism::field::boundary::scalar

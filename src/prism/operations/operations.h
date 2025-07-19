@@ -8,8 +8,6 @@
 #include "prism/field/vector.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
-#include "prism/mesh/pmesh.h"
-#include "prism/mesh/utilities.h"
 #include "prism/types.h"
 
 namespace prism::ops {
@@ -35,11 +33,6 @@ auto grad(const Field& field, Coord coord) -> field::Scalar;
 template <field::IScalarBased Field>
 auto grad(const Field& field) -> field::Vector;
 
-// face mass flow rate
-auto inline faceFlowRate(double rho, const Vector3d& U, const Vector3d& S) -> double {
-    return rho * U.dot(S);
-}
-
 namespace detail {
 auto inline coordToIndex(Coord coord) -> std::uint8_t {
     switch (coord) {
@@ -48,7 +41,6 @@ auto inline coordToIndex(Coord coord) -> std::uint8_t {
         case Coord::Z: return 2;
         default: break;
     }
-    // Handle unexpected Coord values
     throw std::invalid_argument("Invalid Coord value in coordToIndex");
 }
 

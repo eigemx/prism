@@ -9,10 +9,6 @@
 namespace prism::eqn::boundary {
 /// TODO: many logic here is copied from the NoSlip boundary condition, we should refactor it to
 /// avoid code duplication.
-template <typename To>
-auto castScheme(const SharedPtr<scheme::IScheme>& ptr) -> SharedPtr<To> {
-    return std::dynamic_pointer_cast<To>(ptr);
-}
 
 auto contribution(Coord coord,
                   const Vector3d& Uc,

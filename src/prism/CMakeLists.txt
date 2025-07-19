@@ -3,6 +3,7 @@ add_library(prism
     
     equation/noslip.cpp
     equation/symmetry.cpp
+    equation/outlet.cpp
 
     numerics/solver.cpp
 
