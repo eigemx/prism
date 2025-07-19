@@ -41,8 +41,8 @@ auto main(int argc, char* argv[]) -> int {
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
-    auto nNonOrthCorrectors = 2;
-    auto nOuterIter = 100;
+    auto nNonOrthCorrectors = 3;
+    auto nOuterIter = 150;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -181,6 +181,7 @@ void correctPPrimeBoundaryConditions(field::Pressure& P_prime) {
             for (const auto& face_id : patch.facesIds()) {
                 face_values[face_id] = 0.0;
             }
+            continue;
         }
 
         // keep the values at the faces for other boundary conditions

@@ -13,6 +13,7 @@
 #include "prism/numerics/solver.h"
 #include "prism/operations/operations.h"
 #include "prism/scheme/convection.h"
+#include "prism/scheme/source.h"
 
 using namespace prism;
 using namespace prism::scheme;
@@ -82,12 +83,14 @@ auto main(int argc, char* argv[]) -> int {
                                            diffusion::nonortho::OverRelaxedCorrector,
                                            field::VelocityComponent>;
     using grad = source::Gradient<Sign::Negative, field::Pressure>;
+    using laplacian_s =
+        source::Laplacian<Sign::Positive, field::UniformScalar, field::VelocityComponent>;
 
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectors = 3;
-    auto nOuterIter = 15;
+    auto nOuterIter = 30;
     auto momentumURF = 1.0;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
@@ -102,11 +105,13 @@ auto main(int argc, char* argv[]) -> int {
         auto uEqn = eqn::Momentum(div(mDot, U.x()),     // ∇.(Uu)
                                   laplacian(nu, U.x()), // -∇.(ν∇u)
                                   grad(p, Coord::X)     // = -∂p/∂x
+                                                        // laplacian_s(nu, U.x()) // + ∇.(U∇u)
         );
 
         auto vEqn = eqn::Momentum(div(mDot, U.y()),     // ∇.(Uv)
                                   laplacian(nu, U.y()), // -∇.(ν∇v)
                                   grad(p, Coord::Y)     // = -∂p/∂y
+                                                        // laplacian_s(nu, U.y()) // + ∇.(U∇v)
         );
 
         uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();

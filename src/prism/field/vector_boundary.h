@@ -89,8 +89,13 @@ auto NoSlip<Field>::isDirichlet() const noexcept -> bool {
 
 template <IVectorBased Field>
 auto Symmetry<Field>::get(const IVector& field, const mesh::Face& face) -> Vector3d {
-    ZeroGradient<Field> zg;
-    return zg.get(field, face);
+    Vector3d extrapolated_value = field.valueAtCell(face.owner());
+    const Vector3d& normal = face.normal();
+
+    // Project out the normal component to enforce zero normal velocity at symmetry plane
+    // The projection of a vector 'v' onto a normal 'n' is (v.dot(n)) * n
+    // So, the tangential component is v - (v.dot(n)) * n
+    return extrapolated_value - extrapolated_value.dot(normal) * normal;
 }
 
 template <IVectorBased Field>
