@@ -34,16 +34,6 @@ template <field::IScalarBased Field>
 auto grad(const Field& field) -> field::Vector;
 
 namespace detail {
-auto inline coordToIndex(Coord coord) -> std::uint8_t {
-    switch (coord) {
-        case Coord::X: return 0;
-        case Coord::Y: return 1;
-        case Coord::Z: return 2;
-        default: break;
-    }
-    throw std::invalid_argument("Invalid Coord value in coordToIndex");
-}
-
 template <typename Vector>
 auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double;
 } // namespace detail
@@ -71,7 +61,7 @@ auto grad(const Field& field, Coord coord) -> field::Scalar {
     auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
     VectorXd grad_values = VectorXd::Zero(mesh->cellCount());
-    auto coord_index = detail::coordToIndex(coord);
+    auto coord_index = field::detail::coordToIndex(coord);
 
     std::for_each(mesh->cells().begin(), mesh->cells().end(), [&](const auto& cell) {
         grad_values[cell.id()] = field.gradAtCell(cell)[coord_index];
