@@ -8,7 +8,7 @@ using namespace prism::field;
 namespace fs = std::filesystem;
 
 auto main(int argc, char* argv[]) -> int {
-    log::setLevel(log::Level::Debug);
+    log::setLevel(log::Level::Info);
 
     log::info("diffsolver - A steady state diffusion equation solver");
 
@@ -38,17 +38,18 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    auto nOrthoCorrectors = 40;
+    auto nIter = 40;
+    auto nNonOrthoIter = 3;
 
-    for (int i = 0; i < nOrthoCorrectors; i++) {
-        solver.solve(eqn, 10, 1e-20);
+    for (int i = 0; i < nIter; i++) {
+        for (int j = 0; j < nNonOrthoIter; j++) {
+            solver.solve(eqn, 10, 1e-20);
+        }
     }
 
     prism::export_field_vtu(eqn.field(), "solution.vtu");
-
     auto gradT_x = ops::grad(T, Coord::X);
     prism::export_field_vtu(gradT_x, "gradT_x_ls.vtu");
-
 
     return 0;
 }

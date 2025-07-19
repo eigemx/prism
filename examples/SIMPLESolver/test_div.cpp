@@ -11,6 +11,7 @@
 #include "prism/mesh/utilities.h"
 #include "prism/numerics/solver.h"
 #include "prism/operations/operations.h"
+#include "prism/scheme/convection.h"
 
 using namespace prism;
 using namespace prism::scheme;
@@ -97,7 +98,6 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    /*
     auto foam_fields =
         readFields(std::filesystem::path(unv_file_name).parent_path() / "foam_fields.json");
 
@@ -110,13 +110,13 @@ auto main(int argc, char* argv[]) -> int {
     // convert pressure from std::vector<double> to Eigen::VectorXd
     auto p_vec = VectorXd::Map(foam_fields.pressure.data(), foam_fields.pressure.size());
     auto p = field::Pressure("P", mesh, p_vec);
-    */
-    auto U = field::Velocity("U", mesh, {1.0, 1.0, 0.0});
+
+    auto U = field::Velocity("U", mesh, 0.0);
     auto T = field::Scalar("T", mesh, 0);
     auto rho = field::UniformScalar("rho", mesh, 1.0);
     auto nu = field::UniformScalar("nu", mesh, 1e-3);
 
-    using div = QUICK<field::Velocity, field::VelocityComponent>;
+    using div = Upwind<field::Velocity, field::VelocityComponent>;
     using laplacian = diffusion::Corrected<field::UniformScalar,
                                            diffusion::nonortho::OverRelaxedCorrector,
                                            field::VelocityComponent>;
@@ -131,36 +131,19 @@ auto main(int argc, char* argv[]) -> int {
     auto pressureURF = 0.3;
     auto mDot = rho * U;
 
-    auto kappa = field::UniformScalar("kappa", mesh, 4e-5);
-    using div2 = scheme::convection::MINMOD<field::Velocity, field::Scalar>;
-    using laplacian2 = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
-
-
-    /*
-    eqn.updateCoeffs();
-    writeToCSVfile("conv_matrix.csv", Eigen::MatrixXd(eqn.matrix()));
-    writeToCSVfile("conv_b.csv", eqn.rhs());
-    inspectCell(mesh->cell(901), eqn, U);
-    eqn.zeroOutCoeffs();
-    */
-
     // solve
     auto solver = solver::BiCGSTAB<field::Scalar>();
 
     for (auto iter = 0; iter < nOuterIter; ++iter) {
-        auto eqn = eqn::Transport(div2(U, T),          // ∇.(ρUT)
-                                  laplacian2(kappa, T) // - ∇.(κ ∇T)
-        );
-        /*
         mDot = rho * U; // update mDot with the new U values
 
         log::info("Outer iteration: {}", iter);
-        auto uEqn = eqn::Momentum(div(U, U.x()),        // ∇.(Uu)
+        auto uEqn = eqn::Momentum(div(mDot, U.x()),     // ∇.(Uu)
                                   laplacian(nu, U.x()), // -∇.(ν∇u)
                                   grad(p, Coord::X)     // = -∂p/∂x
         );
 
-        auto vEqn = eqn::Momentum(div(U, U.y()),        // ∇.(Uv)
+        auto vEqn = eqn::Momentum(div(mDot, U.y()),     // ∇.(Uv)
                                   laplacian(nu, U.y()), // -∇.(ν∇v)
                                   grad(p, Coord::Y)     // = -∂p/∂y
         );
@@ -172,14 +155,20 @@ auto main(int argc, char* argv[]) -> int {
 
         // uEqn.setUnderRelaxFactor(momentumURF);
         // vEqn.setUnderRelaxFactor(momentumURF);
-
         log::info("Solving x-momentum equations");
         momentum_solver.solve(uEqn, 15, 1e-20);
 
         log::info("Solving y-momentum equations");
         momentum_solver.solve(vEqn, 15, 1e-20);
-        */
-        solver.solve(eqn, 10, 1e-20);
+
+        // auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
+        // using div2 = scheme::convection::Upwind<field::Velocity, field::Scalar>;
+        // using laplacian2 = scheme::diffusion::NonCorrected<field::UniformScalar,
+        // field::Scalar>;
+        //  auto eqn = eqn::Transport(div2(U, T),          // ∇.(ρUT)
+        //                            laplacian2(kappa, T) // - ∇.(κ ∇T)
+        //);
+        //  solver.solve(eqn, 10, 1e-20);
     }
     export_field_vtu(U.x(), "solution_x.vtu");
     export_field_vtu(U.y(), "solution_y.vtu");
@@ -187,13 +176,4 @@ auto main(int argc, char* argv[]) -> int {
 
     // export_field_vtu(ops::grad(p, Coord::X), "gradP_x.vtu");
     // export_field_vtu(ops::grad(p, Coord::Y), "gradP_y.vtu");
-
-    auto Pe = field::Scalar("Pe", mesh, 0.0);
-    Pe.updateCells([&](const mesh::Cell& cell) {
-        auto Uc = U.valueAtCell(cell);
-        auto kappa_c = kappa.valueAtCell(cell);
-        auto dx = (cell.center() - mesh->face(cell.facesIds().front()).center()).norm() * 2;
-        return Uc.norm() * kappa_c / dx;
-    });
-    export_field_vtu(Pe, "Pe.vtu");
 }

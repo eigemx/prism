@@ -31,19 +31,19 @@ auto contribution(Coord coord,
         case Coord::X: {
             // Eqn (15.154)
             double ac = nx * nx;
-            double b = ((vc * ny) + (wc * nz) * nx);
+            double b = ((vc * ny) + (wc * nz)) * nx;
             return {ac, b};
         }
         case Coord::Y: {
             // Eqn (15.1545)
             double ac = ny * ny;
-            double b = ((uc * nx) + (wc * nz) * ny);
+            double b = ((uc * nx) + (wc * nz)) * ny;
             return {ac, b};
         }
         case Coord::Z: {
             // Eqn (15.156)
             double ac = nz * nz;
-            double b = ((uc * nx) + (vc * ny) * nz);
+            double b = ((uc * nx) + (vc * ny)) * nz;
             return {ac, b};
         }
         default: {
@@ -75,8 +75,8 @@ void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) 
         const auto owner_id = owner.id();
 
         Vector3d n = face.normal();
-        Vector3d d_CB = face.center() - owner.center();
-        double d_normal = d_CB.dot(n);
+        Vector3d d_Cb = face.center() - owner.center();
+        double d_normal = d_Cb.dot(n);
 
         Vector3d Uc = U.valueAtCell(owner);
 
