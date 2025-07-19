@@ -1,5 +1,6 @@
 #include "pressure.h"
 
+#include "pressure_boundary.h"
 #include "prism/log.h"
 
 namespace prism::field {

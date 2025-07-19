@@ -159,7 +159,7 @@ void Gradient<SourceSign, Field>::apply() {
 
 template <Sign SourceSign, typename Kappa, typename Field>
 Laplacian<SourceSign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
-    : IExplicitSource(phi.mesh()->nCells()), _kappa(kappa), _phi(phi) {}
+    : IExplicitSource(phi.mesh()->cellCount()), _kappa(kappa), _phi(phi) {}
 
 template <Sign SourceSign, typename Kappa, typename Field>
 void inline Laplacian<SourceSign, Kappa, Field>::apply() {

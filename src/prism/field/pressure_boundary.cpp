@@ -1,9 +1,10 @@
+#include "pressure_boundary.h"
+
 #include <cassert>
 
 #include "pressure.h"
 
 namespace prism::field::boundary::scalar {
-template <>
 auto Symmetry<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
     // This function is based on equations (15.151), (15.152) and (15.153) from Moukallad et. al.
     // gradient in normal direction is zero, ∇pb.n = 0, so the value of the field should be
