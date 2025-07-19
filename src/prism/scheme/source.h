@@ -150,21 +150,8 @@ Gradient<SourceSign, Field>::Gradient(Field phi, Coord coord)
 template <Sign SourceSign, typename Field>
 void Gradient<SourceSign, Field>::apply() {
     const auto& vol_field = _phi.mesh()->cellsVolumeVector();
+    rhs() = ops::grad(_phi, _coord).values().cwiseProduct(vol_field);
 
-    switch (_coord) {
-        case Coord::X: {
-            rhs() = ops::grad(_phi, Coord::X).values().array() * vol_field.array();
-            break;
-        }
-        case Coord::Y: {
-            rhs() = ops::grad(_phi, Coord::Y).values().array() * vol_field.array();
-            break;
-        }
-        case Coord::Z: {
-            rhs() = ops::grad(_phi, Coord::Z).values().array() * vol_field.array();
-            break;
-        }
-    }
     if constexpr (SourceSign == Sign::Negative) {
         rhs() = -rhs();
     }

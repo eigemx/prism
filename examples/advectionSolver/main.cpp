@@ -34,26 +34,30 @@ auto main(int argc, char* argv[]) -> int {
     // set the velocity of the field to be the same as the inlet value
     const auto& inlet_patch = std::find_if(
         mesh->boundaryPatches().begin(), mesh->boundaryPatches().end(), [](const auto& patch) {
-            return patch.name() == "inlet";
+            return patch.name() == "inlet" || patch.name() == "Inlet";
         });
 
     if (inlet_patch == mesh->boundaryPatches().end()) {
         fmt::println(
-            "Error: No boundary patch with name `inlet` was found, cannot set velocity field.");
+            "Error: No boundary patch with name `inlet` or 'Inlet' was found, cannot set "
+            "velocity field.");
         return 1;
     }
 
     // Set a uniform velocity field, with value equal to inlet velocity;
     Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("U");
 
-    log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
+    log::info("Setting velocity field to [{}, {}, {}] [m/s]",
+              inlet_velocity.x(),
+              inlet_velocity.y(),
+              inlet_velocity.z());
     auto U = field::Velocity("U", mesh, inlet_velocity);
     field::Velocity rhoU = rho * U;
     auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
-    using div = scheme::convection::QUICK<field::Velocity, field::Scalar>;
+    using div = scheme::convection::Upwind<field::Velocity, field::Scalar>;
     using laplacian =
         scheme::diffusion::Corrected<field::UniformScalar,
                                      scheme::diffusion::nonortho::OverRelaxedCorrector,

@@ -286,13 +286,13 @@ auto MUSCL<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept
 template <field::IVectorBased ConvectiveField, typename Field>
 auto SMART<ConvectiveField, Field>::weightsNVF(double phi_tilde) const noexcept
     -> Upwind<ConvectiveField, Field>::WeightsNVF {
-    if (phi_tilde > 0.0 && phi_tilde < 1 / 6) {
+    if (phi_tilde > 0.0 && phi_tilde < (1 / 6)) {
         return {4, 0.0};
     }
-    if (phi_tilde >= 1 / 6 && phi_tilde < 5 / 6) {
+    if (phi_tilde >= (1 / 6) && phi_tilde < (5 / 6)) {
         return {0.75, 3 / 8};
     }
-    if (phi_tilde >= 5 / 6 && phi_tilde < 1.0) {
+    if (phi_tilde >= (5 / 6) && phi_tilde < 1.0) {
         return {0, 1.0};
     }
     return {1.0, 0};

@@ -33,14 +33,16 @@ auto main(int argc, char* argv[]) -> int {
     auto nu = field::UniformScalar("nu", mesh, 1e-3);
 
     using div = LinearUpwind<field::Velocity, field::VelocityComponent>;
-    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::VelocityComponent>;
+    using laplacian = diffusion::Corrected<field::UniformScalar,
+                                           diffusion::nonortho::OverRelaxedCorrector,
+                                           field::VelocityComponent>;
     using grad = source::Gradient<Sign::Negative, field::Pressure>;
 
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectiors = 2;
-    auto nOuterIter = 150;
+    auto nOuterIter = 100;
     auto momentumURF = 0.7;
     auto pressureURF = 0.3;
     auto mDot = rho * U;
