@@ -12,9 +12,19 @@
 
 /// TODO: we need to make sure that constructors are not leaving _data uninitialized, and we can
 /// avoid checks for it later in member functions.
-
 namespace prism::field {
 
+namespace detail {
+auto inline coordToIndex(Coord coord) -> std::uint8_t {
+    switch (coord) {
+        case Coord::X: return 0;
+        case Coord::Y: return 1;
+        case Coord::Z: return 2;
+        default: break;
+    }
+    throw std::invalid_argument("Invalid Coord value in coordToIndex");
+}
+} // namespace detail
 // forward declaration for GeneralScalar
 template <typename Units, typename BHManagerSetter>
 class GeneralScalar;
@@ -487,6 +497,12 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtInteriorFace(const mesh::Face
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face& face) const
     -> double {
+    // if this scalar field is a component of a vector field, we need to return the value of the
+    // parent field at the face in the coordinate direction.
+    if ((_parent != nullptr) && (_coord.has_value())) {
+        auto idx = detail::coordToIndex(_coord.value());
+        return _parent->valueAtFace(face)[idx];
+    }
     const auto& patch = mesh()->boundaryPatch(face);
     const auto& bc = patch.getBoundaryCondition(name());
 
