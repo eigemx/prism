@@ -5,7 +5,7 @@
 using namespace prism;
 namespace fs = std::filesystem;
 
-void correctPPrimeBoundaryConditions(field::Pressure& P_prime);
+void constrainPPrime(field::Pressure& P_prime);
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
@@ -116,7 +116,7 @@ auto main(int argc, char* argv[]) -> int {
         // The corrector should reset to zero the correction field at every iteration and should
         // also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
         // condition is used for the pressure.
-        correctPPrimeBoundaryConditions(P_prime);
+        constrainPPrime(P_prime);
 
         using laplacian_p = diffusion::
             Corrected<field::Tensor, diffusion::nonortho::OverRelaxedCorrector, field::Pressure>;
@@ -164,7 +164,7 @@ auto main(int argc, char* argv[]) -> int {
     export_field_vtu(p, "pressure.vtu");
 }
 
-void correctPPrimeBoundaryConditions(field::Pressure& P_prime) {
+void constrainPPrime(field::Pressure& P_prime) {
     // we need to reset the P_prime field to zero at the boundaries where a Dirichlet condition is
     // applied.
     VectorXd face_values = VectorXd::Zero(P_prime.mesh()->faceCount());
