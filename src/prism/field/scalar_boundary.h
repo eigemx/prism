@@ -73,11 +73,7 @@ auto Outlet<Field>::get(const IScalar& field, const mesh::Face& face) -> double 
 
 template <IScalarBased Field>
 auto ZeroGradient<Field>::get(const IScalar& field, const mesh::Face& face) -> double {
-    /// TODO: is this correct? this is based on 15.160, but I am note sure if it's valid for zero
-    /// gradient boundary condition.
-    const auto& owner = field.mesh()->cell(face.owner());
-    const Vector3d d_Cb = face.center() - owner.center();
-    return field.valueAtCell(owner); // + field.gradAtCellStored(owner).dot(d_Cb);
+    return field.valueAtCell(face.owner());
 }
 
 } // namespace prism::field::boundary::scalar

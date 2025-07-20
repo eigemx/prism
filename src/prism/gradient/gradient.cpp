@@ -11,11 +11,9 @@ IGradient::IGradient(field::IScalar* field) {
     _field = field;
     log::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
     this->boundaryHandlersManager().template addHandler<boundary::Fixed>();
-    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry>();
     this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient>();
-    this->boundaryHandlersManager().template addHandler<boundary::VelocityInlet>();
     this->boundaryHandlersManager().template addHandler<boundary::NoSlip>();
 }
 
