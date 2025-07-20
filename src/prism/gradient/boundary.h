@@ -41,20 +41,6 @@ class NoSlip : public IGradSchemeBoundaryHandler {
              const prism::mesh::Face& face) -> prism::Vector3d override;
 };
 
-class VelocityInlet : public IGradSchemeBoundaryHandler {
-  public:
-    auto name() const -> std::string override { return "velocity-inlet"; }
-    auto get(const prism::field::IScalar& field,
-             const prism::mesh::Face& face) -> prism::Vector3d override;
-};
-
-class FixedGradient : public IGradSchemeBoundaryHandler {
-  public:
-    auto name() const -> std::string override { return "fixed-gradient"; }
-    auto get(const prism::field::IScalar& field,
-             const prism::mesh::Face& face) -> prism::Vector3d override;
-};
-
 class ZeroGradient : public IGradSchemeBoundaryHandler {
   public:
     auto name() const -> std::string override { return "zero-gradient"; }
