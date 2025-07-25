@@ -8,7 +8,7 @@ auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> do
      *
      * The scaled residual is defined as:
      * |Ax - b| / max(|A.diagonal() * x|)
-     * This is based on equations (14.33) and (14.34) from Moukallad et al. (2015).
+     * This is based on equations (14.33) and (14.34) from Moukalled et al. (2015).
      *
      * @param A The sparse matrix representing the linear system.
      * @param x The solution vector.

@@ -154,7 +154,7 @@ void Transport<Field>::relax() {
     auto& b = rhs();
     const auto& phi = field().values();
 
-    // Moukallad et. al, 14.2 Under-Relaxation of the Algebraic Equations
+    // Moukalled et. al, 14.2 Under-Relaxation of the Algebraic Equations
     // equation 14.9
     log::debug("Transport::relax(): applying implicit under-relaxation with factor = {}",
                _relaxation_factor);

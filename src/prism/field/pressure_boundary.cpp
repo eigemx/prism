@@ -6,7 +6,7 @@
 
 namespace prism::field::boundary::scalar {
 auto Symmetry<Pressure>::get(const IScalar& field, const mesh::Face& face) -> double {
-    // This function is based on equations (15.151), (15.152) and (15.153) from Moukallad et. al.
+    // This function is based on equations (15.151), (15.152) and (15.153) from Moukalled et. al.
     // gradient in normal direction is zero, ∇pb.n = 0, so the value of the field should be
     // extrapolated. To make sure that we have a zero normal gradient, the field gradient at the
     // boundary is computed as:

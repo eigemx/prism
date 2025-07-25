@@ -82,7 +82,7 @@ template <field::IVectorBased ConvectiveField, typename F>
 void NoSlip<convection::IAppliedConvection<ConvectiveField, F>>::apply(
     convection::IAppliedConvection<ConvectiveField, F>& scheme,
     const mesh::BoundaryPatch& patch) {
-    // Check section 12.9.3, in Moukallad et. al, normal velocity at walls is zero, and there is
+    // Check section 12.9.3, in Moukalled et. al, normal velocity at walls is zero, and there is
     // no convection flux.
 }
 
