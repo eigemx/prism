@@ -42,9 +42,9 @@ auto main(int argc, char* argv[]) -> int {
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
 
     auto nNonOrthCorrectors = 3;
-    auto nOuterIter = 150;
+    auto nOuterIter = 500;
     auto momentumURF = 0.7;
-    auto pressureURF = 0.3;
+    auto pressureURF = 0.5;
     auto mDot = rho * U;
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {

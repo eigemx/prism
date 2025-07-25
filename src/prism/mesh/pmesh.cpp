@@ -3,69 +3,11 @@
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
+#include <span>
 
 #include "prism/log.h"
 
 namespace prism::mesh {
-namespace iterators {
-FaceIterator::FaceIterator(const std::vector<Face>& faces,
-                           const std::vector<std::size_t>& ids,
-                           std::size_t position)
-    : _faces(faces), _ids(ids), _current(position) {}
-
-auto FaceIterator::operator++() -> FaceIterator& {
-    _current++;
-    return *this;
-}
-
-auto FaceIterator::operator++(int) -> FaceIterator {
-    auto tmp = *this;
-    ++(*this);
-    return tmp;
-}
-
-auto FaceIterator::operator*() const -> const Face& {
-    return _faces[_ids[_current]];
-}
-
-auto FaceIterator::operator->() const -> const Face* {
-    return &_faces[_ids[_current]];
-}
-
-auto FaceIterator::operator==(const FaceIterator& other) const -> bool {
-    return _current == other._current;
-}
-
-auto FaceIterator::operator!=(const FaceIterator& other) const -> bool {
-    return !(*this == other);
-}
-
-BoundaryFaces::BoundaryFaces(const std::vector<Face>& faces,
-                             const std::vector<std::size_t>& boundary_faces_ids)
-    : _faces(faces), _boundary_faces_ids(boundary_faces_ids) {}
-
-auto BoundaryFaces::begin() const -> iterators::FaceIterator {
-    return {_faces, _boundary_faces_ids, 0};
-}
-
-auto BoundaryFaces::end() const -> iterators::FaceIterator {
-    return {_faces, _boundary_faces_ids, _boundary_faces_ids.size()};
-}
-
-InteriorFaces::InteriorFaces(const std::vector<Face>& faces,
-                             const std::vector<std::size_t>& interior_faces_ids)
-    : _faces(faces), _interior_faces_ids(interior_faces_ids) {}
-
-auto InteriorFaces::begin() const -> iterators::FaceIterator {
-    return {_faces, _interior_faces_ids, 0};
-}
-
-auto InteriorFaces::end() const -> iterators::FaceIterator {
-    return {_faces, _interior_faces_ids, _interior_faces_ids.size()};
-}
-
-} // namespace iterators
-
 PMesh::PMesh(std::vector<Vector3d> vertices,
              std::vector<Cell> cells,
              std::vector<Face> faces,
@@ -97,11 +39,11 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
     }
 
     /// TODO: can we do this differently? we need to avoid allocating memory for the vector of
-    // non-empty boundary face ids
+    /// non-empty boundary face ids
     /// TODO: this is the first thing that well fail for an ill-formed mesh. Here, we try to get
-    // the boundary patch of a face withouth checking validity of the mesh, so most probably we
-    // will get a bad std::optional access. We need to check if given parameters forms a valid
-    // mesh before proceeding with the construction.
+    /// the boundary patch of a face withouth checking validity of the mesh, so most probably we
+    /// will get a bad std::optional access. We need to check if given parameters forms a valid
+    /// mesh before proceeding with the construction.
     std::copy_if(_boundary_faces_ids.begin(),
                  _boundary_faces_ids.end(),
                  std::back_inserter(_nonempty_boundary_faces_ids),
@@ -210,18 +152,21 @@ auto PMesh::otherSharingCell(const Cell& c, const Face& f) const -> const Cell& 
 }
 
 auto PMesh::interiorFaces() const -> iterators::InteriorFaces {
-    return {_faces, _interior_faces_ids};
+    return iterators::InteriorFaces(std::span<const Face>(_faces),
+                                    std::span<const std::size_t>(_interior_faces_ids));
 }
 
 /// TODO: for boundaryFaces() and nonEmptyBoundaryFaces() we could iterate over the boundary
 // patches instead, this allows us to get rid of _boundary_faces_ids and
 // _nonempty_boundary_faces_ids vectors.
 auto PMesh::boundaryFaces() const -> iterators::BoundaryFaces {
-    return {_faces, _boundary_faces_ids};
+    return iterators::BoundaryFaces(std::span<const Face>(_faces),
+                                    std::span<const std::size_t>(_boundary_faces_ids));
 }
 
 auto PMesh::nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces {
-    return {_faces, _nonempty_boundary_faces_ids};
+    return iterators::BoundaryFaces(std::span<const Face>(_faces),
+                                    std::span<const std::size_t>(_nonempty_boundary_faces_ids));
 }
 
 auto PMesh::fieldsInfo() const noexcept -> const std::vector<FieldInfo>& {
