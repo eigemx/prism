@@ -126,6 +126,14 @@ cd build
 make
 ```
 
+Once build is complete, check `bin` folder for the built applications, and also check `tests/cases` directory for many cases to play with and understand boundary field files in Prism.
+```bash
+./build/bin/SIMPLESolver tests/cases/pipeCoarse/mesh.unv
+./build/bin/laplacianSolver tests/cases/torus/mesh.unv
+./build/bin/advectionSolver tests/cases/duct/mesh.unv
+./build/bind/poissonSolver tests/cases/poisson/mesh.unv
+```
+
 ## How to contribute
 
 If you want to contribute to Prism, please fork the repository and create a pull request. If you have any questions, feel free to open an issue.
