@@ -5,7 +5,7 @@
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
-    log::setLevel(log::Level::Info);
+    log::setLevel(log::Level::Off);
 
     fmt::println("convsolver - A steady state temperature advection solver");
 

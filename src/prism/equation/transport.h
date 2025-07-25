@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include <memory>
 
 #include "boundary.h"
@@ -15,19 +14,12 @@
 
 namespace prism::eqn {
 
-/// TODO: Make Transport check consistincey of the  conserved transport ScalarField meaning
-// that a transport equation shall have only one transport field.
+/// TODO: Make Transport check consistincey of the conserved transport field, meaning that a
+/// transport equation shall have only one transport field.
 
 /// TODO: Schemes that require no correction shall be updated only once.
-/// TODO: Transport should have at most one convection scheme and at most one diffusion
-// scheme
 
-/// TODO: This is not used anywhere, remove it?
-template <field::IScalarBased Field, typename BHManagerSetter>
-class GeneralTransport {
-  private:
-    BHManagerSetter _setter;
-};
+/// TODO: Transport should have at most one convection scheme and at most one diffusion scheme
 
 template <field::IScalarBased Field = field::Scalar>
 class Transport : public LinearSystem,
