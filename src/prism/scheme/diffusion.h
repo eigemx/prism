@@ -123,7 +123,7 @@ void NonCorrected<KappaType, Field>::applyInterior(const mesh::Face& face) {
 
     const Vector3d& Sf = face.areaVector();
 
-    // The following is based on equation (8.93) from Moukallad et al. (2015).
+    // The following is based on equation (8.93) from Moukalled et al. (2015).
     // this handles the general case when kappa is a field::Tensor.
     Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
 
@@ -202,7 +202,7 @@ void Corrected<KappaType, NonOrthoCorrector, Field>::applyInterior(const mesh::F
 
     // update right hand side
     // cross-diffusion term is added to the right hand side of the equation
-    // check equation 8.80 - Chapter 8 (Moukallad et al., 2015)
+    // check equation 8.80 - Chapter 8 (Moukalled et al., 2015)
     const Vector3d grad_f = this->field().gradAtFace(face);
     this->rhs(owner_id) += Tf_prime.dot(grad_f);
     this->rhs(neighbor_id) += -Tf_prime.dot(grad_f);

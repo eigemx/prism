@@ -13,7 +13,7 @@ namespace detail {
 
 // The following functions are used to get the value of a field at a face or cell.
 // They are specialized for field::Tensor to return a transposed value of the tensor value at the
-// face or cell, to follow equation (8.93) from Moukallad et al. (2015). And for other field
+// face or cell, to follow equation (8.93) from Moukalled et al. (2015). And for other field
 // types, they return the value directly.
 template <field::IFieldBased Field>
 auto valueAtFace(const Field& field, const mesh::Face& face) -> Field::ValueType;
@@ -106,7 +106,7 @@ class NoSlip<Scheme> : public ISchemeBoundaryHandler<Scheme> {
 // a special case of the general Neumann boundary condition, where the gradient of the field is
 // zero at the boundary (flux is zero), and will not result in any contribution to the right hand
 // side of the equation, or the matrix coefficients, and no need for non-orthogonal correction.
-// check equation 8.41 - Chapter 8 (Moukallad et al., 2015) and the following paragraph, and
+// check equation 8.41 - Chapter 8 (Moukalled et al., 2015) and the following paragraph, and
 // paragraph 8.6.8.2 - Chapter 8 in same reference.
 
 // We treat outlet boundary condition in diffusion scheme same as symmetry (zero gradient of the
@@ -156,7 +156,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
         const Vector3d& Sf = face.areaVector();
         Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
 
-        // check Moukallad et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
+        // check Moukalled et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2
         scheme.rhs(owner.id()) += -wall_grad.dot(Sf_prime);
     }
