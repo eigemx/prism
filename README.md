@@ -40,13 +40,19 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
 The following example shows how pressure correction equation is implemented in prism, the complete code can be found in `examples\SIMPLESolver\main.cpp`
 
 ```cpp
+    // here we create the type for diffusion (laplacian operator) with over-relaxed non-orthogonal corrector
     using laplacian_p = diffusion::Corrected<
-                                        field::Tensor, // diffusion coefficient type
-                                        diffusion::nonortho::OverRelaxedCorrector, // non-orthogonal correction type
-                                        field::Pressure // transport field type
+                                        // diffusion coefficient type
+                                        field::Tensor,
+                                        // non-orthogonal correction type
+                                        diffusion::nonortho::OverRelaxedCorrector, 
+                                        // transport field type
+                                        field::Pressure 
                                         >;
-    using div_U = source::Divergence<Sign::Negative, field::Velocity>; // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
+    // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
+    using div_U = source::Divergence<Sign::Negative, field::Velocity>;
 
+    // assemble pressure correction equation
     auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
                                                 div_U(mDot)              // == - (∇.U)
     );
@@ -54,11 +60,51 @@ The following example shows how pressure correction equation is implemented in p
 
 Prism is in early development stages and is not yet ready for production use. However, you can check out the examples folder for some simple usage examples.
 
-## TODO
+## Examples
 
+### 2D SIMPLE Algorithm - backward facing step
+check `examples/SIMPLESolver/main.cpp` for complete implementation:
+
+Momentum equation:
+
+$$\nabla . (\rho UU) - \nabla. (\mu \nabla U) = - \nabla P$$
+
+Pressure correction equation:
+
+$$ -\nabla . (\mathcal{D} \nabla {P}^{\prime}) = - \nabla . U $$
+
+<p align="center">
+    <img alt="backwardFacingStep" src="https://github.com/eigemx/prism/blob/main/screenshots/backwardFacingStep.png?raw=true" width="90%">
+</p>
+
+### Heat Equation - 2D torus with fixed value boundary conditions
+check `examples/laplacianSolver/main.cpp` for complete implementation
+
+Heat equation:
+
+$$ - \nabla . (\kappa . \nabla T) = 0 $$
+
+<p align="center">
+    <img alt="torus" src="https://github.com/eigemx/prism/blob/main/screenshots/torus.png?raw=true" width="90%">
+</p>
+
+### Poisson Equation - 2D slice with function form source
+check `examples/laplacianSolver/main.cpp` for complete implementation
+
+Poisson equation:
+
+$$ - \nabla . (\kappa . \nabla T) = \mathcal{f} $$
+
+$$ f = 2 {\pi}^2 \sin(\pi x) \cos(\pi y) $$
+
+<p align="center">
+    <img alt="torus" src="https://github.com/eigemx/prism/blob/main/screenshots/poisson.png?raw=true" width="90%">
+</p>
+
+## TODO
 - Add documentation.
+- Implement temporal schemes.
 - Implement SIMPLEC, PRIME, PISO and PIMPLE solvers (currently only SIMPLE solver is implemented in example directory).
-- Implement backward Euler scheme for transient problems.
 - Improve field::Vector and field::Tensor implementations using Eigen reference/map types.
 - Implement k-epsilon and k-omega turbulence models.
 - Implement vectorized operations overall in the codebase.
