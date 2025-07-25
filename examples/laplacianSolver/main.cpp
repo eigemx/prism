@@ -31,17 +31,15 @@ auto main(int argc, char* argv[]) -> int {
     auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
     auto eqn = eqn::Transport(
-        diffusion::Corrected<Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector, Scalar>(
-            kappa, T));
-
-    eqn.setUnderRelaxFactor(0.95);
+        diffusion::Corrected<Tensor, diffusion::nonortho::OverRelaxedCorrector, Scalar>(kappa,
+                                                                                        T));
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
     auto nIter = 40;
     auto nNonOrthoIter = 3;
 
-    for (int i = 0; i < nIter; i++) {
+    for (int iter = 0; iter < nIter; iter++) {
         for (int j = 0; j < nNonOrthoIter; j++) {
             solver.solve(eqn, 10, 1e-20);
         }

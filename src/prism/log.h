@@ -9,25 +9,17 @@ enum class Level {
     Warn,
     Error,
     Critical,
+    Off,
 };
 
 void inline setLevel(Level level) {
     switch (level) {
-        case Level::Debug:
-            spdlog::set_level(spdlog::level::debug);
-            break;
-        case Level::Info:
-            spdlog::set_level(spdlog::level::info);
-            break;
-        case Level::Warn:
-            spdlog::set_level(spdlog::level::warn);
-            break;
-        case Level::Error:
-            spdlog::set_level(spdlog::level::err);
-            break;
-        case Level::Critical:
-            spdlog::set_level(spdlog::level::critical);
-            break;
+        case Level::Debug: spdlog::set_level(spdlog::level::debug); break;
+        case Level::Info: spdlog::set_level(spdlog::level::info); break;
+        case Level::Warn: spdlog::set_level(spdlog::level::warn); break;
+        case Level::Error: spdlog::set_level(spdlog::level::err); break;
+        case Level::Critical: spdlog::set_level(spdlog::level::critical); break;
+        case Level::Off: spdlog::set_level(spdlog::level::off); break;
     }
 }
 
