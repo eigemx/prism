@@ -1,70 +1,17 @@
 #pragma once
 
 #include <cmath>
-#include <iterator>
+#include <vector>
 
 #include "boundary.h"
 #include "cell.h"
 #include "face.h"
+#include "iterators.h"
 #include "prism/types.h"
 
 namespace prism::mesh {
 
-/// TODO: when loading a unv mesh with two patches having the same name, we get an exception.
-/// TODO: replace const std::vector& members with std::span
-namespace iterators {
-struct FaceIterator {
-    using iterator_category = std::input_iterator_tag;
-    using value_type = Face;
-    using difference_type = std::ptrdiff_t;
-    using pointer = Face*;
-    using reference = Face&;
-
-    FaceIterator(const std::vector<Face>& faces,
-                 const std::vector<std::size_t>& ids,
-                 std::size_t position);
-
-    auto operator++() -> FaceIterator&;
-    auto operator++(int) -> FaceIterator;
-    auto operator*() const -> const Face&;
-    auto operator->() const -> const Face*;
-    auto operator==(const FaceIterator& other) const -> bool;
-    auto operator!=(const FaceIterator& other) const -> bool;
-
-  private:
-    const std::vector<Face>& _faces;
-    const std::vector<std::size_t>& _ids;
-    std::size_t _current {};
-};
-
-struct BoundaryFaces {
-    BoundaryFaces(const std::vector<Face>& faces,
-                  const std::vector<std::size_t>& boundary_faces_ids);
-
-    auto begin() const -> iterators::FaceIterator;
-    auto end() const -> iterators::FaceIterator;
-
-  private:
-    const std::vector<Face>& _faces;
-    const std::vector<std::size_t>& _boundary_faces_ids;
-};
-
-struct InteriorFaces {
-    InteriorFaces(const std::vector<Face>& faces,
-                  const std::vector<std::size_t>& interior_faces_ids);
-
-    auto begin() const -> iterators::FaceIterator;
-    auto end() const -> iterators::FaceIterator;
-
-  private:
-    const std::vector<Face>& _faces;
-    const std::vector<std::size_t>& _interior_faces_ids;
-};
-
-} // namespace iterators
-
-/// TODO: we don't need boundary_faces_ids and interior_faces_ids, we can just use the
-// boundaryPatches() and faces() methods
+/// TODO: when loading a unv mesh with two patches having the same name, we get an exception. Fix.
 class PMesh {
   public:
     PMesh(std::vector<Vector3d> vertices,

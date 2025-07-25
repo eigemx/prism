@@ -49,11 +49,18 @@ class Transport : public LinearSystem,
     auto field() const -> const Field&;
     auto field() -> Field&;
 
+    /// TODO: maybe returns a casted pointer to the scheme (convection or diffusion) instead of
+    /// the full scheme?
     auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
     auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
 
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
+
+    /// TODO: implement the following, for better SIMPLE and SIMPLE-like algorithms implementation
+    auto AbyV() const -> field::Scalar;
+    auto H() const -> field::Scalar;
+    auto H1() const -> field::Scalar;
 
   private:
     /// TODO: Should this be IConvectionBased and IDiffusionBased instead?

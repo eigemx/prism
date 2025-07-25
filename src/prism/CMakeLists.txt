@@ -1,6 +1,6 @@
 add_library(prism
     linear.cpp
-    
+
     equation/noslip.cpp
     equation/symmetry.cpp
     equation/outlet.cpp
@@ -13,13 +13,14 @@ add_library(prism
     field/vector.cpp
     field/pressure.cpp
     field/pressure_boundary.cpp
-    
+
     export.cpp
     exceptions.cpp
 
     mesh/face.cpp
     mesh/cell.cpp
     mesh/boundary.cpp
+    mesh/iterators.cpp
     mesh/pmesh.cpp 
     mesh/unv.cpp
     mesh/trie.cpp
