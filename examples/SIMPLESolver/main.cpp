@@ -44,7 +44,7 @@ auto main(int argc, char* argv[]) -> int {
     auto nNonOrthCorrectors = 3;
     auto nOuterIter = 500;
     auto momentumURF = 0.7;
-    auto pressureURF = 0.5;
+    auto pressureURF = 0.3;
     auto mDot = rho * U;
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
@@ -71,10 +71,10 @@ auto main(int argc, char* argv[]) -> int {
         vEqn.setUnderRelaxFactor(momentumURF);
 
         log::info("Solving x-momentum equations");
-        momentum_solver.solve(uEqn, 15, 1e-20);
+        momentum_solver.solve(uEqn, 5, 1e-9);
 
         log::info("Solving y-momentum equations");
-        momentum_solver.solve(vEqn, 15, 1e-20);
+        momentum_solver.solve(vEqn, 5, 1e-9);
 
         uEqn.updateCoeffs();
         uEqn.relax();
@@ -138,7 +138,7 @@ auto main(int argc, char* argv[]) -> int {
 
         // For some reason, the following code produces a different result (and wrong) if we used
         // U.valueAtCell directly after the return statement. It seems that we must first evaluate
-        // the value of U at the cell then use it.
+        // the value of U at the cell then use it. This is a bug in the code.
         /// TODO: fix this.
 
         // update velocity field
@@ -159,9 +159,9 @@ auto main(int argc, char* argv[]) -> int {
         vEqn.zeroOutCoeffs();
     }
 
-    export_field_vtu(U.x(), "solution_x.vtu");
-    export_field_vtu(U.y(), "solution_y.vtu");
-    export_field_vtu(p, "pressure.vtu");
+    exportToVTU(U.x(), "solution_x.vtu");
+    exportToVTU(U.y(), "solution_y.vtu");
+    exportToVTU(p, "pressure.vtu");
 }
 
 void constrainPPrime(field::Pressure& P_prime) {

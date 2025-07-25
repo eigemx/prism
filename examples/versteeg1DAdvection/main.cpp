@@ -86,7 +86,7 @@ auto main(int argc, char* argv[]) -> int {
     auto diff_norm = diff.norm();
     log::info("diff norm = {}", diff_norm);
 
-    prism::export_field_vtu(eqn.field(), "solution.vtu");
+    prism::exportToVTU(eqn.field(), "solution.vtu");
 
     return 0;
 }
