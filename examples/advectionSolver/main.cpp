@@ -77,12 +77,12 @@ auto main(int argc, char* argv[]) -> int {
         solver.solve(eqn, 10, 1e-20);
     }
 
-    prism::export_field_vtu(eqn.field(), "solution.vtu");
+    prism::exportToVTU(eqn.field(), "solution.vtu");
 
     auto div_U = ops::div(U);
-    prism::export_field_vtu(div_U, "div.vtu");
+    prism::exportToVTU(div_U, "div.vtu");
 
-    export_field_vtu(U.x().clone(), "U_x.vtu");
-    export_field_vtu(U.clone().y(), "U_y.vtu");
+    exportToVTU(U.x().clone(), "U_x.vtu");
+    exportToVTU(U.clone().y(), "U_y.vtu");
     return 0;
 }

@@ -573,7 +573,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
             "GeneralScalar::setGradScheme(): setting the gradient scheme to Green-Gauss for "
             "field `{}`",
             this->name());
-        _grad_scheme = std::make_shared<gradient::GreenGauss>(this);
+        _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
         return;
     }
 

@@ -142,13 +142,13 @@ auto main(int argc, char* argv[]) -> int {
         //);
         //  solver.solve(eqn, 10, 1e-20);
     }
-    export_field_vtu(U.x(), "solution_x.vtu");
-    export_field_vtu(U.y(), "solution_y.vtu");
-    prism::export_field_vtu(T, "T.vtu");
-    prism::export_field_vtu(p, "p.vtu");
+    exportToVTU(U.x(), "solution_x.vtu");
+    exportToVTU(U.y(), "solution_y.vtu");
+    prism::exportToVTU(T, "T.vtu");
+    prism::exportToVTU(p, "p.vtu");
 
-    export_field_vtu(ops::grad(p, Coord::X), "gradP_x.vtu");
-    export_field_vtu(ops::grad(p, Coord::Y), "gradP_y.vtu");
+    exportToVTU(ops::grad(p, Coord::X), "gradP_x.vtu");
+    exportToVTU(ops::grad(p, Coord::Y), "gradP_y.vtu");
 
     inspectGradient(mesh->cell(900), p);
 }

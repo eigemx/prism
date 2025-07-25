@@ -6,7 +6,7 @@
 
 
 namespace prism {
-void export_field_vtu(const field::IScalar& field, const std::string& file_name) {
+void exportToVTU(const field::IScalar& field, const std::string& file_name) {
     const auto& pmesh = field.mesh();
 
     std::vector<double> points;
