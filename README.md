@@ -40,16 +40,16 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
 The following example shows how pressure correction equation is implemented in prism, the complete code can be found in `examples\SIMPLESolver\main.cpp`
 
 ```cpp
-        using laplacian_p = diffusion::Corrected<
-                                            field::Tensor, // diffusion coefficient type
-                                            diffusion::nonortho::OverRelaxedCorrector, // non-orthogonal correction type
-                                            field::Pressure // transport field type
-                                            >;
-        using div_U = source::Divergence<Sign::Negative, field::Velocity>; // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
+    using laplacian_p = diffusion::Corrected<
+                                        field::Tensor, // diffusion coefficient type
+                                        diffusion::nonortho::OverRelaxedCorrector, // non-orthogonal correction type
+                                        field::Pressure // transport field type
+                                        >;
+    using div_U = source::Divergence<Sign::Negative, field::Velocity>; // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
 
-        auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                    div_U(mDot)              // == - (∇.U)
-        );
+    auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
+                                                div_U(mDot)              // == - (∇.U)
+    );
 ```
 
 Prism is in early development stages and is not yet ready for production use. However, you can check out the examples folder for some simple usage examples.
