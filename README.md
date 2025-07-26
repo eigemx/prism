@@ -89,16 +89,16 @@ $$ - \nabla . (\kappa . \nabla T) = 0 $$
 </p>
 
 ### Poisson Equation - 2D slice with function form source
-check `examples/laplacianSolver/main.cpp` for complete implementation
+check `examples/poissonSolver/main.cpp` for complete implementation
 
 Poisson equation:
 
-$$ - \nabla . (\kappa . \nabla T) = \mathcal{f} $$
+$$ - \nabla . (\kappa . \nabla P) = \mathcal{f} $$
 
 $$ f = 2 {\pi}^2 \sin(\pi x) \cos(\pi y) $$
 
 <p align="center">
-    <img alt="torus" src="https://github.com/eigemx/prism/blob/main/screenshots/poisson.png?raw=true" width="90%">
+    <img alt="poissonSolverSlice" src="https://github.com/eigemx/prism/blob/main/screenshots/poisson.png?raw=true" width="90%">
 </p>
 
 ## TODO
