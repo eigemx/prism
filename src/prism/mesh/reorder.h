@@ -8,7 +8,7 @@ namespace prism::mesh {
 
 class CuthillMckee {
   public:
-    CuthillMckee(PMesh& mesh) noexcept;
+    CuthillMckee(const SharedPtr<PMesh>& mesh) noexcept;
     auto reorder(bool reverse = false) -> void;
 
   private:
@@ -33,9 +33,7 @@ class CuthillMckee {
         std::vector<std::size_t> _neighbors;
     };
 
-
-    /// TODO: use PMeshPtr instead of PMesh&
-    PMesh& _mesh;
+    SharedPtr<PMesh> _mesh;
     std::vector<Node> _nodes;
 };
 } // namespace prism::mesh

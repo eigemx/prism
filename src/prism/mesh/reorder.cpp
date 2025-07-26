@@ -5,17 +5,17 @@
 #include <queue>
 
 namespace prism::mesh {
-CuthillMckee::CuthillMckee(PMesh& mesh) noexcept : _mesh(mesh) {
-    auto n_cells = mesh.cells().size();
+CuthillMckee::CuthillMckee(const SharedPtr<PMesh>& mesh) noexcept : _mesh(mesh) {
+    auto n_cells = mesh->cells().size();
     _nodes.reserve(n_cells);
 
     // fill the adjacency graph
-    for (const auto& cell : mesh.cells()) {
+    for (const auto& cell : mesh->cells()) {
         auto cell_id = cell.id();
         auto node = Node(cell_id, 0);
 
         for (const auto& face_id : cell.facesIds()) {
-            const auto& face = mesh.faces()[face_id];
+            const auto& face = mesh->faces()[face_id];
 
             if (face.isBoundary()) {
                 continue;
@@ -37,7 +37,7 @@ CuthillMckee::CuthillMckee(PMesh& mesh) noexcept : _mesh(mesh) {
 }
 
 auto CuthillMckee::permute() -> std::vector<std::size_t> {
-    auto n = _mesh.cells().size();
+    auto n = _mesh->cells().size();
 
     // initialize the permutation vector. This is the output of the algorithm
     std::vector<std::size_t> permutations;
@@ -108,7 +108,7 @@ void CuthillMckee::reorder(bool reverse) {
     }
 
     // update order of cells vector using the permutation map
-    auto& cells = _mesh.cells();
+    auto& cells = _mesh->cells();
 
     std::vector<Cell> new_cells = cells;
 
@@ -123,7 +123,7 @@ void CuthillMckee::reorder(bool reverse) {
     cells.swap(new_cells);
 
     // update face owners and neighbors
-    for (auto& face : _mesh.faces()) {
+    for (auto& face : _mesh->faces()) {
         face.setOwner(old_to_new[face.owner()]);
 
         if (face.isInterior()) {
