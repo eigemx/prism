@@ -9,7 +9,7 @@
 #include "prism/field/scalar.h"
 #include "prism/field/velocity.h"
 
-auto analytical_solution(double u, const prism::SharedPtr<prism::mesh::PMesh>& mesh)
+auto advection_analytical_solution(double u, const prism::SharedPtr<prism::mesh::PMesh>& mesh)
     -> prism::field::Scalar {
     prism::VectorXd sol;
     sol.resize(mesh->cellCount());
@@ -66,7 +66,7 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
     }
 
     VectorXd diff = eqn.field().values().array() -
-                    analytical_solution(inlet_velocity.x(), mesh).values().array();
+                    advection_analytical_solution(inlet_velocity.x(), mesh).values().array();
     auto diff_norm = diff.norm();
     REQUIRE(diff_norm < 0.25); // it should be around 0.209
 

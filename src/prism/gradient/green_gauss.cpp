@@ -1,5 +1,4 @@
-#include "gradient.h"
-#include "prism/mesh/face.h"
+#include "green_gauss.h"
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {

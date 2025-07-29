@@ -1,4 +1,4 @@
-#include "gradient.h"
+#include "least_squares.h"
 #include "prism/constants.h"
 
 namespace prism::gradient {

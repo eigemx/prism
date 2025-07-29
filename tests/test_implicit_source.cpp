@@ -16,7 +16,7 @@ using namespace prism::scheme;
 
 auto implicit_analytic_solution(const auto& mesh) -> prism::field::Scalar {
     // y = sinh(2x + 1)
-    /// TODO: this can be done more efficiently using a field::map() function
+    /// TODO: this can be done more efficiently using a field::updateCells() function
     prism::VectorXd sol;
     sol.resize(mesh->cellCount());
 

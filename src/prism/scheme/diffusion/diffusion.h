@@ -2,7 +2,6 @@
 
 #include <cassert>
 
-#include "boundary.h"
 #include "diffusion_boundary.h"
 #include "nonortho.h"
 #include "prism/boundary.h"
@@ -10,8 +9,9 @@
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
 #include "prism/mesh/utilities.h"
+#include "prism/scheme/boundary.h"
 #include "prism/types.h"
-#include "scheme.h"
+#include "prism/scheme/scheme.h"
 
 namespace prism::scheme::diffusion {
 // Basic base class for all diffusion schemes, without templating clutter.

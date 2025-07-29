@@ -4,7 +4,7 @@
 #include "prism/field/scalar.h"
 #include "prism/log.h"
 #include "prism/operations/operations.h"
-#include "scheme.h"
+#include "prism/scheme/scheme.h"
 
 
 namespace prism::scheme::source {

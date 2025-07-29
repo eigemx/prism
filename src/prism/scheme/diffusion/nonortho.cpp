@@ -1,9 +1,11 @@
 #include "nonortho.h"
 
+#include "prism/constants.h"
+
 namespace prism::scheme::diffusion::nonortho {
 
-auto OverRelaxedCorrector::decompose(const Vector3d& Sf,
-                                     const Vector3d& e) const -> NonOrthoPair {
+auto OverRelaxedCorrector::decompose(const Vector3d& Sf, const Vector3d& e) const
+    -> NonOrthoPair {
     Vector3d Ef = ((Sf.dot(Sf) / (e.dot(Sf) + EPSILON))) * e;
     return {Ef, Sf - Ef};
 }

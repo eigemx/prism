@@ -6,7 +6,7 @@
 #include <cmath>
 #include <filesystem>
 
-auto solution(const auto& mesh) -> prism::field::Scalar {
+auto poisson_analytical_solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
     sol.resize(mesh->cellCount());
 
@@ -21,15 +21,17 @@ auto solution(const auto& mesh) -> prism::field::Scalar {
     return prism::field::Scalar("S", mesh, std::move(sol));
 }
 
-TEST_CASE("test poisson equation", "[poisson]") {
+auto l2NormRel(const prism::Vector3d& x, const prism::Vector3d& x_ref) -> double {
+    return (x - x_ref).norm() / x_ref.norm();
+}
+
+auto testPoissonWithMesh(const std::string& mesh_file_name) -> prism::field::Scalar {
     using namespace prism;
     using namespace prism::scheme;
 
-    const auto* unv_file_name = "tests/cases/poisson/mesh.unv";
-
     // read mesh
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
+    auto boundary_file = std::filesystem::path(mesh_file_name).parent_path() / "fields.json";
+    auto mesh = mesh::UnvToPMeshConverter(mesh_file_name, boundary_file).toPMesh();
 
     auto P = field::Scalar("P", mesh, 0.0);
 
@@ -66,10 +68,17 @@ TEST_CASE("test poisson equation", "[poisson]") {
         solver.solve(eqn, 15, 1e-20);
     }
 
-    VectorXd diff = P.values() - solution(mesh).values();
-    double diff_norm = diff.norm();
+    return P;
+}
 
-    /// TODO: this is a large l2-norm criteria, we need to check if the solution is correct
-    /// TODO: replace this with relative l2-norm (check poisson example)
-    REQUIRE(diff_norm < 0.1);
+TEST_CASE("test poisson equation unstructured", "[poisson]") {
+    auto P = testPoissonWithMesh("tests/cases/poisson/mesh.unv");
+    double diff_norm = l2NormRel(P.values(), poisson_analytical_solution(P.mesh()).values());
+    REQUIRE(diff_norm < 0.078); // for poisson/mesh.unv it should be = 0.0769
+}
+
+TEST_CASE("test poisson equation structured", "[poisson]") {
+    auto P = testPoissonWithMesh("tests/cases/poisson/mesh_hex.unv");
+    double diff_norm = l2NormRel(P.values(), poisson_analytical_solution(P.mesh()).values());
+    REQUIRE(diff_norm < 0.0004); // for poisson/mesh_hex.unv it should be = 0.000323
 }
