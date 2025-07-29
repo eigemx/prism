@@ -1,7 +1,7 @@
 #pragma once
 
-#include "boundary.h"
 #include "prism/field/ifield.h"
+#include "prism/scheme/boundary.h"
 
 namespace prism::scheme::convection {
 // forward declarations

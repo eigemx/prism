@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Eigen/Core"
-#include "prism/constants.h"
 #include "prism/types.h"
 
 namespace prism::scheme::diffusion::nonortho {

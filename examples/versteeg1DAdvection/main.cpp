@@ -7,7 +7,7 @@
 // Finite Volume Method" - Second Edition by H K Versteeg and W Malalasekera
 // it's also implemented as a test case.
 
-auto analytical_solution(double u, const prism::SharedPtr<prism::mesh::PMesh>& mesh)
+auto advection_analytical_solution(double u, const prism::SharedPtr<prism::mesh::PMesh>& mesh)
     -> prism::field::Scalar {
     prism::VectorXd sol;
     sol.resize(mesh->cellCount());
@@ -82,7 +82,7 @@ auto main(int argc, char* argv[]) -> int {
 
     solver.solve(eqn, 5, 1e-20);
     VectorXd diff = eqn.field().values().array() -
-                    analytical_solution(inlet_velocity.x(), mesh).values().array();
+                    advection_analytical_solution(inlet_velocity.x(), mesh).values().array();
     auto diff_norm = diff.norm();
     log::info("diff norm = {}", diff_norm);
 

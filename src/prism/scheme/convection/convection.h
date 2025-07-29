@@ -2,13 +2,13 @@
 
 #include <cmath>
 
-#include "boundary.h"
 #include "convection_boundary.h"
 #include "convection_hr.h"
 #include "prism/boundary.h"
 #include "prism/field/ifield.h"
 #include "prism/mesh/cell.h"
-#include "scheme.h"
+#include "prism/scheme/boundary.h"
+#include "prism/scheme/scheme.h"
 
 namespace prism::scheme::convection {
 

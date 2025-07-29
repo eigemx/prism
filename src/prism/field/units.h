@@ -74,4 +74,12 @@ class PressureUnit : public Measurable {
 
 using Pascal = PressureUnit;
 
+class DensityUnit : public Measurable {
+  public:
+    DensityUnit() {
+        units().setMass(1);
+        units().setLength(-3);
+    }
+};
+
 } // namespace prism::field::units

@@ -27,7 +27,7 @@ add_library(prism
     mesh/reorder.cpp
     mesh/utilities.cpp
 
-    scheme/nonortho.cpp
+    scheme/diffusion/nonortho.cpp
 
     gradient/boundary.cpp
     gradient/gradient.cpp

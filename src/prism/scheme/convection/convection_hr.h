@@ -6,18 +6,16 @@
 namespace prism::scheme::convection {
 
 template <field::IScalarBased Field>
-auto phiAtDummyUpwind(const Field& field,
-                      const mesh::Cell& cell,
-                      const mesh::Cell& downwind) -> double;
+auto phiAtDummyUpwind(const Field& field, const mesh::Cell& cell, const mesh::Cell& downwind)
+    -> double;
 
 template <field::IScalarBased Field>
 auto phiTilde(const Field& field, const mesh::Cell& cell, const mesh::Cell& downwind) -> double;
 
 
 template <field::IScalarBased Field>
-auto phiAtDummyUpwind(const Field& field,
-                      const mesh::Cell& cell,
-                      const mesh::Cell& downwind) -> double {
+auto phiAtDummyUpwind(const Field& field, const mesh::Cell& cell, const mesh::Cell& downwind)
+    -> double {
     // The following is based on equation (12.66) from Moukalled et. al (2016)
     auto phi_downwind = field.valueAtCell(downwind);
     auto d_CD = downwind.center() - cell.center();

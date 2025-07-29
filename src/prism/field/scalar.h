@@ -5,6 +5,8 @@
 #include "ifield.h"
 #include "prism/exceptions.h"
 #include "prism/gradient/gradient.h"
+#include "prism/gradient/green_gauss.h"
+#include "prism/gradient/least_squares.h"
 #include "prism/log.h"
 #include "prism/mesh/utilities.h"
 #include "scalar_boundary.h"
@@ -25,6 +27,7 @@ auto inline coordToIndex(Coord coord) -> std::uint8_t {
     throw std::invalid_argument("Invalid Coord value in coordToIndex");
 }
 } // namespace detail
+
 // forward declaration for GeneralScalar
 template <typename Units, typename BHManagerSetter>
 class GeneralScalar;
@@ -573,7 +576,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
             "GeneralScalar::setGradScheme(): setting the gradient scheme to Green-Gauss for "
             "field `{}`",
             this->name());
-        _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+        _grad_scheme = std::make_shared<gradient::GreenGauss>(this);
         return;
     }
 
