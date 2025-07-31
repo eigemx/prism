@@ -5,9 +5,9 @@
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
-    log::setLevel(log::Level::Off);
+    log::setLevel(log::Level::Info);
 
-    fmt::println("convsolver - A steady state temperature advection solver");
+    fmt::println("advectionSolver - A steady state temperature advection solver");
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);

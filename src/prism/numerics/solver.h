@@ -6,6 +6,8 @@
 #include "prism/log.h"
 
 namespace prism::solver::detail {
+/// TODO: residual should not be under detal namespace, and we should implement different residual
+/// forms.
 auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double;
 } // namespace prism::solver::detail
 
@@ -15,7 +17,7 @@ class IterationData {
   public:
     IterationData(std::size_t iteration, double initial_residual, double final_residual);
     void setAsConverged() noexcept;
-    auto atConvergence() const noexcept -> bool;
+    auto hasConverged() const noexcept -> bool;
     auto iteration() const noexcept -> std::size_t;
     auto initialResidual() const noexcept -> double;
     auto finalResidual() const noexcept -> double;
@@ -33,12 +35,10 @@ class IterationData {
 template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport<Field>& eq,
-                       std::size_t n_iter = 10,
-                       double eps = 1e-7) -> IterationData;
-    virtual auto step(const SparseMatrix& A,
-                      const VectorXd& x,
-                      const VectorXd& b) -> VectorXd = 0;
+    virtual auto solve(eqn::Transport<Field>& eq, std::size_t n_iter = 10, double eps = 1e-7)
+        -> IterationData;
+    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+        -> VectorXd = 0;
 };
 
 template <typename Field>
@@ -54,9 +54,8 @@ class GaussSeidel : public ISolver<Field> {
 };
 
 template <typename Field>
-auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
-                           std::size_t n_iter,
-                           double eps) -> IterationData {
+auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, double eps)
+    -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
@@ -102,17 +101,15 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
 }
 
 template <typename Field>
-auto BiCGSTAB<Field>::step(const SparseMatrix& A,
-                           const VectorXd& x,
-                           const VectorXd& b) -> VectorXd {
+auto BiCGSTAB<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+    -> VectorXd {
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     return bicg.compute(A).solveWithGuess(b, x);
 }
 
 template <typename Field>
-auto GaussSeidel<Field>::step(const SparseMatrix& A,
-                              const VectorXd& x,
-                              const VectorXd& b) -> VectorXd {
+auto GaussSeidel<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+    -> VectorXd {
     VectorXd x_new = x;
     for (int j = 0; j < x.size(); j++) {
         double sum = 0.0;

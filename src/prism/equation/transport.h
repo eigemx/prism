@@ -11,6 +11,7 @@
 #include "prism/scheme/convection/convection.h"
 #include "prism/scheme/diffusion/diffusion.h"
 #include "prism/scheme/source/source.h"
+#include "prism/scheme/temporal/temporal.h"
 
 namespace prism::eqn {
 
@@ -19,7 +20,8 @@ namespace prism::eqn {
 
 /// TODO: Schemes that require no correction shall be updated only once.
 
-/// TODO: Transport should have at most one convection scheme and at most one diffusion scheme
+/// TODO: Transport should have at most one convection scheme, at most one diffusion scheme, and
+/// at most one temporal scheme.
 
 template <field::IScalarBased Field = field::Scalar>
 class Transport : public LinearSystem,
@@ -43,8 +45,11 @@ class Transport : public LinearSystem,
 
     /// TODO: maybe returns a casted pointer to the scheme (convection or diffusion) instead of
     /// the full scheme?
+    /// TODO: maybe wrap the SharedPtr in a std::optional?
     auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
     auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
+
+    auto isTransient() const noexcept -> bool;
 
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
@@ -68,6 +73,9 @@ class Transport : public LinearSystem,
     template <scheme::source::IImplicitSourceBased Source>
     void addScheme(Source&& source);
 
+    template <scheme::temporal::ITemporalBased Temporal>
+    void addScheme(Temporal&& temporal);
+
     std::vector<SharedPtr<scheme::IFullScheme<Field>>> _schemes;
     std::vector<SharedPtr<scheme::source::IExplicitSource>> _sources;
     Field _phi; // Conserved field of the equation
@@ -75,6 +83,7 @@ class Transport : public LinearSystem,
     SharedPtr<scheme::IFullScheme<Field>> _diff_scheme = nullptr;
     std::size_t _n_corrected_schemes {0};
     double _relaxation_factor {1.0};
+    bool _is_transient {false};
 };
 
 
@@ -120,7 +129,6 @@ void Transport<Field>::zeroOutCoeffs() {
         scheme->rhs().setZero();
     }
 
-    /// TODO: this does not consider implicit sources
     for (auto& source : _sources) {
         source->rhs().setZero();
     }
@@ -240,6 +248,24 @@ void Transport<Field>::addScheme(Source&& source) {
 
     auto src_scheme = std::make_shared<Source>(std::forward<Source>(source));
     _schemes.emplace_back(src_scheme);
+}
+
+template <field::IScalarBased Field>
+template <scheme::temporal::ITemporalBased Temporal>
+void Transport<Field>::addScheme(Temporal&& temporal) {
+    log::debug("Transport::addScheme() found a temporal scheme.");
+    if (temporal.needsCorrection()) {
+        _n_corrected_schemes++;
+    }
+
+    auto temp_scheme = std::make_shared<Temporal>(std::forward<Temporal>(temporal));
+    _schemes.emplace_back(temp_scheme);
+    _is_transient = true;
+}
+
+template <field::IScalarBased Field>
+auto Transport<Field>::isTransient() const noexcept -> bool {
+    return _is_transient;
 }
 
 } // namespace prism::eqn

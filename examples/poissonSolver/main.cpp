@@ -33,7 +33,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::string> args(argv, argv + argc);
 
     if (argc < 2) {
-        log::error("Usage: poisson [mesh-file]");
+        log::error("Usage: poissonSolver [mesh-file]");
         return 1;
     }
 

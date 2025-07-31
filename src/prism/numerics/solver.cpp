@@ -8,7 +8,7 @@ auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> do
      *
      * The scaled residual is defined as:
      * |Ax - b| / max(|A.diagonal() * x|)
-     * This is based on equations (14.33) and (14.34) from Moukalled et al. (2015).
+     * This is based on equations (14.33) and (14.34) from Moukalled et al. (2016).
      *
      * @param A The sparse matrix representing the linear system.
      * @param x The solution vector.
@@ -33,7 +33,7 @@ void IterationData::setAsConverged() noexcept {
     _converged = true;
 }
 
-auto IterationData::atConvergence() const noexcept -> bool {
+auto IterationData::hasConverged() const noexcept -> bool {
     return _converged;
 }
 
