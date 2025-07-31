@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+#include "prism/scheme/temporal/backward_euler.h"
+
 using namespace prism;
 using namespace prism::scheme;
 using namespace prism::field;
@@ -10,7 +12,7 @@ namespace fs = std::filesystem;
 auto main(int argc, char* argv[]) -> int {
     log::setLevel(log::Level::Info);
 
-    log::info("laplacianSolver - A steady state diffusion equation solver");
+    log::info("transLaplacianSolver - A transient diffusion equation solver");
 
     if (argc < 2) {
         log::error("Usage: diffsolver [mesh-file]");
@@ -25,29 +27,28 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = Scalar("T", mesh, 300.0);
+    auto T = Scalar("T", mesh, 0.0);
 
     // diffusion coefficient
-    auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
+    auto kappa = UniformScalar("kappa", mesh, 1e-3);
 
-    auto eqn = eqn::Transport(
-        diffusion::Corrected<Tensor, diffusion::nonortho::OverRelaxedCorrector, Scalar>(kappa,
-                                                                                        T));
+    auto dt = 1e-2;
+
+    using diffusion::nonortho::OverRelaxedCorrector;
+    auto eqn = eqn::Transport(temporal::BackwardEuler<Scalar>(T, dt), // dT/dt
+                              diffusion::NonCorrected<UniformScalar, Scalar>(kappa, T));
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    auto nIter = 40;
-    auto nNonOrthoIter = 3;
+    auto nNonOrthoIter = 1;
+    auto nTimesteps = 9000;
 
-    for (int iter = 0; iter < nIter; iter++) {
-        for (int j = 0; j < nNonOrthoIter; j++) {
-            solver.solve(eqn, 10, 1e-20);
-        }
+    for (auto timestep = 0; timestep < nTimesteps; timestep++) {
+        log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);
+        solver.solve(eqn, 10, 1e-20);
     }
 
     prism::exportToVTU(eqn.field(), "solution.vtu");
-    auto gradT_x = ops::grad(T, Coord::X);
-    prism::exportToVTU(gradT_x, "gradT_x_ls.vtu");
 
     return 0;
 }

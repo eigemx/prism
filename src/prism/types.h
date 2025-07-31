@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <memory>
+#include <optional>
 
 namespace prism {
 
@@ -21,5 +22,8 @@ using UniquePtr = std::unique_ptr<T>;
 
 template <typename T>
 using SharedPtr = std::shared_ptr<T>;
+
+template <typename T>
+using Optional = std::optional<T>;
 
 } // namespace prism
