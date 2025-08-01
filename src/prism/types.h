@@ -4,8 +4,11 @@
 #include <Eigen/Sparse>
 #include <memory>
 #include <optional>
+#include <string>
 
 namespace prism {
+
+using String = std::string;
 
 using Eigen::Matrix3d;
 using Eigen::MatrixX3d;
@@ -26,4 +29,5 @@ using SharedPtr = std::shared_ptr<T>;
 template <typename T>
 using Optional = std::optional<T>;
 
+inline constexpr auto NullOption = std::nullopt;
 } // namespace prism

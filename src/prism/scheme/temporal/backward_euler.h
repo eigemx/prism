@@ -4,12 +4,13 @@
 #include <stdexcept>
 
 #include "prism/field/density.h"
+#include "prism/field/scalar.h"
 #include "prism/log.h"
 #include "temporal.h"
 
 namespace prism::scheme::temporal {
 
-template <typename Field>
+template <field::IScalarBased Field>
 class BackwardEuler : public ITemporal<Field> {
   public:
     BackwardEuler(Field phi);
@@ -27,12 +28,12 @@ class BackwardEuler : public ITemporal<Field> {
 
   private:
     Field _phi;
-    std::optional<field::Density> _rho = std::nullopt;
+    Optional<field::Density> _rho = std::nullopt;
     double _dt {1e-5}; // To avoid initialization with 0
     std::size_t _n_timesteps {0};
 };
 
-template <typename Field>
+template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(Field phi)
     : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi) {
     log::debug(
@@ -41,7 +42,7 @@ BackwardEuler<Field>::BackwardEuler(Field phi)
         _dt);
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(Field phi, double dt)
     : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi), _dt(dt) {
     if (dt <= 0.0) {
@@ -52,7 +53,7 @@ BackwardEuler<Field>::BackwardEuler(Field phi, double dt)
                _dt);
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(field::Density rho, Field phi)
     : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi), _rho(rho) {
     log::debug(
@@ -61,7 +62,7 @@ BackwardEuler<Field>::BackwardEuler(field::Density rho, Field phi)
         _dt);
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(field::Density rho, Field phi, double dt)
     : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi), _rho(rho), _dt(dt) {
     log::debug("scheme::temporal::BackwardEuler() initialized for field `{}` with dt = {}",
@@ -69,7 +70,7 @@ BackwardEuler<Field>::BackwardEuler(field::Density rho, Field phi, double dt)
                _dt);
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 void BackwardEuler<Field>::apply() {
     const auto& vol_field = _phi.mesh()->cellsVolumeVector();
     this->matrix().setIdentity();
@@ -83,12 +84,12 @@ void BackwardEuler<Field>::apply() {
     }
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 auto BackwardEuler<Field>::timeStep() const noexcept -> double {
     return _dt;
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 void BackwardEuler<Field>::setTimeStep(double dt) noexcept {
     if (dt <= 0.0) {
         throw std::invalid_argument("scheme::temporal::BackwardEuler(): dt must be positive");
@@ -96,7 +97,7 @@ void BackwardEuler<Field>::setTimeStep(double dt) noexcept {
     _dt = dt;
 }
 
-template <typename Field>
+template <field::IScalarBased Field>
 auto BackwardEuler<Field>::field() -> Field {
     return _phi;
 }
