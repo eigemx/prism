@@ -1,8 +1,6 @@
 #pragma once
 
 #include <concepts>
-#include <optional>
-#include <string>
 
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
@@ -29,23 +27,22 @@ class IField {
     auto operator=(IField&& other) noexcept -> IField& = default;
     virtual ~IField() = default;
 
-    auto inline name() const -> const std::string& { return _name; }
-    auto inline name() -> std::string& { return _name; }
+    auto name() const -> const std::string&;
+    auto name() -> std::string&;
+    auto mesh() const -> const SharedPtr<mesh::PMesh>&;
 
-    auto inline mesh() const -> const SharedPtr<mesh::PMesh>& { return _mesh; }
-
-    virtual auto hasFaceValues() const -> bool { return false; }
+    virtual auto hasFaceValues() const -> bool;
     virtual auto valueAtCell(std::size_t cell_id) const -> CellValueType = 0;
     virtual auto valueAtCell(const mesh::Cell& cell) const -> CellValueType = 0;
     virtual auto valueAtFace(std::size_t face_id) const -> CellValueType = 0;
     virtual auto valueAtFace(const mesh::Face& face) const -> CellValueType = 0;
-    virtual auto coord() const noexcept -> std::optional<Coord> { return std::nullopt; }
+    virtual auto coord() const noexcept -> Optional<Coord>;
 
     using ValueType = CellValueType;
 
   private:
     SharedPtr<mesh::PMesh> _mesh = nullptr;
-    std::string _name;
+    String _name;
 };
 
 template <typename T>
@@ -77,6 +74,31 @@ IField<CellValueType>::IField(std::string name, const SharedPtr<mesh::PMesh>& me
     : _name(std::move(name)), _mesh(mesh) {
     detail::checkFieldName(_name);
     detail::checkMesh(mesh);
+}
+
+template <typename CellValueType>
+auto IField<CellValueType>::name() const -> const std::string& {
+    return _name;
+}
+
+template <typename CellValueType>
+auto IField<CellValueType>::name() -> std::string& {
+    return _name;
+}
+
+template <typename CellValueType>
+auto IField<CellValueType>::mesh() const -> const SharedPtr<mesh::PMesh>& {
+    return _mesh;
+}
+
+template <typename CellValueType>
+auto IField<CellValueType>::hasFaceValues() const -> bool {
+    return false;
+}
+
+template <typename CellValueType>
+auto IField<CellValueType>::coord() const noexcept -> Optional<Coord> {
+    return NullOption;
 }
 
 /// TODO: This function should be moved to a more appropriate place, like a utility file.
