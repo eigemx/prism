@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "history.h"
 #include "ifield.h"
 #include "prism/exceptions.h"
 #include "prism/gradient/gradient.h"
@@ -17,6 +18,8 @@
 namespace prism::field {
 
 namespace detail {
+/// TODO: this function should be moved to a more appropriate place, like a utility file. Same for
+/// coordToStr in ifield.h
 auto inline coordToIndex(Coord coord) -> std::uint8_t {
     switch (coord) {
         case Coord::X: return 0;
@@ -24,7 +27,7 @@ auto inline coordToIndex(Coord coord) -> std::uint8_t {
         case Coord::Z: return 2;
         default: break;
     }
-    throw std::invalid_argument("Invalid Coord value in coordToIndex");
+    throw std::invalid_argument("prism::field::coordToIndex(): Invalid coordinate value");
 }
 } // namespace detail
 
@@ -110,7 +113,7 @@ class GeneralScalar
     auto values() const -> const VectorXd&;
     auto values() -> VectorXd&;
 
-    auto coord() const noexcept -> std::optional<Coord> override;
+    auto coord() const noexcept -> Optional<Coord> override;
     auto hasFaceValues() const -> bool override;
     void setFaceValues(VectorXd values);
     void clearFaceValues();
@@ -137,6 +140,13 @@ class GeneralScalar
     void updateCells(Func func);
 
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
+
+    void setHistorySize(std::size_t num_time_steps);
+    void update(VectorXd values);
+    auto prevValues() const -> Optional<VectorXd>;
+    auto prevPrevValues() const -> Optional<VectorXd>;
+    auto getHistory(std::size_t index) const -> Optional<VectorXd>;
+
     auto clone() const -> GeneralScalar;
 
     auto operator[](std::size_t i) const -> double;
@@ -150,14 +160,15 @@ class GeneralScalar
     void setGradScheme();
     void addDefaultBoundaryHandlers();
 
-    SharedPtr<VectorXd> _data = nullptr;
+    SharedPtr<VectorXd> _cell_values = nullptr;
+    SharedPtr<HistoryManager> _history_manager = nullptr;
 
     /// TODO: _face_data should not include empty faces
-    SharedPtr<VectorXd> _face_data = nullptr;
+    SharedPtr<VectorXd> _face_values = nullptr;
     SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
 
     const IVector* _parent = nullptr;
-    std::optional<Coord> _coord = std::nullopt;
+    Optional<Coord> _coord = NullOption;
     BHManagerSetter _setter;
 };
 
@@ -240,7 +251,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      double value,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)),
+      _cell_values(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)),
       _parent(parent) {
     log::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     addDefaultBoundaryHandlers();
@@ -254,7 +265,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      Coord coord,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)),
+      _cell_values(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)),
       _coord(coord),
       _parent(parent) {
     log::debug("Creating scalar field: '{}' (as {}-coordinate) with double value = {}",
@@ -272,9 +283,9 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      VectorXd data,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(std::move(data))),
+      _cell_values(std::make_shared<VectorXd>(std::move(data))),
       _parent(parent) {
-    if (_data->size() != mesh->cellCount()) {
+    if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(
             fmt::format("field::GeneralScalar() cannot create a scalar field '{}' given a "
                         "vector that has a different size than mesh's cell count.",
@@ -283,7 +294,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 
     log::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
                this->name(),
-               _data->size());
+               _cell_values->size());
 
     addDefaultBoundaryHandlers();
     setGradScheme();
@@ -296,10 +307,10 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      Coord coord,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(std::move(data))),
+      _cell_values(std::make_shared<VectorXd>(std::move(data))),
       _coord(coord),
       _parent(parent) {
-    if (_data->size() != mesh->cellCount()) {
+    if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
@@ -310,7 +321,7 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         "Creating scalar field: '{}' (as {}-coordinate) with a cell vector data of size = {}",
         this->name(),
         coordToStr(coord),
-        _data->size());
+        _cell_values->size());
     addDefaultBoundaryHandlers();
     setGradScheme();
 }
@@ -322,17 +333,17 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      VectorXd face_data,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(std::move(data))),
-      _face_data(std::make_shared<VectorXd>(std::move(face_data))),
+      _cell_values(std::make_shared<VectorXd>(std::move(data))),
+      _face_values(std::make_shared<VectorXd>(std::move(face_data))),
       _parent(parent) {
-    if (_data->size() != mesh->cellCount()) {
+    if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
             this->name()));
     }
 
-    if (_face_data->size() != mesh->faceCount()) {
+    if (_face_values->size() != mesh->faceCount()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
                         "vector that has a different size than mesh's faces count.",
@@ -343,8 +354,8 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         "Creating scalar field: '{}' with a cell data vector of size = {} and face data "
         "vector of size = {}",
         this->name(),
-        _data->size(),
-        _face_data->size());
+        _cell_values->size(),
+        _face_values->size());
 
     addDefaultBoundaryHandlers();
     setGradScheme();
@@ -358,18 +369,18 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      Coord coord,
                                                      IVector* parent)
     : IScalar(std::move(name), mesh),
-      _data(std::make_shared<VectorXd>(std::move(data))),
-      _face_data(std::make_shared<VectorXd>(std::move(face_data))),
+      _cell_values(std::make_shared<VectorXd>(std::move(data))),
+      _face_values(std::make_shared<VectorXd>(std::move(face_data))),
       _coord(coord),
       _parent(parent) {
-    if (_data->size() != mesh->cellCount()) {
+    if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
             "different size than mesh's cell count.",
             this->name()));
     }
 
-    if (_face_data->size() != mesh->faceCount()) {
+    if (_face_values->size() != mesh->faceCount()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
                         "vector that has a different size than mesh's faces count.",
@@ -382,8 +393,8 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
         "face data vector of size = {}",
         this->name(),
         coordToStr(coord),
-        _data->size(),
-        _face_data->size());
+        _cell_values->size(),
+        _face_values->size());
 
     addDefaultBoundaryHandlers();
     setGradScheme();
@@ -409,44 +420,44 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
     }
 
     log::debug("Setting face values for field '{}'", name());
-    _face_data = std::make_shared<VectorXd>(std::move(values));
+    _face_values = std::make_shared<VectorXd>(std::move(values));
 }
 
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::clearFaceValues() {
-    _face_data = nullptr;
+    _face_values = nullptr;
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::values() const -> const VectorXd& {
-    if (_data == nullptr) {
+    if (_cell_values == nullptr) {
         throw std::runtime_error(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::values() was "
                         "called for field `{}`, but the data is not initialized.",
                         name()));
     }
-    return *_data;
+    return *_cell_values;
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::values() -> VectorXd& {
-    if (_data == nullptr) {
+    if (_cell_values == nullptr) {
         throw std::runtime_error(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::values() was "
                         "called for field `{}`, but the data is not initialized.",
                         name()));
     }
-    return *_data;
+    return *_cell_values;
 }
 
 template <typename Units, typename BHManagerSetter>
-auto GeneralScalar<Units, BHManagerSetter>::coord() const noexcept -> std::optional<Coord> {
+auto GeneralScalar<Units, BHManagerSetter>::coord() const noexcept -> Optional<Coord> {
     return _coord;
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::hasFaceValues() const -> bool {
-    return _face_data != nullptr;
+    return _face_values != nullptr;
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -458,7 +469,7 @@ template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) const -> double {
     assert(_data != nullptr);              // NOLINT
     assert(cell_id < mesh()->cellCount()); // NOLINT
-    return (*_data)[cell_id];
+    return (*_cell_values)[cell_id];
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -466,7 +477,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtFace(std::size_t face_id) con
     if (hasFaceValues()) {
         // Face data were calculated already, just return the value (as in Rhie-Chow
         // correction).
-        return (*_face_data)[face_id];
+        return (*_face_values)[face_id];
     }
 
     const auto& face = mesh()->face(face_id);
@@ -491,8 +502,8 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtInteriorFace(const mesh::Face
     const auto& neighbor = mesh()->cell(face.neighbor().value());
 
     const auto gc = mesh::geometricWeight(owner, neighbor, face);
-    double val = gc * (*_data)[owner.id()];
-    val += (1 - gc) * (*_data)[neighbor.id()];
+    double val = gc * (*_cell_values)[owner.id()];
+    val += (1 - gc) * (*_cell_values)[neighbor.id()];
 
     return val;
 }
@@ -593,6 +604,105 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
 }
 
 template <typename Units, typename BHManagerSetter>
+void GeneralScalar<Units, BHManagerSetter>::setHistorySize(std::size_t num_time_steps) {
+    // If the requested history size is greater than zero, we need to ensure
+    // a history manager is available and configured to the correct size.
+    if (num_time_steps > 0) {
+        // Check if a history manager is already allocated.
+        if (!_history_manager) {
+            // If not, create a new shared history manager.
+            _history_manager = std::make_shared<HistoryManager>(num_time_steps);
+        } else {
+            // If a manager already exists, resize it. This preserves existing history.
+            _history_manager->resize(num_time_steps);
+        }
+    } else {
+        // If the requested size is 0, we release the history manager.
+        _history_manager.reset();
+    }
+}
+
+template <typename Units, typename BHManagerSetter>
+void GeneralScalar<Units, BHManagerSetter>::update(VectorXd values) {
+    if (_history_manager) {
+        _history_manager->update(*_cell_values);
+    }
+    *_cell_values = std::move(values);
+
+    clearFaceValues();
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::prevValues() const -> Optional<VectorXd> {
+    if (_history_manager) {
+        return _history_manager->prevValues();
+    }
+    return NullOption;
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::prevPrevValues() const -> Optional<VectorXd> {
+    if (_history_manager) {
+        return _history_manager->prevPrevValues();
+    }
+    return NullOption;
+}
+
+template <typename Units, typename BHManagerSetter>
+auto GeneralScalar<Units, BHManagerSetter>::getHistory(std::size_t index) const
+    -> Optional<VectorXd> {
+    /**
+     * @brief Retrieves historical field values at a specific time step.
+     *
+     * This method provides access to the field's values from previous time steps
+     * stored in the history manager. The `index` parameter specifies how many
+     * steps back in time to retrieve the data.
+     *
+     * @param index The zero-based index representing the number of time steps
+     *              ago to retrieve the values. An index of 0 refers to the
+     *              immediately previous time step (t-1), 1 refers to two time
+     *              steps ago (t-2), and so on.
+     * @return An `Optional<VectorXd>` containing the historical field values
+     *         if available, or `NullOption` if the history manager is not
+     *         enabled or the requested index is out of bounds.
+     *
+     * @note The history manager must be enabled and configured with a sufficient
+     *       size using `setHistorySize()` for this method to return meaningful
+     *       data. The current field values (t) are *not* part of the history
+     *       retrieved by this method; they are accessed via `values()`.
+     *
+     * @par Examples:
+     * @code
+     * // Assuming 'T' is a GeneralScalar instance with history enabled
+     * // and updated multiple times.
+     *
+     * // Get values from the immediately previous time step (t-1)
+     * Optional<VectorXd> t_minus_1 = T.getHistory(0);
+     * if (t_minus_1.has_value()) {
+     *     // Use t_minus_1.value()
+     * }
+     *
+     * // Get values from two time steps ago (t-2)
+     * Optional<VectorXd> t_minus_2 = T.getHistory(1);
+     * if (t_minus_2.has_value()) {
+     *     // Use t_minus_2.value()
+     * }
+     *
+     * // Attempt to get values from an index beyond the stored history size
+     * Optional<VectorXd> out_of_bounds = T.getHistory(100);
+     * if (!out_of_bounds.has_value()) {
+     *     // Handle case where history is not available for this index
+     * }
+     * @endcode
+     */
+ 
+    if (_history_manager) {
+        return _history_manager->valuesAt(index);
+    }
+    return NullOption;
+}
+
+template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::gradAtFace(const mesh::Face& face) const -> Vector3d {
     return _grad_scheme->gradAtFace(face);
 }
@@ -624,11 +734,11 @@ void GeneralScalar<Units, BHManagerSetter>::updateInteriorFaces(Func func) {
                 face_values[face_id] = valueAtFace(face_id);
             }
         }
-        _face_data = std::make_shared<VectorXd>(std::move(face_values));
+        _face_values = std::make_shared<VectorXd>(std::move(face_values));
     }
 
     for (const auto& face : this->mesh()->interiorFaces()) {
-        (*_face_data)[face.id()] = func(face);
+        (*_face_values)[face.id()] = func(face);
     }
 }
 
@@ -643,7 +753,7 @@ void GeneralScalar<Units, BHManagerSetter>::updateFaces(Func func) {
         }
         for (const auto& face_id : patch.facesIds()) {
             const auto& face = this->mesh()->face(face_id);
-            (*_face_data)[face_id] = func(face);
+            (*_face_values)[face_id] = func(face);
         }
     }
 }
@@ -653,7 +763,7 @@ template <typename Func>
 void GeneralScalar<Units, BHManagerSetter>::updateCells(Func func) {
     /// TODO: test this.
     for (const auto& cell : this->mesh()->cells()) {
-        (*_data)[cell.id()] = func(cell);
+        (*_cell_values)[cell.id()] = func(cell);
     }
 }
 
@@ -664,54 +774,54 @@ auto GeneralScalar<Units, BHManagerSetter>::clone() const -> GeneralScalar {
         auto clone =
             GeneralScalar(this->name(), this->mesh(), this->values(), this->coord().value());
         if (hasFaceValues()) {
-            clone.setFaceValues(*_face_data);
+            clone.setFaceValues(*_face_values);
         }
         return clone;
     }
     auto clone = GeneralScalar(this->name(), this->mesh(), this->values());
     if (hasFaceValues()) {
-        clone.setFaceValues(*_face_data);
+        clone.setFaceValues(*_face_values);
     }
     return clone;
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::operator[](std::size_t i) const -> double {
-    if (_data == nullptr) {
+    if (_cell_values == nullptr) {
         throw std::runtime_error(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
                         "called for field `{}`, but the data is not initialized.",
                         name()));
     }
-    if (i >= _data->size()) {
+    if (i >= _cell_values->size()) {
         throw std::out_of_range(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
                         "called for field `{}`, but the index {} is out of range (size = {}).",
                         name(),
                         i,
-                        _data->size()));
+                        _cell_values->size()));
     }
-    return (*_data)[i];
+    return (*_cell_values)[i];
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::operator[](std::size_t i) -> double& {
-    if (_data == nullptr) {
+    if (_cell_values == nullptr) {
         throw std::runtime_error(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
                         "called for field `{}`, but the data is not initialized.",
                         name()));
     }
 
-    if (i >= _data->size()) {
+    if (i >= _cell_values->size()) {
         throw std::out_of_range(
             fmt::format("prism::field::GeneralScalar<Units, BHManagerSetter>::operator[]() was "
                         "called for field `{}`, but the index {} is out of range (size = {}).",
                         name(),
                         i,
-                        _data->size()));
+                        _cell_values->size()));
     }
-    return (*_data)[i];
+    return (*_cell_values)[i];
 }
 
 } // namespace prism::field

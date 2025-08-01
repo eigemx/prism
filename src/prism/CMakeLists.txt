@@ -13,6 +13,7 @@ add_library(prism
     field/vector.cpp
     field/pressure.cpp
     field/pressure_boundary.cpp
+    field/history.cpp
 
     export.cpp
     exceptions.cpp
