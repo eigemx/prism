@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include "prism/scheme/temporal/backward_euler.h"
+#include "prism/scheme/temporal/adam_moulton.h"
 
 using namespace prism;
 using namespace prism::scheme;
@@ -29,7 +29,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
     auto T = Scalar("T", mesh, 0.0);
-    T.setHistorySize(1); // enable history with a single time step in the past
+    T.setHistorySize(2); // enable history with a single time step in the past
     T.update(T.values());
 
     // diffusion coefficient
@@ -43,8 +43,9 @@ auto main(int argc, char* argv[]) -> int {
     auto nTimesteps = 200;
 
     using diffusion::nonortho::OverRelaxedCorrector;
-    auto eqn = eqn::Transport(temporal::BackwardEuler<Scalar>(T, dt), // dT/dt
-                              diffusion::NonCorrected<UniformScalar, Scalar>(kappa, T));
+    auto eqn = eqn::Transport(
+        temporal::AdamMoulton<Scalar>(T, dt), // dT/dt
+        diffusion::Corrected<UniformScalar, OverRelaxedCorrector, Scalar>(kappa, T));
 
 
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {

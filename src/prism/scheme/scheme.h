@@ -35,6 +35,8 @@ class IPartialScheme : public IScheme, public RHSProvider {
 template <typename Field>
 class IFullScheme : public IScheme, public LinearSystem {
   public:
+    /// TODO: this should be initialized with the field itself, and implement field(), because all
+    /// other schemes already implements field() this way and we need to avoid repetition.
     IFullScheme(std::size_t n_cells) : LinearSystem(n_cells) {}
     void apply() override;
 

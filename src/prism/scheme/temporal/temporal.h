@@ -13,8 +13,6 @@ class ITemporal : public scheme::IFullScheme<Field> {
 
     auto needsCorrection() const noexcept -> bool override;
 
-    using FieldType = Field;
-
   private:
     void applyInterior(const mesh::Face& face) override {}
     void applyBoundary() override {}

@@ -30,6 +30,8 @@ class BackwardEuler : public ITemporal<Field> {
     void applyIncompressible();
     void applyCompressible();
 
+    /// TODO: we don't need to store phi, because IFullScheme should take care of this. Remove and
+    /// access phi through this->field()
     Field _phi;
     Optional<field::Density> _rho = std::nullopt;
     double _dt {1e-5}; // To avoid initialization with 0
@@ -40,7 +42,8 @@ template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(Field phi)
     : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi) {
     log::debug(
-        "prism::scheme::temporal::BackwardEuler(phi) initialized for field `{}` with default dt = "
+        "prism::scheme::temporal::BackwardEuler(phi) initialized for field `{}` with default dt "
+        "= "
         "{}",
         phi.name(),
         _dt);
@@ -83,9 +86,10 @@ template <field::IScalarBased Field>
 void BackwardEuler<Field>::apply() {
     if (_rho.has_value()) {
         applyCompressible();
-        return;
+    } else {
+        applyIncompressible();
     }
-    applyIncompressible();
+    _n_timesteps++;
 }
 
 template <field::IScalarBased Field>

@@ -8,6 +8,7 @@ Prism is a C++20 library for solving partial differential equations (PDEs) using
 - Support for non-orthogonal correction for diffusion scheme.
 - Central difference, Upwind, Second-order upwind, QUICK and high-resolution (TVD) schemes.
 - Support for explicit and implicit source terms.
+- Support for implicit transiet schemes such as Backward Euler (first order) and Adam-Moulton (second order).
 - Support for user defined boundary conditions (with many default boundary conditions available such as Fixed, FixedGradient, Symmetric, Outlet, ...).
 - Exporting results to VTU format (right now supporting meshes with hexahedral, tetrahedral and pyramidal cells only).
 - and much more...
@@ -45,9 +46,9 @@ The following example shows how pressure correction equation is implemented in p
                                         // diffusion coefficient type
                                         field::Tensor,
                                         // non-orthogonal correction type
-                                        diffusion::nonortho::OverRelaxedCorrector, 
+                                        diffusion::nonortho::OverRelaxedCorrector,
                                         // transport field type
-                                        field::Pressure 
+                                        field::Pressure
                                         >;
     // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
     using div_U = source::Divergence<Sign::Negative, field::Velocity>;
@@ -63,6 +64,7 @@ Prism is in early development stages and is not yet ready for production use. Ho
 ## Examples
 
 ### 2D SIMPLE Algorithm - backward facing step
+
 check `examples/SIMPLESolver/main.cpp` for complete implementation:
 
 Momentum equation:
@@ -78,6 +80,7 @@ $$ -\nabla . (\mathcal{D} \nabla {P}^{\prime}) = - \nabla . U $$
 </p>
 
 ### Heat Equation - 2D torus with fixed value boundary conditions
+
 check `examples/laplacianSolver/main.cpp` for complete implementation
 
 Heat equation:
@@ -89,6 +92,7 @@ $$ - \nabla . (\kappa . \nabla T) = 0 $$
 </p>
 
 ### Poisson Equation - 2D slice with function form source
+
 check `examples/poissonSolver/main.cpp` for complete implementation
 
 Poisson equation:
@@ -102,8 +106,8 @@ $$ f = 2 {\pi}^2 \sin(\pi x) \cos(\pi y) $$
 </p>
 
 ## TODO
+
 - Add documentation.
-- Implement temporal schemes.
 - Implement SIMPLEC, PRIME, PISO and PIMPLE solvers (currently only SIMPLE solver is implemented in example directory).
 - Improve field::Vector and field::Tensor implementations using Eigen reference/map types.
 - Implement k-epsilon and k-omega turbulence models.
@@ -114,7 +118,6 @@ $$ f = 2 {\pi}^2 \sin(\pi x) \cos(\pi y) $$
 > [!CAUTION]
 >
 > This is just a fun side project of mine. Use it at your own risk.
-
 
 ```bash
 git clone --recurse-submodules -j8 https://github.com/eigemx/prism.git
@@ -127,6 +130,7 @@ make
 ```
 
 Once build is complete, check `bin` folder for the built applications, and also check `tests/cases` directory for many cases to play with and understand boundary field files in Prism.
+
 ```bash
 ./build/bin/SIMPLESolver tests/cases/pipeCoarse/mesh.unv
 ./build/bin/laplacianSolver tests/cases/torus/mesh.unv
