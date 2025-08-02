@@ -143,7 +143,7 @@ auto main(int argc, char* argv[]) -> int {
 
         // update velocity field
         U.updateCells([&](const mesh::Cell& cell) {
-            auto U_cell = U.valueAtCell(cell);
+            Vector3d U_cell = U.valueAtCell(cell);
             return U_cell - (D.valueAtCell(cell) * P_prime.gradAtCell(cell));
         });
 
@@ -153,7 +153,7 @@ auto main(int argc, char* argv[]) -> int {
         });
 
         // update pressure
-        p.values() = p.values().array() + (pressureURF * P_prime.values().array());
+        p.update(p.values() + (pressureURF * P_prime.values()));
 
         uEqn.zeroOutCoeffs();
         vEqn.zeroOutCoeffs();

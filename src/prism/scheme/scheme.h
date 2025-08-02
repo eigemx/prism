@@ -30,8 +30,8 @@ class IPartialScheme : public IScheme, public RHSProvider {
     IPartialScheme(std::size_t n_cells) : RHSProvider(n_cells) {}
 };
 
-// Base type for FVSchemes that requires contribution to both sides of the discretized linear
-// system
+// Base type for finite volume schemes that requires contribution to both sides of the discretized
+// linear system
 template <typename Field>
 class IFullScheme : public IScheme, public LinearSystem {
   public:
