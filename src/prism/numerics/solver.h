@@ -84,6 +84,8 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, doubl
             break;
         }
     }
+    eqn.field().update(phi.values());
+
     // zero out the left & right hand side vector, for the next solve call, or in case user calls
     // updateCoeffs() later.
     eqn.zeroOutCoeffs();
