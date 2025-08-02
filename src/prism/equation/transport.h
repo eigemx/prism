@@ -48,6 +48,7 @@ class Transport : public LinearSystem,
     /// TODO: maybe wrap the SharedPtr in a std::optional?
     auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
     auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
+    auto temporalScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
 
     auto isTransient() const noexcept -> bool;
 
@@ -76,13 +77,20 @@ class Transport : public LinearSystem,
     template <scheme::temporal::ITemporalBased Temporal>
     void addScheme(Temporal&& temporal);
 
+    // Conserved field of the equation
+    Field _phi;
+
     std::vector<SharedPtr<scheme::IFullScheme<Field>>> _schemes;
     std::vector<SharedPtr<scheme::source::IExplicitSource>> _sources;
-    Field _phi; // Conserved field of the equation
+
     SharedPtr<scheme::IFullScheme<Field>> _conv_scheme = nullptr;
     SharedPtr<scheme::IFullScheme<Field>> _diff_scheme = nullptr;
+    SharedPtr<scheme::IFullScheme<Field>> _temporal_scheme = nullptr;
+
     std::size_t _n_corrected_schemes {0};
+
     double _relaxation_factor {1.0};
+
     bool _is_transient {false};
 };
 

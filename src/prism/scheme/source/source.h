@@ -111,7 +111,7 @@ ConstantScalar<SourceSign, Field>::ConstantScalar(Field phi)
     : _phi(phi), IExplicitSource(phi.mesh()->cellCount()) {}
 
 template <Sign SourceSign, field::IScalarBased Field>
-void inline ConstantScalar<SourceSign, Field>::apply() {
+void ConstantScalar<SourceSign, Field>::apply() {
     const auto& vol_field = _phi.mesh()->cellsVolumeVector();
 
     if constexpr (SourceSign == Sign::Positive) {
