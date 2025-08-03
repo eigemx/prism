@@ -6,6 +6,7 @@
 #include "prism/operations/operations.h"
 #include "prism/scheme/scheme.h"
 
+/// TODO: Separate below classes into separate files
 
 namespace prism::scheme::source {
 // source term is assumed to be always on the right hand side of the conserved equation.
@@ -90,19 +91,16 @@ class Laplacian : public IExplicitSource {
 template <Sign SourceSign, field::IScalarBased Field>
 class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
   public:
-    ImplicitField(Field& phi) : _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()) {}
-    ImplicitField(double coeff, Field& phi)
-        : _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()), _coeff(coeff) {}
+    ImplicitField(Field& phi) : IFullScheme<Field>(phi) {}
+    ImplicitField(double coeff, Field& phi) : IFullScheme<Field>(phi), _coeff(coeff) {}
 
     void apply() override;
-    auto inline field() -> Field override { return _phi; }
     auto inline needsCorrection() const noexcept -> bool override { return false; }
 
   private:
     void inline applyInterior(const mesh::Face& face) override {}
     void inline applyBoundary() override {}
 
-    field::Scalar _phi;
     double _coeff {1.0};
 };
 

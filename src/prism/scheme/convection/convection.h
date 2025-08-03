@@ -35,22 +35,21 @@ class IAppliedConvection
     IAppliedConvection(ConvectiveField U, Field phi);
 
     auto needsCorrection() const noexcept -> bool override { return true; }
-    auto inline field() -> Field override { return _phi; }
     auto inline U() -> const ConvectiveField& { return _U; }
 
     using ConvectiveFieldType = ConvectiveField;
     using FieldType = Field;
 
   private:
+    void applyInterior(const mesh::Face& face) override;
+    void applyBoundary() override;
+
     virtual auto interpolate(double m_dot,
                              const mesh::Cell& cell,
                              const mesh::Cell& neighbor,
                              const mesh::Face& face) -> detail::CoeffsTriplet = 0;
-    ConvectiveField _U;
-    Field _phi;
 
-    void applyInterior(const mesh::Face& face) override;
-    void applyBoundary() override;
+    ConvectiveField _U;
 };
 
 // Concept for diffusion schemes that are based on IAppliedConvection.
@@ -160,7 +159,7 @@ IAppliedConvection<ConvectiveField, Field>::IAppliedConvection(ConvectiveField U
     /// TODO: check why _phi.mesh()->cellCount() is not working, as phi should be in a moved
     /// state. Also, we need to avoid std::move and just make the constructor take a const
     /// reference.
-    : _U(std::move(U)), _phi(std::move(phi)), IFullScheme<Field>(phi.mesh()->cellCount()) {
+    : _U(std::move(U)), IFullScheme<Field>(phi) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
@@ -172,7 +171,7 @@ IAppliedConvection<ConvectiveField, Field>::IAppliedConvection(ConvectiveField U
 
 template <field::IVectorBased ConvectiveField, typename Field>
 void IAppliedConvection<ConvectiveField, Field>::applyInterior(const mesh::Face& face) {
-    const auto& mesh = _phi.mesh();
+    const auto& mesh = this->field().mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
     const std::size_t owner_id = owner.id();
