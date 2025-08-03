@@ -10,8 +10,8 @@
 #include "prism/mesh/face.h"
 #include "prism/mesh/utilities.h"
 #include "prism/scheme/boundary.h"
-#include "prism/types.h"
 #include "prism/scheme/scheme.h"
+#include "prism/types.h"
 
 namespace prism::scheme::diffusion {
 // Basic base class for all diffusion schemes, without templating clutter.
@@ -22,14 +22,12 @@ template <typename Kappa, typename Field>
 class IAppliedDiffusion : public IFullScheme<Field> {
   public:
     IAppliedDiffusion(Kappa kappa, Field phi);
-    auto field() -> Field override { return _phi; }
     auto kappa() -> Kappa { return _kappa; }
 
     using FieldType = Field;
     using KappaType = Kappa;
 
   private:
-    Field _phi;
     Kappa _kappa;
 };
 
@@ -88,7 +86,7 @@ class Corrected
 //
 template <typename KappaType, typename Field>
 IAppliedDiffusion<KappaType, Field>::IAppliedDiffusion(KappaType kappa, Field phi)
-    : _kappa(kappa), _phi(phi), IFullScheme<Field>(phi.mesh()->cellCount()) {}
+    : _kappa(kappa), IFullScheme<Field>(phi) {}
 
 ///
 /// diffusion::NonCorrected implementation

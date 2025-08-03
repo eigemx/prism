@@ -19,10 +19,6 @@ class BackwardEuler : public ITemporal<Field> {
     BackwardEuler(field::Density rho, Field phi, double dt);
 
     void apply() override;
-    auto field() -> Field override;
-
-    auto timeStep() const noexcept -> double;
-    void setTimeStep(double dt) noexcept;
 
     using FieldType = Field;
 
@@ -30,56 +26,48 @@ class BackwardEuler : public ITemporal<Field> {
     void applyIncompressible();
     void applyCompressible();
 
-    /// TODO: we don't need to store phi, because IFullScheme should take care of this. Remove and
-    /// access phi through this->field()
-    Field _phi;
     Optional<field::Density> _rho = std::nullopt;
-    double _dt {1e-5}; // To avoid initialization with 0
-    std::size_t _n_timesteps {0};
 };
 
 template <field::IScalarBased Field>
-BackwardEuler<Field>::BackwardEuler(Field phi)
-    : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi) {
+BackwardEuler<Field>::BackwardEuler(Field phi) : ITemporal<Field>(phi) {
     log::debug(
-        "prism::scheme::temporal::BackwardEuler(phi) initialized for field `{}` with default dt "
-        "= "
+        "prism::scheme::temporal::BackwardEuler() initialized for field `{}` with default dt = "
         "{}",
-        phi.name(),
-        _dt);
+        this->field().name(),
+        this->timeStep());
 }
 
 template <field::IScalarBased Field>
-BackwardEuler<Field>::BackwardEuler(Field phi, double dt)
-    : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi), _dt(dt) {
+BackwardEuler<Field>::BackwardEuler(Field phi, double dt) : ITemporal<Field>(phi, dt) {
     if (dt <= 0.0) {
         throw std::invalid_argument(
             "prism::scheme::temporal::BackwardEuler(phi, dt): dt must be positive");
     }
     log::debug(
         "prism::scheme::temporal::BackwardEuler(phi, dt) initialized for field `{}` with dt = {}",
-        phi.name(),
-        _dt);
+        this->field().name(),
+        this->timeStep());
 }
 
 template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(field::Density rho, Field phi)
-    : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi), _rho(rho) {
+    : ITemporal<Field>(phi), _rho(rho) {
     log::debug(
         "prism::scheme::temporal::BackwardEuler(rho, phi) initialized for field `{}` with "
         "default dt = {}",
-        phi.name(),
-        _dt);
+        this->field().name(),
+        this->timestep());
 }
 
 template <field::IScalarBased Field>
 BackwardEuler<Field>::BackwardEuler(field::Density rho, Field phi, double dt)
-    : ITemporal<Field>(phi.mesh()->cellCount()), _phi(phi), _rho(rho), _dt(dt) {
+    : ITemporal<Field>(phi, dt), _rho(rho) {
     log::debug(
         "prism::scheme::temporal::BackwardEuler(rho, phi, dt) initialized for field `{}` with dt "
         "= {}",
-        phi.name(),
-        _dt);
+        this->field().name(),
+        this->timestep());
 }
 
 template <field::IScalarBased Field>
@@ -89,7 +77,7 @@ void BackwardEuler<Field>::apply() {
     } else {
         applyIncompressible();
     }
-    _n_timesteps++;
+    this->incrementTimestep();
 }
 
 template <field::IScalarBased Field>
@@ -101,44 +89,25 @@ void BackwardEuler<Field>::applyCompressible() {
 template <field::IScalarBased Field>
 void BackwardEuler<Field>::applyIncompressible() {
     log::debug("Applying backward Euler scheme to field `{}` (no density field provided)",
-               _phi.name());
-    const auto& vol_field = _phi.mesh()->cellsVolumeVector();
+               this->field().name());
+    const auto& vol_field = this->field().mesh()->cellsVolumeVector();
 
     // we need to make sure that the field is keeping track of at least one time step
-    if (!_phi.prevValues().has_value()) {
+    if (!this->field().prevValues().has_value()) {
         throw std::runtime_error(fmt::format(
             "prism::scheme::temporal::BackwardEuler::apply() was called for field `{}`, but "
             "the field does not have any previous time step values stored.",
-            _phi.name()));
+            this->field().name()));
     }
 
     /// TODO: when we find a way to avoid the copy, we need to adjust the code below to const&
-    const VectorXd phi_prev = _phi.prevValues().value();
+    const VectorXd phi_prev = this->field().prevValues().value();
 
     // Note that the left hand side is constant for all time steps, we need to utilize this to
     // avoid recalculation of the LHS matrix each time step.
     this->matrix().setIdentity();
-    this->matrix().diagonal() = vol_field / _dt;
-    this->rhs() = vol_field.cwiseProduct(phi_prev) / _dt;
-}
-
-template <field::IScalarBased Field>
-auto BackwardEuler<Field>::timeStep() const noexcept -> double {
-    return _dt;
-}
-
-template <field::IScalarBased Field>
-void BackwardEuler<Field>::setTimeStep(double dt) noexcept {
-    if (dt <= 0.0) {
-        throw std::invalid_argument(
-            "prism::scheme::temporal::BackwardEuler::setTimeStep(): dt must be positive");
-    }
-    _dt = dt;
-}
-
-template <field::IScalarBased Field>
-auto BackwardEuler<Field>::field() -> Field {
-    return _phi;
+    this->matrix().diagonal() = vol_field / this->timeStep();
+    this->rhs() = vol_field.cwiseProduct(phi_prev) / this->timeStep();
 }
 
 } // namespace prism::scheme::temporal

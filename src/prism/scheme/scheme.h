@@ -1,5 +1,6 @@
 #pragma once
 
+#include "prism/field/ifield.h"
 #include "prism/linear.h"
 #include "prism/mesh/face.h"
 
@@ -32,23 +33,29 @@ class IPartialScheme : public IScheme, public RHSProvider {
 
 // Base type for finite volume schemes that requires contribution to both sides of the discretized
 // linear system
-template <typename Field>
+template <field::IScalarBased Field>
 class IFullScheme : public IScheme, public LinearSystem {
   public:
-    /// TODO: this should be initialized with the field itself, and implement field(), because all
-    /// other schemes already implements field() this way and we need to avoid repetition.
-    IFullScheme(std::size_t n_cells) : LinearSystem(n_cells) {}
+    IFullScheme(Field field);
+
     void apply() override;
 
     // returns the conserved transport field
-    virtual auto field() -> Field = 0;
+    virtual auto field() -> Field&;
+    virtual auto field() const -> const Field&;
 
   private:
     virtual void applyInterior(const mesh::Face& face) = 0;
     virtual void applyBoundary() = 0;
+
+    Field _field;
 };
 
-template <typename Field>
+template <field::IScalarBased Field>
+IFullScheme<Field>::IFullScheme(Field field)
+    : LinearSystem(field.mesh()->cellCount()), _field(field) {}
+
+template <field::IScalarBased Field>
 void IFullScheme<Field>::apply() {
     /** @brief Applies discretized diffusion equation to the mesh->
      * The discretized equation is applied using applyInterior() (per face basis) and
@@ -64,6 +71,16 @@ void IFullScheme<Field>::apply() {
 
     // we've inserted all the triplets, now we can collect them into the matrix
     this->collect();
+}
+
+template <field::IScalarBased Field>
+auto IFullScheme<Field>::field() -> Field& {
+    return _field;
+}
+
+template <field::IScalarBased Field>
+auto IFullScheme<Field>::field() const -> const Field& {
+    return _field;
 }
 
 } // namespace prism::scheme
