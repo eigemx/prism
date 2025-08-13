@@ -12,25 +12,22 @@ namespace prism::gradient {
 class IGradient
     : public prism::boundary::BHManagerProvider<boundary::IGradSchemeBoundaryHandler> {
   public:
-    IGradient() = delete;
+    IGradient();
     IGradient(const IGradient&) = default;
     IGradient(IGradient&&) = default;
     auto operator=(const IGradient&) -> IGradient& = default;
     auto operator=(IGradient&&) -> IGradient& = default;
     virtual ~IGradient() = default;
 
-    IGradient(field::IScalar* field);
+    virtual auto gradAtCell(const mesh::Cell& c, const field::IScalar& field) -> Vector3d = 0;
 
-    virtual auto gradAtCell(const mesh::Cell& c) -> Vector3d = 0;
-    virtual auto gradAtCellStored(const mesh::Cell& c) -> Vector3d = 0;
-    virtual auto gradAtFace(const mesh::Face& f) -> Vector3d;
+    /// TODO: gradAtCellStored should not require the field as an argument. Remove it.
+    virtual auto gradAtCellStored(const mesh::Cell& c,
+                                  const field::IScalar& field) -> Vector3d = 0;
+    virtual auto gradAtFace(const mesh::Face& f, const field::IScalar& field) -> Vector3d;
 
   protected:
-    auto field() -> field::IScalar* { return _field; }
-    virtual auto gradAtBoundaryFace(const mesh::Face& f) -> Vector3d;
-
-  private:
-    field::IScalar* _field;
+    virtual auto gradAtBoundaryFace(const mesh::Face& f, const field::IScalar& field) -> Vector3d;
 };
 
 } // namespace prism::gradient

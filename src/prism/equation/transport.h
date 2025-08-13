@@ -10,6 +10,7 @@
 #include "prism/log.h"
 #include "prism/scheme/convection/convection.h"
 #include "prism/scheme/diffusion/diffusion.h"
+#include "prism/scheme/scheme.h"
 #include "prism/scheme/source/source.h"
 #include "prism/scheme/temporal/temporal.h"
 
@@ -30,7 +31,7 @@ class Transport : public LinearSystem,
   public:
     using FieldType = Field;
 
-    template <typename Scheme, typename... Schemes>
+    template <scheme::ISchemeBased Scheme, scheme::ISchemeBased... Schemes>
     Transport(Scheme&& scheme, Schemes&&... schemes);
 
     void updateCoeffs();
@@ -45,7 +46,9 @@ class Transport : public LinearSystem,
 
     /// TODO: maybe returns a casted pointer to the scheme (convection or diffusion) instead of
     /// the full scheme?
-    /// TODO: maybe wrap the SharedPtr in a std::optional?
+    /// TODO: since we delegate adding schemes to overloaded addScheme for each scheme, we can
+    /// directly store as SharedPtr<IAppliedDiffusion> or SharedPtr<IAppliedConvection> and avoid
+    /// need for castScheme later.
     auto convectionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
     auto diffusionScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
     auto temporalScheme() -> SharedPtr<scheme::IFullScheme<Field>>;
@@ -96,7 +99,7 @@ class Transport : public LinearSystem,
 
 
 template <field::IScalarBased Field>
-template <typename Scheme, typename... Schemes>
+template <scheme::ISchemeBased Scheme, scheme::ISchemeBased... Schemes>
 Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()), LinearSystem(scheme.field().mesh()->cellCount()) {
     // add the first mandatory scheme
@@ -109,8 +112,6 @@ Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
 
 template <field::IScalarBased Field>
 void Transport<Field>::updateCoeffs() {
-    const auto& mesh = _phi.mesh();
-
     // iterate over all equation's finite volume schemes
     for (auto& scheme : _schemes) {
         // apply the scheme
@@ -170,8 +171,7 @@ void Transport<Field>::relax() {
     auto& b = rhs();
     const auto& phi = field().values();
 
-    // Moukalled et. al, 14.2 Under-Relaxation of the Algebraic Equations
-    // equation 14.9
+    // Moukalled et. al, 14.2 Under-Relaxation of the Algebraic Equations, equation 14.9.
     log::debug("Transport::relax(): applying implicit under-relaxation with factor = {}",
                _relaxation_factor);
     b += ((1.0 - _relaxation_factor) / _relaxation_factor) * A.diagonal().cwiseProduct(phi);

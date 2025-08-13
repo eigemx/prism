@@ -8,18 +8,16 @@ namespace prism::gradient {
 
 class GreenGauss : public IGradient {
   public:
-    GreenGauss(field::IScalar* field);
+    explicit GreenGauss(const SharedPtr<mesh::PMesh>& mesh);
 
-    auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
-    auto gradAtCellStored(const mesh::Cell& cell) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d override;
+    auto gradAtCellStored(const mesh::Cell& cell,
+                          const field::IScalar& field) -> Vector3d override;
 
   private:
     auto correctSkewness(const mesh::Face& face,
                          const mesh::Cell& cell,
                          const mesh::Cell& nei) const -> double;
-
-
-    auto boundaryFaceIntegral(const mesh::Face& f) -> Vector3d;
 
     std::vector<Vector3d> _cell_gradients;
 };

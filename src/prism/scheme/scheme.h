@@ -24,6 +24,9 @@ class IScheme {
     virtual auto needsCorrection() const noexcept -> bool = 0;
 };
 
+template <typename T>
+concept ISchemeBased = std::derived_from<T, IScheme>;
+
 // Base type for FVSchemes that requires contribution to only the right hand side of the
 // discretized linear system.
 class IPartialScheme : public IScheme, public RHSProvider {

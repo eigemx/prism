@@ -1,5 +1,6 @@
 #pragma once
 
+#include "algorithm/SIMPLE.h"
 #include "constants.h"
 #include "equation/transport.h"
 #include "export.h"

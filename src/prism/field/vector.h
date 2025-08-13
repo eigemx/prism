@@ -27,7 +27,7 @@ class GeneralVector
     /// TODO: replace with std::array<Component, 3> and use std::move in the constructor
     GeneralVector(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
-                  std::array<Component, 3>& fields);
+                  std::array<Component, 3>& components);
 
     /// TODO: impelement this.
     GeneralVector(std::string name,
@@ -130,17 +130,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(std::string name,
                                                          std::array<Component, 3>& components)
     : IVector(std::move(name), mesh), m_x(components[0]), m_y(components[1]), m_z(components[2]) {
     log::debug("Creating vector field: '{}'", this->name());
-    // check mesh consistency
-    for (auto& field : components) {
-        if (field.parent() != nullptr) {
-            log::warn(
-                "field::Vector '{}' constructor was given a sub-field '{}' that already has a "
-                "parent field::Vector",
-                this->name(),
-                field.name());
-        }
-        field.setParent(this);
-    }
+    m_x.setParent(this);
+    m_y.setParent(this);
+    m_z.setParent(this);
 
     // check sub-fields naming consistency
     if ((m_x.name() != (this->name() + "_x")) || (m_y.name() != (this->name() + "_y")) ||
@@ -337,6 +329,7 @@ auto GeneralVector<Component, BHManagerSetter>::clone() const -> GeneralVector {
     };
 
     auto clone = GeneralVector(this->name(), this->mesh(), components);
+
     if (hasFaceValues()) {
         clone.setFaceValues(*m_face_data);
     }
