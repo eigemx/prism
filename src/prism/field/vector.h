@@ -130,10 +130,6 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(std::string name,
                                                          std::array<Component, 3>& components)
     : IVector(std::move(name), mesh), m_x(components[0]), m_y(components[1]), m_z(components[2]) {
     log::debug("Creating vector field: '{}'", this->name());
-    m_x.setParent(this);
-    m_y.setParent(this);
-    m_z.setParent(this);
-
     // check sub-fields naming consistency
     if ((m_x.name() != (this->name() + "_x")) || (m_y.name() != (this->name() + "_y")) ||
         (m_z.name() != (this->name() + "_z"))) {

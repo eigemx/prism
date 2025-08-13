@@ -123,9 +123,6 @@ class GeneralScalar
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
-    auto parent() const -> const IVector*;
-    void setParent(const IVector* parent);
-
     auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
     auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
@@ -540,17 +537,6 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtBoundaryFace(const mesh::Face
     }
 
     return handler->get(*this, face);
-}
-
-template <typename Units, typename BHManagerSetter>
-auto GeneralScalar<Units, BHManagerSetter>::parent() const -> const IVector* {
-    return _parent;
-}
-
-template <typename Units, typename BHManagerSetter>
-void GeneralScalar<Units, BHManagerSetter>::setParent(const IVector* parent) {
-    _parent = parent;
-    /// TODO: check parent and component names consistency
 }
 
 template <typename Units, typename BHManagerSetter>
