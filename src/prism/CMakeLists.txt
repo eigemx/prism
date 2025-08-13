@@ -36,4 +36,6 @@ add_library(prism
     gradient/least_squares.cpp
 
     operations/rhie_chow.cpp
+
+    algorithm/SIMPLE.cpp
 )

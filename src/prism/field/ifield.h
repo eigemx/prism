@@ -52,6 +52,7 @@ class IScalar : public IField<double> {
   public:
     IScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh);
 
+    /// TODO: implement gradAtX methods with face id and cell id.
     virtual auto gradAtFace(const mesh::Face& face) const -> Vector3d = 0;
     virtual auto gradAtCell(const mesh::Cell& cell) const -> Vector3d = 0;
     virtual auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d = 0;

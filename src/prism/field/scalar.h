@@ -130,6 +130,8 @@ class GeneralScalar
     auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
+    void update(VectorXd values);
+
     template <typename Func>
     void updateInteriorFaces(Func func);
 
@@ -142,7 +144,6 @@ class GeneralScalar
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
 
     void setHistorySize(std::size_t num_time_steps);
-    void update(VectorXd values);
     auto prevValues() const -> Optional<VectorXd>;
     auto prevPrevValues() const -> Optional<VectorXd>;
     auto getHistory(std::size_t index) const -> Optional<VectorXd>;
@@ -425,6 +426,13 @@ void GeneralScalar<Units, BHManagerSetter>::setFaceValues(VectorXd values) {
 
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::clearFaceValues() {
+    if (_face_values == nullptr) {
+        log::warn(
+            "GeneralScalar<Units, BHManagerSetter>::clearFaceValues() was called for field "
+            "'{}', but the face data is not initialized.",
+            name());
+        return;
+    }
     _face_values = nullptr;
 }
 
@@ -576,7 +584,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
             "field `{}` in `fields.json`, setting the gradient scheme to least squares.",
             this->name());
 
-        _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+        _grad_scheme = std::make_shared<gradient::LeastSquares>(this->mesh());
         return;
     }
 
@@ -587,7 +595,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
             "GeneralScalar::setGradScheme(): setting the gradient scheme to Green-Gauss for "
             "field `{}`",
             this->name());
-        _grad_scheme = std::make_shared<gradient::GreenGauss>(this);
+        _grad_scheme = std::make_shared<gradient::GreenGauss>(this->mesh());
         return;
     }
 
@@ -600,7 +608,7 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
         "for field `{}`",
         this->name());
 
-    _grad_scheme = std::make_shared<gradient::LeastSquares>(this);
+    _grad_scheme = std::make_shared<gradient::LeastSquares>(this->mesh());
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -629,7 +637,9 @@ void GeneralScalar<Units, BHManagerSetter>::update(VectorXd values) {
     }
     *_cell_values = std::move(values);
 
-    clearFaceValues();
+    if (_face_values != nullptr) {
+        clearFaceValues();
+    }
 }
 
 template <typename Units, typename BHManagerSetter>
@@ -695,7 +705,7 @@ auto GeneralScalar<Units, BHManagerSetter>::getHistory(std::size_t index) const
      * }
      * @endcode
      */
- 
+
     if (_history_manager) {
         return _history_manager->valuesAt(index);
     }
@@ -704,18 +714,18 @@ auto GeneralScalar<Units, BHManagerSetter>::getHistory(std::size_t index) const
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::gradAtFace(const mesh::Face& face) const -> Vector3d {
-    return _grad_scheme->gradAtFace(face);
+    return _grad_scheme->gradAtFace(face, *this);
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::gradAtCell(const mesh::Cell& cell) const -> Vector3d {
-    return _grad_scheme->gradAtCell(cell);
+    return _grad_scheme->gradAtCell(cell, *this);
 }
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::gradAtCellStored(const mesh::Cell& cell) const
     -> Vector3d {
-    return _grad_scheme->gradAtCellStored(cell);
+    return _grad_scheme->gradAtCellStored(cell, *this);
 }
 
 template <typename Units, typename BHManagerSetter>

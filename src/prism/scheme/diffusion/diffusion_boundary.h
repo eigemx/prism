@@ -2,10 +2,10 @@
 
 #include <concepts>
 
-#include "prism/scheme/boundary.h"
 #include "prism/constants.h"
 #include "prism/field/ifield.h"
 #include "prism/field/tensor.h"
+#include "prism/scheme/boundary.h"
 
 namespace prism::scheme::diffusion {
 

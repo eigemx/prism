@@ -1,7 +1,11 @@
 #include "green_gauss.h"
+
 #include "prism/mesh/utilities.h"
 
+
 namespace prism::gradient {
+auto boundaryFaceIntegral(const mesh::Face& face, const field::IScalar& field) -> Vector3d;
+
 auto GreenGauss::correctSkewness(const mesh::Face& face,
                                  const mesh::Cell& cell,
                                  const mesh::Cell& nei) const -> double {
@@ -19,31 +23,31 @@ auto GreenGauss::correctSkewness(const mesh::Face& face,
 }
 
 
-GreenGauss::GreenGauss(field::IScalar* field) : IGradient(field) {
-    const auto& mesh = field->mesh();
+GreenGauss::GreenGauss(const SharedPtr<mesh::PMesh>& mesh) {
     _cell_gradients.resize(mesh->cellCount(), prism::Vector3d::Zero());
 }
 
-auto GreenGauss ::gradAtCellStored(const mesh::Cell& cell) -> Vector3d {
+auto GreenGauss ::gradAtCellStored(const mesh::Cell& cell,
+                                   const field::IScalar& field) -> Vector3d { // NOLINT
     return _cell_gradients[cell.id()];
 }
 
-auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
+auto GreenGauss ::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
     Vector3d grad {0., 0., 0.};
-    const auto& mesh = this->field()->mesh();
-    const auto& phi = this->field();
+    const auto& mesh = field.mesh();
+    const auto& phi = field;
 
     for (auto face_id : cell.facesIds()) {
         const mesh::Face& face = mesh->face(face_id);
 
         if (face.isBoundary()) {
-            grad += boundaryFaceIntegral(face);
+            grad += boundaryFaceIntegral(face, field);
             continue;
         }
 
         auto Sf = mesh::outwardAreaVector(face, cell);
-        const auto& nei = this->field()->mesh()->otherSharingCell(cell, face);
-        auto face_phi = 0.5 * (phi->valueAtCell(cell) + phi->valueAtCell(nei));
+        const auto& nei = field.mesh()->otherSharingCell(cell, face);
+        auto face_phi = 0.5 * (phi.valueAtCell(cell) + phi.valueAtCell(nei));
 
         // skewness correction
         face_phi += correctSkewness(face, cell, nei);
@@ -58,14 +62,14 @@ auto GreenGauss ::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     return grad;
 }
 
-auto GreenGauss::boundaryFaceIntegral(const mesh::Face& face) -> Vector3d {
-    const auto& boundary_patch = this->field()->mesh()->boundaryPatch(face);
+auto boundaryFaceIntegral(const mesh::Face& face, const field::IScalar& field) -> Vector3d {
+    const auto& boundary_patch = field.mesh()->boundaryPatch(face);
     if (boundary_patch.isEmpty()) {
         return {0.0, 0.0, 0.0};
     }
 
-    const auto& boundary_condition = boundary_patch.getBoundaryCondition(this->field()->name());
-    auto phi = this->field()->valueAtFace(face);
+    const auto& boundary_condition = boundary_patch.getBoundaryCondition(field.name());
+    auto phi = field.valueAtFace(face);
     return phi * face.areaVector();
 }
 

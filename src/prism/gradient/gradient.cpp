@@ -3,12 +3,7 @@
 #include "prism/mesh/utilities.h"
 
 namespace prism::gradient {
-IGradient::IGradient(field::IScalar* field) {
-    if (field == nullptr) {
-        throw std::runtime_error("prism::gradient::IGradient() was given a null IScalar pointer");
-    }
-
-    _field = field;
+IGradient::IGradient() {
     log::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
     this->boundaryHandlersManager().template addHandler<boundary::Fixed>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet>();
@@ -17,16 +12,16 @@ IGradient::IGradient(field::IScalar* field) {
     this->boundaryHandlersManager().template addHandler<boundary::NoSlip>();
 }
 
-auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
+auto IGradient::gradAtFace(const mesh::Face& face, const field::IScalar& field) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
     if (face.isInterior()) {
         // interior face
-        const auto& mesh = _field->mesh();
+        const auto& mesh = field.mesh();
         const auto& owner_cell = mesh->cell(face.owner());
-        auto owner_grad = gradAtCell(owner_cell);
+        auto owner_grad = gradAtCell(owner_cell, field);
 
         const auto& neighbor_cell = mesh->cell(face.neighbor().value());
-        auto neighbor_grad = gradAtCell(neighbor_cell);
+        auto neighbor_grad = gradAtCell(neighbor_cell, field);
 
         auto gc = mesh::geometricWeight(owner_cell, neighbor_cell, face);
 
@@ -35,12 +30,12 @@ auto IGradient::gradAtFace(const mesh::Face& face) -> Vector3d {
     }
 
     // boundary face
-    return gradAtBoundaryFace(face);
+    return gradAtBoundaryFace(face, field);
 }
 
-auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
-    const auto& boundary_patch = _field->mesh()->boundaryPatch(face);
-    const auto& boundary_condition = boundary_patch.getBoundaryCondition(_field->name());
+auto IGradient::gradAtBoundaryFace(const mesh::Face& face, const field::IScalar& field) -> Vector3d {
+    const auto& boundary_patch = field.mesh()->boundaryPatch(face);
+    const auto& boundary_condition = boundary_patch.getBoundaryCondition(field.name());
 
     auto handler = this->boundaryHandlersManager().getHandler(boundary_condition.kindString());
 
@@ -51,6 +46,6 @@ auto IGradient::gradAtBoundaryFace(const mesh::Face& face) -> Vector3d {
             boundary_condition.kindString());
     }
 
-    return handler->get(*_field, face);
+    return handler->get(field, face);
 }
 } // namespace prism::gradient

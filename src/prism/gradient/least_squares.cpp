@@ -3,15 +3,13 @@
 
 namespace prism::gradient {
 
-LeastSquares::LeastSquares(field::IScalar* field) : IGradient(field) {
-    const auto& mesh = this->field()->mesh();
+LeastSquares::LeastSquares(const SharedPtr<mesh::PMesh>& mesh) : IGradient() {
     _cell_gradients.resize(mesh->cellCount(), Vector3d::Zero());
-    setPseudoInvMatrices();
+    setPseudoInvMatrices(mesh);
 }
 
-void LeastSquares::setPseudoInvMatrices() {
+void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
     // This function is based on section 9.3 'Least-Square Gradient'
-    const auto& mesh = this->field()->mesh();
 
     _pinv_matrices.resize(mesh->cellCount());
 
@@ -62,8 +60,8 @@ void LeastSquares::setPseudoInvMatrices() {
     }
 }
 
-auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
-    const auto& mesh = this->field()->mesh();
+auto LeastSquares::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
+    const auto& mesh = field.mesh();
 
     // right hand side of equation (9.27)
     Vector3d b {0.0, 0.0, 0.0};
@@ -72,14 +70,14 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
         const auto& face = mesh->face(face_id);
 
         double delta_phi = 0.0;
-        auto phi_cell = this->field()->valueAtCell(cell);
+        auto phi_cell = field.valueAtCell(cell);
         Vector3d r_CF = {.0, .0, .0};
 
         if (face.isInterior()) {
             // interior face
             const auto neighbor = mesh->otherSharingCell(cell, face);
             r_CF = neighbor.center() - cell.center();
-            auto nei_phi = this->field()->valueAtCell(neighbor);
+            auto nei_phi = field.valueAtCell(neighbor);
             delta_phi = nei_phi - phi_cell;
 
         } else {
@@ -89,7 +87,7 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
                 continue; // skip empty patches
             }
 
-            auto bface_phi = this->field()->valueAtFace(face);
+            auto bface_phi = field.valueAtFace(face);
             r_CF = face.center() - cell.center();
             delta_phi = bface_phi - phi_cell;
         }
@@ -107,7 +105,7 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     return grad;
 }
 
-auto LeastSquares::gradAtCellStored(const mesh::Cell& cell) -> Vector3d {
+auto LeastSquares::gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
     return _cell_gradients[cell.id()];
 }
 } // namespace prism::gradient
