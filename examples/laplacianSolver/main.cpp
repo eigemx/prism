@@ -10,10 +10,10 @@ namespace fs = std::filesystem;
 auto main(int argc, char* argv[]) -> int {
     log::setLevel(log::Level::Info);
 
-    log::info("laplacianSolver - A steady state diffusion equation solver");
+    log::info("laplacianSolver - A steady state heat equation solver");
 
     if (argc < 2) {
-        log::error("Usage: diffsolver [mesh-file]");
+        log::error("Usage: laplacianSolver [mesh-file]");
         return 1;
     }
 
@@ -28,6 +28,8 @@ auto main(int argc, char* argv[]) -> int {
     auto T = Scalar("T", mesh, 300.0);
 
     // diffusion coefficient
+    // Note: this does not have to be a tensor, but it is just a demonstration of how to use
+    // different diffusion coefficient fields.
     auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
     auto eqn = eqn::Transport(
@@ -37,7 +39,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
     auto nIter = 40;
-    auto nNonOrthoIter = 3;
+    auto nNonOrthoIter = 2;
 
     for (int iter = 0; iter < nIter; iter++) {
         for (int j = 0; j < nNonOrthoIter; j++) {
