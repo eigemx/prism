@@ -10,17 +10,20 @@
 
 namespace prism::algo {
 struct SIMPLEParameters {
-    // Number of non-orthogonal correctors for pressure equation
-    std::size_t non_ortho_correctors = 2;
-
     // Under-relaxation factor for momentum predictor
     double momentum_urf = 0.7;
 
     // Momentum predictor inner solve() loop max. iterations count
     std::size_t momentum_max_iter = 3;
 
-    // Minimum residual for momentum predictor
+    // Minimum final solver residual for momentum predictor
     double momentum_residual = 1e-7;
+
+    // Initial residual stopping criterion for momentum predictor
+    double momentum_residual_stop = 1e-5;
+
+    // Number of non-orthogonal correctors for pressure equation
+    std::size_t non_ortho_correctors = 2;
 
     // Under-relaxation factor for pressure field
     double pressure_urf = 0.3;
@@ -43,6 +46,10 @@ class IncompressibleSIMPLE : public IPressureLinked {
   private:
     SIMPLEParameters _params;
 };
+
+void solveMomentumImplicitly(SIMPLEParameters params,
+                             std::span<eqn::Momentum*> momentum_predictors);
+
 void constrainPPrime(field::Pressure& pprime);
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,

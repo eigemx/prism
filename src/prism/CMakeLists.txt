@@ -39,4 +39,5 @@ add_library(prism
 
     algorithm/SIMPLE.cpp
     algorithm/PRIME.cpp
+    algorithm/PISO.cpp
 )
