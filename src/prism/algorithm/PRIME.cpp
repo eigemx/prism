@@ -41,10 +41,8 @@ void solveMomentumExplicitly(std::span<eqn::Momentum*> momentum_predictors) {
         const auto& b = eqn->rhs();
         const auto& ac = A.diagonal();
 
-        const auto H = (A * U.values() - ac.cwiseProduct(U.values())).cwiseQuotient(ac);
-        const auto B = b.cwiseQuotient(ac);
-
-        U.values() = -H + B;
+        const auto H = A * U.values() - ac.cwiseProduct(U.values());
+        U.values() = (-H + b).cwiseQuotient(ac);
 
         eqn->zeroOutCoeffs();
     }

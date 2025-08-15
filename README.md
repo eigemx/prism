@@ -108,7 +108,6 @@ $$ f = 2 {\pi}^2 \sin(\pi x) \cos(\pi y) $$
 ## TODO
 
 - Add documentation.
-- Implement SIMPLEC, PRIME, PISO and PIMPLE solvers (currently only SIMPLE solver is implemented in example directory).
 - Improve field::Vector and field::Tensor implementations using Eigen reference/map types.
 - Implement k-epsilon and k-omega turbulence models.
 - Implement vectorized operations overall in the codebase.

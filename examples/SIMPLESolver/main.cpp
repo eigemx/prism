@@ -66,8 +66,9 @@ auto main(int argc, char* argv[]) -> int {
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
         log::info("Outer iteration: {}", outer_iteration);
-        auto SIMPLE = algo::IncompressibleSIMPLE(params);
-        SIMPLE.step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
+
+        algo::IncompressibleSIMPLE(params).step(
+            std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 
     exportToVTU(U.x(), "solution_x.vtu");
