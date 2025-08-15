@@ -35,10 +35,12 @@ class IterationData {
 template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport<Field>& eq, std::size_t n_iter = 10, double eps = 1e-7)
-        -> IterationData;
-    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-        -> VectorXd = 0;
+    virtual auto solve(eqn::Transport<Field>& eq,
+                       std::size_t n_iter = 10,
+                       double eps = 1e-7) -> IterationData;
+    virtual auto step(const SparseMatrix& A,
+                      const VectorXd& x,
+                      const VectorXd& b) -> VectorXd = 0;
 };
 
 template <typename Field>
@@ -48,14 +50,15 @@ class BiCGSTAB : public ISolver<Field> {
 };
 
 template <typename Field>
-class GaussSeidel : public ISolver<Field> {
+class Jacobi : public ISolver<Field> {
   public:
     auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd override;
 };
 
 template <typename Field>
-auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, double eps)
-    -> IterationData {
+auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
+                           std::size_t n_iter,
+                           double eps) -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
@@ -84,6 +87,9 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, doubl
             break;
         }
     }
+    /// TODO: update() should be called by the main loop, not here. If we are calling solve() from
+    /// non-orthogonal corrector in the same time step, we shouldn't be updating the field time
+    /// history.
     eqn.field().update(phi.values());
 
     // zero out the left & right hand side vector, for the next solve call, or in case user calls
@@ -103,26 +109,21 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, doubl
 }
 
 template <typename Field>
-auto BiCGSTAB<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-    -> VectorXd {
+auto BiCGSTAB<Field>::step(const SparseMatrix& A,
+                           const VectorXd& x,
+                           const VectorXd& b) -> VectorXd {
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     return bicg.compute(A).solveWithGuess(b, x);
 }
 
+
 template <typename Field>
-auto GaussSeidel<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-    -> VectorXd {
-    VectorXd x_new = x;
-    for (int j = 0; j < x.size(); j++) {
-        double sum = 0.0;
-        for (int k = 0; k < x.size(); k++) {
-            if (k != j) {
-                sum += A.coeff(j, k) * x[k];
-            }
-        }
-        x_new[j] = (b[j] - sum) / A.coeff(j, j);
-    }
-    return x_new;
+auto Jacobi<Field>::step(const SparseMatrix& A,
+                         const VectorXd& x,
+                         const VectorXd& b) -> VectorXd {
+    VectorXd D_inv = A.diagonal().cwiseInverse();
+    VectorXd residual = b - A * x;
+    return x + D_inv.asDiagonal() * residual;
 }
 
 } // namespace prism::solver

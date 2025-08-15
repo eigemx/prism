@@ -62,11 +62,10 @@ auto main(int argc, char* argv[]) -> int {
     uEqn.setUnderRelaxFactor(params.momentum_urf);
     vEqn.setUnderRelaxFactor(params.momentum_urf);
 
+    std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
         log::info("Outer iteration: {}", outer_iteration);
-        std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
-
         auto SIMPLE = algo::IncompressibleSIMPLE(params);
         SIMPLE.step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }

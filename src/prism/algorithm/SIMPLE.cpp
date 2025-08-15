@@ -42,12 +42,8 @@ void constrainPPrime(field::Pressure& pprime) {
     pprime.setFaceValues(face_values);
 }
 
-auto solvePressureEquation(SIMPLEParameters params,
-                           std::span<eqn::Momentum*> momentum_predictors,
-                           field::Velocity& U,
-                           field::Velocity& mdot,
-                           const field::Pressure& p)
-    -> std::pair<field::Pressure, field::Tensor> {
+auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
+                                  const field::Pressure& p) -> field::Tensor {
     for (auto* eqn : momentum_predictors) {
         eqn->updateCoeffs();
         eqn->relax();
@@ -79,7 +75,16 @@ auto solvePressureEquation(SIMPLEParameters params,
         // clang-format on
     }
 
-    auto D = field::Tensor("D", mesh, std::move(D_data));
+    return {"D", mesh, std::move(D_data)};
+}
+
+auto solvePressureEquation(SIMPLEParameters params,
+                           std::span<eqn::Momentum*> momentum_predictors,
+                           field::Velocity& U,
+                           field::Velocity& mdot,
+                           const field::Pressure& p)
+    -> std::pair<field::Pressure, field::Tensor> {
+    auto D = pressureEquationCoeffsTensor(momentum_predictors, p);
 
     // Rhie-Chow interpolation for velocity face values
     log::debug(
@@ -92,7 +97,7 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     // pressure correction field created with same name as pressure field to get same boundary
     // conditions without having to define _pprime in fields.json file.
-    auto pprime = field::Pressure(p.name(), mesh, 0.0);
+    auto pprime = field::Pressure(p.name(), p.mesh(), 0.0);
 
     // The corrector should reset to zero the correction field at every iteration and should
     // also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
@@ -147,6 +152,15 @@ void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
     }
     auto [pprime, D] = solvePressureEquation(_params, momentum_predictors, U, mdot, p);
 
+    correctFields(U, mdot, p, D, pprime, _params.pressure_urf);
+}
+
+void correctFields(field::Velocity& U,
+                   field::Velocity& mdot,
+                   field::Pressure& p,
+                   const field::Tensor& D,
+                   const field::Pressure& pprime,
+                   double pressure_urf) {
     // update velocity field
     U.updateCells([&](const mesh::Cell& cell) {
         return U.valueAtCell(cell) - (D.valueAtCell(cell) * pprime.gradAtCell(cell));
@@ -158,6 +172,6 @@ void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
     });
 
     // update pressure
-    p.update(p.values() + (_params.pressure_urf * pprime.values()));
+    p.update(p.values() + (pressure_urf * pprime.values()));
 }
 } // namespace prism::algo

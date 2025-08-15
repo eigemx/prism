@@ -38,4 +38,5 @@ add_library(prism
     operations/rhie_chow.cpp
 
     algorithm/SIMPLE.cpp
+    algorithm/PRIME.cpp
 )
