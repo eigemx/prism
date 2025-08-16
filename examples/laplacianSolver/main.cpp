@@ -38,7 +38,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
-    auto nIter = 40;
+    auto nIter = 20;
     auto nNonOrthoIter = 2;
 
     for (int iter = 0; iter < nIter; iter++) {
