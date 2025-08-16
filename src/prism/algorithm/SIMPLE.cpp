@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 
+#include <cstddef>
 #include <stdexcept>
 
 #include "prism/equation/transport.h"
@@ -135,7 +136,7 @@ auto solvePressureEquation(SIMPLEParameters params,
     p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
 
     // non-orthogonal correction
-    for (auto i = 0; i < params.non_ortho_correctors; ++i) {
+    for (std::size_t i = 0; i < params.non_ortho_correctors; ++i) {
         p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
     }
 

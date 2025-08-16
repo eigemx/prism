@@ -24,7 +24,7 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
 template <Sign SourceSign, field::IScalarBased Field>
 void ImplicitField<SourceSign, Field>::apply() {
     this->matrix().setIdentity();
-    this->matrix().diagonal() *= _coeff * this->field().mesh()->cellsVolumeVector();
+    this->matrix().diagonal() = _coeff * this->field().mesh()->cellsVolumeVector();
 
     if constexpr (SourceSign == Sign::Positive) {
         this->matrix() *= -1;

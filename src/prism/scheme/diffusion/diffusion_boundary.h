@@ -184,7 +184,6 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         // vector joining the centers of the cell and the face
         const Vector3d d_Cf = face.center() - owner.center();
         const double d_Cf_norm = d_Cf.norm();
-        const Vector3d e = d_Cf / d_Cf_norm;
 
         Vector3d Sf_prime = diffusion::detail::valueAtCell(kappa, owner) * face.areaVector();
         const double g_diff = Sf_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
