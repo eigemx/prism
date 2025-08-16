@@ -32,7 +32,7 @@ auto GreenGauss ::gradAtCellStored(const mesh::Cell& cell,
     return _cell_gradients[cell.id()];
 }
 
-auto GreenGauss ::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
+auto GreenGauss ::gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> Vector3d {
     Vector3d grad {0., 0., 0.};
     const auto& mesh = field.mesh();
     const auto& phi = field;

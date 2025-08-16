@@ -1,4 +1,5 @@
 #include "least_squares.h"
+
 #include "prism/constants.h"
 
 namespace prism::gradient {
@@ -60,7 +61,7 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
     }
 }
 
-auto LeastSquares::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
+auto LeastSquares::gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> Vector3d {
     const auto& mesh = field.mesh();
 
     // right hand side of equation (9.27)
@@ -105,7 +106,8 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell, const field::IScalar& fiel
     return grad;
 }
 
-auto LeastSquares::gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
+auto LeastSquares::gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field)
+    -> Vector3d {
     return _cell_gradients[cell.id()];
 }
 } // namespace prism::gradient

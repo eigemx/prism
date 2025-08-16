@@ -10,7 +10,7 @@ class GreenGauss : public IGradient {
   public:
     explicit GreenGauss(const SharedPtr<mesh::PMesh>& mesh);
 
-    auto gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell,  field::IScalar& field) -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell,
                           const field::IScalar& field) -> Vector3d override;
 

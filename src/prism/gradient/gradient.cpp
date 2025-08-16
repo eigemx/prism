@@ -12,7 +12,7 @@ IGradient::IGradient() {
     this->boundaryHandlersManager().template addHandler<boundary::NoSlip>();
 }
 
-auto IGradient::gradAtFace(const mesh::Face& face, const field::IScalar& field) -> Vector3d {
+auto IGradient::gradAtFace(const mesh::Face& face, field::IScalar& field) -> Vector3d {
     // interpolate gradient at surrounding cells to the face center
     if (face.isInterior()) {
         // interior face
@@ -33,7 +33,7 @@ auto IGradient::gradAtFace(const mesh::Face& face, const field::IScalar& field) 
     return gradAtBoundaryFace(face, field);
 }
 
-auto IGradient::gradAtBoundaryFace(const mesh::Face& face, const field::IScalar& field) -> Vector3d {
+auto IGradient::gradAtBoundaryFace(const mesh::Face& face, field::IScalar& field) -> Vector3d {
     const auto& boundary_patch = field.mesh()->boundaryPatch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(field.name());
 
