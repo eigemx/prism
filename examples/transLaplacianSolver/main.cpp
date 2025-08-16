@@ -51,12 +51,12 @@ auto main(int argc, char* argv[]) -> int {
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {
         log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);
 
-        for (auto i = 0; i < nNonOrthoIter; i++) {
-            solver.solve(eqn, 10, 1e-20);
-        }
         // update the field time history
         T.update(T.values());
 
+        for (auto i = 0; i < nNonOrthoIter; i++) {
+            solver.solve(eqn, 10, 1e-20);
+        }
         prism::exportToVTU(eqn.field(), "solution.vtu");
     }
     return 0;

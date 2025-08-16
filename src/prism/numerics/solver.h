@@ -35,12 +35,10 @@ class IterationData {
 template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport<Field>& eq,
-                       std::size_t n_iter = 10,
-                       double eps = 1e-7) -> IterationData;
-    virtual auto step(const SparseMatrix& A,
-                      const VectorXd& x,
-                      const VectorXd& b) -> VectorXd = 0;
+    virtual auto solve(eqn::Transport<Field>& eq, std::size_t n_iter = 10, double eps = 1e-7)
+        -> IterationData;
+    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+        -> VectorXd = 0;
 };
 
 template <typename Field>
@@ -56,9 +54,8 @@ class Jacobi : public ISolver<Field> {
 };
 
 template <typename Field>
-auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
-                           std::size_t n_iter,
-                           double eps) -> IterationData {
+auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, double eps)
+    -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
@@ -87,11 +84,6 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
             break;
         }
     }
-    /// TODO: update() should be called by the main loop, not here. If we are calling solve() from
-    /// non-orthogonal corrector in the same time step, we shouldn't be updating the field time
-    /// history.
-    eqn.field().update(phi.values());
-
     // zero out the left & right hand side vector, for the next solve call, or in case user calls
     // updateCoeffs() later.
     eqn.zeroOutCoeffs();
@@ -109,18 +101,16 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
 }
 
 template <typename Field>
-auto BiCGSTAB<Field>::step(const SparseMatrix& A,
-                           const VectorXd& x,
-                           const VectorXd& b) -> VectorXd {
+auto BiCGSTAB<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+    -> VectorXd {
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     return bicg.compute(A).solveWithGuess(b, x);
 }
 
 
 template <typename Field>
-auto Jacobi<Field>::step(const SparseMatrix& A,
-                         const VectorXd& x,
-                         const VectorXd& b) -> VectorXd {
+auto Jacobi<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
+    -> VectorXd {
     VectorXd D_inv = A.diagonal().cwiseInverse();
     VectorXd residual = b - A * x;
     return x + D_inv.asDiagonal() * residual;
