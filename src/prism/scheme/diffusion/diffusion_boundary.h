@@ -215,7 +215,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
      * @param scheme The diffusion scheme.
      * @param patch The boundary patch containing the faces.
      */
-    const auto phi = scheme.field();
+    auto phi = scheme.field();
     const auto& mesh = phi.mesh();
     const auto& corrector = scheme.corrector();
     const auto& kappa = scheme.kappa();
@@ -268,14 +268,14 @@ auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType
 }
 
 template <>
-auto inline valueAtFace(const field::Tensor& field,
-                        const mesh::Face& face) -> field::Tensor::ValueType {
+auto inline valueAtFace(const field::Tensor& field, const mesh::Face& face)
+    -> field::Tensor::ValueType {
     return field.valueAtFace(face.id()).transpose();
 }
 
 template <>
-auto inline valueAtCell(const field::Tensor& field,
-                        const mesh::Cell& cell) -> field::Tensor::ValueType {
+auto inline valueAtCell(const field::Tensor& field, const mesh::Cell& cell)
+    -> field::Tensor::ValueType {
     return field.valueAtCell(cell.id()).transpose();
 }
 } // namespace prism::scheme::diffusion::detail

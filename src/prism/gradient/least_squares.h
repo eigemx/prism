@@ -8,9 +8,9 @@ class LeastSquares : public IGradient {
   public:
     explicit LeastSquares(const SharedPtr<mesh::PMesh>& mesh);
 
-    auto gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d override;
-    auto gradAtCellStored(const mesh::Cell& cell,
-                          const field::IScalar& field) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> Vector3d override;
+    auto gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field)
+        -> Vector3d override;
 
   private:
     void setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh);

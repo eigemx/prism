@@ -15,7 +15,7 @@ void Outlet<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     using Convection = scheme::convection::IAppliedConvection<field::Velocity, F>;
     auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
-    const auto& phi = eqn.field();
+    auto& phi = eqn.field();
 
     for (std::size_t face_id : patch.facesIds()) {
         const auto& face = mesh->face(face_id);

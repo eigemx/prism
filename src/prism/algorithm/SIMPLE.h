@@ -59,12 +59,12 @@ auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,
                            field::Velocity& U,
                            field::Velocity& mdot,
-                           const field::Pressure& p) -> std::pair<field::Pressure, field::Tensor>;
+                           field::Pressure& p) -> std::pair<field::Pressure, field::Tensor>;
 
 void correctFields(field::Velocity& U,
                    field::Velocity& mdot,
                    field::Pressure& p,
                    const field::Tensor& D,
-                   const field::Pressure& pprime,
+                   field::Pressure& pprime,
                    double pressure_urf);
 } // namespace prism::algo

@@ -25,11 +25,11 @@ auto UniformScalar::valueAtFace(const mesh::Face& face) const -> double { // NOL
     return _value;
 }
 
-auto UniformScalar::gradAtFace(const mesh::Face& face) const -> Vector3d { // NOLINT
+auto UniformScalar::gradAtFace(const mesh::Face& face) -> Vector3d { // NOLINT
     return {0.0, 0.0, 0.0};
 }
 
-auto UniformScalar::gradAtCell(const mesh::Cell& cell) const -> Vector3d { // NOLINT
+auto UniformScalar::gradAtCell(const mesh::Cell& cell) -> Vector3d { // NOLINT
     return {0.0, 0.0, 0.0};
 }
 

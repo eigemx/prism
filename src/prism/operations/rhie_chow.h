@@ -14,13 +14,13 @@ template <field::IVectorBased Vector>
 auto rhieChowCorrectFace(const mesh::Face& face,
                          Vector& U,
                          const field::Tensor& D,
-                         const field::Pressure& P) -> Vector3d;
+                         field::Pressure& P) -> Vector3d;
 
 template <field::IVectorBased Vector>
 auto rhieChowCorrectBoundaryFace(const mesh::Face& face,
                                  Vector& U,
                                  const field::Tensor& D,
-                                 const field::Pressure& P) -> Vector3d;
+                                 field::Pressure& P) -> Vector3d;
 
 namespace detail {
 auto pressureGradCalculated(const mesh::Face& face,
@@ -32,7 +32,7 @@ template <field::IVectorBased Vector>
 auto rhieChowCorrectBoundaryFace(const mesh::Face& face,
                                  Vector& U,
                                  const field::Tensor& D,
-                                 const field::Pressure& P) -> Vector3d {
+                                 field::Pressure& P) -> Vector3d {
     /// TODO: correcting boundary faces returns wrong solution near boundaries.
     const std::size_t owner_id = face.owner();
     const Vector3d& Uc = U.valueAtCell(owner_id);
@@ -48,7 +48,7 @@ template <field::IVectorBased Vector>
 auto rhieChowCorrectFace(const mesh::Face& face,
                          Vector& U,
                          const field::Tensor& D,
-                         const field::Pressure& P) -> Vector3d {
+                         field::Pressure& P) -> Vector3d {
     if (face.isBoundary()) {
         return rhieChowCorrectBoundaryFace(face, U, D, P);
     }

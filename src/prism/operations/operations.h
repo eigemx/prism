@@ -57,7 +57,7 @@ auto div(const Vector& U) -> field::Scalar {
 }
 
 template <field::IScalarBased Field>
-auto grad(const Field& field, Coord coord) -> field::Scalar {
+auto grad(Field& field, Coord coord) -> field::Scalar {
     auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
     VectorXd grad_values = VectorXd::Zero(mesh->cellCount());

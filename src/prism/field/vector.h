@@ -22,7 +22,9 @@ class GeneralVector
   public:
     GeneralVector(const std::string& name, const SharedPtr<mesh::PMesh>& mesh, double value);
 
-    GeneralVector(const std::string& name, const SharedPtr<mesh::PMesh>& mesh, const Vector3d& data);
+    GeneralVector(const std::string& name,
+                  const SharedPtr<mesh::PMesh>& mesh,
+                  const Vector3d& data);
 
     /// TODO: replace with std::array<Component, 3> and use std::move in the constructor
     GeneralVector(std::string name,
@@ -101,9 +103,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          double value)
     : IVector(name, mesh),
-      _x(this->name() + "_x", mesh, value, Coord::X, static_cast<IVector*>(this)),
-      _y(this->name() + "_y", mesh, value, Coord::Y, static_cast<IVector*>(this)),
-      _z(this->name() + "_z", mesh, value, Coord::Z, static_cast<IVector*>(this)) {
+      _x(this->name() + "_x", mesh, value, Coord::X),
+      _y(this->name() + "_y", mesh, value, Coord::Y),
+      _z(this->name() + "_z", mesh, value, Coord::Z) {
     log::debug("Creating vector field: '{}' with real value = {}", this->name(), value);
     addDefaultBoundaryHandlers();
 }
@@ -113,9 +115,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          const Vector3d& data)
     : IVector(name, mesh),
-      _x(this->name() + "_x", mesh, data[0], Coord::X, static_cast<IVector*>(this)),
-      _y(this->name() + "_y", mesh, data[1], Coord::Y, static_cast<IVector*>(this)),
-      _z(this->name() + "_z", mesh, data[2], Coord::Z, static_cast<IVector*>(this)) {
+      _x(this->name() + "_x", mesh, data[0], Coord::X),
+      _y(this->name() + "_y", mesh, data[1], Coord::Y),
+      _z(this->name() + "_z", mesh, data[2], Coord::Z) {
     log::debug("Creating vector field: '{}' with uniform vector value [{}, {}, {}]",
                this->name(),
                data.x(),

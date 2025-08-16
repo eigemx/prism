@@ -48,8 +48,8 @@ class UniformScalar : public IScalar {
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
-    auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
-    auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
+    auto gradAtFace(const mesh::Face& face) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
     template <IScalarBased ScalarField>
@@ -68,40 +68,27 @@ class GeneralScalar
       public Units,
       public prism::boundary::BHManagerProvider<boundary::scalar::IScalarBoundaryHandler> {
   public:
-    GeneralScalar(std::string name,
-                  const SharedPtr<mesh::PMesh>& mesh,
-                  double value,
-                  IVector* parent = nullptr);
+    GeneralScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value);
 
-    GeneralScalar(std::string name,
-                  const SharedPtr<mesh::PMesh>& mesh,
-                  double value,
-                  Coord coord,
-                  IVector* parent = nullptr);
+    GeneralScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, Coord coord);
+
+    GeneralScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data);
 
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
-                  IVector* parent = nullptr);
+                  Coord coord);
 
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
-                  Coord coord,
-                  IVector* parent = nullptr);
+                  VectorXd face_data);
 
     GeneralScalar(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   VectorXd data,
                   VectorXd face_data,
-                  IVector* parent = nullptr);
-
-    GeneralScalar(std::string name,
-                  const SharedPtr<mesh::PMesh>& mesh,
-                  VectorXd data,
-                  VectorXd face_data,
-                  Coord coord,
-                  IVector* parent = nullptr);
+                  Coord coord);
 
     GeneralScalar() = delete;
     GeneralScalar(const GeneralScalar&) = default;
@@ -123,8 +110,8 @@ class GeneralScalar
     auto valueAtFace(std::size_t face_id) const -> double override;
     auto valueAtFace(const mesh::Face& face) const -> double override;
 
-    auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
-    auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
+    auto gradAtFace(const mesh::Face& face) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
     void update(VectorXd values);
@@ -246,11 +233,9 @@ auto UniformScalar::operator*(const VectorField& other) -> VectorField {
 template <typename Units, typename BHManagerSetter>
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const SharedPtr<mesh::PMesh>& mesh,
-                                                     double value,
-                                                     IVector* parent)
+                                                     double value)
     : IScalar(std::move(name), mesh),
-      _cell_values(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)),
-      _parent(parent) {
+      _cell_values(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)) {
     log::debug("Creating scalar field: '{}' with double value = {}", this->name(), value);
     addDefaultBoundaryHandlers();
     setGradScheme();
@@ -260,12 +245,10 @@ template <typename Units, typename BHManagerSetter>
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const SharedPtr<mesh::PMesh>& mesh,
                                                      double value,
-                                                     Coord coord,
-                                                     IVector* parent)
+                                                     Coord coord)
     : IScalar(std::move(name), mesh),
       _cell_values(std::make_shared<VectorXd>(VectorXd::Ones(mesh->cellCount()) * value)),
-      _coord(coord),
-      _parent(parent) {
+      _coord(coord) {
     log::debug("Creating scalar field: '{}' (as {}-coordinate) with double value = {}",
                this->name(),
                coordToStr(coord),
@@ -278,11 +261,8 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
 template <typename Units, typename BHManagerSetter>
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const SharedPtr<mesh::PMesh>& mesh,
-                                                     VectorXd data,
-                                                     IVector* parent)
-    : IScalar(std::move(name), mesh),
-      _cell_values(std::make_shared<VectorXd>(std::move(data))),
-      _parent(parent) {
+                                                     VectorXd data)
+    : IScalar(std::move(name), mesh), _cell_values(std::make_shared<VectorXd>(std::move(data))) {
     if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(
             fmt::format("field::GeneralScalar() cannot create a scalar field '{}' given a "
@@ -302,12 +282,10 @@ template <typename Units, typename BHManagerSetter>
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const SharedPtr<mesh::PMesh>& mesh,
                                                      VectorXd data,
-                                                     Coord coord,
-                                                     IVector* parent)
+                                                     Coord coord)
     : IScalar(std::move(name), mesh),
       _cell_values(std::make_shared<VectorXd>(std::move(data))),
-      _coord(coord),
-      _parent(parent) {
+      _coord(coord) {
     if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
@@ -328,12 +306,10 @@ template <typename Units, typename BHManagerSetter>
 GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const SharedPtr<mesh::PMesh>& mesh,
                                                      VectorXd data,
-                                                     VectorXd face_data,
-                                                     IVector* parent)
+                                                     VectorXd face_data)
     : IScalar(std::move(name), mesh),
       _cell_values(std::make_shared<VectorXd>(std::move(data))),
-      _face_values(std::make_shared<VectorXd>(std::move(face_data))),
-      _parent(parent) {
+      _face_values(std::make_shared<VectorXd>(std::move(face_data))) {
     if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
@@ -364,13 +340,11 @@ GeneralScalar<Units, BHManagerSetter>::GeneralScalar(std::string name,
                                                      const SharedPtr<mesh::PMesh>& mesh,
                                                      VectorXd data,
                                                      VectorXd face_data,
-                                                     Coord coord,
-                                                     IVector* parent)
+                                                     Coord coord)
     : IScalar(std::move(name), mesh),
       _cell_values(std::make_shared<VectorXd>(std::move(data))),
       _face_values(std::make_shared<VectorXd>(std::move(face_data))),
-      _coord(coord),
-      _parent(parent) {
+      _coord(coord) {
     if (_cell_values->size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
             "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
@@ -699,12 +673,12 @@ auto GeneralScalar<Units, BHManagerSetter>::getHistory(std::size_t index) const
 }
 
 template <typename Units, typename BHManagerSetter>
-auto GeneralScalar<Units, BHManagerSetter>::gradAtFace(const mesh::Face& face) const -> Vector3d {
+auto GeneralScalar<Units, BHManagerSetter>::gradAtFace(const mesh::Face& face) -> Vector3d {
     return _grad_scheme->gradAtFace(face, *this);
 }
 
 template <typename Units, typename BHManagerSetter>
-auto GeneralScalar<Units, BHManagerSetter>::gradAtCell(const mesh::Cell& cell) const -> Vector3d {
+auto GeneralScalar<Units, BHManagerSetter>::gradAtCell(const mesh::Cell& cell) -> Vector3d {
     return _grad_scheme->gradAtCell(cell, *this);
 }
 

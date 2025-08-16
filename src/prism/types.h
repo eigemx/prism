@@ -9,7 +9,8 @@
 namespace prism {
 
 using String = std::string;
-
+using f32 = float;
+using f64 = double;
 using Eigen::Matrix3d;
 using Eigen::MatrixX3d;
 using Eigen::Vector3d;
