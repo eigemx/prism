@@ -19,10 +19,7 @@ void solveMomentumImplicitly(SIMPLEParameters params,
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     log::debug("prism::algo::solveMomentumImplicitly(): solving momentum equations");
     for (auto* eqn : momentum_predictors) {
-        eqn->updateCoeffs();
-        eqn->relax();
         momentum_solver.solve(*eqn, params.momentum_max_iter, params.momentum_residual);
-        eqn->zeroOutCoeffs();
     }
 }
 
@@ -62,7 +59,6 @@ auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
         eqn->relax();
     }
 
-    // calculate coefficients for the pressure equation
     const auto& mesh = p.mesh();
     const VectorXd& vol_vec = mesh->cellsVolumeVector();
     const VectorXd& uEqn_diag = momentum_predictors[0]->matrix().diagonal();
@@ -106,6 +102,7 @@ auto solvePressureEquation(SIMPLEParameters params,
     // Rhie-Chow interpolation for velocity face values
     log::debug(
         "prism::algo::solvePressureEquation(): applying Rhie-Chow correction to faces velocity");
+
     // first, we update convective flux with latest values of velocity field before applying the
     // Rhie-Chow correction.
     mdot.updateFaces([&](const mesh::Face& face) { return U.valueAtFace(face); });
@@ -132,6 +129,7 @@ auto solvePressureEquation(SIMPLEParameters params,
     auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, pprime), // - ∇.(D ∇P')
                                                 div_U(mdot)             // == - (∇.U)
     );
+
     log::debug("prism::algo::solvePressureEquation(): solving pressure correction equation");
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
     p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
@@ -157,14 +155,8 @@ void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                         momentum_predictors.size()));
     }
 
-    // solve momentum equations
-    auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
-    log::debug("prism::algo::IncompressibleSIMPLE::step(): solving momentum equations");
-    for (auto* eqn : momentum_predictors) {
-        momentum_solver.solve(*eqn, _params.momentum_max_iter, _params.momentum_residual);
-    }
+    solveMomentumImplicitly(_params, momentum_predictors);
     auto [pprime, D] = solvePressureEquation(_params, momentum_predictors, U, mdot, p);
-
     correctFields(U, mdot, p, D, pprime, _params.pressure_urf);
 }
 
@@ -179,7 +171,7 @@ void correctFields(field::Velocity& U,
         return U.valueAtCell(cell) - (D.valueAtCell(cell) * pprime.gradAtCell(cell));
     });
 
-    // update mass flow rate at faces
+    // update mass flow rate at interior faces
     mdot.updateInteriorFaces([&](const mesh::Face& face) {
         return mdot.valueAtFace(face) - (D.valueAtFace(face) * pprime.gradAtFace(face));
     });
