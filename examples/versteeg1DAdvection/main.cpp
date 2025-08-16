@@ -14,7 +14,6 @@ auto advection_analytical_solution(double u, const prism::SharedPtr<prism::mesh:
 
     for (const auto& cell : mesh->cells()) {
         double x = cell.center().x();
-        double y = cell.center().y();
         double sol_cell = -(std::exp(u * x / 0.1) - 1) / (std::exp(u / 0.1) - 1);
         sol[cell.id()] = sol_cell + 1;
     }

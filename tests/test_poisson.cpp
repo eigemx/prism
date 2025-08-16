@@ -21,7 +21,7 @@ auto poisson_analytical_solution(const auto& mesh) -> prism::field::Scalar {
     return prism::field::Scalar("S", mesh, std::move(sol));
 }
 
-auto l2NormRel(const prism::Vector3d& x, const prism::Vector3d& x_ref) -> double {
+auto l2NormRel(const prism::VectorXd& x, const prism::VectorXd& x_ref) -> double {
     return (x - x_ref).norm() / x_ref.norm();
 }
 

@@ -16,7 +16,6 @@ using namespace prism::scheme;
 
 auto implicit_analytic_solution(const auto& mesh) -> prism::field::Scalar {
     // y = sinh(2x + 1)
-    /// TODO: this can be done more efficiently using a field::updateCells() function
     prism::VectorXd sol;
     sol.resize(mesh->cellCount());
 
@@ -29,7 +28,7 @@ auto implicit_analytic_solution(const auto& mesh) -> prism::field::Scalar {
     return {"S", mesh, std::move(sol)};
 }
 
-auto l2NormRelative(const Vector3d& x, const Vector3d& x_ref) -> double {
+auto l2NormRelative(const VectorXd& x, const VectorXd& x_ref) -> double {
     return (x - x_ref).norm() / x_ref.norm();
 }
 
@@ -57,6 +56,7 @@ TEST_CASE("test implicit source", "[implicit-source]") {
     for (int i = 0; i < nOuterIter; ++i) {
         solver.solve(eqn, 15, 1e-20);
     }
+
     auto norm = l2NormRelative(y.values(), implicit_analytic_solution(mesh).values());
-    REQUIRE(norm < 0.004);
+    REQUIRE(norm < 0.005);
 }

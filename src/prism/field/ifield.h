@@ -41,8 +41,8 @@ class IField {
     using ValueType = CellValueType;
 
   private:
-    SharedPtr<mesh::PMesh> _mesh = nullptr;
     String _name;
+    SharedPtr<mesh::PMesh> _mesh = nullptr;
 };
 
 template <typename T>

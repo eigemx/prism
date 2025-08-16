@@ -472,7 +472,7 @@ auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(const mesh::Cell& cell) 
 
 template <typename Units, typename BHManagerSetter>
 auto GeneralScalar<Units, BHManagerSetter>::valueAtCell(std::size_t cell_id) const -> double {
-    assert(_data != nullptr);              // NOLINT
+    assert(_cell_values != nullptr);       // NOLINT
     assert(cell_id < mesh()->cellCount()); // NOLINT
     return (*_cell_values)[cell_id];
 }

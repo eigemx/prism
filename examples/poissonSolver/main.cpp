@@ -22,12 +22,12 @@ auto solution(const auto& mesh) -> prism::field::Scalar {
     return prism::field::Scalar("S", mesh, std::move(sol));
 }
 
-auto l2NormRelative(const Vector3d& x, const Vector3d& x_ref) -> double {
+auto l2NormRelative(const VectorXd& x, const VectorXd& x_ref) -> double {
     return (x - x_ref).norm() / x_ref.norm();
 }
 
 auto main(int argc, char* argv[]) -> int {
-    log::setLevel(log::Level::Debug);
+    log::setLevel(log::Level::Info);
 
     // silence clang-tidy pointer arithmetic warnings
     std::vector<std::string> args(argv, argv + argc);
