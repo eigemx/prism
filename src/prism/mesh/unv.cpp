@@ -106,7 +106,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
     }
 
     // clear _unv_mesh to save memory
-    _unv_mesh.release();
+    _unv_mesh.reset();
 }
 
 auto UnvToPMeshConverter::toPMesh() -> SharedPtr<PMesh> {
