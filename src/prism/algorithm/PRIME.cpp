@@ -18,14 +18,14 @@ void PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
     }
 
     // solve momentum equations explicitly
-    log::debug("prism::algo::PRIME::step(): solving momentum equations explicitly");
+    log::info("prism::algo::PRIME::step(): solving momentum equations explicitly");
     solveMomentumExplicitly(momentum_predictors);
 
     // solve pressure equation
     SIMPLEParameters SIMPLE_params {.pressure_urf = _params.pressure_urf,
                                     .pressure_max_iter = _params.pressure_max_iter,
                                     .pressure_residual = _params.pressure_residual};
-    log::debug("prism::algo::PRIME::step(): solving pressure equation");
+    log::info("prism::algo::PRIME::step(): solving pressure equation");
     auto [pprime, D] = solvePressureEquation(SIMPLE_params, momentum_predictors, U, mdot, p);
 
     correctFields(U, mdot, p, D, pprime, _params.pressure_urf);

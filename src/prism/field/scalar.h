@@ -114,6 +114,7 @@ class GeneralScalar
     auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
+    /// TODO: overload for the case of zero arguments, to update with current values.
     void update(VectorXd values);
 
     template <typename Func>
@@ -573,15 +574,10 @@ void GeneralScalar<Units, BHManagerSetter>::setGradScheme() {
 
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::setHistorySize(std::size_t num_time_steps) {
-    // If the requested history size is greater than zero, we need to ensure
-    // a history manager is available and configured to the correct size.
     if (num_time_steps > 0) {
-        // Check if a history manager is already allocated.
         if (!_history_manager) {
-            // If not, create a new shared history manager.
             _history_manager = std::make_shared<HistoryManager>(num_time_steps);
         } else {
-            // If a manager already exists, resize it. This preserves existing history.
             _history_manager->resize(num_time_steps);
         }
     } else {

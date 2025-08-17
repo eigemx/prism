@@ -102,6 +102,7 @@ template <field::IScalarBased Field>
 template <scheme::ISchemeBased Scheme, scheme::ISchemeBased... Schemes>
 Transport<Field>::Transport(Scheme&& scheme, Schemes&&... schemes)
     : _phi(scheme.field()), LinearSystem(scheme.field().mesh()->cellCount()) {
+    /// TODO: when first scheme is temporal, eqn.field() returns zero-valued field. Check this.
     // add the first mandatory scheme
     addScheme(std::forward<Scheme>(scheme));
 

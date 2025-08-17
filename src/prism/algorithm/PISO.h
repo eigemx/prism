@@ -11,8 +11,8 @@ struct PISOParameters {
     // PISO outer loop iterations count
     std::size_t outer_iterations = 1;
 
-    // Solve momentum equations implicitly (SIMPLE step)?
-    bool momentum_implicit = false;
+    // Number of SIMPLE steps
+    std::size_t momentum_implicit_steps = 1;
 
     // Number of pressure correction steps (PRIME steps).
     std::size_t pressure_correction_steps = 2;

@@ -2,13 +2,11 @@
   "fields": [
     {
       "name": "P",
-      "type": "scalar",
-      "gradScheme": "greenGauss"
+      "type": "scalar"
     },
     {
       "name": "U",
-      "type": "velocity",
-      "gradScheme": "greenGauss"
+      "type": "velocity"
     }
   ]
 }

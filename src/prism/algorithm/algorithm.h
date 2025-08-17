@@ -6,20 +6,6 @@
 #include "prism/field/pressure.h"
 
 namespace prism::algo {
-
-struct StepResult {
-    auto hasConverged() const -> bool;
-    auto hasDiverged() const -> bool;
-    auto momentumResiduals() const -> std::array<double, 3>;
-    auto pressureResidual() const -> double;
-
-  private:
-    bool _has_converged = false;
-    bool _has_diverged = false;
-    std::array<double, 3> _momentum_residuals = {0., 0., 0.};
-    double _pressure_residual = 0.;
-};
-
 class IPressureLinked {
   public:
     IPressureLinked() = default;
