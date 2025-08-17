@@ -25,8 +25,8 @@ void solveMomentumImplicitly(SIMPLEParameters params,
 }
 
 void constrainPPrime(field::Pressure& pprime) {
-    // we need to reset the _pprime field to zero at the boundaries where a Dirichlet condition is
-    // applied.
+    // we need to reset the pprime field to zero at the boundaries where a Dirichlet or a symmetry
+    // condition is applied.
     VectorXd face_values = VectorXd::Zero(pprime.mesh()->faceCount());
 
     for (const auto& patch : pprime.mesh()->boundaryPatches()) {
@@ -168,12 +168,22 @@ void correctFields(field::Velocity& U,
                    double pressure_urf) {
     // update velocity field
     U.updateCells([&](const mesh::Cell& cell) {
-        return U.valueAtCell(cell) - (D.valueAtCell(cell) * pprime.gradAtCell(cell));
+        /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
+        /// stack-use-after-return errors. This might be related to how temporaries are handled
+        /// in complex expressions. Note: This issue only appears in debug mode with AddressSanitizer,
+        /// not in release mode.
+        Vector3d update = U.valueAtCell(cell) - (D.valueAtCell(cell) * pprime.gradAtCell(cell));
+        return update;
     });
 
     // update mass flow rate at interior faces
     mdot.updateInteriorFaces([&](const mesh::Face& face) {
-        return mdot.valueAtFace(face) - (D.valueAtFace(face) * pprime.gradAtFace(face));
+        /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
+        /// stack-use-after-return errors. This might be related to how temporaries are handled
+        /// in complex expressions. Note: This issue only appears in debug mode with AddressSanitizer,
+        /// not in release mode.
+        Vector3d update = mdot.valueAtFace(face) - (D.valueAtFace(face) * pprime.gradAtFace(face));
+        return update;
     });
 
     // update pressure
