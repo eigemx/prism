@@ -15,6 +15,7 @@ namespace prism::solver {
 
 class IterationData {
   public:
+    IterationData() = default;
     IterationData(std::size_t iteration, double initial_residual, double final_residual);
     void setAsConverged() noexcept;
     auto hasConverged() const noexcept -> bool;
@@ -23,9 +24,9 @@ class IterationData {
     auto finalResidual() const noexcept -> double;
 
   private:
-    std::size_t _iteration {};
-    double _initial_residual {};
-    double _final_residual {};
+    std::size_t _iteration {3};
+    double _initial_residual {1e-6};
+    double _final_residual {1e-8};
     bool _converged {false};
 };
 
@@ -35,10 +36,12 @@ class IterationData {
 template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport<Field>& eq, std::size_t n_iter = 10, double eps = 1e-7)
-        -> IterationData;
-    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-        -> VectorXd = 0;
+    virtual auto solve(eqn::Transport<Field>& eq,
+                       std::size_t n_iter = 10,
+                       double eps = 1e-7) -> IterationData;
+    virtual auto step(const SparseMatrix& A,
+                      const VectorXd& x,
+                      const VectorXd& b) -> VectorXd = 0;
 };
 
 template <typename Field>
@@ -54,8 +57,9 @@ class Jacobi : public ISolver<Field> {
 };
 
 template <typename Field>
-auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, double eps)
-    -> IterationData {
+auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
+                           std::size_t n_iter,
+                           double eps) -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto& phi = eqn.field();
@@ -101,16 +105,18 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn, std::size_t n_iter, doubl
 }
 
 template <typename Field>
-auto BiCGSTAB<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-    -> VectorXd {
+auto BiCGSTAB<Field>::step(const SparseMatrix& A,
+                           const VectorXd& x,
+                           const VectorXd& b) -> VectorXd {
     Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
     return bicg.compute(A).solveWithGuess(b, x);
 }
 
 
 template <typename Field>
-auto Jacobi<Field>::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b)
-    -> VectorXd {
+auto Jacobi<Field>::step(const SparseMatrix& A,
+                         const VectorXd& x,
+                         const VectorXd& b) -> VectorXd {
     VectorXd D_inv = A.diagonal().cwiseInverse();
     VectorXd residual = b - A * x;
     return x + D_inv.asDiagonal() * residual;

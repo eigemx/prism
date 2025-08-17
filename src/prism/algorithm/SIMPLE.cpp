@@ -18,7 +18,7 @@ void solveMomentumImplicitly(SIMPLEParameters params,
                              std::span<eqn::Momentum*> momentum_predictors) {
     // solve momentum equations implicitly
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
-    log::debug("prism::algo::solveMomentumImplicitly(): solving momentum equations");
+    log::info("prism::algo::solveMomentumImplicitly(): solving momentum equations");
     for (auto* eqn : momentum_predictors) {
         momentum_solver.solve(*eqn, params.momentum_max_iter, params.momentum_residual);
     }
@@ -130,7 +130,7 @@ auto solvePressureEquation(SIMPLEParameters params,
                                                 div_U(mdot)             // == - (∇.U)
     );
 
-    log::debug("prism::algo::solvePressureEquation(): solving pressure correction equation");
+    log::info("prism::algo::solvePressureEquation(): solving pressure equation");
     auto p_solver = solver::BiCGSTAB<field::Pressure>();
     p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
 
@@ -170,8 +170,8 @@ void correctFields(field::Velocity& U,
     U.updateCells([&](const mesh::Cell& cell) {
         /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
         /// stack-use-after-return errors. This might be related to how temporaries are handled
-        /// in complex expressions. Note: This issue only appears in debug mode with AddressSanitizer,
-        /// not in release mode.
+        /// in complex expressions. Note: This issue only appears in debug mode with
+        /// AddressSanitizer, not in release mode.
         Vector3d update = U.valueAtCell(cell) - (D.valueAtCell(cell) * pprime.gradAtCell(cell));
         return update;
     });
@@ -180,9 +180,10 @@ void correctFields(field::Velocity& U,
     mdot.updateInteriorFaces([&](const mesh::Face& face) {
         /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
         /// stack-use-after-return errors. This might be related to how temporaries are handled
-        /// in complex expressions. Note: This issue only appears in debug mode with AddressSanitizer,
-        /// not in release mode.
-        Vector3d update = mdot.valueAtFace(face) - (D.valueAtFace(face) * pprime.gradAtFace(face));
+        /// in complex expressions. Note: This issue only appears in debug mode with
+        /// AddressSanitizer, not in release mode.
+        Vector3d update =
+            mdot.valueAtFace(face) - (D.valueAtFace(face) * pprime.gradAtFace(face));
         return update;
     });
 
