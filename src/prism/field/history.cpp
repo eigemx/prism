@@ -1,7 +1,5 @@
 #include "history.h"
 
-#include <algorithm>
-
 namespace prism::field {
 
 HistoryManager::HistoryManager(int num_time_steps) : _max_steps(num_time_steps) {

@@ -116,6 +116,7 @@ class GeneralScalar
 
     /// TODO: overload for the case of zero arguments, to update with current values.
     void update(VectorXd values);
+    void updatePrevTimeSteps();
 
     template <typename Func>
     void updateInteriorFaces(Func func);
@@ -589,12 +590,20 @@ void GeneralScalar<Units, BHManagerSetter>::setHistorySize(std::size_t num_time_
 template <typename Units, typename BHManagerSetter>
 void GeneralScalar<Units, BHManagerSetter>::update(VectorXd values) {
     if (_history_manager) {
-        _history_manager->update(*_cell_values);
+        updatePrevTimeSteps();
     }
     *_cell_values = std::move(values);
 
+    // clear face values if they exist
     if (_face_values != nullptr) {
         clearFaceValues();
+    }
+}
+
+template <typename Units, typename BHManagerSetter>
+void GeneralScalar<Units, BHManagerSetter>::updatePrevTimeSteps() {
+    if (_history_manager) {
+        _history_manager->update(*_cell_values);
     }
 }
 
