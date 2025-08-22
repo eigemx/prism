@@ -28,7 +28,12 @@ add_library(prism
     mesh/reorder.cpp
     mesh/utilities.cpp
 
+    scheme/scheme.cpp
     scheme/diffusion/nonortho.cpp
+    scheme/convection/convection.cpp
+    scheme/convection/convection_hr.cpp
+    scheme/convection/convection_boundary.cpp
+
 
     gradient/boundary.cpp
     gradient/gradient.cpp
