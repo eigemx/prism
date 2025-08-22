@@ -45,8 +45,8 @@ class GeneralVector
     auto valueAtFace(std::size_t face_id) const -> Vector3d override;
     auto valueAtFace(const mesh::Face& face) const -> Vector3d override;
 
-    auto fluxAtFace(std::size_t face_id) const -> double;
-    auto fluxAtFace(const mesh::Face& face) const -> double;
+    auto fluxAtFace(std::size_t face_id) const -> f64;
+    auto fluxAtFace(const mesh::Face& face) const -> f64;
 
     auto inline x() -> Component& { return _x; }
     auto inline y() -> Component& { return _y; }
@@ -79,8 +79,8 @@ class GeneralVector
     void initFaceData();
     void initFaceFluxDataVector();
     auto valueAtBoundaryFace(const mesh::Face& face) const -> Vector3d;
-    auto fluxAtInteriorFace(const mesh::Face& face) const -> double;
-    auto fluxAtBoundaryFace(const mesh::Face& face) const -> double;
+    auto fluxAtInteriorFace(const mesh::Face& face) const -> f64;
+    auto fluxAtBoundaryFace(const mesh::Face& face) const -> f64;
     void addDefaultBoundaryHandlers();
 
     Component _x, _y, _z;
@@ -210,7 +210,7 @@ auto GeneralVector<Component, BHManagerSetter>::hasFaceFluxValues() const -> boo
 }
 
 template <typename Component, typename BHManagerSetter>
-auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(std::size_t face_id) const -> double {
+auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(std::size_t face_id) const -> f64 {
     if (hasFaceFluxValues()) {
         return (*m_face_flux_data)[face_id];
     }
@@ -223,8 +223,7 @@ auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(std::size_t face_id) 
 }
 
 template <typename Component, typename BHManagerSetter>
-auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(const mesh::Face& face) const
-    -> double {
+auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(const mesh::Face& face) const -> f64 {
     return fluxAtFace(face.id());
 }
 
