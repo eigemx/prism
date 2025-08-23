@@ -20,7 +20,7 @@ class GeneralVector
       public units::Measurable,
       public prism::boundary::BHManagerProvider<boundary::vector::IVectorBoundaryHandler> {
   public:
-    GeneralVector(const std::string& name, const SharedPtr<mesh::PMesh>& mesh, double value);
+    GeneralVector(const std::string& name, const SharedPtr<mesh::PMesh>& mesh, f64 value);
 
     GeneralVector(const std::string& name,
                   const SharedPtr<mesh::PMesh>& mesh,
@@ -39,21 +39,18 @@ class GeneralVector
     auto hasFaceValues() const -> bool override;
     auto hasFaceFluxValues() const -> bool;
 
-    auto valueAtCell(std::size_t cell_id) const -> Vector3d override;
+    auto valueAtCell(size_t cell_id) const -> Vector3d override;
     auto valueAtCell(const mesh::Cell& cell) const -> Vector3d override;
 
-    auto valueAtFace(std::size_t face_id) const -> Vector3d override;
+    auto valueAtFace(size_t face_id) const -> Vector3d override;
     auto valueAtFace(const mesh::Face& face) const -> Vector3d override;
 
-    auto fluxAtFace(std::size_t face_id) const -> f64;
-    auto fluxAtFace(const mesh::Face& face) const -> f64;
+    auto fluxAtFace(size_t face_id) const -> f64 override;
+    auto fluxAtFace(const mesh::Face& face) const -> f64 override;
 
-    auto inline x() -> Component& { return _x; }
-    auto inline y() -> Component& { return _y; }
-    auto inline z() -> Component& { return _z; }
-    auto inline x() const -> const Component& { return _x; }
-    auto inline y() const -> const Component& { return _y; }
-    auto inline z() const -> const Component& { return _z; }
+    auto x() const -> const SharedPtr<Component>& { return _x; }
+    auto y() const -> const SharedPtr<Component>& { return _y; }
+    auto z() const -> const SharedPtr<Component>& { return _z; }
 
     void setFaceValues(std::vector<Vector3d> values);
     void setFaceFluxValues(VectorXd values);
@@ -71,7 +68,7 @@ class GeneralVector
 
     auto clone() const -> GeneralVector;
 
-    auto operator[](std::size_t i) const -> Vector3d;
+    auto operator[](size_t i) const -> Vector3d;
 
     using ComponentType = Component;
 
@@ -83,9 +80,12 @@ class GeneralVector
     auto fluxAtBoundaryFace(const mesh::Face& face) const -> f64;
     void addDefaultBoundaryHandlers();
 
-    Component _x, _y, _z;
+    SharedPtr<Component> _x, _y, _z;
+
+    /// TODO: clean this clutter!
     SharedPtr<std::vector<Vector3d>> m_face_data = nullptr;
     SharedPtr<VectorXd> m_face_flux_data = nullptr;
+
     BHManagerSetter m_setter;
 };
 
@@ -101,11 +101,11 @@ using Vector = GeneralVector<Scalar, VectorBHManagerSetter>;
 template <typename Component, typename BHManagerSetter>
 GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name,
                                                          const SharedPtr<mesh::PMesh>& mesh,
-                                                         double value)
+                                                         f64 value)
     : IVector(name, mesh),
-      _x(this->name() + "_x", mesh, value, Coord::X),
-      _y(this->name() + "_y", mesh, value, Coord::Y),
-      _z(this->name() + "_z", mesh, value, Coord::Z) {
+      _x(std::make_shared<Component>(this->name() + "_x", mesh, value, Coord::X)),
+      _y(std::make_shared<Component>(this->name() + "_y", mesh, value, Coord::Y)),
+      _z(std::make_shared<Component>(this->name() + "_z", mesh, value, Coord::Z)) {
     log::debug("Creating vector field: '{}' with real value = {}", this->name(), value);
     addDefaultBoundaryHandlers();
 }
@@ -115,9 +115,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          const Vector3d& data)
     : IVector(name, mesh),
-      _x(this->name() + "_x", mesh, data[0], Coord::X),
-      _y(this->name() + "_y", mesh, data[1], Coord::Y),
-      _z(this->name() + "_z", mesh, data[2], Coord::Z) {
+      _x(std::make_shared<Component>(this->name() + "_x", mesh, data[0], Coord::X)),
+      _y(std::make_shared<Component>(this->name() + "_y", mesh, data[1], Coord::Y)),
+      _z(std::make_shared<Component>(this->name() + "_z", mesh, data[2], Coord::Z)) {
     log::debug("Creating vector field: '{}' with uniform vector value [{}, {}, {}]",
                this->name(),
                data.x(),
@@ -130,26 +130,28 @@ template <typename Component, typename BHManagerSetter>
 GeneralVector<Component, BHManagerSetter>::GeneralVector(std::string name,
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          std::array<Component, 3>& components)
-    : IVector(std::move(name), mesh), _x(components[0]), _y(components[1]), _z(components[2]) {
+    : IVector(std::move(name), mesh),
+      _x(std::make_shared<Component>(components[0])),
+      _y(std::make_shared<Component>(components[1])),
+      _z(std::make_shared<Component>(components[2])) {
     log::debug("Creating vector field: '{}'", this->name());
     // check sub-fields naming consistency
-    if ((_x.name() != (this->name() + "_x")) || (_y.name() != (this->name() + "_y")) ||
-        (_z.name() != (this->name() + "_z"))) {
+    if ((_x->name() != (this->name() + "_x")) || (_y->name() != (this->name() + "_y")) ||
+        (_z->name() != (this->name() + "_z"))) {
         throw std::runtime_error(
             fmt::format("All field::Vector components names should end with '_x', '_y' or '_z'. "
                         "field::Vector constructor for `{}` vector field was given the following "
                         "field::Scalar names: '{}', '{}', '{}",
                         this->name(),
-                        _x.name(),
-                        _y.name(),
-                        _z.name()));
+                        _x->name(),
+                        _y->name(),
+                        _z->name()));
     }
     addDefaultBoundaryHandlers();
 }
 
 template <typename Component, typename BHManagerSetter>
-auto GeneralVector<Component, BHManagerSetter>::valueAtCell(std::size_t cell_id) const
-    -> Vector3d {
+auto GeneralVector<Component, BHManagerSetter>::valueAtCell(size_t cell_id) const -> Vector3d {
     return operator[](cell_id);
 }
 
@@ -160,8 +162,7 @@ auto GeneralVector<Component, BHManagerSetter>::valueAtCell(const mesh::Cell& ce
 }
 
 template <typename Component, typename BHManagerSetter>
-auto GeneralVector<Component, BHManagerSetter>::valueAtFace(std::size_t face_id) const
-    -> Vector3d {
+auto GeneralVector<Component, BHManagerSetter>::valueAtFace(size_t face_id) const -> Vector3d {
     return valueAtFace(mesh()->face(face_id));
 }
 
@@ -176,7 +177,7 @@ auto GeneralVector<Component, BHManagerSetter>::valueAtFace(const mesh::Face& fa
     if (face.isBoundary()) {
         return valueAtBoundaryFace(face);
     }
-    return {_x.valueAtFace(id), _y.valueAtFace(id), _z.valueAtFace(id)};
+    return {_x->valueAtFace(id), _y->valueAtFace(id), _z->valueAtFace(id)};
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -210,7 +211,7 @@ auto GeneralVector<Component, BHManagerSetter>::hasFaceFluxValues() const -> boo
 }
 
 template <typename Component, typename BHManagerSetter>
-auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(std::size_t face_id) const -> f64 {
+auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(size_t face_id) const -> f64 {
     if (hasFaceFluxValues()) {
         return (*m_face_flux_data)[face_id];
     }
@@ -229,13 +230,13 @@ auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(const mesh::Face& fac
 
 template <typename Component, typename BHManagerSetter>
 auto GeneralVector<Component, BHManagerSetter>::fluxAtInteriorFace(const mesh::Face& face) const
-    -> double {
+    -> f64 {
     return valueAtFace(face).dot(face.areaVector());
 }
 
 template <typename Component, typename BHManagerSetter>
 auto GeneralVector<Component, BHManagerSetter>::fluxAtBoundaryFace(const mesh::Face& face) const
-    -> double {
+    -> f64 {
     const auto& patch = mesh()->boundaryPatch(face);
     const auto& bc = patch.getBoundaryCondition(name());
 
@@ -254,8 +255,8 @@ auto GeneralVector<Component, BHManagerSetter>::fluxAtBoundaryFace(const mesh::F
 }
 
 template <typename Component, typename BHManagerSetter>
-auto GeneralVector<Component, BHManagerSetter>::operator[](std::size_t i) const -> Vector3d {
-    return {_x.valueAtCell(i), _y.valueAtCell(i), _z.valueAtCell(i)};
+auto GeneralVector<Component, BHManagerSetter>::operator[](size_t i) const -> Vector3d {
+    return {_x->valueAtCell(i), _y->valueAtCell(i), _z->valueAtCell(i)};
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -320,9 +321,9 @@ void GeneralVector<Component, BHManagerSetter>::updateFaces(Func func) {
 template <typename Component, typename BHManagerSetter>
 auto GeneralVector<Component, BHManagerSetter>::clone() const -> GeneralVector {
     auto components = std::array<Component, 3> {
-        this->x().clone(),
-        this->y().clone(),
-        this->z().clone(),
+        *(this->x()),
+        *(this->y()),
+        *(this->z()),
     };
 
     auto clone = GeneralVector(this->name(), this->mesh(), components);
@@ -382,9 +383,9 @@ template <typename Func>
 void GeneralVector<Component, BHManagerSetter>::updateCells(Func func) {
     for (const auto& cell : this->mesh()->cells()) {
         Vector3d update = func(cell);
-        this->x()[cell.id()] = update.x();
-        this->y()[cell.id()] = update.y();
-        this->z()[cell.id()] = update.z();
+        this->x()->operator[](cell.id()) = update.x();
+        this->y()->operator[](cell.id()) = update.y();
+        this->z()->operator[](cell.id()) = update.z();
     }
 }
 

@@ -28,9 +28,9 @@ class PRIME : public IPressureLinked {
   public:
     PRIME(PRIMEParameters parameters);
     void step(std::span<eqn::Momentum*> momentum_predictors,
-              field::Velocity& U,
-              field::Velocity& mdot,
-              field::Pressure& p) override;
+              SharedPtr<field::Velocity>& U,
+              SharedPtr<field::Velocity>& mdot,
+              SharedPtr<field::Pressure>& p) override;
 
   private:
     PRIMEParameters _params;

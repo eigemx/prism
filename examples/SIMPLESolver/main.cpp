@@ -7,6 +7,10 @@
 using namespace prism;
 namespace fs = std::filesystem;
 
+void test(const SharedPtr<field::Scalar>& phi) {
+    log::info("{}", phi->mesh()->cellCount());
+}
+
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
@@ -27,29 +31,28 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set mesh fields
-    auto U = field::Velocity("U", mesh, {.0, .0, .0});
-    auto p = field::Pressure("P", mesh, 0.0);
-    auto nu = field::UniformScalar("nu", mesh, 1e-3);
+    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {.0, .0, .0});
+    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
+    auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
 
-    using div = LinearUpwind<field::Velocity, field::VelocityComponent>;
-    using laplacian = diffusion::Corrected<field::UniformScalar,
-                                           diffusion::nonortho::OverRelaxedCorrector,
-                                           field::VelocityComponent>;
-    using grad = source::Gradient<Sign::Negative, field::Pressure>;
+    using div = LinearUpwind;
+    using laplacian =
+        diffusion::Corrected<field::Scalar, diffusion::nonortho::OverRelaxedCorrector>;
+    using grad = source::Gradient<Sign::Negative>;
 
     auto nOuterIter = 50;
-    auto mdot = U.clone();
+    auto mdot = std::make_shared<field::Velocity>(U->clone());
 
     algo::SIMPLEParameters params;
 
-    auto uEqn = eqn::Momentum(div(mdot, U.x()),     // ∇.(Uu)
-                              laplacian(nu, U.x()), // -∇.(ν∇u)
-                              grad(p, Coord::X)     // = -∂p/∂x
+    auto uEqn = eqn::Momentum(div(mdot, U->x()),     // ∇.(Uu)
+                              laplacian(nu, U->x()), // -∇.(ν∇u)
+                              grad(p, Coord::X)      // = -∂p/∂x
     );
 
-    auto vEqn = eqn::Momentum(div(mdot, U.y()),     // ∇.(Uv)
-                              laplacian(nu, U.y()), // -∇.(ν∇v)
-                              grad(p, Coord::Y)     // = -∂p/∂y
+    auto vEqn = eqn::Momentum(div(mdot, U->y()),     // ∇.(Uv)
+                              laplacian(nu, U->y()), // -∇.(ν∇v)
+                              grad(p, Coord::Y)      // = -∂p/∂y
     );
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
@@ -71,7 +74,7 @@ auto main(int argc, char* argv[]) -> int {
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 
-    exportToVTU(U.x(), "solution_x.vtu");
-    exportToVTU(U.y(), "solution_y.vtu");
-    exportToVTU(p, "pressure.vtu");
+    exportToVTU(*(U->x()), "solution_x.vtu");
+    exportToVTU(*(U->y()), "solution_y.vtu");
+    exportToVTU(*p, "pressure.vtu");
 }

@@ -6,6 +6,7 @@
 #include "convection_hr.h"
 #include "prism/boundary.h"
 #include "prism/field/ifield.h"
+#include "prism/field/scalar.h"
 #include "prism/mesh/cell.h"
 #include "prism/scheme/boundary.h"
 #include "prism/scheme/scheme.h"
@@ -30,7 +31,7 @@ class IAppliedConvection : public IConvection,
                            public prism::boundary::BHManagerProvider<
                                boundary::ISchemeBoundaryHandler<IAppliedConvection>> {
   public:
-    IAppliedConvection(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi);
+    IAppliedConvection(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi);
 
     auto needsCorrection() const noexcept -> bool override { return true; }
     auto U() -> const SharedPtr<field::IVector>& { return _U; }
@@ -54,7 +55,7 @@ concept IAppliedConvectionBased = std::derived_from<T, IAppliedConvection>;
 // Upwind scheme
 class Upwind : public IAppliedConvection {
   public:
-    Upwind(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    Upwind(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : IAppliedConvection(U, phi) {}
 
   protected:
@@ -73,7 +74,7 @@ class Upwind : public IAppliedConvection {
 // Central difference scheme
 class CentralDifference : public Upwind {
   public:
-    CentralDifference(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    CentralDifference(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:
@@ -83,7 +84,7 @@ class CentralDifference : public Upwind {
 // Second order upwind (linear upwind) scheme
 class LinearUpwind : public Upwind {
   public:
-    LinearUpwind(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    LinearUpwind(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:
@@ -93,7 +94,7 @@ class LinearUpwind : public Upwind {
 // QUICK scheme
 class QUICK : public Upwind {
   public:
-    QUICK(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    QUICK(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:
@@ -103,7 +104,7 @@ class QUICK : public Upwind {
 // FROMM scheme
 class FROMM : public Upwind {
   public:
-    FROMM(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    FROMM(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:
@@ -113,7 +114,7 @@ class FROMM : public Upwind {
 // MINMOD scheme
 class MINMOD : public Upwind {
   public:
-    MINMOD(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    MINMOD(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:
@@ -123,7 +124,7 @@ class MINMOD : public Upwind {
 // MUSCL scheme
 class MUSCL : public Upwind {
   public:
-    MUSCL(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    MUSCL(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:
@@ -133,7 +134,7 @@ class MUSCL : public Upwind {
 // SMART scheme
 class SMART : public Upwind {
   public:
-    SMART(const SharedPtr<field::IVector>& U, const SharedPtr<field::IScalar>& phi)
+    SMART(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
         : Upwind(U, phi) {}
 
   protected:

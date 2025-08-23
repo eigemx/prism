@@ -3,17 +3,20 @@
 #include <fmt/format.h>
 
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 
 #include "prism/equation/transport.h"
 #include "prism/log.h"
 #include "prism/numerics/solver.h"
 #include "prism/operations/rhie_chow.h"
+#include "prism/scheme/diffusion/diffusion.h"
 #include "prism/scheme/source/divergence.h"
 #include "prism/types.h"
 
-
 namespace prism::algo {
+using field::Pressure;
+
 void solveMomentumImplicitly(SIMPLEParameters params,
                              std::span<eqn::Momentum*> momentum_predictors) {
     // solve momentum equations implicitly
@@ -24,18 +27,18 @@ void solveMomentumImplicitly(SIMPLEParameters params,
     }
 }
 
-void constrainPPrime(field::Pressure& pprime) {
+void constrainPPrime(SharedPtr<field::Pressure>& pprime) {
     // we need to reset the pprime field to zero at the boundaries where a Dirichlet or a symmetry
     // condition is applied.
-    VectorXd face_values = VectorXd::Zero(pprime.mesh()->faceCount());
+    VectorXd face_values = VectorXd::Zero(pprime->mesh()->faceCount());
 
-    for (const auto& patch : pprime.mesh()->boundaryPatches()) {
+    for (const auto& patch : pprime->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
             continue; // skip empty patches
         }
 
         const auto& bc = patch.getBoundaryCondition("P");
-        const auto& handler = pprime.boundaryHandlersManager().getHandler(bc.kindString());
+        const auto& handler = pprime->boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler->isDirichlet() || handler->name() == "symmetry") {
             for (const auto& face_id : patch.facesIds()) {
@@ -46,21 +49,22 @@ void constrainPPrime(field::Pressure& pprime) {
 
         // keep the values at the faces for other boundary conditions
         for (const auto& face_id : patch.facesIds()) {
-            const auto& face = pprime.mesh()->face(face_id);
-            face_values[face_id] = pprime.valueAtFace(face);
+            const auto& face = pprime->mesh()->face(face_id);
+            face_values[face_id] = pprime->valueAtFace(face);
         }
     }
-    pprime.setFaceValues(face_values);
+    pprime->setFaceValues(face_values);
 }
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
-                                  const field::Pressure& p) -> field::Tensor {
+                                  const SharedPtr<field::Pressure>& p)
+    -> SharedPtr<field::Tensor> {
     for (auto* eqn : momentum_predictors) {
         eqn->updateCoeffs();
         eqn->relax();
     }
 
-    const auto& mesh = p.mesh();
+    const auto& mesh = p->mesh();
     const VectorXd& vol_vec = mesh->cellsVolumeVector();
     const VectorXd& uEqn_diag = momentum_predictors[0]->matrix().diagonal();
     const VectorXd& vEqn_diag = momentum_predictors[1]->matrix().diagonal();
@@ -89,15 +93,17 @@ auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
         eqn->zeroOutCoeffs();
     }
 
-    return {"D", mesh, std::move(D_data)};
+    return std::make_shared<field::Tensor>("D", mesh, std::move(D_data));
 }
 
 auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,
-                           field::Velocity& U,
-                           field::Velocity& mdot,
-                           field::Pressure& p) -> std::pair<field::Pressure, field::Tensor> {
-    auto D = pressureEquationCoeffsTensor(momentum_predictors, p);
+                           SharedPtr<field::Velocity>& U,
+                           SharedPtr<field::Velocity>& mdot,
+                           SharedPtr<field::Pressure>& p)
+    -> std::pair<SharedPtr<field::Pressure>, SharedPtr<field::Tensor>> {
+    using namespace scheme::diffusion;
+    SharedPtr<field::Tensor> D = pressureEquationCoeffsTensor(momentum_predictors, p);
 
     // Rhie-Chow interpolation for velocity face values
     log::debug(
@@ -105,13 +111,13 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     // first, we update convective flux with latest values of velocity field before applying the
     // Rhie-Chow correction.
-    mdot.updateFaces([&](const mesh::Face& face) { return U.valueAtFace(face); });
-    mdot.updateInteriorFaces(
-        [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, U, D, p); });
+    mdot->updateFaces([&](const mesh::Face& face) { return U->valueAtFace(face); });
+    mdot->updateInteriorFaces(
+        [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, *U, *D, *p); });
 
     // pressure correction field created with same name as pressure field to get same boundary
     // conditions without having to define _pprime in fields.json file.
-    auto pprime = field::Pressure(p.name(), p.mesh(), 0.0);
+    auto pprime = std::make_shared<field::Pressure>(Pressure(p->name(), p->mesh(), 0.0));
 
     // The corrector should reset to zero the correction field at every iteration and should
     // also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary
@@ -120,14 +126,11 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     /// TODO: based on number of non-orhogonal corrections in _params, we should check if we need
     /// diffusion::Corrected or diffusion::NonCorrected
-    using laplacian_p =
-        scheme::diffusion::Corrected<field::Tensor,
-                                     scheme::diffusion::nonortho::OverRelaxedCorrector,
-                                     field::Pressure>;
-    using div_U = scheme::source::Divergence<Sign::Negative, field::Velocity>;
+    using laplacian_p = Corrected<field::Tensor, nonortho::OverRelaxedCorrector>;
+    using div_U = scheme::source::Divergence<Sign::Negative>;
 
-    auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, pprime), // - ∇.(D ∇P')
-                                                div_U(mdot)             // == - (∇.U)
+    auto pEqn = eqn::Transport(laplacian_p(D, pprime), // - ∇.(D ∇P')
+                               div_U(mdot)             // == - (∇.U)
     );
 
     log::info("prism::algo::solvePressureEquation(): solving pressure equation");
@@ -145,9 +148,9 @@ auto solvePressureEquation(SIMPLEParameters params,
 IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEParameters parameters) : _params(parameters) {}
 
 void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
-                                field::Velocity& U,
-                                field::Velocity& mdot,
-                                field::Pressure& p) {
+                                SharedPtr<field::Velocity>& U,
+                                SharedPtr<field::Velocity>& mdot,
+                                SharedPtr<field::Pressure>& p) {
     if (momentum_predictors.size() != 2 && momentum_predictors.size() != 3) {
         throw std::runtime_error(
             fmt::format("prism::algo::IncompressibleSIMPLE::step() expects 2 or 3 momentum "
@@ -160,34 +163,35 @@ void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
     correctFields(U, mdot, p, D, pprime, _params.pressure_urf);
 }
 
-void correctFields(field::Velocity& U,
-                   field::Velocity& mdot,
-                   field::Pressure& p,
-                   const field::Tensor& D,
-                   field::Pressure& pprime,
+void correctFields(SharedPtr<field::Velocity>& U,
+                   SharedPtr<field::Velocity>& mdot,
+                   SharedPtr<field::Pressure>& p,
+                   const SharedPtr<field::Tensor>& D,
+                   SharedPtr<field::Pressure>& pprime,
                    double pressure_urf) {
     // update velocity field
-    U.updateCells([&](const mesh::Cell& cell) {
-        /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
-        /// stack-use-after-return errors. This might be related to how temporaries are handled
-        /// in complex expressions. Note: This issue only appears in debug mode with
-        /// AddressSanitizer, not in release mode.
-        Vector3d update = U.valueAtCell(cell) - (D.valueAtCell(cell) * pprime.gradAtCell(cell));
-        return update;
-    });
-
-    // update mass flow rate at interior faces
-    mdot.updateInteriorFaces([&](const mesh::Face& face) {
+    U->updateCells([&](const mesh::Cell& cell) {
         /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
         /// stack-use-after-return errors. This might be related to how temporaries are handled
         /// in complex expressions. Note: This issue only appears in debug mode with
         /// AddressSanitizer, not in release mode.
         Vector3d update =
-            mdot.valueAtFace(face) - (D.valueAtFace(face) * pprime.gradAtFace(face));
+            U->valueAtCell(cell) - (D->valueAtCell(cell) * pprime->gradAtCell(cell));
+        return update;
+    });
+
+    // update mass flow rate at interior faces
+    mdot->updateInteriorFaces([&](const mesh::Face& face) {
+        /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
+        /// stack-use-after-return errors. This might be related to how temporaries are handled
+        /// in complex expressions. Note: This issue only appears in debug mode with
+        /// AddressSanitizer, not in release mode.
+        Vector3d update =
+            mdot->valueAtFace(face) - (D->valueAtFace(face) * pprime->gradAtFace(face));
         return update;
     });
 
     // update pressure
-    p.update(p.values() + (pressure_urf * pprime.values()));
+    p->update(p->values() + (pressure_urf * pprime->values()));
 }
 } // namespace prism::algo

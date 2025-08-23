@@ -46,9 +46,9 @@ class PISO : public IPressureLinked {
   public:
     PISO(PISOParameters parameters);
     void step(std::span<eqn::Momentum*> momentum_predictors,
-              field::Velocity& U,
-              field::Velocity& mdot,
-              field::Pressure& p) override;
+              SharedPtr<field::Velocity>& U,
+              SharedPtr<field::Velocity>& mdot,
+              SharedPtr<field::Pressure>& p) override;
 
   private:
     PISOParameters _params;

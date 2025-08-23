@@ -39,9 +39,9 @@ class IncompressibleSIMPLE : public IPressureLinked {
   public:
     IncompressibleSIMPLE(SIMPLEParameters parameters);
     void step(std::span<eqn::Momentum*> momentum_predictors,
-              field::Velocity& U,
-              field::Velocity& mdot,
-              field::Pressure& p) override;
+              SharedPtr<field::Velocity>& U,
+              SharedPtr<field::Velocity>& mdot,
+              SharedPtr<field::Pressure>& p) override;
 
   private:
     SIMPLEParameters _params;
@@ -50,21 +50,23 @@ class IncompressibleSIMPLE : public IPressureLinked {
 void solveMomentumImplicitly(SIMPLEParameters params,
                              std::span<eqn::Momentum*> momentum_predictors);
 
-void constrainPPrime(field::Pressure& pprime);
+void constrainPPrime(SharedPtr<field::Pressure>& pprime);
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
-                                  const field::Pressure& p) -> field::Tensor;
+                                  const SharedPtr<field::Pressure>& p)
+    -> SharedPtr<field::Tensor>;
 
 auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,
-                           field::Velocity& U,
-                           field::Velocity& mdot,
-                           field::Pressure& p) -> std::pair<field::Pressure, field::Tensor>;
+                           SharedPtr<field::Velocity>& U,
+                           SharedPtr<field::Velocity>& mdot,
+                           SharedPtr<field::Pressure>& p)
+    -> std::pair<SharedPtr<field::Pressure>, SharedPtr<field::Tensor>>;
 
-void correctFields(field::Velocity& U,
-                   field::Velocity& mdot,
-                   field::Pressure& p,
-                   const field::Tensor& D,
-                   field::Pressure& pprime,
+void correctFields(SharedPtr<field::Velocity>& U,
+                   SharedPtr<field::Velocity>& mdot,
+                   SharedPtr<field::Pressure>& p,
+                   const SharedPtr<field::Tensor>& D,
+                   SharedPtr<field::Pressure>& pprime,
                    double pressure_urf);
 } // namespace prism::algo

@@ -35,7 +35,7 @@ auto grad(const Field& field) -> field::Vector;
 
 namespace detail {
 template <typename Vector>
-auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double;
+auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> f64;
 } // namespace detail
 
 template <typename Vector>
@@ -80,8 +80,8 @@ auto grad(const Field& field) -> field::Vector {
 
 namespace detail {
 template <typename Vector>
-auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double {
-    double sum = 0.0;
+auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> f64 {
+    f64 sum = 0.0;
     const auto& mesh = U.mesh();
 
     for (auto face_id : cell.facesIds()) {
@@ -94,7 +94,7 @@ auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> double {
                 continue;
             }
         }
-        double flux = U.fluxAtFace(face);
+        f64 flux = U.fluxAtFace(face);
         if (!face.isOwnedBy(cell.id())) {
             // fluxAtFace returns flux in face normal direction from owner to face center, we need
             // to reverse this value when `face` is not owned by `cell`

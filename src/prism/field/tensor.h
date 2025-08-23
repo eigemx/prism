@@ -21,6 +21,8 @@ class Tensor : public IField<Matrix3d> {
     auto operator[](std::size_t i) -> Matrix3d&;
     auto operator[](std::size_t i) const -> const Matrix3d&;
 
+    using ValueType = Matrix3d;
+
   private:
     std::vector<Matrix3d> _data;
 };

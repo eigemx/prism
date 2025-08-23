@@ -1,5 +1,6 @@
 #pragma once
 
+#include "prism/field/scalar.h"
 #include "source.h"
 
 namespace prism::scheme::source {
@@ -7,32 +8,32 @@ namespace prism::scheme::source {
 // and adds it to the right hand side of the system of equation
 // coefficients are calculated during (and only during) initialization,
 // no corrections are required afterwards
-
-/// TODO: ConstantScalar constructor should accept just a scalar value, and we should do the
-// remaining housekeeping with creating the needed ScalarField
-template <Sign SourceSign = Sign::Positive, field::IScalarBased Field = field::Scalar>
+template <Sign SourceSign = Sign::Positive>
 class ConstantScalar : public IExplicitSource {
   public:
-    ConstantScalar(Field phi);
+    ConstantScalar(const SharedPtr<field::Scalar>& phi);
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return false; }
+    auto field() const noexcept -> const SharedPtr<field::Scalar>& { return _phi; }
 
   private:
-    Field _phi;
+    SharedPtr<field::Scalar> _phi;
 };
 
-template <Sign SourceSign, field::IScalarBased Field>
-ConstantScalar<SourceSign, Field>::ConstantScalar(Field phi)
-    : _phi(phi), IExplicitSource(phi.mesh()->cellCount()) {}
+template <Sign SourceSign>
+ConstantScalar<SourceSign>::ConstantScalar(const SharedPtr<field::Scalar>& phi)
+    : _phi(phi), IExplicitSource(phi->mesh()->cellCount()) {}
 
-template <Sign SourceSign, field::IScalarBased Field>
-void ConstantScalar<SourceSign, Field>::apply() {
-    const auto& vol_field = _phi.mesh()->cellsVolumeVector();
+template <Sign SourceSign>
+void ConstantScalar<SourceSign>::apply() {
+    const auto& vol_field = this->field()->mesh()->cellsVolumeVector();
+    auto phi = this->field()->values();
+    rhs() = phi.cwiseProduct(vol_field);
 
-    if constexpr (SourceSign == Sign::Positive) {
-        rhs() = _phi.values().array() * vol_field.array();
+    if constexpr (SourceSign == Sign::Negative) {
+        rhs() = -rhs();
         return;
     }
-    rhs() = -_phi.values().array() * vol_field.array();
 }
+
 } // namespace prism::scheme::source

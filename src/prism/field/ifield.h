@@ -64,8 +64,8 @@ concept IScalarBased = std::derived_from<T, IScalar>;
 class IVector : public IField<Vector3d> {
   public:
     IVector(std::string name, const SharedPtr<mesh::PMesh>& mesh);
-    virtual auto fluxAtFace(const mesh::Face& face) -> f64 = 0;
-    virtual auto fluxAtFace(std::size_t face_id) -> f64 = 0;
+    virtual auto fluxAtFace(const mesh::Face& face) const -> f64 = 0;
+    virtual auto fluxAtFace(std::size_t face_id) const -> f64 = 0;
 };
 
 template <typename T>

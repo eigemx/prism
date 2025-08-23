@@ -16,8 +16,8 @@ class IPressureLinked {
     virtual ~IPressureLinked() = default;
 
     virtual void step(std::span<eqn::Momentum*> momentum_predictors,
-                      field::Velocity& U,
-                      field::Velocity& mdot,
-                      field::Pressure& p) = 0;
+                      SharedPtr<field::Velocity>& U,
+                      SharedPtr<field::Velocity>& mdot,
+                      SharedPtr<field::Pressure>& p) = 0;
 };
 } // namespace prism::algo

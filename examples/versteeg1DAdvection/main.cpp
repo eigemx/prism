@@ -42,8 +42,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto T = field::Scalar("T", mesh, 0.0);
-    auto rho = field::UniformScalar("rho", mesh, 1.0);
+    auto T = std::make_shared<field::Scalar>("T", mesh, 0.0);
 
     // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -62,17 +61,16 @@ auto main(int argc, char* argv[]) -> int {
     Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("U");
 
     log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
-    auto U = field::Velocity("U", mesh, inlet_velocity);
-    field::Velocity rhoU = rho * U;
-    auto kappa = field::UniformScalar("kappa", mesh, 0.1);
+    auto U = std::make_shared<field::Velocity>("U", mesh, inlet_velocity);
+    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 0.1);
 
     log::info("Peclet number = {}", inlet_velocity.x() * 0.2 / 0.1);
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
-    using div = scheme::convection::Upwind<field::Velocity, field::Scalar>;
-    using laplacian = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
+    using div = scheme::convection::Upwind;
+    using laplacian = scheme::diffusion::NonCorrected<field::Scalar>;
 
-    auto eqn = eqn::Transport(div(rhoU, T),       // ∇.(ρUT)
+    auto eqn = eqn::Transport(div(U, T),          // ∇.(UT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
@@ -80,12 +78,12 @@ auto main(int argc, char* argv[]) -> int {
     auto solver = solver::BiCGSTAB<field::Scalar>();
 
     solver.solve(eqn, 5, 1e-20);
-    VectorXd diff = eqn.field().values().array() -
+    VectorXd diff = eqn.field()->values().array() -
                     advection_analytical_solution(inlet_velocity.x(), mesh).values().array();
     auto diff_norm = diff.norm();
     log::info("diff norm = {}", diff_norm);
 
-    prism::exportToVTU(eqn.field(), "solution.vtu");
+    prism::exportToVTU(*(eqn.field()), "solution.vtu");
 
     return 0;
 }

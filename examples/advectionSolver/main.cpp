@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -25,10 +26,7 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = field::Scalar("temperature", mesh, 300.0);
-
-    // density field
-    auto rho = field::UniformScalar("rho", mesh, 1.18);
+    auto T = std::make_shared<field::Scalar>("temperature", mesh, 300.0);
 
     // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -51,19 +49,17 @@ auto main(int argc, char* argv[]) -> int {
               inlet_velocity.x(),
               inlet_velocity.y(),
               inlet_velocity.z());
-    auto U = field::Velocity("U", mesh, inlet_velocity);
-    field::Velocity rhoU = rho * U;
-    auto kappa = field::UniformScalar("kappa", mesh, 1e-2);
+    auto U = std::make_shared<field::Velocity>("U", mesh, inlet_velocity);
+    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 1e-2);
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
-    using div = scheme::convection::Upwind<field::Velocity, field::Scalar>;
+    using div = scheme::convection::Upwind;
     using laplacian =
-        scheme::diffusion::Corrected<field::UniformScalar,
-                                     scheme::diffusion::nonortho::OverRelaxedCorrector,
-                                     field::Scalar>;
+        scheme::diffusion::Corrected<field::Scalar,
+                                     scheme::diffusion::nonortho::OverRelaxedCorrector>;
 
-    auto eqn = eqn::Transport(div(rhoU, T),       // ∇.(ρUT)
+    auto eqn = eqn::Transport(div(U, T),          // ∇.(ρUT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
@@ -77,12 +73,12 @@ auto main(int argc, char* argv[]) -> int {
         solver.solve(eqn, 10, 1e-20);
     }
 
-    prism::exportToVTU(eqn.field(), "solution.vtu");
+    prism::exportToVTU(*eqn.field(), "solution.vtu");
 
-    auto div_U = ops::div(U);
+    auto div_U = ops::div(*U);
     prism::exportToVTU(div_U, "div.vtu");
 
-    exportToVTU(U.x().clone(), "U_x.vtu");
-    exportToVTU(U.clone().y(), "U_y.vtu");
+    exportToVTU(*(U->x()), "U_x.vtu");
+    exportToVTU(*(U->y()), "U_y.vtu");
     return 0;
 }
