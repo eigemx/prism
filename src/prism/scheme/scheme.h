@@ -1,6 +1,6 @@
 #pragma once
 
-#include "prism/field/ifield.h"
+#include "prism/field/scalar.h"
 #include "prism/linear.h"
 #include "prism/mesh/face.h"
 
@@ -42,18 +42,19 @@ class IPartialScheme : public IScheme, public RHSProvider {
 // linear system
 class IFullScheme : public IScheme, public LinearSystem {
   public:
-    IFullScheme(const SharedPtr<field::IScalar>& field);
+    IFullScheme(const SharedPtr<field::Scalar>& field);
 
     void apply() override;
 
     // returns the conserved transport field
-    virtual auto field() -> SharedPtr<field::IScalar>&;
+    virtual auto field() -> SharedPtr<field::Scalar>&;
+    virtual auto field() const -> const SharedPtr<field::Scalar>&;
 
   private:
     virtual void applyInterior(const mesh::Face& face) = 0;
     virtual void applyBoundary() = 0;
 
-    SharedPtr<field::IScalar> _field;
+    SharedPtr<field::Scalar> _field;
 };
 
 } // namespace prism::scheme

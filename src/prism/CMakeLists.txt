@@ -1,6 +1,7 @@
 add_library(prism
     linear.cpp
 
+    equation/transport.cpp
     equation/noslip.cpp
     equation/symmetry.cpp
     equation/outlet.cpp
@@ -11,7 +12,6 @@ add_library(prism
     field/tensor.cpp
     field/scalar.cpp
     field/vector.cpp
-    field/pressure.cpp
     field/pressure_boundary.cpp
     field/history.cpp
 
@@ -33,7 +33,9 @@ add_library(prism
     scheme/convection/convection.cpp
     scheme/convection/convection_hr.cpp
     scheme/convection/convection_boundary.cpp
-
+    scheme/temporal/temporal.cpp
+    scheme/temporal/backward_euler.cpp
+    scheme/temporal/adam_moulton.cpp
 
     gradient/boundary.cpp
     gradient/gradient.cpp

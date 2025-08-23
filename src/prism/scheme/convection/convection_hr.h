@@ -1,15 +1,15 @@
 #pragma once
 
-#include "prism/field/ifield.h"
+#include "prism/field/scalar.h"
 #include "prism/mesh/cell.h"
 
 namespace prism::scheme::convection {
 
-auto phiAtDummyUpwind(SharedPtr<field::IScalar>& field,
+auto phiAtDummyUpwind(SharedPtr<field::Scalar>& field,
                       const mesh::Cell& cell,
                       const mesh::Cell& downwind) -> f64;
 
-auto phiTilde(SharedPtr<field::IScalar> field, const mesh::Cell& cell, const mesh::Cell& downwind)
+auto phiTilde(SharedPtr<field::Scalar>& field, const mesh::Cell& cell, const mesh::Cell& downwind)
     -> f64;
 
 } // namespace prism::scheme::convection

@@ -1,6 +1,7 @@
 #include <prism/prism.h>
 
 #include <cmath>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto P = field::Scalar("P", mesh, 0.0);
+    auto P = std::make_shared<field::Scalar>("P", mesh, 0.0);
 
     // create source term
     /// TODO: use a more generic way to create source terms using mapped scalar fields
@@ -60,16 +61,14 @@ auto main(int argc, char* argv[]) -> int {
         src_values[cell.id()] = src;
     }
 
-    auto c = field::Tensor("c", mesh, Matrix3d::Identity());
+    auto c = std::make_shared<field::Tensor>("c", mesh, Matrix3d::Identity());
 
-    using laplacian = diffusion::Corrected<field::Tensor,
-                                           scheme::diffusion::nonortho::OverRelaxedCorrector,
-                                           field::Scalar>;
-    auto source = field::Scalar("S", mesh, std::move(src_values));
+    using laplacian =
+        diffusion::Corrected<field::Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector>;
+    auto source = std::make_shared<field::Scalar>("S", mesh, std::move(src_values));
 
-    auto eqn = eqn::Transport<field::Scalar>(
-        laplacian(c, P),                                              // -∇.∇p
-        source::ConstantScalar<Sign::Positive, field::Scalar>(source) // = S
+    auto eqn = eqn::Transport(laplacian(c, P),                               // -∇.∇p
+                              source::ConstantScalar<Sign::Positive>(source) // = S
     );
 
     // solve
@@ -80,14 +79,14 @@ auto main(int argc, char* argv[]) -> int {
         solver.solve(eqn, 15, 1e-20);
     }
 
-    prism::exportToVTU(P, "solution.vtu");
+    prism::exportToVTU(*P, "solution.vtu");
     prism::exportToVTU(solution(mesh), "analytical.vtu");
 
-    VectorXd diff = P.values() - solution(mesh).values();
+    VectorXd diff = P->values() - solution(mesh).values();
     auto diff_field = field::Scalar("diff", mesh, diff);
     prism::exportToVTU(diff_field, "diff.vtu");
 
-    fmt::print("relative l2-norm: {}\n", l2NormRelative(P.values(), solution(mesh).values()));
+    fmt::print("relative l2-norm: {}\n", l2NormRelative(P->values(), solution(mesh).values()));
 
     auto grad_p_anal_x = field::Scalar("grad_p_anal", mesh, 0.0);
     auto grad_p_anal_y = field::Scalar("grad_p_anal", mesh, 0.0);
@@ -102,14 +101,14 @@ auto main(int argc, char* argv[]) -> int {
 
     prism::exportToVTU(grad_p_anal_x, "grad_p_anal_x.vtu");
     prism::exportToVTU(grad_p_anal_y, "grad_p_anal_y.vtu");
-    prism::exportToVTU(ops::grad(P, Coord::X), "grad_p_x.vtu");
-    prism::exportToVTU(ops::grad(P, Coord::Y), "grad_p_y.vtu");
+    prism::exportToVTU(ops::grad(*P, Coord::X), "grad_p_x.vtu");
+    prism::exportToVTU(ops::grad(*P, Coord::Y), "grad_p_y.vtu");
 
     // print relative l2-norm of the analytical solution for each pressure gradient component
     fmt::print("relative l2-norm of the analytical solution for grad_p_x: {}\n",
-               l2NormRelative(grad_p_anal_x.values(), ops::grad(P, Coord::X).values()));
+               l2NormRelative(grad_p_anal_x.values(), ops::grad(*P, Coord::X).values()));
     fmt::print("relative l2-norm of the analytical solution for grad_p_y: {}\n",
-               l2NormRelative(grad_p_anal_y.values(), ops::grad(P, Coord::Y).values()));
+               l2NormRelative(grad_p_anal_y.values(), ops::grad(*P, Coord::Y).values()));
 
     return 0;
 }

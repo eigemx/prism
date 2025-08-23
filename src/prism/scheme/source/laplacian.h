@@ -5,27 +5,26 @@
 #include "source.h"
 
 namespace prism::scheme::source {
-template <Sign SourceSign = Sign::Positive,
-          typename Kappa = field::UniformScalar,
-          typename Field = field::Scalar>
+template <Sign SourceSign = Sign::Positive>
 class Laplacian : public IExplicitSource {
   public:
-    Laplacian(Kappa kappa, Field phi);
+    Laplacian(const SharedPtr<field::Scalar>& kappa, const SharedPtr<field::Scalar>& phi);
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return true; }
 
   private:
-    Kappa _kappa;
-    Field _phi;
+    SharedPtr<field::Scalar> _kappa;
+    SharedPtr<field::Scalar> _phi;
 };
 
-template <Sign SourceSign, typename Kappa, typename Field>
-Laplacian<SourceSign, Kappa, Field>::Laplacian(Kappa kappa, Field phi)
-    : IExplicitSource(phi.mesh()->cellCount()), _kappa(kappa), _phi(phi) {}
+template <Sign SourceSign>
+Laplacian<SourceSign>::Laplacian(const SharedPtr<field::Scalar>& kappa,
+                                 const SharedPtr<field::Scalar>& phi)
+    : IExplicitSource(phi->mesh()->cellCount()), _kappa(kappa), _phi(phi) {}
 
-template <Sign SourceSign, typename Kappa, typename Field>
-void inline Laplacian<SourceSign, Kappa, Field>::apply() {
-    auto grad_phi = ops::grad(_phi);
+template <Sign SourceSign>
+void inline Laplacian<SourceSign>::apply() {
+    auto grad_phi = ops::grad(*_phi);
     auto div = ops::div(grad_phi);
 
     if constexpr (SourceSign == Sign::Positive) {

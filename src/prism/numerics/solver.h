@@ -36,7 +36,7 @@ class IterationData {
 template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport<Field>& eq,
+    virtual auto solve(eqn::Transport& eq,
                        std::size_t n_iter = 10,
                        double eps = 1e-7) -> IterationData;
     virtual auto step(const SparseMatrix& A,
@@ -57,12 +57,12 @@ class Jacobi : public ISolver<Field> {
 };
 
 template <typename Field>
-auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
+auto ISolver<Field>::solve(eqn::Transport& eqn,
                            std::size_t n_iter,
                            double eps) -> IterationData {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
-    auto& phi = eqn.field();
+    auto phi = eqn.field();
 
     double init_res = 0.0;
     double current_res = 0.0;
@@ -74,12 +74,12 @@ auto ISolver<Field>::solve(eqn::Transport<Field>& eqn,
 
     for (; iter < n_iter; iter++) {
         if (iter == 0) {
-            init_res = detail::residual(A, phi.values(), b);
+            init_res = detail::residual(A, phi->values(), b);
         }
 
         // do at least one iteration
-        phi.values() = step(A, phi.values(), b);
-        current_res = detail::residual(A, phi.values(), b);
+        phi->values() = step(A, phi->values(), b);
+        current_res = detail::residual(A, phi->values(), b);
 
         // check for convergence
         if (current_res < eps) {

@@ -1,6 +1,7 @@
 #include <prism/prism.h>
 
 #include <filesystem>
+#include <memory>
 
 #include "prism/scheme/temporal/adam_moulton.h"
 
@@ -28,12 +29,12 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = Scalar("T", mesh, 0.0);
-    T.setHistorySize(1);     // enable history with a single time step in the past
-    T.updatePrevTimeSteps(); // sets the initial value of the field at t = 0
+    auto T = std::make_shared<Scalar>("T", mesh, 0.0);
+    T->setHistorySize(1);     // enable history with a single time step in the past
+    T->updatePrevTimeSteps(); // sets the initial value of the field at t = 0
 
     // diffusion coefficient
-    auto kappa = UniformScalar("kappa", mesh, 1e-3);
+    auto kappa = std::make_shared<Scalar>("kappa", mesh, 1e-3);
 
     auto dt = 2;
 
@@ -43,9 +44,8 @@ auto main(int argc, char* argv[]) -> int {
     auto nTimesteps = 200;
 
     using diffusion::nonortho::OverRelaxedCorrector;
-    auto eqn = eqn::Transport(
-        temporal::BackwardEuler<Scalar>(T, dt), // dT/dt
-        diffusion::Corrected<UniformScalar, OverRelaxedCorrector, Scalar>(kappa, T));
+    auto eqn = eqn::Transport(temporal::BackwardEuler(T, dt), // dT/dt
+                              diffusion::Corrected<Scalar, OverRelaxedCorrector>(kappa, T));
 
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {
         log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);
@@ -55,13 +55,13 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         // update the field time history
-        T.updatePrevTimeSteps();
+        T->updatePrevTimeSteps();
 
-        log::info("T = {}", T.values().mean());
-        log::info("T_prev = {}", T.prevValues().value().mean());
+        log::info("T = {}", T->values().mean());
+        log::info("T_prev = {}", T->prevValues().value().mean());
         // log::info("T_prev_prev = {}", T.prevPrevValues().value().mean());
     }
-    prism::exportToVTU(eqn.field(), "solution.vtu");
+    prism::exportToVTU(*(eqn.field()), "solution.vtu");
 
     return 0;
 }

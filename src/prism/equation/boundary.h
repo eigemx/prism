@@ -1,7 +1,6 @@
 #pragma once
 
 #include "prism/boundary.h"
-#include "prism/field/ifield.h"
 #include "prism/field/velocity.h"
 #include "prism/mesh/boundary.h"
 #include "prism/scheme/scheme.h"
@@ -9,10 +8,9 @@
 namespace prism::eqn {
 
 // forward declaration
-template <field::IScalarBased Field>
 class Transport;
 
-using Momentum = Transport<field::VelocityComponent>;
+class Momentum;
 
 } // namespace prism::eqn
 

@@ -16,16 +16,18 @@ namespace detail {
 // face or cell, to follow equation (8.93) from Moukalled et al. (2015). And for other field
 // types, they return the value directly.
 template <field::IFieldBased Field>
-auto valueAtFace(const Field& field, const mesh::Face& face) -> Field::ValueType;
+auto valueAtFace(const SharedPtr<Field>& field, const mesh::Face& face) -> Field::ValueType;
 
 template <field::IFieldBased Field>
-auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType;
+auto valueAtCell(const SharedPtr<Field>& field, const mesh::Cell& cell) -> Field::ValueType;
 
 template <>
-auto valueAtFace(const field::Tensor& field, const mesh::Face& face) -> field::Tensor::ValueType;
+auto valueAtFace(const SharedPtr<field::Tensor>& field, const mesh::Face& face)
+    -> field::Tensor::ValueType;
 
 template <>
-auto valueAtCell(const field::Tensor& field, const mesh::Cell& cell) -> field::Tensor::ValueType;
+auto valueAtCell(const SharedPtr<field::Tensor>& field, const mesh::Cell& cell)
+    -> field::Tensor::ValueType;
 } // namespace detail
 
 // Forward declarations for diffusion scheme classes defined in diffusion.h
@@ -44,10 +46,10 @@ class INonCorrected;
 template <typename T>
 concept INonCorrectedBased = std::derived_from<T, INonCorrected>;
 
-template <typename KappaType, typename NonOrthoCorrector, typename Field>
+template <typename Kappa, typename NonOrthoCorrector>
 class Corrected;
 
-template <typename KappaType, typename Field>
+template <typename Kappa>
 class NonCorrected;
 
 } // namespace prism::scheme::diffusion
@@ -143,7 +145,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
      */
     const auto& phi = scheme.field();
     const auto& kappa = scheme.kappa();
-    const auto& mesh = phi.mesh();
+    const auto& mesh = phi->mesh();
 
     for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh->face(face_id);
@@ -151,10 +153,10 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
 
         // get the fixed gradient (flux) value associated with the face
         const auto& boundary_patch = mesh->faceBoundaryPatch(face);
-        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi.name());
+        const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi->name());
 
         const Vector3d& Sf = face.areaVector();
-        Vector3d Sf_prime = kappa.valueAtCell(owner) * Sf;
+        Vector3d Sf_prime = kappa->valueAtCell(owner) * Sf;
 
         // check Moukalled et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2
@@ -172,13 +174,13 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
      * @param patch The boundary patch containing the faces.
      */
     const auto phi = scheme.field();
-    const auto& mesh = phi.mesh();
+    const auto& mesh = phi->mesh();
     const auto& kappa = scheme.kappa();
 
     for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh->face(face_id);
         const mesh::Cell& owner = mesh->cell(face.owner());
-        const double phi_wall = phi.valueAtFace(face);
+        const double phi_wall = phi->valueAtFace(face);
         const std::size_t cell_id = owner.id();
 
         // vector joining the centers of the cell and the face
@@ -216,7 +218,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
      * @param patch The boundary patch containing the faces.
      */
     auto phi = scheme.field();
-    const auto& mesh = phi.mesh();
+    const auto& mesh = phi->mesh();
     const auto& corrector = scheme.corrector();
     const auto& kappa = scheme.kappa();
 
@@ -226,7 +228,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const std::size_t owner_id = owner.id();
 
         // get the fixed phi variable associated with the face
-        const double phi_wall = phi.valueAtFace(face);
+        const double phi_wall = phi->valueAtFace(face);
 
         // vector joining the centers of the cell and the face
         const Vector3d d_Cf = face.center() - owner.center();
@@ -238,7 +240,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const double g_diff = Ef_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
 
         scheme.insert(owner_id, owner_id, g_diff);
-        scheme.rhs(owner_id) += (g_diff * phi_wall) + Tf_prime.dot(phi.gradAtFace(face));
+        scheme.rhs(owner_id) += (g_diff * phi_wall) + Tf_prime.dot(phi->gradAtFace(face));
     }
 }
 
@@ -258,24 +260,24 @@ void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
 
 namespace prism::scheme::diffusion::detail {
 template <field::IFieldBased Field>
-auto valueAtFace(const Field& field, const mesh::Face& face) -> Field::ValueType {
-    return field.valueAtFace(face.id());
+auto valueAtFace(const SharedPtr<Field>& field, const mesh::Face& face) -> Field::ValueType {
+    return field->valueAtFace(face.id());
 }
 
 template <field::IFieldBased Field>
-auto valueAtCell(const Field& field, const mesh::Cell& cell) -> Field::ValueType {
-    return field.valueAtCell(cell.id());
+auto valueAtCell(const SharedPtr<Field>& field, const mesh::Cell& cell) -> Field::ValueType {
+    return field->valueAtCell(cell.id());
 }
 
 template <>
-auto inline valueAtFace(const field::Tensor& field, const mesh::Face& face)
+auto inline valueAtFace(const SharedPtr<field::Tensor>& field, const mesh::Face& face)
     -> field::Tensor::ValueType {
-    return field.valueAtFace(face.id()).transpose();
+    return field->valueAtFace(face.id()).transpose();
 }
 
 template <>
-auto inline valueAtCell(const field::Tensor& field, const mesh::Cell& cell)
+auto inline valueAtCell(const SharedPtr<field::Tensor>& field, const mesh::Cell& cell)
     -> field::Tensor::ValueType {
-    return field.valueAtCell(cell.id()).transpose();
+    return field->valueAtCell(cell.id()).transpose();
 }
 } // namespace prism::scheme::diffusion::detail

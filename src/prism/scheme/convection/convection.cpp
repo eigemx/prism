@@ -1,9 +1,10 @@
 #include "convection.h"
+#include "prism/field/scalar.h"
 
 namespace prism::scheme::convection {
 
 IAppliedConvection::IAppliedConvection(const SharedPtr<field::IVector>& U,
-                                       const SharedPtr<field::IScalar>& phi)
+                                       const SharedPtr<field::Scalar>& phi)
     : _U(U), IFullScheme(phi) {
     // add default boundary handlers for IConvection based types
     using Scheme = std::remove_reference_t<decltype(*this)>;

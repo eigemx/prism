@@ -8,9 +8,9 @@ namespace prism::algo {
 PRIME::PRIME(PRIMEParameters parameters) : _params(parameters) {}
 
 void PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
-                 field::Velocity& U,
-                 field::Velocity& mdot,
-                 field::Pressure& p) {
+                      SharedPtr<field::Velocity>& U,
+                      SharedPtr<field::Velocity>& mdot,
+                      SharedPtr<field::Pressure>& p) {
     if (momentum_predictors.size() != 2 && momentum_predictors.size() != 3) {
         throw std::runtime_error(
             fmt::format("prism::algo::PRIME::step() expects 2 or 3 momentum predictors, not {}",
@@ -36,13 +36,13 @@ void solveMomentumExplicitly(std::span<eqn::Momentum*> momentum_predictors) {
         eqn->updateCoeffs();
         eqn->relax();
 
-        auto& U = eqn->field();
+        auto U = eqn->field();
         const auto& A = eqn->matrix();
         const auto& b = eqn->rhs();
         const auto& ac = A.diagonal();
 
-        const auto H = A * U.values() - ac.cwiseProduct(U.values());
-        U.values() = (-H + b).cwiseQuotient(ac);
+        const auto H = A * U->values() - ac.cwiseProduct(U->values());
+        U->values() = (-H + b).cwiseQuotient(ac);
 
         eqn->zeroOutCoeffs();
     }

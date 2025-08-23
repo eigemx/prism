@@ -49,23 +49,23 @@ auto contribution(Coord coord,
 }
 
 void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
-    field::VelocityComponent field = eqn.field();
-    const auto& mesh = eqn.field().mesh();
+    auto field = eqn.field();
+    const auto& mesh = eqn.field()->mesh();
 
     // Momentum's conserved field is always a VelocityComponent
     using F = field::VelocityComponent;
-    using Convection = scheme::convection::IAppliedConvection<field::Velocity, F>;
+    using Convection = scheme::convection::IAppliedConvection;
     auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
 
-    /// TODO: this is a bit of a hack, what if kappa is not uniform?
-    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::UniformScalar, F>;
+    /// TODO: this is a bit of a hack, what if kappa is not scalar?
+    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::Scalar>;
     auto diff_scheme = castScheme<Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
     LinearSystem sys(mesh->cellCount());
 
-    for (std::size_t face_id : patch.facesIds()) {
+    for (size_t face_id : patch.facesIds()) {
         const auto& face = mesh->face(face_id);
         const auto& owner = mesh->cell(face.owner());
         const auto owner_id = owner.id();
@@ -74,10 +74,10 @@ void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) 
         Vector3d d_Cb = face.center() - owner.center();
         double d_normal = d_Cb.dot(n);
 
-        Vector3d Uc = U.valueAtCell(owner);
+        Vector3d Uc = U->valueAtCell(owner);
 
-        double g = 2 * mu.valueAtFace(face) * face.area() / d_normal;
-        auto [ac, b] = contribution(field.coord().value(), Uc, n);
+        double g = 2 * mu->valueAtFace(face) * face.area() / d_normal;
+        auto [ac, b] = contribution(field->coord().value(), Uc, n);
 
         sys.insert(owner_id, owner_id, g * ac);
         sys.rhs(owner_id) += -g * b;

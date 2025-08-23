@@ -3,15 +3,9 @@
 #include "prism/field/scalar.h"
 
 namespace prism::field {
-
-class PressureBHManagerSetter {
+class Pressure : public Scalar {
   public:
-    using IScalarBHManager =
-        prism::boundary::BoundaryHandlersManager<boundary::scalar::IScalarBoundaryHandler>;
-
-    static void set(IScalarBHManager& manager);
+    using Scalar::Scalar;
 };
-
-using Pressure = GeneralScalar<units::Pascal, PressureBHManagerSetter>;
 
 } // namespace prism::field

@@ -5,6 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <filesystem>
+#include <memory>
 
 auto poisson_analytical_solution(const auto& mesh) -> prism::field::Scalar {
     prism::VectorXd sol;
@@ -25,7 +26,8 @@ auto l2NormRel(const prism::VectorXd& x, const prism::VectorXd& x_ref) -> double
     return (x - x_ref).norm() / x_ref.norm();
 }
 
-auto testPoissonWithMesh(const std::string& mesh_file_name) -> prism::field::Scalar {
+auto testPoissonWithMesh(const std::string& mesh_file_name)
+    -> prism::SharedPtr<prism::field::Scalar> {
     using namespace prism;
     using namespace prism::scheme;
 
@@ -33,7 +35,7 @@ auto testPoissonWithMesh(const std::string& mesh_file_name) -> prism::field::Sca
     auto boundary_file = std::filesystem::path(mesh_file_name).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file_name, boundary_file).toPMesh();
 
-    auto P = field::Scalar("P", mesh, 0.0);
+    auto P = std::make_shared<field::Scalar>("P", mesh, 0.0);
 
     // create source term
     VectorXd src_values;
@@ -48,16 +50,14 @@ auto testPoissonWithMesh(const std::string& mesh_file_name) -> prism::field::Sca
         src_values[cell.id()] = src;
     }
 
-    auto c = field::Tensor("c", mesh, Matrix3d::Identity());
+    auto c = std::make_shared<field::Tensor>("c", mesh, Matrix3d::Identity());
 
-    using laplacian = diffusion::Corrected<field::Tensor,
-                                           scheme::diffusion::nonortho::OverRelaxedCorrector,
-                                           field::Scalar>;
-    auto source = field::Scalar("S", mesh, std::move(src_values));
+    using laplacian =
+        diffusion::Corrected<field::Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector>;
+    auto source = std::make_shared<field::Scalar>("S", mesh, std::move(src_values));
 
-    auto eqn = eqn::Transport<field::Scalar>(
-        laplacian(c, P),                                              // -∇.∇p
-        source::ConstantScalar<Sign::Positive, field::Scalar>(source) // = S
+    auto eqn = eqn::Transport(laplacian(c, P),                               // -∇.∇p
+                              source::ConstantScalar<Sign::Positive>(source) // = S
     );
 
     // solve
@@ -73,12 +73,12 @@ auto testPoissonWithMesh(const std::string& mesh_file_name) -> prism::field::Sca
 
 TEST_CASE("test poisson equation unstructured", "[poisson]") {
     auto P = testPoissonWithMesh("tests/cases/poisson/mesh.unv");
-    double diff_norm = l2NormRel(P.values(), poisson_analytical_solution(P.mesh()).values());
+    double diff_norm = l2NormRel(P->values(), poisson_analytical_solution(P->mesh()).values());
     REQUIRE(diff_norm < 0.078); // for poisson/mesh.unv it should be = 0.0769
 }
 
 TEST_CASE("test poisson equation structured", "[poisson]") {
     auto P = testPoissonWithMesh("tests/cases/poisson/mesh_hex.unv");
-    double diff_norm = l2NormRel(P.values(), poisson_analytical_solution(P.mesh()).values());
+    double diff_norm = l2NormRel(P->values(), poisson_analytical_solution(P->mesh()).values());
     REQUIRE(diff_norm < 0.0004); // for poisson/mesh_hex.unv it should be = 0.000323
 }

@@ -1,14 +1,13 @@
 #pragma once
 
-#include "prism/field/ifield.h"
 #include "source.h"
 
 namespace prism::scheme::source {
-template <Sign SourceSign, field::IScalarBased Field>
-class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
+template <Sign SourceSign>
+class ImplicitField : public IFullScheme, public IImplicitSource {
   public:
-    ImplicitField(Field& phi) : IFullScheme<Field>(phi) {}
-    ImplicitField(double coeff, Field& phi) : IFullScheme<Field>(phi), _coeff(coeff) {}
+    ImplicitField(SharedPtr<field::Scalar>& phi) : IFullScheme(phi) {}
+    ImplicitField(f64 coeff, SharedPtr<field::Scalar>& phi) : IFullScheme(phi), _coeff(coeff) {}
 
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return false; }
@@ -17,17 +16,17 @@ class ImplicitField : public IFullScheme<Field>, public IImplicitSource {
     void applyInterior(const mesh::Face& face) override {}
     void applyBoundary() override {}
 
-    double _coeff {1.0};
+    f64 _coeff {1.0};
 };
 
 
-template <Sign SourceSign, field::IScalarBased Field>
-void ImplicitField<SourceSign, Field>::apply() {
-    this->matrix().setIdentity();
-    this->matrix().diagonal() = _coeff * this->field().mesh()->cellsVolumeVector();
+template <Sign SourceSign>
+void ImplicitField<SourceSign>::apply() {
+    matrix().setIdentity();
+    matrix().diagonal() = _coeff * field()->mesh()->cellsVolumeVector();
 
     if constexpr (SourceSign == Sign::Positive) {
-        this->matrix() *= -1;
+        matrix() *= -1;
         return;
     }
 }

@@ -1,6 +1,7 @@
 #include <prism/prism.h>
 
 #include <filesystem>
+#include <memory>
 
 using namespace prism;
 using namespace prism::scheme;
@@ -25,16 +26,15 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = Scalar("T", mesh, 300.0);
+    auto T = std::make_shared<Scalar>("T", mesh, 300.0);
 
     // diffusion coefficient
     // Note: this does not have to be a tensor, but it is just a demonstration of how to use
     // different diffusion coefficient fields.
-    auto kappa = Tensor("kappa", mesh, Matrix3d::Identity() * 1e-5);
+    auto kappa = std::make_shared<Tensor>("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
     auto eqn = eqn::Transport(
-        diffusion::Corrected<Tensor, diffusion::nonortho::OverRelaxedCorrector, Scalar>(kappa,
-                                                                                        T));
+        diffusion::Corrected<Tensor, diffusion::nonortho::OverRelaxedCorrector>(kappa, T));
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();
@@ -47,8 +47,8 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    prism::exportToVTU(eqn.field(), "solution.vtu");
-    auto gradT_x = ops::grad(T, Coord::X);
+    prism::exportToVTU(*eqn.field(), "solution.vtu");
+    auto gradT_x = ops::grad(*T, Coord::X);
     prism::exportToVTU(gradT_x, "gradT_x_ls.vtu");
 
     return 0;

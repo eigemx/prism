@@ -11,27 +11,27 @@ namespace prism::eqn::boundary {
 auto contribution(Coord coord,
                   const Vector3d& Uc,
                   const Vector3d& Ub,
-                  const Vector3d& n) -> std::pair<double, double> {
+                  const Vector3d& n) -> std::pair<f64, f64> {
     // n
-    double nx = n.x();
-    double ny = n.y();
-    double nz = n.z();
+    f64 nx = n.x();
+    f64 ny = n.y();
+    f64 nz = n.z();
 
     // Uc
-    double uc = Uc.x();
-    double vc = Uc.y();
-    double wc = Uc.z();
+    f64 uc = Uc.x();
+    f64 vc = Uc.y();
+    f64 wc = Uc.z();
 
     // Ub
-    double ub = Ub.x();
-    double vb = Ub.y();
-    double wb = Ub.z();
+    f64 ub = Ub.x();
+    f64 vb = Ub.y();
+    f64 wb = Ub.z();
 
     switch (coord) {
         case Coord::X: {
             // Eqn (15.124)
-            double ac = 1 - (nx * nx);
-            double b = ub * (1 - (nx * nx));
+            f64 ac = 1 - (nx * nx);
+            f64 b = ub * (1 - (nx * nx));
             b += (vc - vb) * ny * nx;
             b += -(wc - wb) * nz * nx;
             return {ac, b};
@@ -39,16 +39,16 @@ auto contribution(Coord coord,
 
         case Coord::Y: {
             // Eqn (15.125)
-            double ac = 1 - (ny * ny);
-            double b = (uc - ub) * nx * ny;
+            f64 ac = 1 - (ny * ny);
+            f64 b = (uc - ub) * nx * ny;
             b += vb * (1 - (ny * ny));
             b += (wc - wb) * nz * ny;
             return {ac, b};
         }
         case Coord::Z: {
             // Eqn (15.126)
-            double ac = 1 - (nz * nz);
-            double b = (uc - ub) * nx * nz;
+            f64 ac = 1 - (nz * nz);
+            f64 b = (uc - ub) * nx * nz;
             b += (vc - vb) * ny * nz;
             b += wb * (1 - (nz * nz));
             return {ac, b};
@@ -61,23 +61,23 @@ auto contribution(Coord coord,
 }
 
 void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
-    field::VelocityComponent field = eqn.field();
-    const auto& mesh = eqn.field().mesh();
+    auto field = eqn.field();
+    const auto& mesh = eqn.field()->mesh();
 
     // Momentum's conserved field is always a VelocityComponent
     using F = field::VelocityComponent;
-    using Convection = scheme::convection::IAppliedConvection<field::Velocity, F>;
+    using Convection = scheme::convection::IAppliedConvection;
     auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
     const auto& U = conv_scheme->U();
 
-    /// TODO: this is a bit of a hack, what if kappa is not uniform?
-    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::UniformScalar, F>;
+    /// TODO: this is a bit of a hack, what if kappa is not scalar?
+    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::Scalar>;
     auto diff_scheme = castScheme<Diffusion>(eqn.diffusionScheme());
     const auto& mu = diff_scheme->kappa();
 
     LinearSystem sys(mesh->cellCount());
 
-    for (std::size_t face_id : patch.facesIds()) {
+    for (size_t face_id : patch.facesIds()) {
         const auto& face = mesh->face(face_id);
         const auto& owner = mesh->cell(face.owner());
         const auto owner_id = owner.id();
@@ -86,15 +86,15 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
         // element to the face (wall patch)
         Vector3d n = face.normal();
         Vector3d d_CB = face.center() - owner.center();
-        double d_normal = d_CB.dot(n);
+        f64 d_normal = d_CB.dot(n);
 
-        Vector3d Uc = U.valueAtCell(owner);
-        Vector3d Ub = U.valueAtFace(face);
+        Vector3d Uc = U->valueAtCell(owner);
+        Vector3d Ub = U->valueAtFace(face);
 
-        double g = mu.valueAtFace(face) * face.area() / d_normal;
+        f64 g = mu->valueAtFace(face) * face.area() / d_normal;
         /// TODO: at a test round, ac & b seems to be zero and this apply() function does not do
         /// anything. Check this again.
-        auto [ac, b] = contribution(field.coord().value(), Uc, Ub, n);
+        auto [ac, b] = contribution(field->coord().value(), Uc, Ub, n);
 
         sys.insert(owner_id, owner_id, g * ac);
         sys.rhs(owner_id) += g * b;

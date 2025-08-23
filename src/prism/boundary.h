@@ -119,14 +119,14 @@ namespace detail {
 template <typename Applier>
 void applyBoundary(const std::string& applier_name, Applier& applier) {
     auto _phi = applier.field();
-    const auto& mesh = _phi.mesh();
+    const auto& mesh = _phi->mesh();
 
     for (const auto& patch : mesh->boundaryPatches()) {
         if (patch.isEmpty()) {
             continue;
         }
 
-        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
+        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi->name());
         auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler == nullptr) {
@@ -151,14 +151,14 @@ void applyBoundary(const std::string& applier_name, Applier& applier) {
 template <typename Applier>
 void applyBoundaryIfExists(const std::string& applier_name, Applier& applier) {
     auto _phi = applier.field();
-    const auto& mesh = _phi.mesh();
+    const auto& mesh = _phi->mesh();
 
     for (const auto& patch : mesh->boundaryPatches()) {
         if (patch.isEmpty()) {
             continue;
         }
 
-        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi.name());
+        const mesh::BoundaryCondition& bc = patch.getBoundaryCondition(_phi->name());
         auto handler = applier.boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler == nullptr) {

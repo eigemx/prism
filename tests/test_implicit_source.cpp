@@ -10,6 +10,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <filesystem>
+#include <memory>
 
 using namespace prism;
 using namespace prism::scheme;
@@ -39,14 +40,13 @@ TEST_CASE("test implicit source", "[implicit-source]") {
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto y = field::Scalar("y", mesh, 0.0);
-    auto c = field::UniformScalar("c", mesh, 1.0);
+    auto y = std::make_shared<field::Scalar>("y", mesh, 0.0);
+    auto c = std::make_shared<field::Scalar>("c", mesh, 1.0);
 
-    using laplacian = diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
+    using laplacian = diffusion::NonCorrected<field::Scalar>;
 
-    auto eqn = eqn::Transport<field::Scalar>(
-        laplacian(c, y),                                           // -∇.∇y
-        source::ImplicitField<Sign::Negative, field::Scalar>(4, y) // = -4y
+    auto eqn = eqn::Transport(laplacian(c, y),                            // -∇.∇y
+                              source::ImplicitField<Sign::Negative>(4, y) // = -4y
     );
 
     // solve
@@ -57,6 +57,6 @@ TEST_CASE("test implicit source", "[implicit-source]") {
         solver.solve(eqn, 15, 1e-20);
     }
 
-    auto norm = l2NormRelative(y.values(), implicit_analytic_solution(mesh).values());
+    auto norm = l2NormRelative(y->values(), implicit_analytic_solution(mesh).values());
     REQUIRE(norm < 0.005);
 }

@@ -3,15 +3,9 @@
 #include "prism/field/scalar.h"
 
 namespace prism::field {
-
-class DensityBHManagerSetter {
+class Density : public Scalar {
   public:
-    using IScalarBHManager =
-        prism::boundary::BoundaryHandlersManager<boundary::scalar::IScalarBoundaryHandler>;
-
-    static void set(IScalarBHManager& manager);
+    using Scalar::Scalar;   // Inherit constructors of field::Scalar
 };
-
-using Density = GeneralScalar<units::DensityUnit, DensityBHManagerSetter>;
 
 } // namespace prism::field
