@@ -53,8 +53,6 @@ class Transport : public LinearSystem,
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
 
-  private:
-    /// TODO: Should this be IConvectionBased and IDiffusionBased instead?
     template <scheme::convection::IAppliedConvectionBased Convection>
     void addScheme(Convection&& convection);
 
@@ -70,6 +68,8 @@ class Transport : public LinearSystem,
     template <scheme::temporal::ITemporalBased Temporal>
     void addScheme(Temporal&& temporal);
 
+  private:
+    /// TODO: Should this be IConvectionBased and IDiffusionBased instead?
     // Conserved field of the equation
     SharedPtr<field::Scalar> _phi;
 
