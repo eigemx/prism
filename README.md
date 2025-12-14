@@ -19,15 +19,12 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
     // solve for temperature advection: ∇.(UT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector.
 
-    // first template parameter specifies the type for advective field and
-    // the second for the transport field (temperature scalar field)
     // ∇.(UT)
-    using div = scheme::convection::LinearUpwind<field::Velocity, field::Scalar>;
+    using div = convection::Upwind;
 
-    // first template parameter specifies the type for diffusion coefficient and
-    // the second for the transport field (temperature scalar field)
     // - ∇.(κ ∇T)
-    using laplacian = scheme::diffusion::NonCorrected<field::UniformScalar, field::Scalar>;
+    // the template parameter specifies the type for diffusion coefficient
+    using laplacian = diffusion::NonCorrected<field::Scalar>;
 
     auto eqn = eqn::Transport(div(U, T),            //   ∇.(UT)
                               laplacian(kappa, T)   // - ∇.(κ ∇T) = 0
@@ -38,7 +35,7 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
     solver.solve(eqn);
 ```
 
-The following example shows how pressure correction equation is implemented in prism, the complete code can be found in `examples\SIMPLESolver\main.cpp`
+The following example shows how pressure correction equation is implemented in prism, the complete code can be found in `algorithm/SIMPLE.cpp`
 
 ```cpp
     // here we create the type for diffusion (laplacian operator) with over-relaxed non-orthogonal corrector
@@ -46,16 +43,15 @@ The following example shows how pressure correction equation is implemented in p
                                         // diffusion coefficient type
                                         field::Tensor,
                                         // non-orthogonal correction type
-                                        diffusion::nonortho::OverRelaxedCorrector,
-                                        // transport field type
-                                        field::Pressure
+                                        diffusion::nonortho::OverRelaxedCorrector
                                         >;
+
     // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
-    using div_U = source::Divergence<Sign::Negative, field::Velocity>;
+    using div_U = source::Divergence<Sign::Negative>;
 
     // assemble pressure correction equation
-    auto pEqn = eqn::Transport<field::Pressure>(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
-                                                div_U(mDot)              // == - (∇.U)
+    auto pEqn = eqn::Transport(laplacian_p(D, P_prime), // - ∇.(D ∇P_prime)
+                               div_U(mDot)              // == - (∇.U)
     );
 ```
 
@@ -134,7 +130,7 @@ Once build is complete, check `bin` folder for the built applications, and also 
 ./build/bin/SIMPLESolver tests/cases/pipeCoarse/mesh.unv
 ./build/bin/laplacianSolver tests/cases/torus/mesh.unv
 ./build/bin/advectionSolver tests/cases/duct/mesh.unv
-./build/bind/poissonSolver tests/cases/poisson/mesh.unv
+./build/bin/poissonSolver tests/cases/poisson/mesh.unv
 ```
 
 ## How to contribute
