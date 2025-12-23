@@ -17,7 +17,7 @@
 namespace prism::algo {
 using field::Pressure;
 
-void solveMomentumImplicitly(SIMPLEParameters params,
+void solveImplicitMomentum(SIMPLEParameters params,
                              std::span<eqn::Momentum*> momentum_predictors) {
     // solve momentum equations implicitly
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
@@ -158,7 +158,7 @@ void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                         momentum_predictors.size()));
     }
 
-    solveMomentumImplicitly(_params, momentum_predictors);
+    solveImplicitMomentum(_params, momentum_predictors);
     auto [pprime, D] = solvePressureEquation(_params, momentum_predictors, U, mdot, p);
     correctFields(U, mdot, p, D, pprime, _params.pressure_urf);
 }

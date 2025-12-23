@@ -47,8 +47,8 @@ class IncompressibleSIMPLE : public IPressureLinked {
     SIMPLEParameters _params;
 };
 
-void solveMomentumImplicitly(SIMPLEParameters params,
-                             std::span<eqn::Momentum*> momentum_predictors);
+void solveImplicitMomentum(SIMPLEParameters params,
+                           std::span<eqn::Momentum*> momentum_predictors);
 
 void constrainPPrime(SharedPtr<field::Pressure>& pprime);
 

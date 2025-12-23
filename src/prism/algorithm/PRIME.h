@@ -36,6 +36,6 @@ class PRIME : public IPressureLinked {
     PRIMEParameters _params;
 };
 
-void solveMomentumExplicitly(std::span<eqn::Momentum*> momentum_predictors);
+void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors);
 
 } // namespace prism::algo
