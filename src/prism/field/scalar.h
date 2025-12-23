@@ -30,24 +30,18 @@ class Scalar
       public prism::boundary::BHManagerProvider<boundary::scalar::IScalarBoundaryHandler> {
   public:
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value);
-
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, Coord coord);
-
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data);
-
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data, Coord coord);
-
     Scalar(std::string name,
            const SharedPtr<mesh::PMesh>& mesh,
            VectorXd data,
            VectorXd face_data);
-
     Scalar(std::string name,
            const SharedPtr<mesh::PMesh>& mesh,
            VectorXd data,
            VectorXd face_data,
            Coord coord);
-
     Scalar(const Scalar&) = default;
     Scalar(Scalar&&) = default;
     auto operator=(const Scalar&) -> Scalar& = default;
