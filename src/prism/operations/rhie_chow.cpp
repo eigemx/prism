@@ -18,8 +18,10 @@ auto pressureGradCalculated(const mesh::Face& face,
 
     auto gradp_ortho = (p_neigh - p_owner) / d_CF_norm;
 
-    return gradp_avg + ((gradp_ortho - gradp_avg.dot(e_CF)) * e_CF); // book
-    // return gradp_avg - (gradp_avg.dot(e_CF) * e_CF) + (gradp_ortho * e_CF); // foam
+    return gradp_avg + ((gradp_ortho - gradp_avg.dot(e_CF)) * e_CF);
+
+    // The following  is based on OpenFOAM implementation as listed in the reference book
+    // return gradp_avg - (gradp_avg.dot(e_CF) * e_CF) + (gradp_ortho * e_CF);
 }
 
 } // namespace prism::ops::detail

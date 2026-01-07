@@ -7,10 +7,6 @@
 using namespace prism;
 namespace fs = std::filesystem;
 
-void test(const SharedPtr<field::Scalar>& phi) {
-    log::info("{}", phi->mesh()->cellCount());
-}
-
 auto main(int argc, char* argv[]) -> int {
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
@@ -54,6 +50,7 @@ auto main(int argc, char* argv[]) -> int {
                               laplacian(nu, U->y()), // -∇.(ν∇v)
                               grad(p, Coord::Y)      // = -∂p/∂y
     );
+
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();

@@ -81,9 +81,7 @@ class Transport : public LinearSystem,
     SharedPtr<scheme::IFullScheme> _temporal_scheme;
 
     size_t _n_corrected_schemes {0};
-
     f64 _relaxation_factor {1.0};
-
     bool _is_transient {false};
 };
 
