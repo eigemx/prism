@@ -92,8 +92,8 @@ auto arePatchesAnArray(const json& doc) -> bool {
  * @throws std::runtime_error If the field does not contain required "name" or "type" keys.
  */
 auto parseField(const json& field) -> FieldInfo {
-    std::optional<std::string> grad_scheme = std::nullopt;
-    std::optional<std::vector<double>> units = std::nullopt;
+    Optional<std::string> grad_scheme = NullOption;
+    Optional<std::vector<double>> units = NullOption;
 
     if (!field.contains("name") || !field.contains("type")) {
         throw std::runtime_error("prism::mesh::parseField(): Field must contain name and type");
@@ -404,8 +404,8 @@ FieldInfo::FieldInfo(std::string name, std::string type)
 
 FieldInfo::FieldInfo(std::string name,
                      std::string type,
-                     std::optional<std::string> grad_scheme,
-                     std::optional<std::vector<double>> units)
+                     Optional<std::string> grad_scheme,
+                     Optional<std::vector<double>> units)
     : _name(std::move(name)),
       _type(std::move(type)),
       _grad_scheme(std::move(grad_scheme)),
@@ -417,10 +417,10 @@ auto FieldInfo::name() const noexcept -> const std::string& {
 auto FieldInfo::type() const noexcept -> const std::string& {
     return _type;
 }
-auto FieldInfo::gradScheme() const noexcept -> const std::optional<std::string>& {
+auto FieldInfo::gradScheme() const noexcept -> const Optional<std::string>& {
     return _grad_scheme;
 }
-auto FieldInfo::units() const noexcept -> const std::optional<std::vector<double>>& {
+auto FieldInfo::units() const noexcept -> const Optional<std::vector<double>>& {
     return _units;
 }
 

@@ -73,14 +73,6 @@ class PMesh {
     VectorXd _cells_volume;
 };
 
-class PMeshPtr {
-  public:
-    PMeshPtr(const PMesh* ptr);
-
-  private:
-    const PMesh* _ptr;
-};
-
 class ToPMeshConverter {
   public:
     /** @brief Converts a mesh to a PMesh object.

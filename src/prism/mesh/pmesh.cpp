@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <stdexcept>
 #include <span>
+#include <stdexcept>
 
 #include "prism/log.h"
 
@@ -146,6 +146,7 @@ auto PMesh::cellsVolumeVector() const noexcept -> const VectorXd& {
 }
 
 auto PMesh::otherSharingCell(const Cell& c, const Face& f) const -> const Cell& {
+    /// TODO: This is dangerous if called for a boundary face (no neighbor). Fix.
     assert(f.isInterior() && "prism::mesh::Mesh::otherSharingCell() called on a boundary face!");
     auto n_id = f.owner() == c.id() ? f.neighbor().value() : f.owner();
     return _cells[n_id];

@@ -3,7 +3,6 @@
 #include <prism/types.h>
 
 #include <filesystem>
-#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -20,19 +19,19 @@ class FieldInfo {
     FieldInfo(std::string name, std::string type);
     FieldInfo(std::string name,
               std::string type,
-              std::optional<std::string> grad_scheme,
-              std::optional<std::vector<double>> units);
+              Optional<std::string> grad_scheme,
+              Optional<std::vector<double>> units);
 
     auto name() const noexcept -> const std::string&;
     auto type() const noexcept -> const std::string&;
-    auto gradScheme() const noexcept -> const std::optional<std::string>&;
-    auto units() const noexcept -> const std::optional<std::vector<double>>&;
+    auto gradScheme() const noexcept -> const Optional<std::string>&;
+    auto units() const noexcept -> const Optional<std::vector<double>>&;
 
   private:
     std::string _name;
     std::string _type;
-    std::optional<std::string> _grad_scheme;
-    std::optional<std::vector<double>> _units;
+    Optional<std::string> _grad_scheme;
+    Optional<std::vector<double>> _units;
 };
 
 class BoundaryCondition {
