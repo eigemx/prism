@@ -174,7 +174,6 @@ auto readFieldsBoundaryFile(const std::string& field_name, const json& doc) -> F
         auto name = patch["name"].get<std::string>();
         auto type = patch["type"].get<std::string>();
 
-        // Check if patch has a value field
         if (patch.contains("value")) {
             auto value = patch["value"];
             if (value.is_number()) {
@@ -182,7 +181,6 @@ auto readFieldsBoundaryFile(const std::string& field_name, const json& doc) -> F
                     BoundaryConditionValueKind::Scalar, value.get<double>(), type);
                 boundary_file.patchToBoundaryCondition.insert({name, bc});
             } else if (value.is_array()) {
-                // make sure that the array is of size 3
                 if (value.size() != 3) {
                     throw std::runtime_error(
                         fmt::format("prism::mesh::readBoundaryFile(): expected array of size 3 "
@@ -196,7 +194,6 @@ auto readFieldsBoundaryFile(const std::string& field_name, const json& doc) -> F
                 boundary_file.patchToBoundaryCondition.insert({name, bc});
             }
         } else {
-            // patch does not have a value (empty, symmetry, outlet,...)
             auto bc = BoundaryCondition(BoundaryConditionValueKind::Nil, 0.0, type);
             boundary_file.patchToBoundaryCondition.insert({name, bc});
         }
@@ -238,7 +235,7 @@ auto readFieldsBoundaryFiles(const std::filesystem::path& path,
 
 /**
  * @brief Extracts unique boundary patches from all field boundary files.
- * @param boundary_files Vector of FieldBoundaryFile objects.
+ * @param field_boundary_files Vector of FieldBoundaryFile objects.
  * @return A vector of BoundaryPatch objects.
  */
 auto extractBoundaryPatches(const std::vector<FieldBoundaryFile>& field_boundary_files)
@@ -266,7 +263,6 @@ auto extractBoundaryPatches(const std::vector<FieldBoundaryFile>& field_boundary
  */
 auto parsePatches(const std::filesystem::path& path, const std::vector<FieldInfo>& fields)
     -> std::vector<BoundaryPatch> {
-    // check if there is a json file for every field defined in fields.json file
     if (!fieldsFilesExist(fields, path)) {
         throw std::runtime_error(
             fmt::format("prism::mesh::readBoundaryFile(): Some field defined in `fields.json` "
@@ -279,7 +275,6 @@ auto parsePatches(const std::filesystem::path& path, const std::vector<FieldInfo
         return {};
     }
 
-    // make sure that boundary files are consistent
     auto patches_count = field_boundary_files.at(0).patchToBoundaryCondition.size();
 
     for (const auto& field_file : field_boundary_files) {
@@ -293,13 +288,7 @@ auto parsePatches(const std::filesystem::path& path, const std::vector<FieldInfo
     return extractBoundaryPatches(field_boundary_files);
 }
 
-/**
- * @brief Constructs a MeshBoundary by reading and parsing boundary condition files.
- * @param path Path to the fields.json file.
- * @throws std::runtime_error If file cannot be opened, parsed, or contains invalid data.
- */
 MeshBoundary::MeshBoundary(const std::filesystem::path& path) {
-    // read boundary file
     auto file = std::ifstream(path);
 
     if (!file) {
@@ -329,18 +318,10 @@ MeshBoundary::MeshBoundary(const std::filesystem::path& path) {
     _boundary_patches = parsePatches(path, _fields);
 }
 
-/**
- * @brief Returns the vector of fields defined in the boundary file.
- * @return const reference to vector of FieldInfo.
- */
 auto MeshBoundary::fields() const noexcept -> const std::vector<FieldInfo>& {
     return _fields;
 }
 
-/**
- * @brief Returns the vector of boundary patches.
- * @return const reference to vector of BoundaryPatch.
- */
 auto MeshBoundary::patches() const noexcept -> const std::vector<BoundaryPatch>& {
     return _boundary_patches;
 }
@@ -364,37 +345,19 @@ auto isComponentField(const std::string& name) -> bool {
     return false;
 }
 
-/**
- * @brief Constructs a BoundaryCondition with the specified type, value, and kind string.
- * @param type The value kind (Nil, Scalar, or Vector).
- * @param value The boundary condition value.
- * @param bc_type_str The boundary condition type string (e.g., "fixedValue", "zeroGradient").
- */
 BoundaryCondition::BoundaryCondition(BoundaryConditionValueKind type,
                                      BoundaryConditionValue value,
                                      std::string bc_type_str)
     : _value_kind(type), _value(std::move(value)), _kind_str(std::move(bc_type_str)) {}
 
-/**
- * @brief Returns the value kind of this boundary condition.
- * @return The BoundaryConditionValueKind.
- */
 auto BoundaryCondition::valueKind() const noexcept -> BoundaryConditionValueKind {
     return _value_kind;
 }
 
-/**
- * @brief Returns the value of this boundary condition.
- * @return const reference to the BoundaryConditionValue.
- */
 auto BoundaryCondition::value() const noexcept -> const BoundaryConditionValue& {
     return _value;
 }
 
-/**
- * @brief Returns the kind string of this boundary condition.
- * @return const reference to the kind string.
- */
 auto BoundaryCondition::kindString() const noexcept -> const std::string& {
     return _kind_str;
 }
@@ -425,12 +388,6 @@ auto FieldInfo::units() const noexcept -> const Optional<std::vector<double>>& {
 }
 
 
-/**
- * @brief Constructs a BoundaryPatch with the given name and field-to-BC map.
- * @param name The name of the boundary patch.
- * @param field_name_to_bc_map Map of field names to their boundary conditions.
- * @throws std::runtime_error If the field name to BC map is empty.
- */
 BoundaryPatch::BoundaryPatch(std::string name,
                              std::map<std::string, BoundaryCondition> field_name_to_bc_map)
     : _name(std::move(name)), _field_name_to_bc_map(std::move(field_name_to_bc_map)) {
@@ -449,58 +406,33 @@ BoundaryPatch::BoundaryPatch(std::string name,
     }
 }
 
-/**
- * @brief Returns the name of the boundary patch.
- * @return const reference to the patch name.
- */
 auto BoundaryPatch::name() const noexcept -> const std::string& {
     return _name;
 }
 
-/**
- * @brief Checks if this patch is an empty patch.
- * @return true if the patch is empty, false otherwise.
- */
 auto BoundaryPatch::isEmpty() const noexcept -> bool {
     return _is_empty;
 }
 
-/**
- * @brief Returns the const reference to face IDs associated with this patch.
- * @return const reference to vector of face IDs.
- */
 auto BoundaryPatch::facesIds() const noexcept -> const std::vector<std::size_t>& {
     return _faces_ids;
 }
 
-/**
- * @brief Returns the mutable reference to face IDs associated with this patch.
- * @return reference to vector of face IDs.
- */
 auto BoundaryPatch::facesIds() noexcept -> std::vector<std::size_t>& {
     return _faces_ids;
 }
 
-/**
- * @brief Gets the boundary condition for a given field name.
- * @param field_name The name of the field.
- * @return A const reference to the BoundaryCondition.
- * @throws std::runtime_error If the field is not found in the patch.
- */
 auto BoundaryPatch::getBoundaryCondition(const std::string& field_name) const
     -> const BoundaryCondition& {
-    // Search for the field name in the boundary patch
     auto it = _field_name_to_bc_map.find(field_name);
 
     if (it == _field_name_to_bc_map.end()) {
-        // search for the parent field, if exists
         if (isComponentField(field_name)) {
             it = _field_name_to_bc_map.find(field_name.substr(0, field_name.size() - 2));
         }
     }
 
     if (it == _field_name_to_bc_map.end()) {
-        // field not found
         throw std::runtime_error(
             fmt::format("prism::mesh::BoundaryPatch::getBoundaryCondition(): "
                         "Boundary patch `{}` does not have a field named `{}`",
@@ -511,27 +443,14 @@ auto BoundaryPatch::getBoundaryCondition(const std::string& field_name) const
     return it->second;
 }
 
-/**
- * @brief Gets the scalar boundary condition value for a given field.
- * @param field_name The name of the field.
- * @return The scalar value.
- * @throws std::runtime_error If the field is not found or is not a scalar.
- */
 auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) const -> double {
-    // in some cases we're dealing with a ScalarField that is a component of a parent
-    // VectorField, such as when dealing with the x-component ScalarField of a velocity
-    // VectorField U. in this case we won't find the boundary condition value for U_x as a
-    // single scalar BC, but we can get it from the first component of the vector BC value of
-    // U.
     if (isComponentField(field_name)) {
         return getScalarBCSubfield(field_name);
     }
 
-    // Search for the field name in the boundary patch
     auto it = _field_name_to_bc_map.find(field_name);
 
     if (it == _field_name_to_bc_map.end()) {
-        // field not found
         throw std::runtime_error(
             fmt::format("prism::mesh::BoundaryPatch::getScalarBoundaryCondition(): "
                         "Boundary patch '{}' does not have a field named '{}'",
@@ -540,7 +459,6 @@ auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) co
     }
 
     if (it->second.valueKind() != BoundaryConditionValueKind::Scalar) {
-        // field is not a scalar
         throw std::runtime_error(
             fmt::format("prism::mesh::BoundaryPatch::getScalarBoundaryCondition(): "
                         "Boundary patch '{}' field '{}' is not a scalar",
@@ -552,18 +470,10 @@ auto BoundaryPatch::getScalarBoundaryCondition(const std::string& field_name) co
 }
 
 
-/**
- * @brief Gets the vector boundary condition value for a given field.
- * @param field_name The name of the field.
- * @return The vector value as Vector3d.
- * @throws std::runtime_error If the field is not found or is not a vector.
- */
 auto BoundaryPatch::getVectorBoundaryCondition(const std::string& field_name) const -> Vector3d {
-    // Search for the field name in the boundary patch
     auto it = _field_name_to_bc_map.find(field_name);
 
     if (it == _field_name_to_bc_map.end()) {
-        // field not found
         throw std::runtime_error(
             fmt::format("prism::mesh::BoundaryPatch::getVectorBoundaryCondition(): "
                         "Boundary patch '{}' does not have a field named '{}'",
@@ -572,7 +482,6 @@ auto BoundaryPatch::getVectorBoundaryCondition(const std::string& field_name) co
     }
 
     if (it->second.valueKind() != BoundaryConditionValueKind::Vector) {
-        // field is not a vector
         throw std::runtime_error(
             fmt::format("prism::mesh::BoundaryPatch::getVectorBoundaryCondition(): "
                         "Boundary patch '{}' field '{}' is not a vector",
@@ -583,12 +492,6 @@ auto BoundaryPatch::getVectorBoundaryCondition(const std::string& field_name) co
     return std::get<Vector3d>(it->second.value());
 }
 
-/**
- * @brief Gets a scalar component from a vector boundary condition subfield.
- * @param name The component field name (e.g., "U_x", "U_y", "U_z").
- * @return The scalar component value.
- * @throws std::runtime_error If the field name doesn't end with a valid cartesian component.
- */
 auto BoundaryPatch::getScalarBCSubfield(const std::string& name) const -> double {
     const auto& vec_value = getVectorBoundaryCondition(name.substr(0, name.size() - 2));
 

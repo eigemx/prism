@@ -52,12 +52,10 @@ void HistoryManager::resize(std::size_t new_size) {
         return;
     }
 
-    // If the new size is smaller, truncate the history
     if (new_size < _history.size()) {
         _history.resize(new_size);
     }
 
-    // Update the max steps and reserve capacity
     _max_steps = new_size;
     _history.reserve(_max_steps);
 }
