@@ -26,9 +26,18 @@ struct FieldBoundaryFile {
  */
 auto fileToString(const std::filesystem::path& path) -> std::string {
     std::ifstream file(path);
+    if (!file.is_open()) {
+        throw std::runtime_error(
+            fmt::format("prism::mesh::fileToString(): failed to open file {}", path.string()));
+    }
     std::stringstream buffer;
     buffer << file.rdbuf();
-    return buffer.str();
+    auto content = buffer.str();
+    if (content.empty()) {
+        throw std::runtime_error(fmt::format(
+            "prism::mesh::fileToString(): boundary conditions file {} is empty!", path.string()));
+    }
+    return content;
 }
 
 /**
@@ -87,7 +96,7 @@ auto parseField(const json& field) -> FieldInfo {
     std::optional<std::vector<double>> units = std::nullopt;
 
     if (!field.contains("name") || !field.contains("type")) {
-        throw std::runtime_error("Field must contain name and type");
+        throw std::runtime_error("prism::mesh::parseField(): Field must contain name and type");
     }
 
     auto name = field["name"].get<std::string>();
@@ -99,7 +108,6 @@ auto parseField(const json& field) -> FieldInfo {
     if (field.contains("units")) {
         units = field["units"].get<std::vector<double>>();
     }
-
 
     return {name, type, grad_scheme, units};
 }
@@ -123,8 +131,8 @@ auto parseFields(const json& fields) -> std::vector<FieldInfo> {
  * @param path Path to the fields.json file.
  * @return True if all field boundary files exist, false otherwise.
  */
-auto fieldsFilesExist(const std::vector<FieldInfo>& fields,
-                      const std::filesystem::path& path) -> bool {
+auto fieldsFilesExist(const std::vector<FieldInfo>& fields, const std::filesystem::path& path)
+    -> bool {
     for (const auto& field : fields) {
         auto file_name = fmt::format("{}.json", field.name());
         auto file_path = path.parent_path() / file_name;
@@ -149,8 +157,8 @@ auto readFieldsBoundaryFile(const std::string& field_name, const json& doc) -> F
 
     if (!containsPatches(doc) || !arePatchesAnArray(doc)) {
         throw std::runtime_error(
-            fmt::format("prism::mesh::readBoundaryFile(): file `{}` either don't contain "
-                        "`patches` field of `patches` is not an array",
+            fmt::format("prism::mesh::readBoundaryFile(): file `{}` either doesn't contain "
+                        "`patches` field of `patches` entry is not an array",
                         field_name));
     }
 
@@ -159,7 +167,7 @@ auto readFieldsBoundaryFile(const std::string& field_name, const json& doc) -> F
     for (const auto& patch : patches) {
         if (!patch.contains("name") || !patch.contains("type")) {
             throw std::runtime_error(
-                fmt::format("prism::mesh::readBoundaryFile(): file `{}` either don't contain "
+                fmt::format("prism::mesh::readBoundaryFile(): file `{}` either doesn't contain "
                             "`name` or `type` field",
                             field_name));
         }
@@ -233,28 +241,18 @@ auto readFieldsBoundaryFiles(const std::filesystem::path& path,
  * @param boundary_files Vector of FieldBoundaryFile objects.
  * @return A vector of BoundaryPatch objects.
  */
-auto extractBoundaryPatches(const std::vector<FieldBoundaryFile>& boundary_files)
+auto extractBoundaryPatches(const std::vector<FieldBoundaryFile>& field_boundary_files)
     -> std::vector<BoundaryPatch> {
-    // each boundary file contains a map of patch name to boundary condition, we need to extract
-    // the patch names (keys of the map) to a std::vector
-    std::set<std::string> patch_names;
-    for (const auto& boundary_file : boundary_files) {
-        for (const auto& [name, _] : boundary_file.patchToBoundaryCondition) {
-            patch_names.insert(name);
-        }
-    }
-
     auto patches = std::vector<BoundaryPatch>();
-    for (const auto& patch_name : patch_names) {
-        std::map<std::string, BoundaryCondition> field_to_bc;
-        for (const auto& boundary_file : boundary_files) {
-            auto it = boundary_file.patchToBoundaryCondition.find(patch_name);
-            if (it != boundary_file.patchToBoundaryCondition.end()) {
-                field_to_bc.insert({boundary_file.fieldName, it->second});
-            }
+
+    for (const auto& [patch_name, _] : field_boundary_files.front().patchToBoundaryCondition) {
+        std::map<std::string, BoundaryCondition> field_name_to_bc;
+        for (const auto& boundary_file : field_boundary_files) {
+            field_name_to_bc.insert(
+                {boundary_file.fieldName, boundary_file.patchToBoundaryCondition.at(patch_name)});
         }
 
-        patches.emplace_back(patch_name, field_to_bc);
+        patches.emplace_back(patch_name, field_name_to_bc);
     }
     return patches;
 }
@@ -266,29 +264,33 @@ auto extractBoundaryPatches(const std::vector<FieldBoundaryFile>& boundary_files
  * @return A vector of BoundaryPatch objects.
  * @throws std::runtime_error If field files don't exist or are inconsistent.
  */
-auto parsePatches(const std::filesystem::path& path,
-                  const std::vector<FieldInfo>& fields) -> std::vector<BoundaryPatch> {
-    // check if there is a json file for every field
+auto parsePatches(const std::filesystem::path& path, const std::vector<FieldInfo>& fields)
+    -> std::vector<BoundaryPatch> {
+    // check if there is a json file for every field defined in fields.json file
     if (!fieldsFilesExist(fields, path)) {
         throw std::runtime_error(
             fmt::format("prism::mesh::readBoundaryFile(): Some field defined in `fields.json` "
                         "file are not present in a dedicated boundary conditions file"));
     }
 
-    auto boundary_files = readFieldsBoundaryFiles(path, fields);
+    std::vector<FieldBoundaryFile> field_boundary_files = readFieldsBoundaryFiles(path, fields);
+
+    if (field_boundary_files.empty()) {
+        return {};
+    }
 
     // make sure that boundary files are consistent
-    auto patches_count = boundary_files.at(0).patchToBoundaryCondition.size();
+    auto patches_count = field_boundary_files.at(0).patchToBoundaryCondition.size();
 
-    for (const auto& boundary_file : boundary_files) {
-        if (boundary_file.patchToBoundaryCondition.size() != patches_count) {
+    for (const auto& field_file : field_boundary_files) {
+        if (field_file.patchToBoundaryCondition.size() != patches_count) {
             throw std::runtime_error(
                 "prism::mesh::readBoundaryFile(): boundary conditions files are "
                 "not consistent, please make sure that all boundary conditions "
                 "files have the same number of patches");
         }
     }
-    return extractBoundaryPatches(boundary_files);
+    return extractBoundaryPatches(field_boundary_files);
 }
 
 /**
@@ -399,18 +401,6 @@ auto BoundaryCondition::kindString() const noexcept -> const std::string& {
 
 FieldInfo::FieldInfo(std::string name, std::string type)
     : _name(std::move(name)), _type(std::move(type)) {}
-
-FieldInfo::FieldInfo(std::string name, std::string type, std::string grad_scheme)
-    : _name(std::move(name)), _type(std::move(type)), _grad_scheme(std::move(grad_scheme)) {}
-
-FieldInfo::FieldInfo(std::string name,
-                     std::string type,
-                     std::string grad_scheme,
-                     std::vector<double> units)
-    : _name(std::move(name)),
-      _type(std::move(type)),
-      _grad_scheme(std::move(grad_scheme)),
-      _units(std::move(units)) {}
 
 FieldInfo::FieldInfo(std::string name,
                      std::string type,

@@ -12,16 +12,12 @@ namespace prism::mesh {
 
 enum class BoundaryConditionValueKind { Nil, Scalar, Vector };
 
+
 using BoundaryConditionValue = std::variant<double, Vector3d>;
 
 class FieldInfo {
   public:
     FieldInfo(std::string name, std::string type);
-    FieldInfo(std::string name, std::string type, std::string grad_scheme);
-    FieldInfo(std::string name,
-              std::string type,
-              std::string grad_scheme,
-              std::vector<double> units);
     FieldInfo(std::string name,
               std::string type,
               std::optional<std::string> grad_scheme,

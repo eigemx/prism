@@ -1,0 +1,9 @@
+{
+    "patches": [
+        {
+            "name": "Wall",
+            "type": "noSlip",
+            "value": [0.0, 0.0, 0.0]
+        }
+    ]
+}

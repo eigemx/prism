@@ -1,0 +1,14 @@
+{
+    "patches": [
+        {
+            "name": "Wall",
+            "type": "fixed",
+            "value": 300.0
+        },
+        {
+            "name": "Inlet",
+            "type": "fixed",
+            "value": 350.0
+        }
+    ]
+}

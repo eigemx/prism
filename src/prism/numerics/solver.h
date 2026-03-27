@@ -6,7 +6,7 @@
 #include "prism/log.h"
 
 namespace prism::solver::detail {
-/// TODO: residual should not be under detal namespace, and we should implement different residual
+/// TODO: residual should not be under detail namespace, and we should implement different residual
 /// forms.
 auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double;
 } // namespace prism::solver::detail

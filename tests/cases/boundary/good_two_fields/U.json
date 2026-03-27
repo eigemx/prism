@@ -1,0 +1,18 @@
+{
+    "patches": [
+        {
+            "name": "Wall",
+            "type": "noSlip"
+        },
+        {
+            "name": "Inlet",
+            "type": "fixed",
+            "value": [1.0, 0.0, 0.0]
+        },
+        {
+            "name": "Outlet",
+            "type": "outlet",
+            "value": [0.0, 0.0, 0.0]
+        }
+    ]
+}
