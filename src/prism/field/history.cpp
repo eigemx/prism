@@ -2,7 +2,7 @@
 
 namespace prism::field {
 
-HistoryManager::HistoryManager(int num_time_steps) : _max_steps(num_time_steps) {
+HistoryManager::HistoryManager(std::size_t num_time_steps) : _max_steps(num_time_steps) {
     _history.reserve(_max_steps);
 }
 

@@ -169,7 +169,7 @@ void Scalar::setFaceValues(VectorXd values) {
 }
 
 void Scalar::clearFaceValues() {
-    if (_face_values.size() > 0) {
+    if (_face_values.size() == 0) {
         log::warn(
             "Scalar::clearFaceValues() was called for field '{}', but the face data is not "
             "initialized.",
@@ -357,20 +357,17 @@ void Scalar::updatePrevTimeSteps() {
 }
 
 auto Scalar::prevValues() const -> Optional<VectorXd> {
-    /// TODO: implement this
-    return NullOption;
+    return _history_manager.prevValues();
 }
 
 
 auto Scalar::prevPrevValues() const -> Optional<VectorXd> {
-    /// TODO: implement this
-    return NullOption;
+    return _history_manager.prevPrevValues();
 }
 
 
 auto Scalar::getHistory(std::size_t index) const -> Optional<VectorXd> {
-    /// TODO: implement this
-    return NullOption;
+    return _history_manager.valuesAt(index);
 }
 
 

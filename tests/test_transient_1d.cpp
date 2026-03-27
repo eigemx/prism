@@ -25,7 +25,7 @@ auto transientAnalyticalSolution(prism::f64 x, prism::f64 t, prism::f64 kappa) -
 }
 
 
-TEST_CASE("solve transient diffusion equation 1D", "[transiet]") {
+TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     using namespace prism;
     log::setLevel(log::Level::Error);
 
@@ -34,35 +34,29 @@ TEST_CASE("solve transient diffusion equation 1D", "[transiet]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto T = field::Scalar("T", mesh, 200.0);
-    T.setHistorySize(2); // enable history with a single time step in the past
-    T.update(T.values());
+    auto T = std::make_shared<field::Scalar>("T", mesh, 200.0);
+    T->setHistorySize(2);
+    T->update(T->values());
 
-    // diffusion coefficient
-    auto kappa = prism::field::UniformScalar("kappa", mesh, 1e-3);
+    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 1e-3);
 
     auto dt = 2;
 
-    // solve
-    auto solver = solver::BiCGSTAB<prism::field::Scalar>();
+    auto solver = solver::BiCGSTAB<field::Scalar>();
     auto nNonOrthoIter = 2;
     auto nTimesteps = 200;
 
-    using prism::scheme::diffusion::nonortho::OverRelaxedCorrector;
-    auto eqn =
-        eqn::Transport(prism::scheme::temporal::AdamMoulton<prism::field::Scalar>(T, dt), // dT/dt
-                       prism::scheme::diffusion::Corrected<prism::field::UniformScalar,
-                                                           OverRelaxedCorrector,
-                                                           prism::field::Scalar>(kappa, T));
+    using laplacian = scheme::diffusion::Corrected<field::Scalar>;
+    auto eqn = eqn::Transport(scheme::temporal::AdamMoulton(T, dt), laplacian(kappa, T));
 
-    
+
     std::vector<double> diff_norm_vec;
+    double final_diff_norm = 0.0;
 
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {
         log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);
 
-        // update the field time history
-        T.update(T.values());
+        T->update(T->values());
 
         for (auto i = 0; i < nNonOrthoIter; i++) {
             solver.solve(eqn, 10, 1e-20);
@@ -75,17 +69,27 @@ TEST_CASE("solve transient diffusion equation 1D", "[transiet]") {
             auto x = cell.center().x();
             auto t = dt * timestep;
             analytical_sol[cell.id()] =
-                transientAnalyticalSolution(x, t, kappa.valueAtCell(cell.id()));
+                transientAnalyticalSolution(x, t, kappa->valueAtCell(cell.id()));
         });
 
         auto t = dt * timestep;
+        auto diff_norm = (T->values() - analytical_sol).norm() / analytical_sol.norm();
 
-        if (t == 20 || t == 40 || t == 60) {
-            auto diff_norm = (T.values() - analytical_sol).norm() / analytical_sol.norm();
+        if (t == 40 || t == 60) {
             diff_norm_vec.push_back(diff_norm);
         }
+
+        if (timestep == nTimesteps - 1) {
+            final_diff_norm = diff_norm;
+        }
     }
-    for (auto diff_norm : diff_norm_vec) {
-        REQUIRE(diff_norm < 0.15);
+
+    for (std::size_t i = 1; i < diff_norm_vec.size(); i++) {
+        REQUIRE(diff_norm_vec[i] < diff_norm_vec[i - 1]);
     }
+
+    REQUIRE(diff_norm_vec[0] < 0.10);
+    REQUIRE(diff_norm_vec[1] < 0.10);
+
+    REQUIRE(final_diff_norm < 0.02);
 }

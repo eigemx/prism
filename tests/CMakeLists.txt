@@ -5,9 +5,9 @@ add_executable(tests
                     test_poisson.cpp 
                     test_unv_converter.cpp
                     test_boundary.cpp
-                    #test_scalar_history.cpp
+                    test_scalar_history.cpp
                     test_implicit_source.cpp
-                    #test_transient_1d.cpp
+                    test_transient_1d.cpp
                )
 target_link_libraries(tests PRIVATE prism Catch2::Catch2WithMain)
 

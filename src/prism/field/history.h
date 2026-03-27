@@ -8,7 +8,7 @@ namespace prism::field {
 
 class HistoryManager {
   public:
-    HistoryManager(int num_time_steps);
+    HistoryManager(std::size_t num_time_steps);
 
     /// TODO: the following getters are not efficient, because they return copies of the data.
     /// We should return references instead. std::option does not allow returning references. We
