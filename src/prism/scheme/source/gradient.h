@@ -10,17 +10,17 @@ namespace prism::scheme::source {
 template <Sign SourceSign = Sign::Positive>
 class Gradient : public IExplicitSource {
   public:
-    Gradient(const SharedPtr<field::Scalar>& phi, Coord coord);
+    Gradient(const SharedPtr<field::Scalar>& phi, VectorCoord coord);
     void apply() override;
     auto needsCorrection() const noexcept -> bool override { return true; }
 
   private:
     SharedPtr<field::Scalar> _phi;
-    Coord _coord;
+    VectorCoord _coord;
 };
 
 template <Sign SourceSign>
-Gradient<SourceSign>::Gradient(const SharedPtr<field::Scalar>& phi, Coord coord)
+Gradient<SourceSign>::Gradient(const SharedPtr<field::Scalar>& phi, VectorCoord coord)
     : _phi(phi), _coord(coord), IExplicitSource(phi->mesh()->cellCount()) {
     log::debug(
         "prism::scheme::source::Gradient(): Creating {}-coordinate gradient source for field "

@@ -101,14 +101,14 @@ auto main(int argc, char* argv[]) -> int {
 
     prism::exportToVTU(grad_p_anal_x, "grad_p_anal_x.vtu");
     prism::exportToVTU(grad_p_anal_y, "grad_p_anal_y.vtu");
-    prism::exportToVTU(ops::grad(*P, Coord::X), "grad_p_x.vtu");
-    prism::exportToVTU(ops::grad(*P, Coord::Y), "grad_p_y.vtu");
+    prism::exportToVTU(ops::grad(*P, VectorCoord::X), "grad_p_x.vtu");
+    prism::exportToVTU(ops::grad(*P, VectorCoord::Y), "grad_p_y.vtu");
 
     // print relative l2-norm of the analytical solution for each pressure gradient component
     fmt::print("relative l2-norm of the analytical solution for grad_p_x: {}\n",
-               l2NormRelative(grad_p_anal_x.values(), ops::grad(*P, Coord::X).values()));
+               l2NormRelative(grad_p_anal_x.values(), ops::grad(*P, VectorCoord::X).values()));
     fmt::print("relative l2-norm of the analytical solution for grad_p_y: {}\n",
-               l2NormRelative(grad_p_anal_y.values(), ops::grad(*P, Coord::Y).values()));
+               l2NormRelative(grad_p_anal_y.values(), ops::grad(*P, VectorCoord::Y).values()));
 
     return 0;
 }

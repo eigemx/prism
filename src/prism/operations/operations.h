@@ -28,7 +28,7 @@ template <typename Vector>
 auto curl(const Vector& U, bool return_face_data = true) -> field::Vector;
 
 template <field::IScalarBased Field>
-auto grad(const Field& field, Coord coord) -> field::Scalar;
+auto grad(const Field& field, VectorCoord coord) -> field::Scalar;
 
 template <field::IScalarBased Field>
 auto grad(const Field& field) -> field::Vector;
@@ -57,7 +57,7 @@ auto div(const Vector& U) -> field::Scalar {
 }
 
 template <field::IScalarBased Field>
-auto grad(Field& field, Coord coord) -> field::Scalar {
+auto grad(Field& field, VectorCoord coord) -> field::Scalar {
     auto grad_field_name = fmt::format("grad({})_{}", field.name(), field::coordToStr(coord));
     const auto& mesh = field.mesh();
     VectorXd grad_values = VectorXd::Zero(mesh->cellCount());
@@ -73,7 +73,7 @@ auto grad(Field& field, Coord coord) -> field::Scalar {
 template <field::IScalarBased Field>
 auto grad(const Field& field) -> field::Vector {
     std::array<field::Scalar, 3> fields {
-        grad(field, Coord::X), grad(field, Coord::Y), grad(field, Coord::Z)};
+        grad(field, VectorCoord::X), grad(field, VectorCoord::Y), grad(field, VectorCoord::Z)};
 
     return field::Vector(fmt::format("grad({})", field.name()), field.mesh(), fields);
 }

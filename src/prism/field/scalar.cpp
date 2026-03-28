@@ -21,7 +21,7 @@ Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value)
 }
 
 
-Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, Coord coord)
+Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, VectorCoord coord)
     : IScalar(std::move(name), mesh),
       _cell_values(VectorXd::Ones(mesh->cellCount()) * value),
       _history_manager(0),
@@ -36,8 +36,8 @@ Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, 
 }
 
 
-Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data)
-    : IScalar(std::move(name), mesh), _cell_values(std::move(data)), _history_manager(0) {
+Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd values)
+    : IScalar(std::move(name), mesh), _cell_values(std::move(values)), _history_manager(0) {
     if (_cell_values.size() != mesh->cellCount()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a "
@@ -54,9 +54,12 @@ Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd da
 }
 
 
-Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data, Coord coord)
+Scalar::Scalar(std::string name,
+               const SharedPtr<mesh::PMesh>& mesh,
+               VectorXd values,
+               VectorCoord coord)
     : IScalar(std::move(name), mesh),
-      _cell_values(std::move(data)),
+      _cell_values(std::move(values)),
       _history_manager(0),
       _coord(coord) {
     if (_cell_values.size() != mesh->cellCount()) {
@@ -78,11 +81,11 @@ Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd da
 
 Scalar::Scalar(std::string name,
                const SharedPtr<mesh::PMesh>& mesh,
-               VectorXd data,
-               VectorXd face_data)
+               VectorXd values,
+               VectorXd face_values)
     : IScalar(std::move(name), mesh),
-      _cell_values(std::move(data)),
-      _face_values(std::move(face_data)),
+      _cell_values(std::move(values)),
+      _face_values(std::move(face_values)),
       _history_manager(0) {
     if (_cell_values.size() != mesh->cellCount()) {
         throw std::runtime_error(fmt::format(
@@ -112,12 +115,12 @@ Scalar::Scalar(std::string name,
 
 Scalar::Scalar(std::string name,
                const SharedPtr<mesh::PMesh>& mesh,
-               VectorXd data,
-               VectorXd face_data,
-               Coord coord)
+               VectorXd values,
+               VectorXd face_values,
+               VectorCoord coord)
     : IScalar(std::move(name), mesh),
-      _cell_values(std::move(data)),
-      _face_values(std::move(face_data)),
+      _cell_values(std::move(values)),
+      _face_values(std::move(face_values)),
       _history_manager(0),
       _coord(coord) {
     if (_cell_values.size() != mesh->cellCount()) {
@@ -199,7 +202,7 @@ auto Scalar::values() -> VectorXd& {
     return _cell_values;
 }
 
-auto Scalar::coord() const noexcept -> Optional<Coord> {
+auto Scalar::coord() const noexcept -> Optional<VectorCoord> {
     return _coord;
 }
 

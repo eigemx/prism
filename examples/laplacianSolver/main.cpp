@@ -48,7 +48,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     prism::exportToVTU(*eqn.field(), "solution.vtu");
-    auto gradT_x = ops::grad(*T, Coord::X);
+    auto gradT_x = ops::grad(*T, VectorCoord::X);
     prism::exportToVTU(gradT_x, "gradT_x_ls.vtu");
 
     return 0;

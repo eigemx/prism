@@ -36,7 +36,7 @@ class IField {
     virtual auto valueAtCell(const mesh::Cell& cell) const -> CellValueType = 0;
     virtual auto valueAtFace(std::size_t face_id) const -> CellValueType = 0;
     virtual auto valueAtFace(const mesh::Face& face) const -> CellValueType = 0;
-    virtual auto coord() const noexcept -> Optional<Coord>;
+    virtual auto coord() const noexcept -> Optional<VectorCoord>;
 
     using ValueType = CellValueType;
 
@@ -100,20 +100,20 @@ auto IField<CellValueType>::hasFaceValues() const -> bool {
 }
 
 template <typename CellValueType>
-auto IField<CellValueType>::coord() const noexcept -> Optional<Coord> {
+auto IField<CellValueType>::coord() const noexcept -> Optional<VectorCoord> {
     return NullOption;
 }
 
 /// TODO: This function should be moved to a more appropriate place, like a utility file.
-auto inline coordToStr(prism::Coord coord) -> std::string {
+auto inline coordToStr(VectorCoord coord) -> std::string {
     switch (coord) {
-        case prism::Coord::X: {
+        case prism::VectorCoord::X: {
             return "x";
         }
-        case prism::Coord::Y: {
+        case prism::VectorCoord::Y: {
             return "y";
         }
-        case prism::Coord::Z: {
+        case prism::VectorCoord::Z: {
             return "z";
         }
         default: {

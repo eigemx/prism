@@ -41,14 +41,14 @@ auto main(int argc, char* argv[]) -> int {
 
     algo::SIMPLEParameters params;
 
-    auto uEqn = eqn::Momentum(div(mdot, U->x()),     // ∇.(Uu)
-                              laplacian(nu, U->x()), // -∇.(ν∇u)
-                              grad(p, Coord::X)      // = -∂p/∂x
+    auto uEqn = eqn::Momentum(div(mdot, U->x()),      // ∇.(Uu)
+                              laplacian(nu, U->x()),  // -∇.(ν∇u)
+                              grad(p, VectorCoord::X) // = -∂p/∂x
     );
 
-    auto vEqn = eqn::Momentum(div(mdot, U->y()),     // ∇.(Uv)
-                              laplacian(nu, U->y()), // -∇.(ν∇v)
-                              grad(p, Coord::Y)      // = -∂p/∂y
+    auto vEqn = eqn::Momentum(div(mdot, U->y()),      // ∇.(Uv)
+                              laplacian(nu, U->y()),  // -∇.(ν∇v)
+                              grad(p, VectorCoord::Y) // = -∂p/∂y
     );
 
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();

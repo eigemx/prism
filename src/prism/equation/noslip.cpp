@@ -8,10 +8,8 @@
 
 namespace prism::eqn::boundary {
 
-auto contribution(Coord coord,
-                  const Vector3d& Uc,
-                  const Vector3d& Ub,
-                  const Vector3d& n) -> std::pair<f64, f64> {
+auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& Ub, const Vector3d& n)
+    -> std::pair<f64, f64> {
     // n
     f64 nx = n.x();
     f64 ny = n.y();
@@ -28,7 +26,7 @@ auto contribution(Coord coord,
     f64 wb = Ub.z();
 
     switch (coord) {
-        case Coord::X: {
+        case VectorCoord::X: {
             // Eqn (15.124)
             f64 ac = 1 - (nx * nx);
             f64 b = ub * (1 - (nx * nx));
@@ -37,7 +35,7 @@ auto contribution(Coord coord,
             return {ac, b};
         }
 
-        case Coord::Y: {
+        case VectorCoord::Y: {
             // Eqn (15.125)
             f64 ac = 1 - (ny * ny);
             f64 b = (uc - ub) * nx * ny;
@@ -45,7 +43,7 @@ auto contribution(Coord coord,
             b += (wc - wb) * nz * ny;
             return {ac, b};
         }
-        case Coord::Z: {
+        case VectorCoord::Z: {
             // Eqn (15.126)
             f64 ac = 1 - (nz * nz);
             f64 b = (uc - ub) * nx * nz;

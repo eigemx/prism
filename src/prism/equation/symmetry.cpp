@@ -10,9 +10,8 @@ namespace prism::eqn::boundary {
 /// TODO: many logic here is copied from the NoSlip boundary condition, we should refactor it to
 /// avoid code duplication.
 
-auto contribution(Coord coord,
-                  const Vector3d& Uc,
-                  const Vector3d& n) -> std::pair<double, double> {
+auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n)
+    -> std::pair<double, double> {
     // n
     double nx = n.x();
     double ny = n.y();
@@ -24,19 +23,19 @@ auto contribution(Coord coord,
     double wc = Uc.z();
 
     switch (coord) {
-        case Coord::X: {
+        case VectorCoord::X: {
             // Eqn (15.154)
             double ac = nx * nx;
             double b = ((vc * ny) + (wc * nz)) * nx;
             return {ac, b};
         }
-        case Coord::Y: {
+        case VectorCoord::Y: {
             // Eqn (15.1545)
             double ac = ny * ny;
             double b = ((uc * nx) + (wc * nz)) * ny;
             return {ac, b};
         }
-        case Coord::Z: {
+        case VectorCoord::Z: {
             // Eqn (15.156)
             double ac = nz * nz;
             double b = ((uc * nx) + (vc * ny)) * nz;

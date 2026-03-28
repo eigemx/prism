@@ -13,11 +13,11 @@ namespace prism::field {
 namespace detail {
 /// TODO: this function should be moved to a more appropriate place, like a utility file. Same for
 /// coordToStr in ifield.h
-auto inline coordToIndex(Coord coord) -> std::uint8_t {
+auto inline coordToIndex(VectorCoord coord) -> std::uint8_t {
     switch (coord) {
-        case Coord::X: return 0;
-        case Coord::Y: return 1;
-        case Coord::Z: return 2;
+        case VectorCoord::X: return 0;
+        case VectorCoord::Y: return 1;
+        case VectorCoord::Z: return 2;
         default: break;
     }
     throw std::invalid_argument("prism::field::coordToIndex(): Invalid coordinate value");
@@ -29,19 +29,29 @@ class Scalar
       public units::Measurable,
       public prism::boundary::BHManagerProvider<boundary::scalar::IScalarBoundaryHandler> {
   public:
+    // Scalar field based on f64 value and an optional coordinate (if vector sub-field)
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value);
-    Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, Coord coord);
+    Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, VectorCoord coord);
+
+    // Scalar field based on VectorXd values and an optional coordinate.
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data);
-    Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data, Coord coord);
     Scalar(std::string name,
            const SharedPtr<mesh::PMesh>& mesh,
-           VectorXd data,
-           VectorXd face_data);
+           VectorXd values,
+           VectorCoord coord);
+
+    // Scalar field based on VectorXd values, with field face values and an optional coordinate.
     Scalar(std::string name,
            const SharedPtr<mesh::PMesh>& mesh,
-           VectorXd data,
-           VectorXd face_data,
-           Coord coord);
+           VectorXd values,
+           VectorXd face_values);
+    Scalar(std::string name,
+           const SharedPtr<mesh::PMesh>& mesh,
+           VectorXd values,
+           VectorXd face_values,
+           VectorCoord coord);
+
+    // default constructors
     Scalar(const Scalar&) = default;
     Scalar(Scalar&&) = default;
     auto operator=(const Scalar&) -> Scalar& = default;
@@ -51,7 +61,7 @@ class Scalar
     auto values() const -> const VectorXd&;
     auto values() -> VectorXd&;
 
-    auto coord() const noexcept -> Optional<Coord> override;
+    auto coord() const noexcept -> Optional<VectorCoord> override;
 
     auto hasFaceValues() const -> bool override;
     void setFaceValues(VectorXd values);
@@ -106,14 +116,6 @@ class Scalar
     SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
 
     // This should have a value only when the object is a component of a field::Vector instance.
-    Optional<Coord> _coord = NullOption;
-};
-
-class ScalarBHManagerSetter {
-  public:
-    using IScalarBHManager =
-        prism::boundary::BoundaryHandlersManager<boundary::scalar::IScalarBoundaryHandler>;
-
-    static void set(IScalarBHManager& manager);
+    Optional<VectorCoord> _coord = NullOption;
 };
 } // namespace prism::field

@@ -103,9 +103,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          f64 value)
     : IVector(name, mesh),
-      _x(std::make_shared<Component>(this->name() + "_x", mesh, value, Coord::X)),
-      _y(std::make_shared<Component>(this->name() + "_y", mesh, value, Coord::Y)),
-      _z(std::make_shared<Component>(this->name() + "_z", mesh, value, Coord::Z)) {
+      _x(std::make_shared<Component>(this->name() + "_x", mesh, value, VectorCoord::X)),
+      _y(std::make_shared<Component>(this->name() + "_y", mesh, value, VectorCoord::Y)),
+      _z(std::make_shared<Component>(this->name() + "_z", mesh, value, VectorCoord::Z)) {
     log::debug("Creating vector field: '{}' with real value = {}", this->name(), value);
     addDefaultBoundaryHandlers();
 }
@@ -115,9 +115,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          const Vector3d& data)
     : IVector(name, mesh),
-      _x(std::make_shared<Component>(this->name() + "_x", mesh, data[0], Coord::X)),
-      _y(std::make_shared<Component>(this->name() + "_y", mesh, data[1], Coord::Y)),
-      _z(std::make_shared<Component>(this->name() + "_z", mesh, data[2], Coord::Z)) {
+      _x(std::make_shared<Component>(this->name() + "_x", mesh, data[0], VectorCoord::X)),
+      _y(std::make_shared<Component>(this->name() + "_y", mesh, data[1], VectorCoord::Y)),
+      _z(std::make_shared<Component>(this->name() + "_z", mesh, data[2], VectorCoord::Z)) {
     log::debug("Creating vector field: '{}' with uniform vector value [{}, {}, {}]",
                this->name(),
                data.x(),
