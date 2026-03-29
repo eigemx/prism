@@ -11,106 +11,35 @@
 /// TODO: make namespaces consistent before function names in log calls.
 
 namespace prism::field {
+
 Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value)
-    : IScalar(std::move(name), mesh),
-      _history_manager(0),
-      _cell_values(VectorXd::Ones(mesh->cellCount()) * value) {
-    log::debug("Creating scalar field: '{}' with f64 value = {}", this->name(), value);
-    addDefaultBoundaryHandlers();
-    setGradScheme();
-}
+    : Scalar(std::move(name), mesh, VectorXd::Ones(mesh->cellCount()) * value, {}, NullOption) {}
 
 
 Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value, VectorCoord coord)
-    : IScalar(std::move(name), mesh),
-      _cell_values(VectorXd::Ones(mesh->cellCount()) * value),
-      _history_manager(0),
-      _coord(coord) {
-    log::debug("Creating scalar field: '{}' (as {}-coordinate) with f64 value = {}",
-               this->name(),
-               coordToStr(coord),
-               value);
-
-    addDefaultBoundaryHandlers();
-    setGradScheme();
-}
+    : Scalar(std::move(name),
+             mesh,
+             VectorXd::Ones(mesh->cellCount()) * value,
+             {},
+             Optional<VectorCoord>(coord)) {}
 
 
-Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd values)
-    : IScalar(std::move(name), mesh), _cell_values(std::move(values)), _history_manager(0) {
-    if (_cell_values.size() != mesh->cellCount()) {
-        throw std::runtime_error(
-            fmt::format("field::Scalar() cannot create a scalar field '{}' given a "
-                        "vector that has a different size than mesh's cell count.",
-                        this->name()));
-    }
-
-    log::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
-               this->name(),
-               _cell_values.size());
-
-    addDefaultBoundaryHandlers();
-    setGradScheme();
-}
+Scalar::Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, VectorXd data)
+    : Scalar(std::move(name), mesh, std::move(data), {}, NullOption) {}
 
 
 Scalar::Scalar(std::string name,
                const SharedPtr<mesh::PMesh>& mesh,
                VectorXd values,
                VectorCoord coord)
-    : IScalar(std::move(name), mesh),
-      _cell_values(std::move(values)),
-      _history_manager(0),
-      _coord(coord) {
-    if (_cell_values.size() != mesh->cellCount()) {
-        throw std::runtime_error(fmt::format(
-            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
-            "different size than mesh's cell count.",
-            this->name()));
-    }
-
-    log::debug(
-        "Creating scalar field: '{}' (as {}-coordinate) with a cell vector data of size = {}",
-        this->name(),
-        coordToStr(coord),
-        _cell_values.size());
-    addDefaultBoundaryHandlers();
-    setGradScheme();
-}
+    : Scalar(std::move(name), mesh, std::move(values), {}, Optional<VectorCoord>(coord)) {}
 
 
 Scalar::Scalar(std::string name,
                const SharedPtr<mesh::PMesh>& mesh,
                VectorXd values,
                VectorXd face_values)
-    : IScalar(std::move(name), mesh),
-      _cell_values(std::move(values)),
-      _face_values(std::move(face_values)),
-      _history_manager(0) {
-    if (_cell_values.size() != mesh->cellCount()) {
-        throw std::runtime_error(fmt::format(
-            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
-            "different size than mesh's cell count.",
-            this->name()));
-    }
-
-    if (_face_values.size() != mesh->faceCount()) {
-        throw std::runtime_error(
-            fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
-                        "vector that has a different size than mesh's faces count.",
-                        this->name()));
-    }
-
-    log::debug(
-        "Creating scalar field: '{}' with a cell data vector of size = {} and face data "
-        "vector of size = {}",
-        this->name(),
-        _cell_values.size(),
-        _face_values.size());
-
-    addDefaultBoundaryHandlers();
-    setGradScheme();
-}
+    : Scalar(std::move(name), mesh, std::move(values), std::move(face_values), NullOption) {}
 
 
 Scalar::Scalar(std::string name,
@@ -118,35 +47,74 @@ Scalar::Scalar(std::string name,
                VectorXd values,
                VectorXd face_values,
                VectorCoord coord)
+    : Scalar(std::move(name),
+             mesh,
+             std::move(values),
+             std::move(face_values),
+             Optional<VectorCoord>(coord)) {}
+
+
+Scalar::Scalar(std::string name,
+               const SharedPtr<mesh::PMesh>& mesh,
+               VectorXd cell_values,
+               VectorXd face_values,
+               Optional<VectorCoord> coord)
     : IScalar(std::move(name), mesh),
-      _cell_values(std::move(values)),
+      _cell_values(std::move(cell_values)),
       _face_values(std::move(face_values)),
       _history_manager(0),
       _coord(coord) {
-    if (_cell_values.size() != mesh->cellCount()) {
-        throw std::runtime_error(fmt::format(
-            "field::Scalar() cannot create a scalar field '{}' given a vector that has a "
-            "different size than mesh's cell count.",
-            this->name()));
+    validateCellValues(_cell_values);
+    if (_face_values.size() > 0) {
+        validateFaceValues(_face_values);
     }
+    logConstruction();
+    addDefaultBoundaryHandlers();
+    setGradScheme();
+}
 
-    if (_face_values.size() != mesh->faceCount()) {
+
+void Scalar::validateCellValues(const VectorXd& values) const {
+    if (values.size() != mesh()->cellCount()) {
+        throw std::runtime_error(
+            fmt::format("field::Scalar() cannot create a scalar field '{}' given a "
+                        "vector that has a different size than mesh's cell count.",
+                        this->name()));
+    }
+}
+
+
+void Scalar::validateFaceValues(const VectorXd& values) const {
+    if (values.size() != mesh()->faceCount()) {
         throw std::runtime_error(
             fmt::format("field::Scalar() cannot create a scalar field '{}' given a face data "
                         "vector that has a different size than mesh's faces count.",
                         this->name()));
     }
+}
 
-    log::debug(
-        "Creating scalar field: '{}' (as {}-coordinate) with a cell data vector of size = {} "
-        "and face data vector of size = {}",
-        this->name(),
-        coordToStr(coord),
-        _cell_values.size(),
-        _face_values.size());
 
-    addDefaultBoundaryHandlers();
-    setGradScheme();
+void Scalar::logConstruction() const {
+    if (_coord.has_value()) {
+        log::debug(
+            "Creating scalar field: '{}' (as {}-coordinate) with a cell data vector of "
+            "size = {} and face data vector of size = {}",
+            this->name(),
+            coordToStr(_coord.value()),
+            _cell_values.size(),
+            _face_values.size());
+    } else if (_face_values.size() > 0) {
+        log::debug(
+            "Creating scalar field: '{}' with a cell data vector of size = {} and face data "
+            "vector of size = {}",
+            this->name(),
+            _cell_values.size(),
+            _face_values.size());
+    } else {
+        log::debug("Creating scalar field: '{}' with a cell vector data of size = {}",
+                   this->name(),
+                   _cell_values.size());
+    }
 }
 
 /// TODO: delete this in favor of updateFaceValues()

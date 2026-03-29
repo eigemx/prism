@@ -108,6 +108,16 @@ class Scalar
     virtual void setUnits();
 
   private:
+    Scalar(std::string name,
+           const SharedPtr<mesh::PMesh>& mesh,
+           VectorXd cell_values,
+           VectorXd face_values,
+           Optional<VectorCoord> coord);
+
+    void validateCellValues(const VectorXd& values) const;
+    void validateFaceValues(const VectorXd& values) const;
+    void logConstruction() const;
+
     VectorXd _cell_values;
     HistoryManager _history_manager;
 

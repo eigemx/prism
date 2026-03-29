@@ -53,7 +53,6 @@ void BackwardEuler::apply() {
     } else {
         applyIncompressible();
     }
-    incrementTimestep();
 }
 
 void BackwardEuler::applyCompressible() { // NOLINT

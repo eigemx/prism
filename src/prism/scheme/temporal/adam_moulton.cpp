@@ -1,8 +1,9 @@
 #include "adam_moulton.h"
 
+#include <stdexcept>
+
 #include "prism/log.h"
 #include "prism/scheme/temporal/backward_euler.h"
-#include <stdexcept>
 
 namespace prism::scheme::temporal {
 
@@ -52,7 +53,6 @@ void AdamMoulton::apply() {
     } else {
         applyIncompressible();
     }
-    incrementTimestep();
 }
 
 void AdamMoulton::applyCompressible() { // NOLINT
@@ -64,7 +64,17 @@ void AdamMoulton::applyIncompressible() {
     log::debug("Applying Adam-Moulton scheme to field `{}` (no density field provided)",
                field()->name());
 
-    if (timeStepsCount() == 0) {
+    // we need to make sure that the field is keeping track of at least one time step
+    if (!field()->prevValues().has_value()) {
+        throw std::runtime_error(fmt::format(
+            "prism::scheme::temporal::AdamMoulton::apply() was called for field `{}`, but "
+            "the field does not have previous time steps values stored. Adam-Moulton transient "
+            "scheme requires two previous time steps. Please make sure that you set "
+            "history tracking of the field using field.setHistorySize(steps) to at least 2.",
+            field()->name()));
+    }
+
+    if (!field()->prevPrevValues().has_value()) {
         // fall back to backward Euler first order scheme, because we have only one time step in
         // the past, and Adam-Moulton requires at least two time steps.
         log::debug(
@@ -74,16 +84,6 @@ void AdamMoulton::applyIncompressible() {
         return;
     }
     const auto& vol_field = field()->mesh()->cellsVolumeVector();
-
-    // we need to make sure that the field is keeping track of at least one time step
-    if (!field()->prevValues().has_value() || !field()->prevPrevValues().has_value()) {
-        throw std::runtime_error(fmt::format(
-            "prism::scheme::temporal::AdamMoulton::apply() was called for field `{}`, but "
-            "the field does not have previous time steps values stored. Adam-Moulton transient "
-            "scheme requires two previous time steps. Please make sure that you set "
-            "history tracking of the field using field.setHistorySize(steps) to at least 2.",
-            field()->name()));
-    }
 
     /// TODO: when we find a way to avoid the copy, we need to adjust the code below to const&
     const VectorXd phi_prev = field()->prevValues().value();

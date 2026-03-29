@@ -16,11 +16,6 @@ class ITemporal : public scheme::IFullScheme {
     auto timeStep() const noexcept -> double;
     void setTimeStep(double dt);
 
-  protected:
-    auto timeStepsCount() const noexcept -> std::size_t;
-    void incrementTimestep() noexcept;
-    void resetTimestep() noexcept;
-
   private:
     void applyInterior(const mesh::Face& face) override {}
     void applyBoundary() override {}

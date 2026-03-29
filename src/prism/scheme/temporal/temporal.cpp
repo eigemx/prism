@@ -28,15 +28,4 @@ void ITemporal::setTimeStep(double dt) {
     _dt = dt;
 }
 
-auto ITemporal::timeStepsCount() const noexcept -> std::size_t {
-    return _n_timesteps;
-}
-
-void ITemporal::incrementTimestep() noexcept {
-    _n_timesteps++;
-}
-
-void ITemporal::resetTimestep() noexcept {
-    _n_timesteps = 0;
-}
 } // namespace prism::scheme::temporal

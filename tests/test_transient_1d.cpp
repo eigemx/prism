@@ -27,7 +27,6 @@ auto transientAnalyticalSolution(prism::f64 x, prism::f64 t, prism::f64 kappa) -
 
 TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     using namespace prism;
-    log::setLevel(log::Level::Error);
 
     // read mesh
     const auto* mesh_file = "tests/cases/versteeg_trans_1d/mesh.unv";
@@ -36,14 +35,13 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
 
     auto T = std::make_shared<field::Scalar>("T", mesh, 200.0);
     T->setHistorySize(2);
-    T->update(T->values());
+    T->updatePrevTimeSteps();
 
     auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 1e-3);
 
     auto dt = 2;
 
     auto solver = solver::BiCGSTAB<field::Scalar>();
-    auto nNonOrthoIter = 2;
     auto nTimesteps = 200;
 
     using laplacian = scheme::diffusion::Corrected<field::Scalar>;
@@ -54,13 +52,7 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     double final_diff_norm = 0.0;
 
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {
-        log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);
-
-        T->update(T->values());
-
-        for (auto i = 0; i < nNonOrthoIter; i++) {
-            solver.solve(eqn, 10, 1e-20);
-        }
+        solver.solve(eqn, 10, 1e-20);
 
         VectorXd analytical_sol(mesh->cellCount());
         analytical_sol.setZero();
@@ -82,6 +74,8 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
         if (timestep == nTimesteps - 1) {
             final_diff_norm = diff_norm;
         }
+
+        T->updatePrevTimeSteps();
     }
 
     for (std::size_t i = 1; i < diff_norm_vec.size(); i++) {

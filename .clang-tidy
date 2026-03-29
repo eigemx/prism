@@ -5,7 +5,8 @@ Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines
          -cppcoreguidelines-pro-type-const-cast,
          -modernize-use-nodiscard,
          -readability-identifier-length,
-         -readability-use-anyofallof
+         -readability-use-anyofallof,
+         -modernize-use-ranges
 '
 
 WarningsAsErrors: '*'
