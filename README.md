@@ -127,7 +127,7 @@ make
 Once build is complete, check `bin` folder for the built applications, and also check `tests/cases` directory for many cases to play with and understand boundary field files in Prism.
 
 ```bash
-./build/bin/SIMPLESolver tests/cases/pipeCoarse/mesh.unv
+./build/bin/SIMPLESolver tests/cases/backward_facing_step/mesh.unv
 ./build/bin/laplacianSolver tests/cases/torus/mesh.unv
 ./build/bin/advectionSolver tests/cases/duct/mesh.unv
 ./build/bin/poissonSolver tests/cases/poisson/mesh.unv
