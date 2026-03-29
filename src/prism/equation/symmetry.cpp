@@ -10,35 +10,34 @@ namespace prism::eqn::boundary {
 /// TODO: many logic here is copied from the NoSlip boundary condition, we should refactor it to
 /// avoid code duplication.
 
-auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n)
-    -> std::pair<double, double> {
+auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n) -> std::pair<f64, f64> {
     // n
-    double nx = n.x();
-    double ny = n.y();
-    double nz = n.z();
+    f64 nx = n.x();
+    f64 ny = n.y();
+    f64 nz = n.z();
 
     // Uc
-    double uc = Uc.x();
-    double vc = Uc.y();
-    double wc = Uc.z();
+    f64 uc = Uc.x();
+    f64 vc = Uc.y();
+    f64 wc = Uc.z();
 
     switch (coord) {
         case VectorCoord::X: {
             // Eqn (15.154)
-            double ac = nx * nx;
-            double b = ((vc * ny) + (wc * nz)) * nx;
+            f64 ac = nx * nx;
+            f64 b = ((vc * ny) + (wc * nz)) * nx;
             return {ac, b};
         }
         case VectorCoord::Y: {
             // Eqn (15.1545)
-            double ac = ny * ny;
-            double b = ((uc * nx) + (wc * nz)) * ny;
+            f64 ac = ny * ny;
+            f64 b = ((uc * nx) + (wc * nz)) * ny;
             return {ac, b};
         }
         case VectorCoord::Z: {
             // Eqn (15.156)
-            double ac = nz * nz;
-            double b = ((uc * nx) + (vc * ny)) * nz;
+            f64 ac = nz * nz;
+            f64 b = ((uc * nx) + (vc * ny)) * nz;
             return {ac, b};
         }
         default: {
@@ -71,11 +70,11 @@ void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) 
 
         Vector3d n = face.normal();
         Vector3d d_Cb = face.center() - owner.center();
-        double d_normal = d_Cb.dot(n);
+        f64 d_normal = d_Cb.dot(n);
 
         Vector3d Uc = U->valueAtCell(owner);
 
-        double g = 2 * mu->valueAtFace(face) * face.area() / d_normal;
+        f64 g = 2 * mu->valueAtFace(face) * face.area() / d_normal;
         auto [ac, b] = contribution(field->coord().value(), Uc, n);
 
         sys.insert(owner_id, owner_id, g * ac);

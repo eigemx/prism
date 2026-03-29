@@ -94,7 +94,7 @@ NonCorrected<Kappa>::NonCorrected(const SharedPtr<Kappa>& kappa,
                                   const SharedPtr<field::Scalar>& phi)
     : IAppliedDiffusion<Kappa>(kappa, phi) {
     // add default boundary handlers for NonCorrected
-    using Scheme = std::remove_reference_t<decltype(*this)>;
+    using Scheme = NonCorrected<Kappa>;
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();

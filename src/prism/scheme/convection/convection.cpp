@@ -1,4 +1,6 @@
 #include "convection.h"
+
+#include "convection_hr.h"
 #include "prism/field/scalar.h"
 
 namespace prism::scheme::convection {
@@ -7,12 +9,12 @@ IAppliedConvection::IAppliedConvection(const SharedPtr<field::IVector>& U,
                                        const SharedPtr<field::Scalar>& phi)
     : _U(U), IFullScheme(phi) {
     // add default boundary handlers for IConvection based types
-    using Scheme = std::remove_reference_t<decltype(*this)>;
+    using Scheme = IAppliedConvection; // just to have nice formatted lines below
     this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
     this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
 }
 
 void IAppliedConvection::applyInterior(const mesh::Face& face) {
@@ -23,7 +25,7 @@ void IAppliedConvection::applyInterior(const mesh::Face& face) {
     const std::size_t neighbor_id = neighbor.id();
 
     // since face is owned by `owner`, the flux will be in the intended way, as the face normal
-    // points from cell center to face center, so no need to flup the sign of the flux.
+    // points from cell center to face center, so no need to flip the sign of the flux.
     const f64 mdot_f = _U->fluxAtFace(face);
 
     auto [a_C, a_N, b] = interpolate(mdot_f, owner, neighbor, face);
@@ -40,8 +42,7 @@ void IAppliedConvection::applyInterior(const mesh::Face& face) {
 }
 
 void IAppliedConvection::applyBoundary() {
-    prism::boundary::detail::applyBoundary("prism::scheme::convection::IAppliedConvection",
-                                           *this);
+    prism::boundary::detail::applyBoundary("prism::scheme::convection::IAppliedConvection", *this);
 }
 
 auto Upwind::interpolate(f64 m_dot,
@@ -64,69 +65,69 @@ auto Upwind::interpolate(f64 m_dot,
     a_C += -std::max(-m_dot, 0.0) * k_minus;
     a_N += -std::max(-m_dot, 0.0) * l_minus;
     b += std::max(-m_dot, 0.0) * (1 - l_minus - k_minus) * phi_upwind;
-    return {a_C, a_N, b};
+    return {.ownerCoeff = a_C, .neighborCoeff = a_N, .rhs = b};
 }
 
 auto Upwind::weightsNVF(f64 phi_tilde) const noexcept // NOLINT
     -> WeightsNVF {
-    return {1.0, 0.0};
+    return {.l = 1.0, .k = 0.0};
 }
 
 auto CentralDifference::weightsNVF(f64 phi_tilde) const noexcept // NOLINT
     -> Upwind::WeightsNVF {
-    return {0.5, 0.5};
+    return {.l = 0.5, .k = 0.5};
 }
 
 auto LinearUpwind::weightsNVF(f64 phi_tilde) const noexcept // NOLINT
     -> Upwind::WeightsNVF {
-    return {1.5, 0.0};
+    return {.l = 1.5, .k = 0.0};
 }
 
 auto QUICK::weightsNVF(f64 phi_tilde) const noexcept // NOLINT
     -> Upwind::WeightsNVF {
-    return {0.75, 3.0 / 8.0};
+    return {.l = 0.75, .k = 3.0 / 8.0};
 }
 
 auto FROMM::weightsNVF(f64 phi_tilde) const noexcept // NOLINT
     -> Upwind::WeightsNVF {
-    return {1.0, 0.25};
+    return {.l = 1.0, .k = 0.25};
 }
 
 auto MINMOD::weightsNVF(f64 phi_tilde) const noexcept -> Upwind::WeightsNVF {
     if (phi_tilde > 0.0 && phi_tilde < 0.5) {
-        return {1.5, 0.0};
+        return {.l = 1.5, .k = 0.0};
     }
     if (phi_tilde >= 0.5 && phi_tilde < 1.0) {
-        return {0.5, 0.5};
+        return {.l = 0.5, .k = 0.5};
     }
-    return {1.0, 0};
+    return {.l = 1.0, .k = 0};
 }
 
 auto MUSCL::weightsNVF(f64 phi_tilde) const noexcept -> Upwind::WeightsNVF {
     if (phi_tilde > 0.0 && phi_tilde < 0.25) {
-        return {2, 0.0};
+        return {.l = 2, .k = 0.0};
     }
     if (phi_tilde >= 0.25 && phi_tilde < 0.75) {
-        return {1, 0.25};
+        return {.l = 1, .k = 0.25};
     }
     if (phi_tilde >= 0.75 && phi_tilde < 1.0) {
-        return {0, 1.0};
+        return {.l = 0, .k = 1.0};
     }
-    return {1.0, 0};
+    return {.l = 1.0, .k = 0};
 }
 
 auto SMART::weightsNVF(f64 phi_tilde) const noexcept -> Upwind::WeightsNVF {
     if (phi_tilde > 0.0 && phi_tilde < (1 / 6)) {
-        return {4, 0.0};
+        return {.l = 4, .k = 0.0};
     }
     if (phi_tilde >= (1 / 6) && phi_tilde < (5 / 6)) {
-        return {0.75, 3 / 8};
+        return {.l = 0.75, .k = 3 / 8};
     }
     if (phi_tilde >= (5 / 6) && phi_tilde < 1.0) {
-        return {0, 1.0};
+        return {.l = 0, .k = 1.0};
     }
-    return {1.0, 0};
+    return {.l = 1.0, .k = 0};
 }
 
 
-} // namespace prism::scscheme::heme::convection
+} // namespace prism::scheme::convection

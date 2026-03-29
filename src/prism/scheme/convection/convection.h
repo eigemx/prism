@@ -1,9 +1,7 @@
 #pragma once
 
-#include <cmath>
 
 #include "convection_boundary.h"
-#include "convection_hr.h"
 #include "prism/boundary.h"
 #include "prism/field/ifield.h"
 #include "prism/field/scalar.h"
@@ -22,7 +20,9 @@ struct CoeffsTriplet {
 };
 } // namespace detail
 
-// Basic base class for all convection schemes, without templating clutter.
+/// TODO: should we rename IConvection and rename IAppliedConvection to IConvection? since there
+/// are no templates left in IAppliedConvection after the SharePtr strategy refactor. Basic base
+/// class for all convection schemes, without templating clutter.
 class IConvection {};
 
 // Finite volume scheme for the discretization of the convection term
