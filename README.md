@@ -24,7 +24,7 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
 
     // - ∇.(κ ∇T)
     // the template parameter specifies the type for diffusion coefficient
-    using laplacian = diffusion::NonCorrected<field::Scalar>;
+    using laplacian = diffusion::NonCorrected;
 
     auto eqn = eqn::Transport(div(U, T),            //   ∇.(UT)
                               laplacian(kappa, T)   // - ∇.(κ ∇T) = 0
@@ -39,12 +39,7 @@ The following example shows how pressure correction equation is implemented in p
 
 ```cpp
     // here we create the type for diffusion (laplacian operator) with over-relaxed non-orthogonal corrector
-    using laplacian_p = diffusion::Corrected<
-                                        // diffusion coefficient type
-                                        field::Tensor,
-                                        // non-orthogonal correction type
-                                        diffusion::nonortho::OverRelaxedCorrector
-                                        >;
+    using laplacian_p = diffusion::Corrected;
 
     // source term for divergence of velocity field with negative sign (sources are added to rhs by default)
     using div_U = source::Divergence<Sign::Negative>;
