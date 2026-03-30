@@ -68,7 +68,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     using div = scheme::convection::Upwind;
-    using laplacian = scheme::diffusion::NonCorrected<field::Scalar>;
+    using laplacian = scheme::diffusion::NonCorrected;
 
     auto eqn = eqn::Transport(div(U, T),          // ∇.(UT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)

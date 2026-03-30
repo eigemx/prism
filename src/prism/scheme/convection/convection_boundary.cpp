@@ -1,8 +1,8 @@
 #include "convection.h"
 
 namespace prism::scheme::boundary {
-void Fixed<convection::IAppliedConvection>::apply(convection::IAppliedConvection& scheme,
-                                                  const mesh::BoundaryPatch& patch) {
+void Fixed<convection::IConvection>::apply(convection::IConvection& scheme,
+                                           const mesh::BoundaryPatch& patch) {
     const auto& phi = scheme.field();
     const auto& mesh = phi->mesh();
 
@@ -17,21 +17,21 @@ void Fixed<convection::IAppliedConvection>::apply(convection::IAppliedConvection
     }
 }
 
-void NoSlip<convection::IAppliedConvection>::apply(convection::IAppliedConvection& scheme,
-                                                   const mesh::BoundaryPatch& patch) {
+void NoSlip<convection::IConvection>::apply(convection::IConvection& scheme,
+                                            const mesh::BoundaryPatch& patch) {
     // Check section 12.9.3, in Moukalled et. al, normal velocity at walls is zero, and there is
     // no convection flux.
 }
 
-void ZeroGradient<convection::IAppliedConvection>::apply(convection::IAppliedConvection& scheme,
-                                                         const mesh::BoundaryPatch& patch) {
+void ZeroGradient<convection::IConvection>::apply(convection::IConvection& scheme,
+                                                  const mesh::BoundaryPatch& patch) {
     /// TODO: implement ZeroGradient separate from Outlet
-    Outlet<convection::IAppliedConvection> outlet;
-    return outlet.apply(scheme, patch);
+    Outlet<convection::IConvection> outlet;
+    outlet.apply(scheme, patch);
 }
 
-void Outlet<convection::IAppliedConvection>::apply(convection::IAppliedConvection& scheme,
-                                                   const mesh::BoundaryPatch& patch) {
+void Outlet<convection::IConvection>::apply(convection::IConvection& scheme,
+                                            const mesh::BoundaryPatch& patch) {
     _n_reverse_flow_faces = 0;
 
     const auto& mesh = scheme.field()->mesh();

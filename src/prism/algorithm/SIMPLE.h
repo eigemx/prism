@@ -1,12 +1,13 @@
 #pragma once
 
-#include <cctype>
 #include <span>
 
 #include "algorithm.h"
 #include "prism/equation/boundary.h"
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
+#include "prism/field/velocity.h"
+#include "prism/types.h"
 
 namespace prism::algo {
 struct SIMPLEParameters {
@@ -14,25 +15,25 @@ struct SIMPLEParameters {
     double momentum_urf = 0.7;
 
     // Momentum predictor inner solve() loop max. iterations count
-    std::size_t momentum_max_iter = 3;
+    size_t momentum_max_iter = 3;
 
     // Minimum final solver residual for momentum predictor
-    double momentum_residual = 1e-7;
+    f64 momentum_residual = 1e-7;
 
     // Initial residual stopping criterion for momentum predictor
-    double momentum_residual_stop = 1e-5;
+    f64 momentum_residual_stop = 1e-5;
 
     // Number of non-orthogonal correctors for pressure equation
-    std::size_t non_ortho_correctors = 2;
+    size_t non_ortho_correctors = 2;
 
     // Under-relaxation factor for pressure field
-    double pressure_urf = 0.3;
+    f64 pressure_urf = 0.3;
 
     // Pressure equation inner solve() loop max. iterations count
-    std::size_t pressure_max_iter = 5;
+    size_t pressure_max_iter = 5;
 
     // Minimum residual for pressure equation
-    double pressure_residual = 1e-7;
+    f64 pressure_residual = 1e-7;
 };
 
 class IncompressibleSIMPLE : public IPressureLinked {
@@ -47,14 +48,12 @@ class IncompressibleSIMPLE : public IPressureLinked {
     SIMPLEParameters _params;
 };
 
-void solveImplicitMomentum(SIMPLEParameters params,
-                           std::span<eqn::Momentum*> momentum_predictors);
+void solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors);
 
 void constrainPPrime(SharedPtr<field::Pressure>& pprime);
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
-                                  const SharedPtr<field::Pressure>& p)
-    -> SharedPtr<field::Tensor>;
+                                  const SharedPtr<field::Pressure>& p) -> SharedPtr<field::Tensor>;
 
 auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,

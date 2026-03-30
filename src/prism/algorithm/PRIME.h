@@ -1,26 +1,26 @@
 #pragma once
 
-#include <cctype>
 #include <span>
 
 #include "algorithm.h"
 #include "prism/equation/boundary.h"
 #include "prism/field/pressure.h"
 #include "prism/field/velocity.h"
+#include "prism/types.h"
 
 namespace prism::algo {
 struct PRIMEParameters {
     // Number of non-orthogonal correctors for pressure equation
-    std::size_t non_ortho_correctors = 2;
+    size_t non_ortho_correctors = 2;
 
     // Under-relaxation factor for pressure field
-    double pressure_urf = 0.3;
+    f64 pressure_urf = 0.3;
 
     // Pressure equation inner solve() loop max. iterations count
-    std::size_t pressure_max_iter = 5;
+    size_t pressure_max_iter = 5;
 
     // Minimum residual for pressure equation
-    double pressure_residual = 1e-7;
+    f64 pressure_residual = 1e-7;
 };
 
 

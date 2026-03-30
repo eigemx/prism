@@ -32,8 +32,7 @@ auto main(int argc, char* argv[]) -> int {
     auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
 
     using div = LinearUpwind;
-    using laplacian =
-        diffusion::Corrected<field::Scalar, diffusion::nonortho::OverRelaxedCorrector>;
+    using laplacian = diffusion::Corrected;
     using grad = source::Gradient<Sign::Negative>;
 
     auto nOuterIter = 50;

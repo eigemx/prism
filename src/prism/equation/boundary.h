@@ -1,9 +1,7 @@
 #pragma once
 
 #include "prism/boundary.h"
-#include "prism/field/velocity.h"
 #include "prism/mesh/boundary.h"
-#include "prism/scheme/scheme.h"
 
 namespace prism::eqn {
 
@@ -15,11 +13,6 @@ class Momentum;
 } // namespace prism::eqn
 
 namespace prism::eqn::boundary {
-
-template <typename To>
-auto castScheme(const SharedPtr<prism::scheme::IScheme>& ptr) -> SharedPtr<To> {
-    return std::dynamic_pointer_cast<To>(ptr);
-}
 
 template <typename Equation>
 class IEquationBoundaryHandler : public prism::boundary::IBoundaryHandler {

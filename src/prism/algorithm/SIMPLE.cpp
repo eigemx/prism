@@ -17,8 +17,7 @@
 namespace prism::algo {
 using field::Pressure;
 
-void solveImplicitMomentum(SIMPLEParameters params,
-                             std::span<eqn::Momentum*> momentum_predictors) {
+void solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors) {
     // solve momentum equations implicitly
     auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
     log::info("prism::algo::solveMomentumImplicitly(): solving momentum equations");
@@ -57,8 +56,7 @@ void constrainPPrime(SharedPtr<field::Pressure>& pprime) {
 }
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
-                                  const SharedPtr<field::Pressure>& p)
-    -> SharedPtr<field::Tensor> {
+                                  const SharedPtr<field::Pressure>& p) -> SharedPtr<field::Tensor> {
     for (auto* eqn : momentum_predictors) {
         eqn->updateCoeffs();
         eqn->relax();
@@ -126,7 +124,7 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     /// TODO: based on number of non-orhogonal corrections in _params, we should check if we need
     /// diffusion::Corrected or diffusion::NonCorrected
-    using laplacian_p = Corrected<field::Tensor, nonortho::OverRelaxedCorrector>;
+    using laplacian_p = Corrected;
     using div_U = scheme::source::Divergence<Sign::Negative>;
 
     auto pEqn = eqn::Transport(laplacian_p(D, pprime), // - ∇.(D ∇P')
@@ -175,8 +173,7 @@ void correctFields(SharedPtr<field::Velocity>& U,
         /// stack-use-after-return errors. This might be related to how temporaries are handled
         /// in complex expressions. Note: This issue only appears in debug mode with
         /// AddressSanitizer, not in release mode.
-        Vector3d update =
-            U->valueAtCell(cell) - (D->valueAtCell(cell) * pprime->gradAtCell(cell));
+        Vector3d update = U->valueAtCell(cell) - (D->valueAtCell(cell) * pprime->gradAtCell(cell));
         return update;
     });
 

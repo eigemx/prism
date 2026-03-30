@@ -45,7 +45,7 @@ auto main(int argc, char* argv[]) -> int {
 
     using diffusion::nonortho::OverRelaxedCorrector;
     auto eqn = eqn::Transport(temporal::AdamMoulton(T, dt), // dT/dt
-                              diffusion::Corrected<Scalar, OverRelaxedCorrector>(kappa, T));
+                              diffusion::Corrected(kappa, T));
 
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {
         log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);

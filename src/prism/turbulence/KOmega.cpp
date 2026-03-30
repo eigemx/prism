@@ -34,7 +34,7 @@ auto KOmega::kEqn() -> eqn::Transport {
     auto sk_values = _rho->values().cwiseProduct(_k->values().cwiseProduct(_omega->values()));
     auto sk = std::make_shared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
     auto k_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _k),
-                                scheme::diffusion::NonCorrected<field::Scalar>(_mu_eff, _k),
+                                scheme::diffusion::NonCorrected(_mu_eff, _k),
                                 scheme::source::ConstantScalar<Sign::Positive>(pk),
                                 scheme::source::ConstantScalar<Sign::Negative>(sk));
 
@@ -56,11 +56,9 @@ auto KOmega::omegaEqn() -> eqn::Transport {
     VectorXd sk_values = _c_alpha1 * omega.cwiseQuotient(k).cwiseProduct(pk->values());
     sk_values -= _c_beta1 * rho.cwiseProduct(omega.cwiseProduct(omega));
     auto sk = std::make_shared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
-
-    auto omega_eqn =
-        eqn::Transport(scheme::convection::LinearUpwind(_mdot, _omega),
-                       scheme::diffusion::NonCorrected<field::Scalar>(_mu_eff, _omega),
-                       scheme::source::ConstantScalar<Sign::Positive>(sk));
+    auto omega_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _omega),
+                                    scheme::diffusion::NonCorrected(_mu_eff, _omega),
+                                    scheme::source::ConstantScalar<Sign::Positive>(sk));
 
     if (_is_transient) {
         omega_eqn.addScheme(scheme::temporal::AdamMoulton(_rho, _omega, _dt));

@@ -4,50 +4,45 @@
 
 namespace prism::scheme::convection {
 // forward declarations
-class IAppliedConvection;
+class IConvection;
 
 } // namespace prism::scheme::convection
 
 namespace prism::scheme::boundary {
 template <>
-class Fixed<convection::IAppliedConvection>
-    : public ISchemeBoundaryHandler<convection::IAppliedConvection> {
+class Fixed<convection::IConvection> : public ISchemeBoundaryHandler<convection::IConvection> {
   public:
-    void apply(convection::IAppliedConvection& scheme, const mesh::BoundaryPatch& patch) override;
+    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override;
     auto name() const -> std::string override { return "fixed"; }
 };
 
 template <>
-class NoSlip<convection::IAppliedConvection>
-    : public ISchemeBoundaryHandler<convection::IAppliedConvection> {
+class NoSlip<convection::IConvection> : public ISchemeBoundaryHandler<convection::IConvection> {
   public:
-    void apply(convection::IAppliedConvection& scheme, const mesh::BoundaryPatch& patch) override;
+    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override;
     auto name() const -> std::string override { return "no-slip"; }
 };
 
 template <>
-class Symmetry<convection::IAppliedConvection>
-    : public ISchemeBoundaryHandler<convection::IAppliedConvection> {
+class Symmetry<convection::IConvection> : public ISchemeBoundaryHandler<convection::IConvection> {
   public:
-    void apply(convection::IAppliedConvection& scheme,
-               const mesh::BoundaryPatch& patch) override {}
+    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override {}
     auto name() const -> std::string override { return "symmetry"; }
 };
 
 template <>
-class ZeroGradient<convection::IAppliedConvection>
-    : public ISchemeBoundaryHandler<convection::IAppliedConvection> {
+class ZeroGradient<convection::IConvection>
+    : public ISchemeBoundaryHandler<convection::IConvection> {
   public:
     // we treat zero-gradient boundary condition as outlet condition.
-    void apply(convection::IAppliedConvection& scheme, const mesh::BoundaryPatch& patch) override;
+    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override;
     auto name() const -> std::string override { return "zero-gradient"; }
 };
 
 template <>
-class Outlet<convection::IAppliedConvection>
-    : public ISchemeBoundaryHandler<convection::IAppliedConvection> {
+class Outlet<convection::IConvection> : public ISchemeBoundaryHandler<convection::IConvection> {
   public:
-    void apply(convection::IAppliedConvection& scheme, const mesh::BoundaryPatch& patch) override;
+    void apply(convection::IConvection& scheme, const mesh::BoundaryPatch& patch) override;
     auto name() const -> std::string override { return "outlet"; }
 
   private:

@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "diffusion_boundary.h"
+#include "diffusion_coeff.h"
 #include "nonortho.h"
 #include "prism/boundary.h"
 #include "prism/field/scalar.h"
@@ -15,39 +16,34 @@
 
 
 namespace prism::scheme::diffusion {
-// Basic base class for all diffusion schemes, without templating clutter.
-class IDiffusion {};
-
 // Base class for all diffusion schemes with shared methods (apply(), field(), and kappa()).
-template <typename Kappa>
-class IAppliedDiffusion : public IFullScheme {
+class IDiffusion : public IFullScheme {
   public:
-    IAppliedDiffusion(const SharedPtr<Kappa>& kappa, const SharedPtr<field::Scalar>& phi);
-    auto kappa() -> const SharedPtr<Kappa>& { return _kappa; }
-
-    using KappaType = Kappa;
+    IDiffusion(SharedPtr<IDiffusionCoeff> kappa, const SharedPtr<field::Scalar>& phi);
+    auto kappa() -> const SharedPtr<IDiffusionCoeff>& { return _kappa; }
 
   private:
-    SharedPtr<Kappa> _kappa;
+    SharedPtr<IDiffusionCoeff> _kappa;
 };
 
-// Concept for diffusion schemes that are based on IAppliedDiffusion.
-template <typename T>
-concept IAppliedDiffusionBased = std::derived_from<T, IAppliedDiffusion<typename T::KappaType>>;
-
 // Base class for all diffusion schemes that do not need non-orthogonal correction.
-class INonCorrected : public IDiffusion {};
+class INonCorrected : public IDiffusion {
+  public:
+    using IDiffusion::IDiffusion;
+};
 
 // Base class for all diffusion schemes that need non-orthogonal correction.
-class ICorrected : public IDiffusion {};
+class ICorrected : public IDiffusion {
+  public:
+    using IDiffusion::IDiffusion;
+};
 
 // Diffusion (laplacian) scheme without non-orthogonal correction.
-template <typename Kappa = field::Scalar>
-class NonCorrected : public INonCorrected,
-                     public IAppliedDiffusion<Kappa>,
-                     public prism::boundary::BHManagerProvider<
-                         boundary::ISchemeBoundaryHandler<NonCorrected<Kappa>>> {
+class NonCorrected
+    : public INonCorrected,
+      public prism::boundary::BHManagerProvider<boundary::ISchemeBoundaryHandler<NonCorrected>> {
   public:
+    template <typename Kappa>
     NonCorrected(const SharedPtr<Kappa>& kappa, const SharedPtr<field::Scalar>& phi);
     auto needsCorrection() const noexcept -> bool override { return false; }
 
@@ -57,59 +53,67 @@ class NonCorrected : public INonCorrected,
 };
 
 // Diffusion (laplacian) scheme with non-orthogonal correction.
-template <typename Kappa = field::Scalar,
-          typename NonOrthoCorrector = nonortho::OverRelaxedCorrector>
-class Corrected : public ICorrected,
-                  public IAppliedDiffusion<Kappa>,
-                  public prism::boundary::BHManagerProvider<
-                      boundary::ISchemeBoundaryHandler<Corrected<Kappa, NonOrthoCorrector>>> {
+class Corrected
+    : public ICorrected,
+      public prism::boundary::BHManagerProvider<boundary::ISchemeBoundaryHandler<Corrected>> {
   public:
-    Corrected(const SharedPtr<Kappa>& kappa, const SharedPtr<field::Scalar>& phi);
+    template <typename Kappa>
+    Corrected(const SharedPtr<Kappa>& kappa,
+              const SharedPtr<field::Scalar>& phi,
+              SharedPtr<nonortho::INonOrthoCorrector> corrector =
+                  std::make_shared<nonortho::OverRelaxedCorrector>());
 
-    auto corrector() const noexcept -> const NonOrthoCorrector& { return _corrector; }
+    auto corrector() const noexcept -> const nonortho::INonOrthoCorrector& { return *_corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
 
-    using NonOrthoCorrectorType = NonOrthoCorrector;
+    template <typename Corrector>
+    auto setCorrector() -> void {
+        _corrector = std::make_shared<Corrector>();
+    }
 
   private:
     void applyInterior(const mesh::Face& face) override;
     void applyBoundary() override;
 
-    NonOrthoCorrector _corrector;
+    SharedPtr<nonortho::INonOrthoCorrector> _corrector;
 };
 
 //
-// diffusion::IAppliedDiffusion implementation
+// diffusion::IDiffusion implementation
 //
+inline IDiffusion::IDiffusion(SharedPtr<IDiffusionCoeff> kappa, const SharedPtr<field::Scalar>& phi)
+    : _kappa(std::move(kappa)), IFullScheme(phi) {}
+
+namespace detail {
 template <typename Kappa>
-IAppliedDiffusion<Kappa>::IAppliedDiffusion(const SharedPtr<Kappa>& kappa,
-                                            const SharedPtr<field::Scalar>& phi)
-    : _kappa(kappa), IFullScheme(phi) {}
+auto wrapKappa(SharedPtr<Kappa> kappa) -> SharedPtr<IDiffusionCoeff> {
+    if constexpr (std::is_same_v<Kappa, field::Scalar>) {
+        return std::make_shared<ScalarDiffusionCoeff>(kappa);
+    } else {
+        return std::make_shared<TensorDiffusionCoeff>(kappa);
+    }
+}
+} // namespace detail
 
 ///
 /// diffusion::NonCorrected implementation
 ///
 template <typename Kappa>
-NonCorrected<Kappa>::NonCorrected(const SharedPtr<Kappa>& kappa,
-                                  const SharedPtr<field::Scalar>& phi)
-    : IAppliedDiffusion<Kappa>(kappa, phi) {
-    // add default boundary handlers for NonCorrected
-    using Scheme = NonCorrected<Kappa>;
-    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
+NonCorrected::NonCorrected(const SharedPtr<Kappa>& kappa, const SharedPtr<field::Scalar>& phi)
+    : INonCorrected(detail::wrapKappa(kappa), phi) {
+    this->boundaryHandlersManager().template addHandler<boundary::Fixed<NonCorrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<NonCorrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Outlet<NonCorrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient<NonCorrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<NonCorrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<NonCorrected>>();
 }
 
-template <typename Kappa>
-void NonCorrected<Kappa>::applyBoundary() {
+inline void NonCorrected::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::NonCorrected", *this);
 }
 
-template <typename Kappa>
-void NonCorrected<Kappa>::applyInterior(const mesh::Face& face) {
+inline void NonCorrected::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field()->mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
@@ -122,7 +126,7 @@ void NonCorrected<Kappa>::applyInterior(const mesh::Face& face) {
 
     // The following is based on equation (8.93) from Moukalled et al. (2015).
     // this handles the general case when kappa is a field::Tensor.
-    Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
+    Vector3d Sf_prime = this->kappa()->multiply(Sf, face);
 
     // geometric diffusion coefficient
     // Taking the norm of Sf_prime discards the sign of kappa, so we use the following instead
@@ -147,27 +151,24 @@ void NonCorrected<Kappa>::applyInterior(const mesh::Face& face) {
 //
 // diffusion::Corrected implementation
 //
-template <typename Kappa, typename NonOrthoCorrector>
-Corrected<Kappa, NonOrthoCorrector>::Corrected(const SharedPtr<Kappa>& kappa,
-                                               const SharedPtr<field::Scalar>& phi)
-    : IAppliedDiffusion<Kappa>(kappa, phi) {
-    // add default boundary handlers for Corrected
-    using Scheme = Corrected<Kappa, NonOrthoCorrector>;
-    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
+template <typename Kappa>
+Corrected::Corrected(const SharedPtr<Kappa>& kappa,
+                     const SharedPtr<field::Scalar>& phi,
+                     SharedPtr<nonortho::INonOrthoCorrector> corrector)
+    : ICorrected(detail::wrapKappa(kappa), phi), _corrector(std::move(corrector)) {
+    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Corrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Corrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Corrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::FixedGradient<Corrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Corrected>>();
+    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Corrected>>();
 }
 
-template <typename Kappa, typename NonOrthoCorrector>
-void Corrected<Kappa, NonOrthoCorrector>::applyBoundary() {
+inline void Corrected::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::diffusion::Corrected", *this);
 }
 
-template <typename Kappa, typename NonOrthoCorrector>
-void Corrected<Kappa, NonOrthoCorrector>::applyInterior(const mesh::Face& face) {
+inline void Corrected::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field()->mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
@@ -180,8 +181,8 @@ void Corrected<Kappa, NonOrthoCorrector>::applyInterior(const mesh::Face& face) 
     const Vector3d e = d_CF / d_CF_norm;
 
     const auto Sf = mesh::outwardAreaVector(face, owner);
-    const Vector3d Sf_prime = detail::valueAtFace(this->kappa(), face) * Sf;
-    const auto [Ef_prime, Tf_prime] = _corrector.decompose(Sf_prime, e);
+    const Vector3d Sf_prime = this->kappa()->multiply(Sf, face);
+    const auto [Ef_prime, Tf_prime] = _corrector->decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
     const f64 g_diff = Ef_prime.dot(d_CF) / (d_CF_norm * d_CF_norm + EPSILON);

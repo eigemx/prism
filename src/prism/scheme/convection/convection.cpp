@@ -5,19 +5,17 @@
 
 namespace prism::scheme::convection {
 
-IAppliedConvection::IAppliedConvection(const SharedPtr<field::IVector>& U,
-                                       const SharedPtr<field::Scalar>& phi)
+IConvection::IConvection(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
     : _U(U), IFullScheme(phi) {
     // add default boundary handlers for IConvection based types
-    using Scheme = IAppliedConvection; // just to have nice formatted lines below
-    this->boundaryHandlersManager().template addHandler<boundary::Fixed<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::Outlet<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<Scheme>>();
-    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<Scheme>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Fixed<IConvection>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Outlet<IConvection>>();
+    this->boundaryHandlersManager().template addHandler<boundary::Symmetry<IConvection>>();
+    this->boundaryHandlersManager().template addHandler<boundary::NoSlip<IConvection>>();
+    this->boundaryHandlersManager().template addHandler<boundary::ZeroGradient<IConvection>>();
 }
 
-void IAppliedConvection::applyInterior(const mesh::Face& face) {
+void IConvection::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field()->mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
@@ -41,7 +39,7 @@ void IAppliedConvection::applyInterior(const mesh::Face& face) {
     this->rhs(neighbor_id) += s;
 }
 
-void IAppliedConvection::applyBoundary() {
+void IConvection::applyBoundary() {
     prism::boundary::detail::applyBoundary("prism::scheme::convection::IAppliedConvection", *this);
 }
 

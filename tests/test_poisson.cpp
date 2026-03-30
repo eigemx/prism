@@ -52,8 +52,7 @@ auto testPoissonWithMesh(const std::string& mesh_file_name)
 
     auto c = std::make_shared<field::Tensor>("c", mesh, Matrix3d::Identity());
 
-    using laplacian =
-        diffusion::Corrected<field::Tensor, scheme::diffusion::nonortho::OverRelaxedCorrector>;
+    using laplacian = diffusion::Corrected;
     auto source = std::make_shared<field::Scalar>("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport(laplacian(c, P),                               // -∇.∇p

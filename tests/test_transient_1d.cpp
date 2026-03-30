@@ -44,7 +44,7 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     auto solver = solver::BiCGSTAB<field::Scalar>();
     auto nTimesteps = 200;
 
-    using laplacian = scheme::diffusion::Corrected<field::Scalar>;
+    using laplacian = scheme::diffusion::Corrected;
     auto eqn = eqn::Transport(scheme::temporal::AdamMoulton(T, dt), laplacian(kappa, T));
 
 

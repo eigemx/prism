@@ -18,7 +18,7 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
-    auto unv_file_name = args[1];
+    const auto& unv_file_name = args[1];
 
     // read mesh
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
@@ -55,9 +55,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source
     using div = scheme::convection::Upwind;
-    using laplacian =
-        scheme::diffusion::Corrected<field::Scalar,
-                                     scheme::diffusion::nonortho::OverRelaxedCorrector>;
+    using laplacian = scheme::diffusion::Corrected;
 
     auto eqn = eqn::Transport(div(U, T),          // ∇.(ρUT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)

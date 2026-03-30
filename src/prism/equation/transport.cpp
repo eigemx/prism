@@ -67,12 +67,16 @@ auto Transport::field() const -> const SharedPtr<field::Scalar>& {
     return _phi;
 }
 
-auto Transport::convectionScheme() -> SharedPtr<scheme::IFullScheme> {
+auto Transport::convectionScheme() -> SharedPtr<scheme::convection::IConvection> {
     return _conv_scheme;
 }
 
-auto Transport::diffusionScheme() -> SharedPtr<scheme::IFullScheme> {
+auto Transport::diffusionScheme() -> SharedPtr<scheme::diffusion::IDiffusion> {
     return _diff_scheme;
+}
+
+auto Transport::temporalScheme() -> SharedPtr<scheme::temporal::ITemporal> {
+    return _temporal_scheme;
 }
 
 auto Transport::isTransient() const noexcept -> bool {

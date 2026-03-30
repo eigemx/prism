@@ -2,12 +2,11 @@
 
 #include "boundary.h"
 #include "prism/equation/transport.h"
-#include "prism/field/scalar.h"
-#include "prism/field/velocity.h"
 #include "prism/types.h"
 
 namespace prism::eqn::boundary {
 
+namespace {
 auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& Ub, const Vector3d& n)
     -> std::pair<f64, f64> {
     // n
@@ -57,21 +56,13 @@ auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& Ub, con
         }
     }
 }
+} // namespace
 
 void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     auto field = eqn.field();
     const auto& mesh = eqn.field()->mesh();
-
-    // Momentum's conserved field is always a VelocityComponent
-    using F = field::VelocityComponent;
-    using Convection = scheme::convection::IAppliedConvection;
-    auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
-    const auto& U = conv_scheme->U();
-
-    /// TODO: this is a bit of a hack, what if kappa is not scalar?
-    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::Scalar>;
-    auto diff_scheme = castScheme<Diffusion>(eqn.diffusionScheme());
-    const auto& mu = diff_scheme->kappa();
+    const auto& U = eqn.convectionScheme()->U();
+    const auto& mu = eqn.diffusionScheme()->kappa();
 
     LinearSystem sys(mesh->cellCount());
 
@@ -89,7 +80,8 @@ void NoSlip<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
         Vector3d Uc = U->valueAtCell(owner);
         Vector3d Ub = U->valueAtFace(face);
 
-        f64 g = mu->valueAtFace(face) * face.area() / d_normal;
+        Vector3d Sf = face.areaVector();
+        f64 g = mu->multiply(Sf, face).norm() / d_normal;
         /// TODO: at a test round, ac & b seems to be zero and this apply() function does not do
         /// anything. Check this again.
         auto [ac, b] = contribution(field->coord().value(), Uc, Ub, n);

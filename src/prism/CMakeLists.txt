@@ -30,6 +30,7 @@ add_library(prism
 
     scheme/scheme.cpp
     scheme/diffusion/nonortho.cpp
+    scheme/diffusion/diffusion_coeff.cpp
     scheme/convection/convection.cpp
     scheme/convection/convection_hr.cpp
     scheme/convection/convection_boundary.cpp

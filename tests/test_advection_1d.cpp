@@ -50,7 +50,7 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
     auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 0.1);
 
     using div = scheme::convection::Upwind;
-    using laplacian = scheme::diffusion::NonCorrected<field::Scalar>;
+    using laplacian = scheme::diffusion::NonCorrected;
 
     auto eqn = eqn::Transport(div(U, T),          // ∇.(ρUT)
                               laplacian(kappa, T) // - ∇.(κ ∇T)

@@ -2,14 +2,13 @@
 
 #include "boundary.h"
 #include "prism/equation/transport.h"
-#include "prism/field/scalar.h"
-#include "prism/field/velocity.h"
 #include "prism/types.h"
 
 namespace prism::eqn::boundary {
 /// TODO: many logic here is copied from the NoSlip boundary condition, we should refactor it to
 /// avoid code duplication.
 
+namespace {
 auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n) -> std::pair<f64, f64> {
     // n
     f64 nx = n.x();
@@ -45,20 +44,16 @@ auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n) -> s
         }
     }
 }
+} // namespace
 
 void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     auto field = eqn.field();
     const auto& mesh = eqn.field()->mesh();
 
-    // Momentum's conserved field is always a VelocityComponent
-    using F = field::VelocityComponent;
-    using Convection = scheme::convection::IAppliedConvection;
-    auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
+    auto conv_scheme = eqn.convectionScheme();
     const auto& U = conv_scheme->U();
 
-    /// TODO: this is a bit of a hack, what if kappa is not scalar?
-    using Diffusion = scheme::diffusion::IAppliedDiffusion<field::Scalar>;
-    auto diff_scheme = castScheme<Diffusion>(eqn.diffusionScheme());
+    const auto& diff_scheme = eqn.diffusionScheme();
     const auto& mu = diff_scheme->kappa();
 
     LinearSystem sys(mesh->cellCount());
@@ -74,7 +69,8 @@ void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) 
 
         Vector3d Uc = U->valueAtCell(owner);
 
-        f64 g = 2 * mu->valueAtFace(face) * face.area() / d_normal;
+        Vector3d Sf = face.areaVector();
+        f64 g = 2 * mu->multiply(Sf, face).norm() / d_normal;
         auto [ac, b] = contribution(field->coord().value(), Uc, n);
 
         sys.insert(owner_id, owner_id, g * ac);

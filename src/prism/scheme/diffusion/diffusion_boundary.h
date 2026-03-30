@@ -3,33 +3,11 @@
 #include <concepts>
 
 #include "prism/constants.h"
-#include "prism/field/ifield.h"
-#include "prism/field/tensor.h"
+#include "prism/mesh/cell.h"
+#include "prism/mesh/face.h"
 #include "prism/scheme/boundary.h"
 
 namespace prism::scheme::diffusion {
-
-namespace detail {
-
-// The following functions are used to get the value of a field at a face or cell.
-// They are specialized for field::Tensor to return a transposed value of the tensor value at the
-// face or cell, to follow equation (8.93) from Moukalled et al. (2015). And for other field
-// types, they return the value directly.
-template <field::IFieldBased Field>
-auto valueAtFace(const SharedPtr<Field>& field, const mesh::Face& face) -> Field::ValueType;
-
-template <field::IFieldBased Field>
-auto valueAtCell(const SharedPtr<Field>& field, const mesh::Cell& cell) -> Field::ValueType;
-
-template <>
-auto valueAtFace(const SharedPtr<field::Tensor>& field, const mesh::Face& face)
-    -> field::Tensor::ValueType;
-
-template <>
-auto valueAtCell(const SharedPtr<field::Tensor>& field, const mesh::Cell& cell)
-    -> field::Tensor::ValueType;
-} // namespace detail
-
 // Forward declarations for diffusion scheme classes defined in diffusion.h
 class IDiffusion;
 
@@ -46,10 +24,8 @@ class INonCorrected;
 template <typename T>
 concept INonCorrectedBased = std::derived_from<T, INonCorrected>;
 
-template <typename Kappa, typename NonOrthoCorrector>
 class Corrected;
 
-template <typename Kappa>
 class NonCorrected;
 
 } // namespace prism::scheme::diffusion
@@ -156,7 +132,7 @@ void FixedGradient<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& pat
         const Vector3d wall_grad = boundary_patch.getVectorBoundaryCondition(phi->name());
 
         const Vector3d& Sf = face.areaVector();
-        Vector3d Sf_prime = kappa->valueAtCell(owner) * Sf;
+        Vector3d Sf_prime = kappa->multiply(Sf, owner);
 
         // check Moukalled et al 2015 Chapter 8 equation 8.39, 8.41 and the following paragraph,
         // and paragraph 8.6.8.2
@@ -187,7 +163,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const Vector3d d_Cf = face.center() - owner.center();
         const double d_Cf_norm = d_Cf.norm();
 
-        Vector3d Sf_prime = diffusion::detail::valueAtCell(kappa, owner) * face.areaVector();
+        Vector3d Sf_prime = kappa->multiply(face.areaVector(), owner);
         const double g_diff = Sf_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
 
         scheme.insert(cell_id, cell_id, g_diff);
@@ -235,7 +211,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const double d_Cf_norm = d_Cf.norm();
         const Vector3d e = d_Cf / d_Cf_norm;
 
-        Vector3d Sf_prime = diffusion::detail::valueAtCell(kappa, owner) * face.areaVector();
+        Vector3d Sf_prime = kappa->multiply(face.areaVector(), owner);
         const auto& [Ef_prime, Tf_prime] = corrector.decompose(Sf_prime, e);
         const double g_diff = Ef_prime.dot(d_Cf) / (d_Cf_norm * d_Cf_norm + EPSILON);
 
@@ -257,27 +233,3 @@ void NoSlip<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     return fixed.apply(scheme, patch);
 }
 } // namespace prism::scheme::boundary
-
-namespace prism::scheme::diffusion::detail {
-template <field::IFieldBased Field>
-auto valueAtFace(const SharedPtr<Field>& field, const mesh::Face& face) -> Field::ValueType {
-    return field->valueAtFace(face.id());
-}
-
-template <field::IFieldBased Field>
-auto valueAtCell(const SharedPtr<Field>& field, const mesh::Cell& cell) -> Field::ValueType {
-    return field->valueAtCell(cell.id());
-}
-
-template <>
-auto inline valueAtFace(const SharedPtr<field::Tensor>& field, const mesh::Face& face)
-    -> field::Tensor::ValueType {
-    return field->valueAtFace(face.id()).transpose();
-}
-
-template <>
-auto inline valueAtCell(const SharedPtr<field::Tensor>& field, const mesh::Cell& cell)
-    -> field::Tensor::ValueType {
-    return field->valueAtCell(cell.id()).transpose();
-}
-} // namespace prism::scheme::diffusion::detail

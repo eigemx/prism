@@ -1,6 +1,5 @@
 #include "boundary.h"
 #include "prism/equation/transport.h"
-#include "prism/field/velocity.h"
 #include "prism/types.h"
 
 namespace prism::eqn::boundary {
@@ -8,11 +7,7 @@ void Outlet<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
     auto field = eqn.field();
     const auto& mesh = field->mesh();
 
-    // Momentum's conserved field is always a VelocityComponent
-    using F = field::VelocityComponent;
-    using Convection = scheme::convection::IAppliedConvection;
-    auto conv_scheme = castScheme<Convection>(eqn.convectionScheme());
-    const auto& U = conv_scheme->U();
+    const auto& U = eqn.convectionScheme()->U();
     auto phi = eqn.field();
 
     for (std::size_t face_id : patch.facesIds()) {

@@ -4,6 +4,7 @@
 
 #include "prism/equation/boundary.h"
 #include "prism/field/pressure.h"
+#include "prism/field/velocity.h"
 
 namespace prism::algo {
 class IPressureLinked {

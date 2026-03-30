@@ -33,8 +33,7 @@ auto main(int argc, char* argv[]) -> int {
     // different diffusion coefficient fields.
     auto kappa = std::make_shared<Tensor>("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
-    auto eqn = eqn::Transport(
-        diffusion::Corrected<Tensor, diffusion::nonortho::OverRelaxedCorrector>(kappa, T));
+    auto eqn = eqn::Transport(diffusion::Corrected(kappa, T));
 
     // solve
     auto solver = solver::BiCGSTAB<Scalar>();

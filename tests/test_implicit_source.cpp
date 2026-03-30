@@ -43,7 +43,7 @@ TEST_CASE("test implicit source", "[implicit-source]") {
     auto y = std::make_shared<field::Scalar>("y", mesh, 0.0);
     auto c = std::make_shared<field::Scalar>("c", mesh, 1.0);
 
-    using laplacian = diffusion::NonCorrected<field::Scalar>;
+    using laplacian = diffusion::NonCorrected;
 
     auto eqn = eqn::Transport(laplacian(c, y),                            // -∇.∇y
                               source::ImplicitField<Sign::Negative>(4, y) // = -4y

@@ -20,18 +20,12 @@ struct CoeffsTriplet {
 };
 } // namespace detail
 
-/// TODO: should we rename IConvection and rename IAppliedConvection to IConvection? since there
-/// are no templates left in IAppliedConvection after the SharePtr strategy refactor. Basic base
-/// class for all convection schemes, without templating clutter.
-class IConvection {};
-
 // Finite volume scheme for the discretization of the convection term
-class IAppliedConvection : public IConvection,
-                           public IFullScheme,
-                           public prism::boundary::BHManagerProvider<
-                               boundary::ISchemeBoundaryHandler<IAppliedConvection>> {
+class IConvection
+    : public IFullScheme,
+      public prism::boundary::BHManagerProvider<boundary::ISchemeBoundaryHandler<IConvection>> {
   public:
-    IAppliedConvection(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi);
+    IConvection(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi);
 
     auto needsCorrection() const noexcept -> bool override { return true; }
     auto U() -> const SharedPtr<field::IVector>& { return _U; }
@@ -50,13 +44,13 @@ class IAppliedConvection : public IConvection,
 
 // Concept for diffusion schemes that are based on IAppliedConvection.
 template <typename T>
-concept IAppliedConvectionBased = std::derived_from<T, IAppliedConvection>;
+concept IAppliedConvectionBased = std::derived_from<T, IConvection>;
 
 // Upwind scheme
-class Upwind : public IAppliedConvection {
+class Upwind : public IConvection {
   public:
     Upwind(const SharedPtr<field::IVector>& U, const SharedPtr<field::Scalar>& phi)
-        : IAppliedConvection(U, phi) {}
+        : IConvection(U, phi) {}
 
   protected:
     struct WeightsNVF {
