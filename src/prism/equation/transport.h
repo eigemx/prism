@@ -49,7 +49,7 @@ class Transport : public LinearSystem,
     template <typename Scheme>
     void addScheme(Scheme&& scheme);
 
-    template <scheme::convection::IAppliedConvectionBased Convection>
+    template <scheme::convection::IConvectionBased Convection>
     void addScheme(Convection&& convection);
 
     template <scheme::diffusion::IDiffusionBased Diffusion>
@@ -100,7 +100,7 @@ void Transport::addScheme(Scheme&& scheme) {
     _schemes.emplace_back(std::make_shared<Scheme>(std::forward<Scheme>(scheme)));
 }
 
-template <scheme::convection::IAppliedConvectionBased Convection>
+template <scheme::convection::IConvectionBased Convection>
 void Transport::addScheme(Convection&& convection) {
     log::debug("Transport::addScheme() found a convection scheme.");
     auto conv_scheme = std::make_shared<Convection>(std::forward<Convection>(convection));

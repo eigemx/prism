@@ -44,7 +44,7 @@ class IConvection
 
 // Concept for diffusion schemes that are based on IAppliedConvection.
 template <typename T>
-concept IAppliedConvectionBased = std::derived_from<T, IConvection>;
+concept IConvectionBased = std::derived_from<T, IConvection>;
 
 // Upwind scheme
 class Upwind : public IConvection {
