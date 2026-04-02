@@ -94,13 +94,23 @@ void Scalar::validateFaceValues(const VectorXd& values) const {
 }
 
 
+void Scalar::validateValues() const {
+    if (_cell_values.size() == 0) {
+        throw std::runtime_error(
+            fmt::format("prism::field::Scalar::values() was called for field `{}`, but the data "
+                        "is not initialized.",
+                        name()));
+    }
+}
+
+
 void Scalar::logConstruction() const {
     if (_coord.has_value()) {
         log::debug(
             "Creating scalar field: '{}' (as {}-coordinate) with a cell data vector of "
             "size = {} and face data vector of size = {}",
             this->name(),
-            coordToStr(_coord.value()),
+            detail::coordToStr(_coord.value()),
             _cell_values.size(),
             _face_values.size());
     } else if (_face_values.size() > 0) {
@@ -130,8 +140,7 @@ void Scalar::setFaceValues(VectorXd values) {
 
     if (hasFaceValues()) {
         log::debug(
-            "Scalar::setFaceValues() was called for field "
-            "'{}', which already has face values set.",
+            "Scalar::setFaceValues() was called for field '{}', which already has face values set.",
             name());
     }
 
@@ -151,22 +160,12 @@ void Scalar::clearFaceValues() {
 }
 
 auto Scalar::values() const -> const VectorXd& {
-    if (_cell_values.size() == 0) {
-        throw std::runtime_error(
-            fmt::format("prism::field::Scalar::values() was called for field `{}`, but the data "
-                        "is not initialized.",
-                        name()));
-    }
+    validateValues();
     return _cell_values;
 }
 
 auto Scalar::values() -> VectorXd& {
-    if (_cell_values.size() == 0) {
-        throw std::runtime_error(
-            fmt::format("prism::field::Scalar::values() was "
-                        "called for field `{}`, but the data is not initialized.",
-                        name()));
-    }
+    validateValues();
     return _cell_values;
 }
 
@@ -356,54 +355,6 @@ auto Scalar::gradAtCellStored(const mesh::Cell& cell) const -> Vector3d {
     return _grad_scheme->gradAtCellStored(cell, *this);
 }
 
-
-template <typename Func>
-void Scalar::updateInteriorFaces(Func func) {
-    if (!hasFaceValues()) {
-        /// TODO: implement initFaceDataVector() to initialize face data vector
-        VectorXd face_values(mesh()->faceCount());
-        face_values.setZero();
-
-        for (const auto& patch : mesh()->boundaryPatches()) {
-            if (patch.isEmpty()) {
-                continue; // skip empty patches
-            }
-            for (const auto& face_id : patch.facesIds()) {
-                face_values[face_id] = valueAtFace(face_id);
-            }
-        }
-        _face_values = std::move(face_values);
-    }
-
-    for (const auto& face : mesh()->interiorFaces()) {
-        _face_values[face.id()] = func(face);
-    }
-}
-
-
-template <typename Func>
-void Scalar::updateFaces(Func func) {
-    updateInteriorFaces(func);
-
-    for (const auto& patch : mesh()->boundaryPatches()) {
-        if (patch.isEmpty()) {
-            continue; // skip empty patches
-        }
-        for (const auto& face_id : patch.facesIds()) {
-            const auto& face = mesh()->face(face_id);
-            _face_values[face_id] = func(face);
-        }
-    }
-}
-
-
-template <typename Func>
-void Scalar::updateCells(Func func) {
-    /// TODO: test this.
-    for (const auto& cell : mesh()->cells()) {
-        _cell_values[cell.id()] = func(cell);
-    }
-}
 
 auto Scalar::operator[](std::size_t i) const -> f64 {
     if (_cell_values.size() == 0) {

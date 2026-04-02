@@ -5,29 +5,15 @@
 #include "prism/gradient/gradient.h"
 #include "scalar_boundary.h"
 #include "units.h"
+#include "utilities.h"
 
 /// TODO: we need to make sure that constructors are not leaving _data uninitialized, and we can
 /// avoid checks for it later in member functions.
 namespace prism::field {
 
-namespace detail {
-/// TODO: this function should be moved to a more appropriate place, like a utility file. Same for
-/// coordToStr in ifield.h
-auto inline coordToIndex(VectorCoord coord) -> std::uint8_t {
-    switch (coord) {
-        case VectorCoord::X: return 0;
-        case VectorCoord::Y: return 1;
-        case VectorCoord::Z: return 2;
-        default: break;
-    }
-    throw std::invalid_argument("prism::field::coordToIndex(): Invalid coordinate value");
-}
-} // namespace detail
-
-class Scalar
-    : public IScalar,
-      public units::Measurable,
-      public prism::boundary::BHManagerProvider<boundary::scalar::IScalarBoundaryHandler> {
+class Scalar : public IScalar,
+               public units::Measurable,
+               public prism::boundary::BHManagerProvider<boundary::scalar::IScalarBoundaryHandler> {
   public:
     // Scalar field based on f64 value and an optional coordinate (if vector sub-field)
     Scalar(std::string name, const SharedPtr<mesh::PMesh>& mesh, f64 value);
@@ -116,6 +102,7 @@ class Scalar
 
     void validateCellValues(const VectorXd& values) const;
     void validateFaceValues(const VectorXd& values) const;
+    void validateValues() const;
     void logConstruction() const;
 
     VectorXd _cell_values;
@@ -128,4 +115,49 @@ class Scalar
     // This should have a value only when the object is a component of a field::Vector instance.
     Optional<VectorCoord> _coord = NullOption;
 };
+
+template <typename Func>
+void Scalar::updateInteriorFaces(Func func) {
+    if (!hasFaceValues()) {
+        VectorXd face_values(mesh()->faceCount());
+        face_values.setZero();
+
+        for (const auto& patch : mesh()->boundaryPatches()) {
+            if (patch.isEmpty()) {
+                continue;
+            }
+            for (const auto& face_id : patch.facesIds()) {
+                face_values[face_id] = valueAtFace(face_id);
+            }
+        }
+        _face_values = std::move(face_values);
+    }
+
+    for (const auto& face : mesh()->interiorFaces()) {
+        _face_values[face.id()] = func(face);
+    }
+}
+
+template <typename Func>
+void Scalar::updateFaces(Func func) {
+    updateInteriorFaces(func);
+
+    for (const auto& patch : mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue;
+        }
+        for (const auto& face_id : patch.facesIds()) {
+            const auto& face = mesh()->face(face_id);
+            _face_values[face_id] = func(face);
+        }
+    }
+}
+
+template <typename Func>
+void Scalar::updateCells(Func func) {
+    for (const auto& cell : mesh()->cells()) {
+        _cell_values[cell.id()] = func(cell);
+    }
+}
+
 } // namespace prism::field

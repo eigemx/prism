@@ -25,7 +25,7 @@ Gradient<SourceSign>::Gradient(const SharedPtr<field::Scalar>& phi, VectorCoord 
     log::debug(
         "prism::scheme::source::Gradient(): Creating {}-coordinate gradient source for field "
         "'{}'",
-        field::coordToStr(coord),
+        field::detail::coordToStr(coord),
         phi->name());
 }
 

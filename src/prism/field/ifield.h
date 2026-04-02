@@ -104,22 +104,4 @@ auto IField<CellValueType>::coord() const noexcept -> Optional<VectorCoord> {
     return NullOption;
 }
 
-/// TODO: This function should be moved to a more appropriate place, like a utility file.
-auto inline coordToStr(VectorCoord coord) -> std::string {
-    switch (coord) {
-        case prism::VectorCoord::X: {
-            return "x";
-        }
-        case prism::VectorCoord::Y: {
-            return "y";
-        }
-        case prism::VectorCoord::Z: {
-            return "z";
-        }
-        default: {
-            return "";
-        }
-    }
-}
-
 } // namespace prism::field
