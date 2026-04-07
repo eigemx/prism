@@ -75,7 +75,7 @@ auto main(int argc, char* argv[]) -> int {
     );
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
 
     solver.solve(eqn, 5, 1e-20);
     VectorXd diff = eqn.field()->values().array() -

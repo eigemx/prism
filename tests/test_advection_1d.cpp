@@ -57,7 +57,7 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
     );
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nOrthogonalCorrectors = 5;
 
     for (int i = 0; i < nOrthogonalCorrectors; ++i) {

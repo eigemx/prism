@@ -60,7 +60,7 @@ auto testPoissonWithMesh(const std::string& mesh_file_name)
     );
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nOrthogonalCorrectors = 5;
 
     for (int i = 0; i < nOrthogonalCorrectors; ++i) {

@@ -36,7 +36,7 @@ auto main(int argc, char* argv[]) -> int {
     auto eqn = eqn::Transport(diffusion::Corrected(kappa, T));
 
     // solve
-    auto solver = solver::BiCGSTAB<Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nIter = 20;
     auto nNonOrthoIter = 2;
 

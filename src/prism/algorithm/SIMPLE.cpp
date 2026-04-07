@@ -8,7 +8,7 @@
 
 #include "prism/equation/transport.h"
 #include "prism/log.h"
-#include "prism/numerics/solver.h"
+#include "prism/numerics/bicgstab.h"
 #include "prism/operations/rhie_chow.h"
 #include "prism/scheme/diffusion/diffusion.h"
 #include "prism/scheme/source/divergence.h"
@@ -19,7 +19,7 @@ using field::Pressure;
 
 void solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors) {
     // solve momentum equations implicitly
-    auto momentum_solver = solver::BiCGSTAB<field::VelocityComponent>();
+    auto momentum_solver = solver::BiCGSTAB();
     log::info("prism::algo::solveMomentumImplicitly(): solving momentum equations");
     for (auto* eqn : momentum_predictors) {
         momentum_solver.solve(*eqn, params.momentum_max_iter, params.momentum_residual);
@@ -132,7 +132,7 @@ auto solvePressureEquation(SIMPLEParameters params,
     );
 
     log::info("prism::algo::solvePressureEquation(): solving pressure equation");
-    auto p_solver = solver::BiCGSTAB<field::Pressure>();
+    auto p_solver = solver::BiCGSTAB();
     p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
 
     // non-orthogonal correction

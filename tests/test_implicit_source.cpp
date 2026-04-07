@@ -50,7 +50,7 @@ TEST_CASE("test implicit source", "[implicit-source]") {
     );
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nOuterIter = 5;
 
     for (int i = 0; i < nOuterIter; ++i) {

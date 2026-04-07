@@ -1,22 +1,14 @@
 #pragma once
 
-#include <Eigen/IterativeLinearSolvers>
-
 #include "prism/equation/transport.h"
-#include "prism/log.h"
-
-namespace prism::solver::detail {
-/// TODO: residual should not be under detail namespace, and we should implement different residual
-/// forms.
-auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double;
-} // namespace prism::solver::detail
+#include "prism/types.h"
 
 namespace prism::solver {
 
-class IterationData {
+class SolverResult {
   public:
-    IterationData() = default;
-    IterationData(std::size_t iteration, double initial_residual, double final_residual);
+    SolverResult() = default;
+    SolverResult(std::size_t iteration, double initial_residual, double final_residual);
     void setAsConverged() noexcept;
     auto hasConverged() const noexcept -> bool;
     auto iteration() const noexcept -> std::size_t;
@@ -24,102 +16,24 @@ class IterationData {
     auto finalResidual() const noexcept -> double;
 
   private:
-    std::size_t _iteration {3};
-    double _initial_residual {1e-6};
-    double _final_residual {1e-8};
+    size_t _iteration {3};
+    f64 _initial_residual {1e-6};
+    f64 _final_residual {1e-8};
     bool _converged {false};
 };
 
-/// TODO: ISolver should not be a template, check if we can use eqn::Transport<IScalar> instead
-/// TODO: each Transport object should have its solve() function, and solvers should be created
-/// from there.
-template <typename Field>
 class ISolver {
   public:
-    virtual auto solve(eqn::Transport& eq,
-                       std::size_t n_iter = 10,
-                       double eps = 1e-7) -> IterationData;
-    virtual auto step(const SparseMatrix& A,
-                      const VectorXd& x,
-                      const VectorXd& b) -> VectorXd = 0;
+    ISolver() = default;
+    ISolver(const ISolver&) = default;
+    ISolver(ISolver&&) = default;
+    auto operator=(const ISolver&) -> ISolver& = default;
+    auto operator=(ISolver&&) -> ISolver& = default;
+    virtual ~ISolver() = default;
+
+    virtual auto solve(eqn::Transport& eq, std::size_t n_iter = 10, double eps = 1e-7)
+        -> SolverResult;
+    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd = 0;
 };
-
-template <typename Field>
-class BiCGSTAB : public ISolver<Field> {
-  public:
-    auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd override;
-};
-
-template <typename Field>
-class Jacobi : public ISolver<Field> {
-  public:
-    auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd override;
-};
-
-template <typename Field>
-auto ISolver<Field>::solve(eqn::Transport& eqn,
-                           std::size_t n_iter,
-                           double eps) -> IterationData {
-    const auto& A = eqn.matrix();
-    const auto& b = eqn.rhs();
-    auto phi = eqn.field();
-
-    double init_res = 0.0;
-    double current_res = 0.0;
-    bool has_converged = false;
-    std::size_t iter = 0;
-
-    eqn.updateCoeffs();
-    eqn.relax();
-
-    for (; iter < n_iter; iter++) {
-        if (iter == 0) {
-            init_res = detail::residual(A, phi->values(), b);
-        }
-
-        // do at least one iteration
-        phi->values() = step(A, phi->values(), b);
-        current_res = detail::residual(A, phi->values(), b);
-
-        // check for convergence
-        if (current_res < eps) {
-            has_converged = true;
-            iter++;
-            break;
-        }
-    }
-    // zero out the left & right hand side vector, for the next solve call, or in case user calls
-    // updateCoeffs() later.
-    eqn.zeroOutCoeffs();
-
-    log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
-              init_res,
-              current_res,
-              iter);
-
-    IterationData data(iter, init_res, current_res);
-    if (has_converged) {
-        data.setAsConverged();
-    }
-    return data;
-}
-
-template <typename Field>
-auto BiCGSTAB<Field>::step(const SparseMatrix& A,
-                           const VectorXd& x,
-                           const VectorXd& b) -> VectorXd {
-    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>, Eigen::IncompleteLUT<double>> bicg;
-    return bicg.compute(A).solveWithGuess(b, x);
-}
-
-
-template <typename Field>
-auto Jacobi<Field>::step(const SparseMatrix& A,
-                         const VectorXd& x,
-                         const VectorXd& b) -> VectorXd {
-    VectorXd D_inv = A.diagonal().cwiseInverse();
-    VectorXd residual = b - A * x;
-    return x + D_inv.asDiagonal() * residual;
-}
 
 } // namespace prism::solver

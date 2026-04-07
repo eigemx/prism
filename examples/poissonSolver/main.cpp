@@ -71,7 +71,7 @@ auto main(int argc, char* argv[]) -> int {
     );
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nNonOrthogonalCorrectors = 5;
 
     for (int i = 0; i < nNonOrthogonalCorrectors; ++i) {

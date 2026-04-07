@@ -7,6 +7,8 @@ add_library(prism
     equation/outlet.cpp
 
     numerics/solver.cpp
+    numerics/bicgstab.cpp
+    numerics/jacobi.cpp
 
     field/ifield.cpp
     field/tensor.cpp

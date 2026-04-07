@@ -39,7 +39,7 @@ auto main(int argc, char* argv[]) -> int {
     auto dt = 2;
 
     // solve
-    auto solver = solver::BiCGSTAB<Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nNonOrthoIter = 2;
     auto nTimesteps = 2;
 

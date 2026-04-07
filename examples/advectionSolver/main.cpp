@@ -64,7 +64,7 @@ auto main(int argc, char* argv[]) -> int {
     // eqn.setUnderRelaxFactor(0.95);
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
     auto nOuterIterations = 25;
 
     for (int i = 0; i < nOuterIterations; ++i) {
