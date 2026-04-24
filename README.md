@@ -31,7 +31,7 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
     );
 
     // solve
-    auto solver = solver::BiCGSTAB<field::Scalar>();
+    auto solver = solver::BiCGSTAB();
     solver.solve(eqn);
 ```
 
