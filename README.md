@@ -23,7 +23,6 @@ Prism's main goal is to be simple, modular and easy to use. The following exampl
     using div = convection::Upwind;
 
     // - ∇.(κ ∇T)
-    // the template parameter specifies the type for diffusion coefficient
     using laplacian = diffusion::NonCorrected;
 
     auto eqn = eqn::Transport(div(U, T),            //   ∇.(UT)

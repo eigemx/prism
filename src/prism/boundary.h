@@ -71,7 +71,7 @@ auto BoundaryHandlersManager<BaseHandler>::getHandler(const std::string& bc) con
     auto handler_creator = _bc_map.at(bc); // handler instance creator function
     auto raw_handler = handler_creator();  // SharedPtr<IBoundaryHandler>
 
-    // we need to cast SharedPtr<IBoundaryHandler> to SharedPtr<BaseHandler>
+    // cast SharedPtr<IBoundaryHandler> to SharedPtr<BaseHandler>
     auto handler = std::dynamic_pointer_cast<BaseHandler>(raw_handler);
 
     return handler;
@@ -131,8 +131,7 @@ void applyBoundary(const std::string& applier_name, Applier& applier) {
 
         if (handler == nullptr) {
             throw error::NonImplementedBoundaryCondition(
-                fmt::format("prism::boundary::detail::applyBoundary() applied by {}",
-                            applier_name),
+                fmt::format("prism::boundary::detail::applyBoundary() applied by {}", applier_name),
                 patch.name(),
                 bc.kindString());
         }
