@@ -26,7 +26,7 @@ auto TensorDiffusionCoeff::multiply(const Vector3d& vector, const mesh::Face& fa
 auto TensorDiffusionCoeff::multiply(const Vector3d& vector, const mesh::Cell& cell) const
     -> Vector3d {
     // The transpose is to follow equation (8.93) from Moukalled et al. (2015)
-    return _tensor->valueAtCell(cell).transpose() * vector;
+    return _tensor->valueAtCellRef(cell).transpose() * vector;
 }
 
 } // namespace prism::scheme::diffusion

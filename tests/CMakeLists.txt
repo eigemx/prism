@@ -9,6 +9,7 @@ add_executable(tests
                     test_implicit_source.cpp
                     test_transient_1d.cpp
                     test_solver.cpp
+                    test_simple_coarse_pipe.cpp
                )
 target_link_libraries(tests PRIVATE prism Catch2::Catch2WithMain)
 

@@ -80,11 +80,7 @@ auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
 
     for (const auto& cell : mesh->cells()) {
         auto i = cell.id();
-        // clang-format off
-            D_data[i]  << Du[i], 0,     0,
-                          0,     Dv[i], 0,
-                          0,     0,     Dw[i];
-        // clang-format on
+        D_data[i].diagonal() << Du[i], Dv[i], Dw[i];
     }
 
     for (auto* eqn : momentum_predictors) {
@@ -173,7 +169,8 @@ void correctFields(SharedPtr<field::Velocity>& U,
         /// stack-use-after-return errors. This might be related to how temporaries are handled
         /// in complex expressions. Note: This issue only appears in debug mode with
         /// AddressSanitizer, not in release mode.
-        Vector3d update = U->valueAtCell(cell) - (D->valueAtCell(cell) * pprime->gradAtCell(cell));
+        Vector3d update =
+            U->valueAtCell(cell) - (D->valueAtCellRef(cell) * pprime->gradAtCell(cell));
         return update;
     });
 

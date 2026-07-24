@@ -12,6 +12,9 @@ IScalar::IScalar(std::string name, const SharedPtr<mesh::PMesh>& mesh)
 
 IVector::IVector(std::string name, const SharedPtr<mesh::PMesh>& mesh)
     : IField<Vector3d>(std::move(name), mesh) {}
+
+ITensor::ITensor(std::string name, const SharedPtr<mesh::PMesh>& mesh)
+    : IField<Matrix3d>(std::move(name), mesh) {}
 } // namespace prism::field
 
 namespace prism::field::detail {

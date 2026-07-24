@@ -71,6 +71,13 @@ class IVector : public IField<Vector3d> {
 template <typename T>
 concept IVectorBased = std::derived_from<T, IVector>;
 
+class ITensor : public IField<Matrix3d> {
+  public:
+    ITensor(std::string name, const SharedPtr<mesh::PMesh>& mesh);
+};
+
+template <typename T>
+concept ITensorBased = std::derived_from<T, ITensor>;
 
 template <typename CellValueType>
 IField<CellValueType>::IField(std::string name, const SharedPtr<mesh::PMesh>& mesh)
