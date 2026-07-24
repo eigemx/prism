@@ -6,25 +6,25 @@ HistoryManager::HistoryManager(std::size_t num_time_steps) : _max_steps(num_time
     _history.reserve(_max_steps);
 }
 
-auto HistoryManager::prevValues() const -> Optional<VectorXd> {
+auto HistoryManager::prevValues() const -> Optional<Ref<const VectorXd>> {
     if (_history.empty()) {
         return NullOption;
     }
-    return _history.front();
+    return std::ref(_history.front());
 }
 
-auto HistoryManager::prevPrevValues() const -> Optional<VectorXd> {
+auto HistoryManager::prevPrevValues() const -> Optional<Ref<const VectorXd>> {
     if (_history.size() < 2) {
         return NullOption;
     }
-    return _history[1];
+    return std::ref(_history[1]);
 }
 
-auto HistoryManager::valuesAt(std::size_t n) const -> Optional<VectorXd> {
+auto HistoryManager::valuesAt(std::size_t n) const -> Optional<Ref<const VectorXd>> {
     if (n >= _history.size()) {
         return NullOption;
     }
-    return _history[n];
+    return std::ref(_history[n]);
 }
 
 void HistoryManager::update(const VectorXd& current_values) {

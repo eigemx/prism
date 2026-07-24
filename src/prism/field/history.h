@@ -6,10 +6,6 @@
 
 namespace prism::field {
 
-/// TODO: the prevValues getters are not efficient, because they return copies of the data.
-/// We should return references instead. std::option does not allow returning references. We
-/// need to find an alternative. Consider std::reference_wrapper
-
 class HistoryManager {
   public:
     /**
@@ -19,24 +15,24 @@ class HistoryManager {
     HistoryManager(std::size_t num_time_steps);
 
     /**
-     * @brief Returns the values from the previous time step.
+     * @brief Returns a reference to the values from the previous time step.
      * @return Optional containing the previous values, or NullOption if history is empty.
      */
-    auto prevValues() const -> Optional<VectorXd>;
+    auto prevValues() const -> Optional<Ref<const VectorXd>>;
 
     /**
-     * @brief Returns the values from two time steps ago.
+     * @brief Returns a reference to the values from two time steps ago.
      * @return Optional containing the values from two steps ago, or NullOption if history size
      * < 2.
      */
-    auto prevPrevValues() const -> Optional<VectorXd>;
+    auto prevPrevValues() const -> Optional<Ref<const VectorXd>>;
 
     /**
-     * @brief Returns the values at a specific time step index.
+     * @brief Returns a reference to the values at a specific time step index.
      * @param n The index of the time step (0 = most recent).
      * @return Optional containing the values at index n, or NullOption if out of bounds.
      */
-    auto valuesAt(std::size_t n) const -> Optional<VectorXd>;
+    auto valuesAt(std::size_t n) const -> Optional<Ref<const VectorXd>>;
 
     /**
      * @brief Updates the history with new values from the current time step.

@@ -58,8 +58,8 @@ auto main(int argc, char* argv[]) -> int {
         T->updatePrevTimeSteps();
 
         log::info("T = {}", T->values().mean());
-        log::info("T_prev = {}", T->prevValues().value().mean());
-        log::info("T_prev_prev = {}", T->prevPrevValues().value().mean());
+        log::info("T_prev = {}", T->prevValues()->get().mean());
+        log::info("T_prev_prev = {}", T->prevPrevValues()->get().mean());
     }
     prism::exportToVTU(*(eqn.field()), "solution.vtu");
 

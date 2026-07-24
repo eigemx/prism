@@ -1,6 +1,7 @@
 #include "scalar.h"
 
 #include <algorithm>
+#include <cassert>
 
 #include "prism/exceptions.h"
 #include "prism/gradient/green_gauss.h"
@@ -94,16 +95,6 @@ void Scalar::validateFaceValues(const VectorXd& values) const {
 }
 
 
-void Scalar::validateValues() const {
-    if (_cell_values.size() == 0) {
-        throw std::runtime_error(
-            fmt::format("prism::field::Scalar::values() was called for field `{}`, but the data "
-                        "is not initialized.",
-                        name()));
-    }
-}
-
-
 void Scalar::logConstruction() const {
     if (_coord.has_value()) {
         log::debug(
@@ -160,17 +151,24 @@ void Scalar::clearFaceValues() {
 }
 
 auto Scalar::values() const -> const VectorXd& {
-    validateValues();
+    assert(_cell_values.size() > 0);
     return _cell_values;
 }
 
 auto Scalar::values() -> VectorXd& {
-    validateValues();
+    assert(_cell_values.size() > 0);
     return _cell_values;
 }
 
 auto Scalar::coord() const noexcept -> Optional<VectorCoord> {
     return _coord;
+}
+
+auto Scalar::clone() const -> Scalar {
+    if (hasFaceValues()) {
+        return Scalar(name(), mesh(), VectorXd(_cell_values), VectorXd(_face_values));
+    }
+    return Scalar(name(), mesh(), VectorXd(_cell_values));
 }
 
 auto Scalar::hasFaceValues() const -> bool {
@@ -220,13 +218,6 @@ auto Scalar::valueAtInteriorFace(const mesh::Face& face) const -> f64 {
 }
 
 auto Scalar::valueAtBoundaryFace(const mesh::Face& face) const -> f64 {
-    // if this scalar field is a component of a vector field, we need to return the value of the
-    // parent field at the face in the coordinate direction.
-    /// TODO: implement this using make_shared_from_this and std::weak_ptr
-    if (_coord.has_value()) {
-        auto idx = detail::coordToIndex(_coord.value());
-        // return _parent->valueAtFace(face)[idx];
-    }
     const auto& patch = mesh()->boundaryPatch(face);
     const auto& bc = patch.getBoundaryCondition(name());
 
@@ -326,17 +317,17 @@ void Scalar::updatePrevTimeSteps() {
     _history_manager.update(_cell_values);
 }
 
-auto Scalar::prevValues() const -> Optional<VectorXd> {
+auto Scalar::prevValues() const -> Optional<Ref<const VectorXd>> {
     return _history_manager.prevValues();
 }
 
 
-auto Scalar::prevPrevValues() const -> Optional<VectorXd> {
+auto Scalar::prevPrevValues() const -> Optional<Ref<const VectorXd>> {
     return _history_manager.prevPrevValues();
 }
 
 
-auto Scalar::getHistory(std::size_t index) const -> Optional<VectorXd> {
+auto Scalar::getHistory(std::size_t index) const -> Optional<Ref<const VectorXd>> {
     return _history_manager.valuesAt(index);
 }
 
@@ -357,40 +348,15 @@ auto Scalar::gradAtCellStored(const mesh::Cell& cell) const -> Vector3d {
 
 
 auto Scalar::operator[](std::size_t i) const -> f64 {
-    if (_cell_values.size() == 0) {
-        throw std::runtime_error(
-            fmt::format("prism::field::Scalar::operator[]() was called for field `{}`, but the "
-                        "data is not initialized.",
-                        name()));
-    }
-    if (i >= _cell_values.size()) {
-        throw std::out_of_range(
-            fmt::format("prism::field::Scalar::operator[]() was called for field `{}`, but the "
-                        "index {} is out of range (size = {}).",
-                        name(),
-                        i,
-                        _cell_values.size()));
-    }
+    assert(_cell_values.size() > 0);
+    assert(i < _cell_values.size());
     return _cell_values[i];
 }
 
 
 auto Scalar::operator[](std::size_t i) -> f64& {
-    if (_cell_values.size() == 0) {
-        throw std::runtime_error(
-            fmt::format("prism::field::Scalar::operator[]() was called for field `{}`, but the "
-                        "data is not initialized.",
-                        name()));
-    }
-
-    if (i >= _cell_values.size()) {
-        throw std::out_of_range(
-            fmt::format("prism::field::Scalar::operator[]() was called for field `{}`, but the "
-                        "index {} is out of range (size = {}).",
-                        name(),
-                        i,
-                        _cell_values.size()));
-    }
+    assert(_cell_values.size() > 0);
+    assert(i < _cell_values.size());
     return _cell_values[i];
 }
 

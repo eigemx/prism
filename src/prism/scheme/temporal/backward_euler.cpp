@@ -14,8 +14,7 @@ BackwardEuler::BackwardEuler(const SharedPtr<field::Scalar>& phi) : ITemporal(ph
         timeStep());
 }
 
-BackwardEuler::BackwardEuler(const SharedPtr<field::Scalar>& phi, double dt)
-    : ITemporal(phi, dt) {
+BackwardEuler::BackwardEuler(const SharedPtr<field::Scalar>& phi, double dt) : ITemporal(phi, dt) {
     if (dt <= 0.0) {
         throw std::invalid_argument(
             "prism::scheme::temporal::BackwardEuler(phi, dt): dt must be positive");
@@ -66,15 +65,15 @@ void BackwardEuler::applyIncompressible() {
     const auto& vol_field = field()->mesh()->cellsVolumeVector();
 
     // we need to make sure that the field is keeping track of at least one time step
-    if (!field()->prevValues().has_value()) {
+    auto phi_prev_opt = field()->prevValues();
+    if (!phi_prev_opt) {
         throw std::runtime_error(fmt::format(
             "prism::scheme::temporal::BackwardEuler::apply() was called for field `{}`, but "
             "the field does not have any previous time step values stored.",
             field()->name()));
     }
 
-    /// TODO: when we find a way to avoid the copy, we need to adjust the code below to const&
-    const VectorXd phi_prev = field()->prevValues().value();
+    const VectorXd& phi_prev = *phi_prev_opt;
 
     // Note that the left hand side is constant for all time steps, we need to utilize this to
     // avoid recalculation of the LHS matrix each time step.

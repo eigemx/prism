@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,6 +34,9 @@ using SharedPtr = std::shared_ptr<T>;
 
 template <typename T>
 using Optional = std::optional<T>;
+
+template <typename T>
+using Ref = std::reference_wrapper<T>;
 
 inline constexpr auto NullOption = std::nullopt;
 } // namespace prism

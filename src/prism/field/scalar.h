@@ -75,12 +75,14 @@ class Scalar : public IScalar,
     template <typename Func>
     void updateCells(Func func);
 
+    auto clone() const -> Scalar;
+
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
 
     void setHistorySize(std::size_t num_time_steps);
-    auto prevValues() const -> Optional<VectorXd>;
-    auto prevPrevValues() const -> Optional<VectorXd>;
-    auto getHistory(std::size_t index) const -> Optional<VectorXd>;
+    auto prevValues() const -> Optional<Ref<const VectorXd>>;
+    auto prevPrevValues() const -> Optional<Ref<const VectorXd>>;
+    auto getHistory(std::size_t index) const -> Optional<Ref<const VectorXd>>;
 
     auto operator[](std::size_t i) const -> f64;
     auto operator[](std::size_t i) -> f64&;
@@ -102,7 +104,6 @@ class Scalar : public IScalar,
 
     void validateCellValues(const VectorXd& values) const;
     void validateFaceValues(const VectorXd& values) const;
-    void validateValues() const;
     void logConstruction() const;
 
     VectorXd _cell_values;
@@ -120,7 +121,6 @@ template <typename Func>
 void Scalar::updateInteriorFaces(Func func) {
     if (!hasFaceValues()) {
         VectorXd face_values(mesh()->faceCount());
-        face_values.setZero();
 
         for (const auto& patch : mesh()->boundaryPatches()) {
             if (patch.isEmpty()) {
