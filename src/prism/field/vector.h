@@ -261,15 +261,8 @@ auto GeneralVector<Component, BHManagerSetter>::operator[](size_t i) const -> Ve
 
 template <typename Component, typename BHManagerSetter>
 void GeneralVector<Component, BHManagerSetter>::initFaceData() {
-    std::vector<Vector3d> face_values(this->mesh()->faceCount(), Vector3d::Zero());
-    VectorXd face_flux_values = VectorXd::Zero(this->mesh()->faceCount());
-
-    /// TODO: why are we looping over interior faces and boundary patches separately when we are
-    /// calling valueAtFace() anyways?
-    for (const auto& face : this->mesh()->interiorFaces()) {
-        face_values[face.id()] = valueAtFace(face);
-        face_flux_values[face.id()] = fluxAtFace(face);
-    }
+    std::vector<Vector3d> face_values(this->mesh()->faceCount());
+    VectorXd face_flux_values(this->mesh()->faceCount());
 
     for (const auto& patch : this->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -301,14 +294,16 @@ void GeneralVector<Component, BHManagerSetter>::updateInteriorFaces(Func func) {
 template <typename Component, typename BHManagerSetter>
 template <typename Func>
 void GeneralVector<Component, BHManagerSetter>::updateFaces(Func func) {
-    updateInteriorFaces(func);
-
+    initFaceData();
+    for (const auto& face : this->mesh()->interiorFaces()) {
+        const Vector3d updated_value = func(face);
+        (*m_face_data)[face.id()] = updated_value;
+        (*m_face_flux_data)[face.id()] = updated_value.dot(face.areaVector());
+    }
     for (const auto& patch : this->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
             continue; // Skip empty patches.
         }
-        /// TODO: this is not efficient, because updateInteriorFaces() already iterates over
-        /// boundary faces to initialize them. We need to fix.
         for (const auto& face_id : patch.facesIds()) {
             const auto& face = this->mesh()->face(face_id);
             const Vector3d updated_value = func(face);
