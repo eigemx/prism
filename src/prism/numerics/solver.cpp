@@ -5,7 +5,7 @@
 namespace prism::solver {
 
 namespace {
-auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> double {
+auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> f64 {
     /** @brief Computes the scaled residual of the linear system Ax = b.
      *
      * The scaled residual is defined as:
@@ -24,7 +24,7 @@ auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> do
 }
 } // namespace
 
-auto ISolver::solve(eqn::Transport& eqn, std::size_t n_iter, double eps) -> SolverResult {
+auto ISolver::solve(eqn::Transport& eqn, size_t n_iter, f64 eps) -> SolverResult {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto phi = eqn.field();
@@ -53,13 +53,6 @@ auto ISolver::solve(eqn::Transport& eqn, std::size_t n_iter, double eps) -> Solv
     }
     eqn.zeroOutCoeffs();
 
-    /// TODO: we shouldn't log::info inside ISolver::solve(), executables should handles this.
-    /// Remove.
-    log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
-              init_res,
-              current_res,
-              iter);
-
     SolverResult data(iter, init_res, current_res);
     if (has_converged) {
         data.setAsConverged();
@@ -67,7 +60,7 @@ auto ISolver::solve(eqn::Transport& eqn, std::size_t n_iter, double eps) -> Solv
     return data;
 }
 
-SolverResult::SolverResult(std::size_t iteration, double initial_residual, double final_residual)
+SolverResult::SolverResult(size_t iteration, f64 initial_residual, f64 final_residual)
     : _iteration(iteration), _initial_residual(initial_residual), _final_residual(final_residual) {}
 
 void SolverResult::setAsConverged() noexcept {
@@ -78,15 +71,15 @@ auto SolverResult::hasConverged() const noexcept -> bool {
     return _converged;
 }
 
-auto SolverResult::iteration() const noexcept -> std::size_t {
+auto SolverResult::iteration() const noexcept -> size_t {
     return _iteration;
 }
 
-auto SolverResult::initialResidual() const noexcept -> double {
+auto SolverResult::initialResidual() const noexcept -> f64 {
     return _initial_residual;
 }
 
-auto SolverResult::finalResidual() const noexcept -> double {
+auto SolverResult::finalResidual() const noexcept -> f64 {
     return _final_residual;
 }
 

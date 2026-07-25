@@ -5,6 +5,7 @@
 #include "prism/equation/boundary.h"
 #include "prism/field/pressure.h"
 #include "prism/field/velocity.h"
+#include "prism/report.h"
 
 namespace prism::algo {
 class IPressureLinked {
@@ -16,9 +17,9 @@ class IPressureLinked {
     auto operator=(IPressureLinked&&) -> IPressureLinked& = delete;
     virtual ~IPressureLinked() = default;
 
-    virtual void step(std::span<eqn::Momentum*> momentum_predictors,
+    virtual auto step(std::span<eqn::Momentum*> momentum_predictors,
                       SharedPtr<field::Velocity>& U,
                       SharedPtr<field::Velocity>& mdot,
-                      SharedPtr<field::Pressure>& p) = 0;
+                      SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> = 0;
 };
 } // namespace prism::algo

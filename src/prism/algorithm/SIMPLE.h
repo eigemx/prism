@@ -7,6 +7,7 @@
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
 #include "prism/field/velocity.h"
+#include "prism/report.h"
 #include "prism/types.h"
 
 namespace prism::algo {
@@ -39,28 +40,34 @@ struct SIMPLEParameters {
 class IncompressibleSIMPLE : public IPressureLinked {
   public:
     IncompressibleSIMPLE(SIMPLEParameters parameters);
-    void step(std::span<eqn::Momentum*> momentum_predictors,
+    auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
-              SharedPtr<field::Pressure>& p) override;
+              SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> override;
 
   private:
     SIMPLEParameters _params;
 };
 
-void solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors);
+auto solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors)
+    -> std::vector<report::Entry>;
 
 void constrainPPrime(SharedPtr<field::Pressure>& pprime);
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
                                   const SharedPtr<field::Pressure>& p) -> SharedPtr<field::Tensor>;
 
+struct PressureEquationResult {
+    SharedPtr<field::Pressure> pprime;
+    SharedPtr<field::Tensor> D;
+    std::vector<report::Entry> reports;
+};
+
 auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
                            SharedPtr<field::Velocity>& mdot,
-                           SharedPtr<field::Pressure>& p)
-    -> std::pair<SharedPtr<field::Pressure>, SharedPtr<field::Tensor>>;
+                           SharedPtr<field::Pressure>& p) -> PressureEquationResult;
 
 void correctFields(SharedPtr<field::Velocity>& U,
                    SharedPtr<field::Velocity>& mdot,

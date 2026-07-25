@@ -77,7 +77,12 @@ auto main(int argc, char* argv[]) -> int {
     // solve
     auto solver = solver::BiCGSTAB();
 
-    solver.solve(eqn, 5, 1e-20);
+    auto result = solver.solve(eqn, 5, 1e-20);
+    log::info("[{:>8}] Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
+              eqn.field()->name(),
+              result.initialResidual(),
+              result.finalResidual(),
+              result.iteration());
     VectorXd diff = eqn.field()->values().array() -
                     advection_analytical_solution(inlet_velocity.x(), mesh).values().array();
     auto diff_norm = diff.norm();

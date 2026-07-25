@@ -7,10 +7,11 @@ namespace prism::algo {
 
 PISO::PISO(PISOParameters parameters) : _params(parameters) {}
 
-void PISO::step(std::span<eqn::Momentum*> momentum_predictors,
+auto PISO::step(std::span<eqn::Momentum*> momentum_predictors,
                 SharedPtr<field::Velocity>& U,
                 SharedPtr<field::Velocity>& mdot,
-                SharedPtr<field::Pressure>& p) {
+                SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> {
+    auto reports = std::vector<report::Entry>();
     for (std::size_t i = 0; i < _params.pressure_correction_steps; ++i) {
         if (_params.momentum_implicit_steps > 0) {
             SIMPLEParameters simple_params = {.momentum_urf = _params.momentum_urf,
@@ -18,7 +19,9 @@ void PISO::step(std::span<eqn::Momentum*> momentum_predictors,
                                               .momentum_residual = _params.momentum_residual};
 
             for (std::size_t j = 0; j < _params.momentum_implicit_steps; ++j) {
-                IncompressibleSIMPLE(simple_params).step(momentum_predictors, U, mdot, p);
+                auto simple_reports =
+                    IncompressibleSIMPLE(simple_params).step(momentum_predictors, U, mdot, p);
+                reports.insert(reports.end(), simple_reports.begin(), simple_reports.end());
             }
         }
         for (std::size_t j = 0; j < _params.pressure_correction_steps; ++j) {
@@ -28,8 +31,10 @@ void PISO::step(std::span<eqn::Momentum*> momentum_predictors,
                 .pressure_max_iter = _params.pressure_max_iter,
                 .pressure_residual = _params.pressure_residual,
             };
-            PRIME(prime_params).step(momentum_predictors, U, mdot, p);
+            auto prime_reports = PRIME(prime_params).step(momentum_predictors, U, mdot, p);
+            reports.insert(reports.end(), prime_reports.begin(), prime_reports.end());
         }
     }
+    return reports;
 }
 } // namespace prism::algo

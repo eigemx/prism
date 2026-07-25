@@ -3,6 +3,7 @@
 #include <span>
 
 #include "algorithm.h"
+#include "prism/report.h"
 #include "prism/types.h"
 
 namespace prism::algo {
@@ -45,10 +46,10 @@ struct PISOParameters {
 class PISO : public IPressureLinked {
   public:
     PISO(PISOParameters parameters);
-    void step(std::span<eqn::Momentum*> momentum_predictors,
+    auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
-              SharedPtr<field::Pressure>& p) override;
+              SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> override;
 
   private:
     PISOParameters _params;

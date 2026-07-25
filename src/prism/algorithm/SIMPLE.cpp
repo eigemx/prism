@@ -17,13 +17,22 @@
 namespace prism::algo {
 using field::Pressure;
 
-void solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors) {
+auto solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors)
+    -> std::vector<report::Entry> {
+    auto reports = std::vector<report::Entry>();
     // solve momentum equations implicitly
     auto momentum_solver = solver::BiCGSTAB();
-    log::info("prism::algo::solveMomentumImplicitly(): solving momentum equations");
+    log::debug("prism::algo::solveMomentumImplicitly(): solving momentum equations");
     for (auto* eqn : momentum_predictors) {
-        momentum_solver.solve(*eqn, params.momentum_max_iter, params.momentum_residual);
+        auto result =
+            momentum_solver.solve(*eqn, params.momentum_max_iter, params.momentum_residual);
+        reports.push_back({eqn->field()->name(),
+                           result.iteration(),
+                           result.initialResidual(),
+                           result.finalResidual(),
+                           result.hasConverged()});
     }
+    return reports;
 }
 
 void constrainPPrime(SharedPtr<field::Pressure>& pprime) {
@@ -94,8 +103,7 @@ auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
                            SharedPtr<field::Velocity>& mdot,
-                           SharedPtr<field::Pressure>& p)
-    -> std::pair<SharedPtr<field::Pressure>, SharedPtr<field::Tensor>> {
+                           SharedPtr<field::Pressure>& p) -> PressureEquationResult {
     using namespace scheme::diffusion;
     SharedPtr<field::Tensor> D = pressureEquationCoeffsTensor(momentum_predictors, p);
 
@@ -127,24 +135,28 @@ auto solvePressureEquation(SIMPLEParameters params,
                                div_U(mdot)             // == - (∇.U)
     );
 
-    log::info("prism::algo::solvePressureEquation(): solving pressure equation");
+    auto reports = std::vector<report::Entry>();
+    log::debug("prism::algo::solvePressureEquation(): solving pressure equation");
     auto p_solver = solver::BiCGSTAB();
-    p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
 
-    // non-orthogonal correction
-    for (std::size_t i = 0; i < params.non_ortho_correctors; ++i) {
-        p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
+    for (std::size_t i = 0; i <= params.non_ortho_correctors; ++i) {
+        auto result = p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
+        reports.push_back({fmt::format("{}_corr_{}", pprime->name(), i),
+                           result.iteration(),
+                           result.initialResidual(),
+                           result.finalResidual(),
+                           result.hasConverged()});
     }
 
-    return {pprime, D};
+    return {.pprime = pprime, .D = D, .reports = std::move(reports)};
 }
 
 IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEParameters parameters) : _params(parameters) {}
 
-void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
+auto IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                                 SharedPtr<field::Velocity>& U,
                                 SharedPtr<field::Velocity>& mdot,
-                                SharedPtr<field::Pressure>& p) {
+                                SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> {
     if (momentum_predictors.size() != 2 && momentum_predictors.size() != 3) {
         throw std::runtime_error(
             fmt::format("prism::algo::IncompressibleSIMPLE::step() expects 2 or 3 momentum "
@@ -152,9 +164,11 @@ void IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                         momentum_predictors.size()));
     }
 
-    solveImplicitMomentum(_params, momentum_predictors);
-    auto [pprime, D] = solvePressureEquation(_params, momentum_predictors, U, mdot, p);
-    correctFields(U, mdot, p, D, pprime, _params.pressure_urf);
+    auto reports = solveImplicitMomentum(_params, momentum_predictors);
+    auto result = solvePressureEquation(_params, momentum_predictors, U, mdot, p);
+    reports.insert(reports.end(), result.reports.begin(), result.reports.end());
+    correctFields(U, mdot, p, result.D, result.pprime, _params.pressure_urf);
+    return reports;
 }
 
 void correctFields(SharedPtr<field::Velocity>& U,

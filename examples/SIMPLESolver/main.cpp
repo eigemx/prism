@@ -65,9 +65,15 @@ auto main(int argc, char* argv[]) -> int {
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
         log::info("Outer iteration: {}", outer_iteration);
-
-        algo::IncompressibleSIMPLE(params).step(
+        auto reports = algo::IncompressibleSIMPLE(params).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
+        for (const auto& entry : reports) {
+            log::info("[{:>8}] Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
+                      entry.field_name,
+                      entry.initial_residual,
+                      entry.final_residual,
+                      entry.n_iterations);
+        }
     }
 
     exportToVTU(*(U->x()), "solution_x.vtu");

@@ -6,6 +6,7 @@
 #include "prism/equation/boundary.h"
 #include "prism/field/pressure.h"
 #include "prism/field/velocity.h"
+#include "prism/report.h"
 #include "prism/types.h"
 
 namespace prism::algo {
@@ -27,10 +28,10 @@ struct PRIMEParameters {
 class PRIME : public IPressureLinked {
   public:
     PRIME(PRIMEParameters parameters);
-    void step(std::span<eqn::Momentum*> momentum_predictors,
+    auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
-              SharedPtr<field::Pressure>& p) override;
+              SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> override;
 
   private:
     PRIMEParameters _params;
