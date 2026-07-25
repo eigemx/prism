@@ -83,10 +83,10 @@ class GeneralVector
     SharedPtr<Component> _x, _y, _z;
 
     /// TODO: clean this clutter!
-    SharedPtr<std::vector<Vector3d>> m_face_data = nullptr;
-    SharedPtr<VectorXd> m_face_flux_data = nullptr;
+    SharedPtr<std::vector<Vector3d>> _face_data = nullptr;
+    SharedPtr<VectorXd> _face_flux_data = nullptr;
 
-    BHManagerSetter m_setter;
+    BHManagerSetter _setter;
 };
 
 class VectorBHManagerSetter {
@@ -171,7 +171,7 @@ auto GeneralVector<Component, BHManagerSetter>::valueAtFace(const mesh::Face& fa
     -> Vector3d {
     const auto id = face.id();
     if (hasFaceValues()) {
-        return (*m_face_data)[id];
+        return (*_face_data)[id];
     }
 
     if (face.isBoundary()) {
@@ -202,18 +202,18 @@ auto GeneralVector<Component, BHManagerSetter>::valueAtBoundaryFace(const mesh::
 
 template <typename Component, typename BHManagerSetter>
 auto GeneralVector<Component, BHManagerSetter>::hasFaceValues() const -> bool {
-    return m_face_data != nullptr;
+    return _face_data != nullptr;
 }
 
 template <typename Component, typename BHManagerSetter>
 auto GeneralVector<Component, BHManagerSetter>::hasFaceFluxValues() const -> bool {
-    return m_face_flux_data != nullptr;
+    return _face_flux_data != nullptr;
 }
 
 template <typename Component, typename BHManagerSetter>
 auto GeneralVector<Component, BHManagerSetter>::fluxAtFace(size_t face_id) const -> f64 {
     if (hasFaceFluxValues()) {
-        return (*m_face_flux_data)[face_id];
+        return (*_face_flux_data)[face_id];
     }
 
     const auto& face = this->mesh()->face(face_id);
@@ -273,8 +273,8 @@ void GeneralVector<Component, BHManagerSetter>::initFaceData() {
             face_flux_values[face_id] = fluxAtFace(face_id);
         }
     }
-    m_face_data = std::make_shared<std::vector<Vector3d>>(std::move(face_values));
-    m_face_flux_data = std::make_shared<VectorXd>(std::move(face_flux_values));
+    _face_data = std::make_shared<std::vector<Vector3d>>(std::move(face_values));
+    _face_flux_data = std::make_shared<VectorXd>(std::move(face_flux_values));
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -286,8 +286,8 @@ void GeneralVector<Component, BHManagerSetter>::mapInteriorFaceValues(Func func)
 
     for (const auto& face : this->mesh()->interiorFaces()) {
         const Vector3d updated_value = func(face);
-        (*m_face_data)[face.id()] = updated_value;
-        (*m_face_flux_data)[face.id()] = updated_value.dot(face.areaVector());
+        (*_face_data)[face.id()] = updated_value;
+        (*_face_flux_data)[face.id()] = updated_value.dot(face.areaVector());
     }
 }
 
@@ -297,8 +297,8 @@ void GeneralVector<Component, BHManagerSetter>::mapFaceValues(Func func) {
     initFaceData();
     for (const auto& face : this->mesh()->interiorFaces()) {
         const Vector3d updated_value = func(face);
-        (*m_face_data)[face.id()] = updated_value;
-        (*m_face_flux_data)[face.id()] = updated_value.dot(face.areaVector());
+        (*_face_data)[face.id()] = updated_value;
+        (*_face_flux_data)[face.id()] = updated_value.dot(face.areaVector());
     }
     for (const auto& patch : this->mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -307,8 +307,8 @@ void GeneralVector<Component, BHManagerSetter>::mapFaceValues(Func func) {
         for (const auto& face_id : patch.facesIds()) {
             const auto& face = this->mesh()->face(face_id);
             const Vector3d updated_value = func(face);
-            (*m_face_data)[face_id] = updated_value;
-            (*m_face_flux_data)[face_id] = updated_value.dot(face.areaVector());
+            (*_face_data)[face_id] = updated_value;
+            (*_face_flux_data)[face_id] = updated_value.dot(face.areaVector());
         }
     }
 }
@@ -324,11 +324,11 @@ auto GeneralVector<Component, BHManagerSetter>::clone() const -> GeneralVector {
     auto clone = GeneralVector(this->name(), this->mesh(), components);
 
     if (hasFaceValues()) {
-        clone.setFaceValues(*m_face_data);
+        clone.setFaceValues(*_face_data);
     }
 
     if (hasFaceFluxValues()) {
-        clone.setFaceFluxValues(*m_face_flux_data);
+        clone.setFaceFluxValues(*_face_flux_data);
     }
     return clone;
 }
@@ -351,7 +351,7 @@ void GeneralVector<Component, BHManagerSetter>::setFaceValues(std::vector<Vector
     }
 
     log::debug("Setting face values for field '{}'", name());
-    m_face_data = std::make_shared<std::vector<Vector3d>>(std::move(values));
+    _face_data = std::make_shared<std::vector<Vector3d>>(std::move(values));
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -370,7 +370,7 @@ void GeneralVector<Component, BHManagerSetter>::setFaceFluxValues(VectorXd value
             name());
     }
     log::debug("Setting face flux values for field '{}'", name());
-    m_face_flux_data = std::make_shared<VectorXd>(std::move(values));
+    _face_flux_data = std::make_shared<VectorXd>(std::move(values));
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -386,7 +386,7 @@ void GeneralVector<Component, BHManagerSetter>::mapCellValues(Func func) {
 
 template <typename Component, typename BHManagerSetter>
 void GeneralVector<Component, BHManagerSetter>::addDefaultBoundaryHandlers() {
-    m_setter.set(this->boundaryHandlersManager());
+    _setter.set(this->boundaryHandlersManager());
 }
 
 } // namespace prism::field

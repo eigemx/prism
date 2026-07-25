@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-#include "../types.h"
+#include "prism/types.h"
 
 namespace prism::mesh {
 
@@ -12,38 +12,32 @@ class Face {
     Face(const std::vector<Vector3d>& face_vertices,
          std::vector<std::size_t> face_vertices_ids) noexcept;
 
-    auto inline area() const noexcept -> double { return _area; }
-    auto inline normal() const noexcept -> const Vector3d& { return _normal; }
-    auto inline center() const noexcept -> const Vector3d& { return _center; }
-    auto inline areaVector() const noexcept -> Vector3d { return _area * _normal; }
+    auto area() const noexcept -> double { return _area; }
+    auto normal() const noexcept -> const Vector3d& { return _normal; }
+    auto center() const noexcept -> const Vector3d& { return _center; }
+    auto areaVector() const noexcept -> Vector3d { return _area * _normal; }
 
-    auto inline id() const noexcept -> std::size_t { return _id; }
+    auto id() const noexcept -> std::size_t { return _id; }
 
     /// TODO: This should be setId() instead of id(), to make the purpose of the operation clear
-    auto inline id() noexcept -> std::size_t& { return _id; }
-    auto inline verticesIds() const noexcept -> const std::vector<std::size_t>& {
-        return _vertices_ids;
-    }
+    auto id() noexcept -> std::size_t& { return _id; }
+    auto verticesIds() const noexcept -> const std::vector<std::size_t>& { return _vertices_ids; }
 
-    auto inline owner() const -> std::size_t { return _owner.value(); }
-    void inline setOwner(std::size_t owner_id) noexcept { _owner = owner_id; }
+    auto owner() const -> std::size_t { return _owner.value(); }
+    void setOwner(std::size_t owner_id) noexcept { _owner = owner_id; }
 
     // This function is added mainly for debugging purposes,
     // because each face must have an owner, so this will return false if something is wrong
-    auto inline hasOwner() const -> bool { return _owner.has_value(); }
-    auto inline isOwnedBy(const std::size_t& cell_id) const -> bool {
-        return _owner.value() == cell_id;
-    }
+    auto hasOwner() const -> bool { return _owner.has_value(); }
+    auto isOwnedBy(const std::size_t& cell_id) const -> bool { return _owner.value() == cell_id; }
 
-    auto inline neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
-    auto inline isInterior() const -> bool { return _neighbor.has_value(); }
-    auto inline setNeighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
-    auto inline isBoundary() const -> bool { return !isInterior(); }
+    auto neighbor() const -> const std::optional<std::size_t>& { return _neighbor; }
+    auto isInterior() const -> bool { return _neighbor.has_value(); }
+    auto setNeighbor(std::size_t nei_id) noexcept { _neighbor = nei_id; }
+    auto isBoundary() const -> bool { return !isInterior(); }
 
-    auto inline boundaryPatchId() const -> const std::optional<std::size_t>& {
-        return _boundary_patch_id;
-    }
-    void inline setBoundaryPatchId(std::size_t boundary_patch_id) noexcept {
+    auto boundaryPatchId() const -> const std::optional<std::size_t>& { return _boundary_patch_id; }
+    void setBoundaryPatchId(std::size_t boundary_patch_id) noexcept {
         _boundary_patch_id = boundary_patch_id;
     }
 
