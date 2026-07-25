@@ -38,9 +38,7 @@ class BoundaryHandlersManager {
     void removeHandler(const std::string& bc);
 
   private:
-    using InstanceCreatorPtr = SharedPtr<IBoundaryHandler> (*)();
-    void addHandler(const std::string& bc, InstanceCreatorPtr creator);
-    std::map<std::string, InstanceCreatorPtr> _bc_map;
+    std::map<std::string, SharedPtr<IBoundaryHandler>> _handler_cache;
 };
 
 template <typename BaseHandler>
@@ -56,56 +54,35 @@ class BHManagerProvider {
     ManagerType _bh_manager;
 };
 
-template <typename T>
-auto createHandlerInstance() -> SharedPtr<IBoundaryHandler> {
-    return std::make_shared<T>();
-}
-
 template <typename BaseHandler>
 auto BoundaryHandlersManager<BaseHandler>::getHandler(const std::string& bc) const
     -> SharedPtr<BaseHandler> {
-    if (!_bc_map.contains(bc)) {
-        return nullptr;
+    auto it = _handler_cache.find(bc);
+    if (it != _handler_cache.end()) {
+        return std::dynamic_pointer_cast<BaseHandler>(it->second);
     }
-
-    auto handler_creator = _bc_map.at(bc); // handler instance creator function
-    auto raw_handler = handler_creator();  // SharedPtr<IBoundaryHandler>
-
-    // cast SharedPtr<IBoundaryHandler> to SharedPtr<BaseHandler>
-    auto handler = std::dynamic_pointer_cast<BaseHandler>(raw_handler);
-
-    return handler;
-}
-
-template <typename BaseHandler>
-void BoundaryHandlersManager<BaseHandler>::addHandler(const std::string& bc,
-                                                      InstanceCreatorPtr creator) {
-    if (creator == nullptr) {
-        throw std::runtime_error(
-            "BoundaryHandlersManager::addHandler() was given a pointer to boundary handler "
-            "instance creator function that is null.");
-    }
-    _bc_map.insert({bc, creator});
+    return nullptr;
 }
 
 template <typename BaseHandler>
 template <typename DerivedHandler>
 void BoundaryHandlersManager<BaseHandler>::addHandler() {
-    DerivedHandler temp;
-    addHandler(temp.name(), &boundary::createHandlerInstance<DerivedHandler>);
+    auto handler = std::make_shared<DerivedHandler>();
+    _handler_cache.emplace(handler->name(), std::move(handler));
 }
 
 template <typename BaseHandler>
 template <typename DerivedHandler, typename... Args>
 void BoundaryHandlersManager<BaseHandler>::addHandler(Args&&... args) {
-    DerivedHandler temp(std::forward<Args>(args)...);
-    addHandler(temp.name(), &boundary::createHandlerInstance<DerivedHandler>);
+    auto handler = std::make_shared<DerivedHandler>(std::forward<Args>(args)...);
+    _handler_cache.emplace(handler->name(), std::move(handler));
 }
+
 template <typename BaseHandler>
 void BoundaryHandlersManager<BaseHandler>::removeHandler(const std::string& bc) {
-    const auto it = _bc_map.find(bc);
-    if (it != _bc_map.end()) {
-        _bc_map.erase(it);
+    const auto it = _handler_cache.find(bc);
+    if (it != _handler_cache.end()) {
+        _handler_cache.erase(it);
         return;
     }
     throw std::runtime_error(
