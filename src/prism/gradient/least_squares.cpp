@@ -4,7 +4,7 @@
 
 namespace prism::gradient {
 
-LeastSquares::LeastSquares(const SharedPtr<mesh::PMesh>& mesh) : IGradient() {
+LeastSquares::LeastSquares(const SharedPtr<mesh::PMesh>& mesh) {
     _cell_gradients.resize(mesh->cellCount(), Vector3d::Zero());
     setPseudoInvMatrices(mesh);
 }
@@ -13,6 +13,7 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
     // This function is based on section 9.3 'Least-Square Gradient'
 
     _pinv_matrices.resize(mesh->cellCount());
+    _cell_face_cache.resize(mesh->cellCount());
 
     for (const auto& cell : mesh->cells()) {
         // A 3x3 matrix of the left hand side of equation (9.27)
@@ -33,27 +34,25 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
                 // interior face
                 const auto neighbor = mesh->otherSharingCell(cell, face);
                 r_CF = neighbor.center() - cell.center();
+
+                // weight factor defined in equation (9.28)
+                const double wk = 1 / (r_CF.norm() + EPSILON);
+                Vector3d w_dir = r_CF * wk;
+                d_matrix += w_dir * r_CF.transpose();
+                _cell_face_cache[cell.id()].push_back({true, neighbor.id(), w_dir});
+
             } else {
                 // boundary face
                 r_CF = face.center() - cell.center();
+                const f64 wk = 1 / (r_CF.norm() + EPSILON);
+                Vector3d w_dir = r_CF * wk;
+                d_matrix += w_dir * r_CF.transpose();
+
+                const auto& patch = mesh->faceBoundaryPatch(face);
+                if (!patch.isEmpty()) {
+                    _cell_face_cache[cell.id()].push_back({false, face_id, w_dir});
+                }
             }
-
-            // weight factor defined in equation (9.28)
-            const double wk = 1 / (r_CF.norm() + EPSILON);
-            const double dx = r_CF.x(); // equation (9.24)
-            const double dy = r_CF.y(); // equation (9.24)
-            const double dz = r_CF.z(); // equation (9.24)
-
-            // clang-format off
-            // left hand side of equation (9.27) for the k-th cell, before summing and before
-            // multiplying the weight factor wk
-            Matrix3d d_matrix_k = Matrix3d::Zero();
-            d_matrix_k << (dx * dx), (dx * dy), (dx * dz), 
-                          (dy * dx), (dy * dy), (dy * dz),
-                          (dz * dx), (dz * dy), (dz * dz);
-            // clang-format on
-
-            d_matrix += d_matrix_k * wk;
         }
 
         const auto& d_matrix_t = d_matrix.transpose();
@@ -62,51 +61,29 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
 }
 
 auto LeastSquares::gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> Vector3d {
-    const auto& mesh = field.mesh();
-
     // right hand side of equation (9.27)
     Vector3d b {0.0, 0.0, 0.0};
+    auto phi_cell = field.valueAtCell(cell);
 
-    for (auto face_id : cell.facesIds()) {
-        const auto& face = mesh->face(face_id);
-
-        double delta_phi = 0.0;
-        auto phi_cell = field.valueAtCell(cell);
-        Vector3d r_CF = {.0, .0, .0};
-
-        if (face.isInterior()) {
-            // interior face
-            const auto neighbor = mesh->otherSharingCell(cell, face);
-            r_CF = neighbor.center() - cell.center();
-            auto nei_phi = field.valueAtCell(neighbor);
-            delta_phi = nei_phi - phi_cell;
-
+    for (const auto& gf : _cell_face_cache[cell.id()]) {
+        f64 other_phi {};
+        if (gf.is_interior) {
+            other_phi = field.valueAtCell(gf.other_id);
         } else {
-            // boundary face
-            const auto& patch = mesh->faceBoundaryPatch(face);
-            if (patch.isEmpty()) {
-                continue; // skip empty patches
-            }
-
-            auto bface_phi = field.valueAtFace(face);
-            r_CF = face.center() - cell.center();
-            delta_phi = bface_phi - phi_cell;
+            other_phi = field.valueAtFace(gf.other_id);
         }
-        const double wk = 1 / (r_CF.norm() + EPSILON);
-        const double dx = r_CF.x();
-        const double dy = r_CF.y();
-        const double dz = r_CF.z();
-
-        // update the right hand side of equation (9.27)
-        b += Vector3d {dx * delta_phi, dy * delta_phi, dz * delta_phi} * wk;
+        // w_dir is the weighted direction vector (dx*wk, dy*wk, dz*wk)
+        // from equation (9.24) and (9.28)
+        b += gf.w_dir * (other_phi - phi_cell);
     }
+
     Vector3d grad = _pinv_matrices[cell.id()] * b;
     _cell_gradients[cell.id()] = grad;
 
     return grad;
 }
 
-auto LeastSquares::gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field)
+auto LeastSquares::gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field) // NOLINT
     -> Vector3d {
     return _cell_gradients[cell.id()];
 }
