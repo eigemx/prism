@@ -45,6 +45,12 @@ class IField {
     SharedPtr<mesh::PMesh> _mesh = nullptr;
 };
 
+template <typename F>
+concept CellMapper = std::invocable<F, const mesh::Cell&>;
+
+template <typename F>
+concept FaceMapper = std::invocable<F, const mesh::Face&>;
+
 template <typename T>
 concept IFieldBased = std::derived_from<T, IField<typename T::ValueType>>;
 

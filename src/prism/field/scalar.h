@@ -66,14 +66,14 @@ class Scalar : public IScalar,
     void update(VectorXd values);
     void updatePrevTimeSteps();
 
-    template <typename Func>
-    void updateInteriorFaces(Func func);
+    template <FaceMapper Func>
+    void mapInteriorFaceValues(Func func);
 
-    template <typename Func>
-    void updateFaces(Func func);
+    template <FaceMapper Func>
+    void mapFaceValues(Func func);
 
-    template <typename Func>
-    void updateCells(Func func);
+    template <CellMapper Func>
+    void mapCellValues(Func func);
 
     auto clone() const -> Scalar;
 
@@ -117,8 +117,8 @@ class Scalar : public IScalar,
     Optional<VectorCoord> _coord = NullOption;
 };
 
-template <typename Func>
-void Scalar::updateInteriorFaces(Func func) {
+template <FaceMapper Func>
+void Scalar::mapInteriorFaceValues(Func func) {
     if (!hasFaceValues()) {
         VectorXd face_values(mesh()->faceCount());
 
@@ -138,9 +138,9 @@ void Scalar::updateInteriorFaces(Func func) {
     }
 }
 
-template <typename Func>
-void Scalar::updateFaces(Func func) {
-    updateInteriorFaces(func);
+template <FaceMapper Func>
+void Scalar::mapFaceValues(Func func) {
+    mapInteriorFaceValues(func);
 
     for (const auto& patch : mesh()->boundaryPatches()) {
         if (patch.isEmpty()) {
@@ -153,8 +153,8 @@ void Scalar::updateFaces(Func func) {
     }
 }
 
-template <typename Func>
-void Scalar::updateCells(Func func) {
+template <CellMapper Func>
+void Scalar::mapCellValues(Func func) {
     for (const auto& cell : mesh()->cells()) {
         _cell_values[cell.id()] = func(cell);
     }

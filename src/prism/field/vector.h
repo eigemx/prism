@@ -57,14 +57,14 @@ class GeneralVector
 
     /// TODO: updateInteriorFaces, updateFaces, updateCells and clone should all be virtual
     /// functions. Update IField.
-    template <typename Func>
-    void updateInteriorFaces(Func func);
+    template <FaceMapper Func>
+    void mapInteriorFaceValues(Func func);
 
-    template <typename Func>
-    void updateFaces(Func func);
+    template <FaceMapper Func>
+    void mapFaceValues(Func func);
 
-    template <typename Func>
-    void updateCells(Func func);
+    template <CellMapper Func>
+    void mapCellValues(Func func);
 
     auto clone() const -> GeneralVector;
 
@@ -278,8 +278,8 @@ void GeneralVector<Component, BHManagerSetter>::initFaceData() {
 }
 
 template <typename Component, typename BHManagerSetter>
-template <typename Func>
-void GeneralVector<Component, BHManagerSetter>::updateInteriorFaces(Func func) {
+template <FaceMapper Func>
+void GeneralVector<Component, BHManagerSetter>::mapInteriorFaceValues(Func func) {
     if (!hasFaceValues()) {
         initFaceData();
     }
@@ -292,8 +292,8 @@ void GeneralVector<Component, BHManagerSetter>::updateInteriorFaces(Func func) {
 }
 
 template <typename Component, typename BHManagerSetter>
-template <typename Func>
-void GeneralVector<Component, BHManagerSetter>::updateFaces(Func func) {
+template <FaceMapper Func>
+void GeneralVector<Component, BHManagerSetter>::mapFaceValues(Func func) {
     initFaceData();
     for (const auto& face : this->mesh()->interiorFaces()) {
         const Vector3d updated_value = func(face);
@@ -374,8 +374,8 @@ void GeneralVector<Component, BHManagerSetter>::setFaceFluxValues(VectorXd value
 }
 
 template <typename Component, typename BHManagerSetter>
-template <typename Func>
-void GeneralVector<Component, BHManagerSetter>::updateCells(Func func) {
+template <CellMapper Func>
+void GeneralVector<Component, BHManagerSetter>::mapCellValues(Func func) {
     for (const auto& cell : this->mesh()->cells()) {
         Vector3d update = func(cell);
         this->x()->operator[](cell.id()) = update.x();

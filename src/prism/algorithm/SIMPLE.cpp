@@ -105,8 +105,8 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     // first, we update convective flux with latest values of velocity field before applying the
     // Rhie-Chow correction.
-    mdot->updateFaces([&](const mesh::Face& face) { return U->valueAtFace(face); });
-    mdot->updateInteriorFaces(
+    mdot->mapFaceValues([&](const mesh::Face& face) { return U->valueAtFace(face); });
+    mdot->mapInteriorFaceValues(
         [&](const mesh::Face& face) { return ops::rhieChowCorrectFace(face, *U, *D, *p); });
 
     // pressure correction field created with same name as pressure field to get same boundary
@@ -164,7 +164,7 @@ void correctFields(SharedPtr<field::Velocity>& U,
                    SharedPtr<field::Pressure>& pprime,
                    double pressure_urf) {
     // update velocity field
-    U->updateCells([&](const mesh::Cell& cell) {
+    U->mapCellValues([&](const mesh::Cell& cell) {
         /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
         /// stack-use-after-return errors. This might be related to how temporaries are handled
         /// in complex expressions. Note: This issue only appears in debug mode with
@@ -175,7 +175,7 @@ void correctFields(SharedPtr<field::Velocity>& U,
     });
 
     // update mass flow rate at interior faces
-    mdot->updateInteriorFaces([&](const mesh::Face& face) {
+    mdot->mapInteriorFaceValues([&](const mesh::Face& face) {
         /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
         /// stack-use-after-return errors. This might be related to how temporaries are handled
         /// in complex expressions. Note: This issue only appears in debug mode with
