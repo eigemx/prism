@@ -68,11 +68,11 @@ auto main(int argc, char* argv[]) -> int {
         auto reports = algo::IncompressibleSIMPLE(params).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
         for (const auto& entry : reports) {
-            log::info("[{:>8}] Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {})",
-                      entry.field_name,
+            log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",
                       entry.initial_residual,
                       entry.final_residual,
-                      entry.n_iterations);
+                      entry.n_iterations,
+                      entry.field_name);
         }
     }
 
