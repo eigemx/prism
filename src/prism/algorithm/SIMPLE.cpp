@@ -99,6 +99,20 @@ auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
     return std::make_shared<field::Tensor>("D", mesh, std::move(D_data));
 }
 
+auto needsPressureReference(const SharedPtr<field::Pressure>& pprime) -> bool {
+    for (const auto& patch : pprime->mesh()->boundaryPatches()) {
+        if (patch.isEmpty()) {
+            continue;
+        }
+        const auto& bc = patch.getBoundaryCondition(pprime->name());
+        const auto& handler = pprime->boundaryHandlersManager().getHandler(bc.kindString());
+        if (handler != nullptr && handler->isDirichlet()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 auto solvePressureEquation(SIMPLEParameters params,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
@@ -126,6 +140,15 @@ auto solvePressureEquation(SIMPLEParameters params,
     // condition is used for the pressure.
     constrainPPrime(pprime);
 
+    // If no reference cell was explicitly set and all pressure BCs are Neumann (closed
+    // domain), auto-select cell 0 to break the matrix singularity (OpenFOAM compatibility).
+    if (!params.p_ref_cell.has_value() && needsPressureReference(pprime)) {
+        params.p_ref_cell = 0;
+        log::debug(
+            "prism::algo::solvePressureEquation(): all-Neumann pressure BCs "
+            "detected, auto-selecting p_ref_cell = 0");
+    }
+
     /// TODO: based on number of non-orhogonal corrections in _params, we should check if we need
     /// diffusion::Corrected or diffusion::NonCorrected
     using laplacian_p = Corrected;
@@ -140,7 +163,11 @@ auto solvePressureEquation(SIMPLEParameters params,
     auto p_solver = solver::BiCGSTAB();
 
     for (std::size_t i = 0; i <= params.non_ortho_correctors; ++i) {
-        auto result = p_solver.solve(pEqn, params.pressure_max_iter, params.pressure_residual);
+        auto result = p_solver.solve(pEqn,
+                                     params.pressure_max_iter,
+                                     params.pressure_residual,
+                                     params.p_ref_cell,
+                                     params.p_ref_value);
         reports.push_back({fmt::format("{}_corr_{}", pprime->name(), i),
                            result.iteration(),
                            result.initialResidual(),

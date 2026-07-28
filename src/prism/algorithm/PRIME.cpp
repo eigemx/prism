@@ -25,7 +25,9 @@ auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
     // solve pressure equation
     SIMPLEParameters SIMPLE_params {.pressure_urf = _params.pressure_urf,
                                     .pressure_max_iter = _params.pressure_max_iter,
-                                    .pressure_residual = _params.pressure_residual};
+                                    .pressure_residual = _params.pressure_residual,
+                                    .p_ref_cell = _params.p_ref_cell,
+                                    .p_ref_value = _params.p_ref_value};
     log::debug("prism::algo::PRIME::step(): solving pressure equation");
     auto result = solvePressureEquation(SIMPLE_params, momentum_predictors, U, mdot, p);
 

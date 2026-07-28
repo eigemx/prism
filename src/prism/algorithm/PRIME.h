@@ -22,6 +22,10 @@ struct PRIMEParameters {
 
     // Minimum residual for pressure equation
     f64 pressure_residual = 1e-7;
+
+    // Reference cell for singular (all-Neumann) pressure systems.
+    Optional<size_t> p_ref_cell = NullOption;
+    f64 p_ref_value = 0.0;
 };
 
 

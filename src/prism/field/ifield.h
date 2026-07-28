@@ -72,6 +72,7 @@ class IVector : public IField<Vector3d> {
     IVector(std::string name, const SharedPtr<mesh::PMesh>& mesh);
     virtual auto fluxAtFace(const mesh::Face& face) const -> f64 = 0;
     virtual auto fluxAtFace(std::size_t face_id) const -> f64 = 0;
+    virtual auto gradAtCell(const mesh::Cell& cell) -> Tensor3d = 0;
 };
 
 template <typename T>

@@ -35,6 +35,11 @@ struct SIMPLEParameters {
 
     // Minimum residual for pressure equation
     f64 pressure_residual = 1e-7;
+
+    // Reference cell for singular (all-Neumann) pressure systems.
+    // When set, the diagonal at this cell is doubled to break the null space.
+    Optional<size_t> p_ref_cell = NullOption;
+    f64 p_ref_value = 0.0;
 };
 
 class IncompressibleSIMPLE : public IPressureLinked {
@@ -51,6 +56,9 @@ class IncompressibleSIMPLE : public IPressureLinked {
 
 auto solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors)
     -> std::vector<report::Entry>;
+
+// Returns true if all pressure BCs are Neumann (closed domain requiring a reference cell).
+auto needsPressureReference(const SharedPtr<field::Pressure>& pprime) -> bool;
 
 void constrainPPrime(SharedPtr<field::Pressure>& pprime);
 

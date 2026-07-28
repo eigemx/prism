@@ -62,6 +62,8 @@ class Scalar : public IScalar,
     auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
     auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
 
+    void computeAllCellGradients();
+
     /// TODO: overload for the case of zero arguments, to update with current values.
     void update(VectorXd values);
     void updatePrevTimeSteps();
@@ -158,6 +160,56 @@ void Scalar::mapCellValues(Func func) {
     for (const auto& cell : mesh()->cells()) {
         _cell_values[cell.id()] = func(cell);
     }
+}
+
+// Element-wise field arithmetic
+
+inline auto mul(const SharedPtr<Scalar>& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a->values().cwiseProduct(b->values());
+}
+
+inline auto divide(const SharedPtr<Scalar>& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a->values().cwiseQuotient(b->values());
+}
+
+inline auto add(const SharedPtr<Scalar>& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a->values() + b->values();
+}
+
+inline auto sub(const SharedPtr<Scalar>& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a->values() - b->values();
+}
+
+// Mixed: SharedPtr with VectorXd
+
+inline auto mul(const SharedPtr<Scalar>& a, const VectorXd& b) -> VectorXd {
+    return a->values().cwiseProduct(b);
+}
+
+inline auto mul(const VectorXd& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a.cwiseProduct(b->values());
+}
+
+inline auto divide(const VectorXd& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a.cwiseQuotient(b->values());
+}
+
+inline auto add(const VectorXd& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a + b->values();
+}
+
+inline auto sub(const VectorXd& a, const SharedPtr<Scalar>& b) -> VectorXd {
+    return a - b->values();
+}
+
+// Variadic mul: mul(a, b, c, ...) for 3+ fields
+
+template <typename... Rest>
+inline auto mul(const SharedPtr<Scalar>& a,
+                const SharedPtr<Scalar>& b,
+                const SharedPtr<Scalar>& c,
+                const Rest&... rest) -> VectorXd {
+    return mul(a, mul(b, c, rest...));
 }
 
 } // namespace prism::field

@@ -31,7 +31,11 @@ class ISolver {
     auto operator=(ISolver&&) -> ISolver& = default;
     virtual ~ISolver() = default;
 
-    virtual auto solve(eqn::Transport& eq, size_t n_iter = 10, f64 eps = 1e-7) -> SolverResult;
+    virtual auto solve(eqn::Transport& eq,
+                       size_t n_iter = 10,
+                       f64 eps = 1e-7,
+                       Optional<size_t> ref_cell = NullOption,
+                       f64 ref_value = 0.0) -> SolverResult;
     virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd = 0;
 };
 

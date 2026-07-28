@@ -18,13 +18,14 @@ using std::size_t;
 using Eigen::Matrix3d;
 using Eigen::MatrixX3d;
 using Eigen::Vector3d;
+using Tensor3d = Eigen::Matrix3d;
 using Eigen::VectorXd;
 
 using SparseMatrix = Eigen::SparseMatrix<double>;
 
-enum class VectorCoord { X, Y, Z };
+enum class VectorCoord : std::uint8_t { X, Y, Z };
 
-enum Sign { Positive, Negative };
+enum Sign : std::uint8_t { Positive, Negative };
 
 template <typename T>
 using UniquePtr = std::unique_ptr<T>;

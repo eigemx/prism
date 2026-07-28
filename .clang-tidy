@@ -10,3 +10,7 @@ Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines
 '
 
 WarningsAsErrors: '*'
+
+CheckOptions:
+  - key: modernize-use-trailing-return-type.TransformLambdas
+    value: none

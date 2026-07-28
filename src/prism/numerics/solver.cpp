@@ -24,7 +24,11 @@ auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> f6
 }
 } // namespace
 
-auto ISolver::solve(eqn::Transport& eqn, size_t n_iter, f64 eps) -> SolverResult {
+auto ISolver::solve(eqn::Transport& eqn,
+                    size_t n_iter,
+                    f64 eps,
+                    Optional<size_t> ref_cell,
+                    f64 ref_value) -> SolverResult {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto phi = eqn.field();
@@ -36,6 +40,20 @@ auto ISolver::solve(eqn::Transport& eqn, size_t n_iter, f64 eps) -> SolverResult
 
     eqn.updateCoeffs();
     eqn.relax();
+
+    // OpenFOAM's setReference: pin the solution at one cell to break the null
+    // space of all-Neumann (closed-domain) pressure systems. Doubling the
+    // diagonal removes the constant vector from the null space since the row
+    // sum is no longer zero. The RHS adjustment b[ref] += diag * ref_value
+    // anchors the solution to the desired reference value.
+    if (ref_cell.has_value() && *ref_cell < size_t(eqn.matrix().rows())) {
+        auto& mat = eqn.matrix();
+        auto& vec = eqn.rhs();
+        auto idx = static_cast<Eigen::Index>(*ref_cell);
+        auto diag = mat.coeff(idx, idx);
+        mat.coeffRef(idx, idx) += diag;
+        vec[idx] += diag * ref_value;
+    }
 
     for (; iter < n_iter; iter++) {
         if (iter == 0) {

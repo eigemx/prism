@@ -23,7 +23,7 @@ KOmega::KOmega(const SharedPtr<field::Density>& rho,
 }
 
 void KOmega::setViscosity() {
-    auto mu_t_vals = _rho->values().cwiseProduct(_k->values().cwiseQuotient(_omega->values()));
+    auto mu_t_vals = field::mul(_rho, field::divide(_k, _omega));
     _mu_t->values() = mu_t_vals;
     _mu_eff->values() = mu_t_vals + _mu->values();
 }
@@ -31,7 +31,7 @@ void KOmega::setViscosity() {
 auto KOmega::kEqn() -> eqn::Transport {
     setViscosity();
     auto pk = kProduction();
-    auto sk_values = _rho->values().cwiseProduct(_k->values().cwiseProduct(_omega->values()));
+    auto sk_values = field::mul(_rho, _k, _omega);
     auto sk = std::make_shared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
     auto k_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _k),
                                 scheme::diffusion::NonCorrected(_mu_eff, _k),
@@ -49,12 +49,8 @@ auto KOmega::omegaEqn() -> eqn::Transport {
     setViscosity();
     auto pk = kProduction();
 
-    const auto& omega = _omega->values();
-    const auto& k = _k->values();
-    const auto& rho = _rho->values();
-
-    VectorXd sk_values = _c_alpha1 * omega.cwiseQuotient(k).cwiseProduct(pk->values());
-    sk_values -= _c_beta1 * rho.cwiseProduct(omega.cwiseProduct(omega));
+    VectorXd sk_values = _c_alpha1 * field::mul(field::divide(_omega, _k), pk);
+    sk_values -= _c_beta1 * field::mul(_rho, _omega, _omega);
     auto sk = std::make_shared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
     auto omega_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _omega),
                                     scheme::diffusion::NonCorrected(_mu_eff, _omega),

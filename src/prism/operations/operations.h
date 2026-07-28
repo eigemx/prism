@@ -2,9 +2,10 @@
 
 #include <fmt/format.h>
 
-#include <algorithm>
+#include <cmath>
 
 #include "prism/field/scalar.h"
+#include "prism/field/tensor.h"
 #include "prism/field/vector.h"
 #include "prism/mesh/cell.h"
 #include "prism/mesh/face.h"
@@ -12,26 +13,53 @@
 
 namespace prism::ops {
 
-// Calculates the divergence of a vector field U: ∇.U
+///
+/// @brief      Divergence of a vector field: \f$ \nabla \cdot \mathbf{U} \f$
+///
+/// Computed via the Green-Gauss theorem:
+/// \f$ \int (\nabla \cdot \mathbf{U}) dV = \oint \mathbf{U} \cdot d\mathbf{S} \f$
+///
+/// @param U    Vector field (must support fluxAtFace)
+/// @return     Scalar field \f$ \nabla \cdot \mathbf{U} \f$
+///
 template <typename Vector>
 auto div(const Vector& U) -> field::Scalar;
 
-// Calculates the laplacian of a scalar field ϕ: ∇.∇ϕ
-auto laplacian(const field::Scalar& phi, bool return_face_data = true) -> field::Scalar;
-
-// Calculates the magnitude of a vector field U
-template <typename Vector>
-auto mag(const Vector& U, bool return_face_data = true) -> field::Scalar;
-
-// Calculates the curl of a vector field U
-template <typename Vector>
-auto curl(const Vector& U, bool return_face_data = true) -> field::Vector;
-
+///
+/// @brief      Single component of the gradient of a scalar field
+///
+/// Extracts one coordinate (X, Y, or Z) of \f$ \nabla \phi \f$ as a Scalar field.
+///
+/// @param field   Scalar field whose gradient is computed
+/// @param coord   Which component to extract (VectorCoord::X / Y / Z)
+/// @return        Scalar field containing \f$ \partial \phi / \partial x_i \f$
+///
 template <field::IScalarBased Field>
-auto grad(const Field& field, VectorCoord coord) -> field::Scalar;
+auto grad(Field& field, VectorCoord coord) -> field::Scalar;
 
+///
+/// @brief      Gradient of a scalar field as a Vector field
+///
+/// Combines all three components of \f$ \nabla \phi \f$ into a Vector field.
+/// Equivalent to calling grad(field, X), grad(field, Y), grad(field, Z).
+///
+/// @param field   Scalar field
+/// @return        Vector field \f$ \nabla \phi \f$
+///
 template <field::IScalarBased Field>
-auto grad(const Field& field) -> field::Vector;
+auto grad(Field& field) -> field::Vector;
+
+///
+/// @brief      Velocity gradient tensor as a full Tensor field
+///
+/// One 3×3 matrix per cell. Equivalent to calling velocityGradientAtCell()
+/// on every cell in the mesh.
+///
+/// @param U    Vector field
+/// @return     Tensor field \f$ \nabla \mathbf{U} \f$
+///
+template <typename VectorType>
+auto grad(const VectorType& U) -> field::Tensor;
 
 namespace detail {
 template <typename Vector>
@@ -58,25 +86,43 @@ auto div(const Vector& U) -> field::Scalar {
 
 template <field::IScalarBased Field>
 auto grad(Field& field, VectorCoord coord) -> field::Scalar {
-    auto grad_field_name =
-        fmt::format("grad({})_{}", field.name(), field::detail::coordToStr(coord));
     const auto& mesh = field.mesh();
-    VectorXd grad_values = VectorXd::Zero(mesh->cellCount());
+    VectorXd grad_values(mesh->cellCount());
     auto coord_index = field::detail::coordToIndex(coord);
 
-    std::for_each(mesh->cells().begin(), mesh->cells().end(), [&](const auto& cell) {
+    for (const auto& cell : mesh->cells()) {
         grad_values[cell.id()] = field.gradAtCell(cell)[coord_index];
-    });
+    }
 
-    return field::Scalar(grad_field_name, field.mesh(), grad_values);
+    return field::Scalar(fmt::format("grad({})_{}", field.name(), field::detail::coordToStr(coord)),
+                         mesh,
+                         std::move(grad_values));
 }
 
 template <field::IScalarBased Field>
-auto grad(const Field& field) -> field::Vector {
-    std::array<field::Scalar, 3> fields {
-        grad(field, VectorCoord::X), grad(field, VectorCoord::Y), grad(field, VectorCoord::Z)};
+auto grad(Field& field) -> field::Vector {
+    const auto& mesh = field.mesh();
+    const auto n = mesh->cellCount();
+    VectorXd x_values(n);
+    VectorXd y_values(n);
+    VectorXd z_values(n);
 
-    return field::Vector(fmt::format("grad({})", field.name()), field.mesh(), fields);
+    for (const auto& cell : mesh->cells()) {
+        Vector3d g = field.gradAtCell(cell);
+        auto i = cell.id();
+        x_values[i] = g.x();
+        y_values[i] = g.y();
+        z_values[i] = g.z();
+    }
+
+    auto name = fmt::format("grad({})", field.name());
+    std::array<field::Scalar, 3> components {
+        field::Scalar(name + "_x", mesh, std::move(x_values)),
+        field::Scalar(name + "_y", mesh, std::move(y_values)),
+        field::Scalar(name + "_z", mesh, std::move(z_values)),
+    };
+
+    return field::Vector(name, mesh, components);
 }
 
 namespace detail {
@@ -108,5 +154,38 @@ auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> f64 {
 }
 
 } // namespace detail
+
+template <typename VectorType>
+auto grad(const VectorType& U) -> field::Tensor {
+    const auto& mesh = U.mesh();
+    std::vector<Tensor3d> data(mesh->cellCount());
+
+    for (const auto& cell : mesh->cells()) {
+        data[cell.id()] = U.gradAtCell(cell);
+    }
+
+    return field::Tensor(fmt::format("grad({})", U.name()), mesh, std::move(data));
+}
+
+//
+// Tensor algebra — free functions operating on Tensor3d
+// Mirroring OpenFOAM's global functions: symm(), twoSymm(), dev(), etc.
+//
+
+inline auto symm(const Tensor3d& A) -> Tensor3d {
+    return 0.5 * (A + A.transpose());
+}
+
+inline auto twoSymm(const Tensor3d& A) -> Tensor3d {
+    return A + A.transpose();
+}
+
+inline auto dev(const Tensor3d& A) -> Tensor3d {
+    return A - Tensor3d::Identity() * (A.trace() / 3.0);
+}
+
+inline auto doubleContraction(const Tensor3d& A, const Tensor3d& B) -> f64 {
+    return A.cwiseProduct(B).sum();
+}
 
 } // namespace prism::ops

@@ -346,6 +346,12 @@ auto Scalar::gradAtCellStored(const mesh::Cell& cell) const -> Vector3d {
     return _grad_scheme->gradAtCellStored(cell, *this);
 }
 
+void Scalar::computeAllCellGradients() {
+    for (const auto& cell : this->mesh()->cells()) {
+        this->gradAtCell(cell);
+    }
+}
+
 
 auto Scalar::operator[](std::size_t i) const -> f64 {
     assert(_cell_values.size() > 0);

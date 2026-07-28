@@ -48,6 +48,8 @@ class GeneralVector
     auto fluxAtFace(size_t face_id) const -> f64 override;
     auto fluxAtFace(const mesh::Face& face) const -> f64 override;
 
+    auto gradAtCell(const mesh::Cell& cell) -> Tensor3d override;
+
     auto x() const -> const SharedPtr<Component>& { return _x; }
     auto y() const -> const SharedPtr<Component>& { return _y; }
     auto z() const -> const SharedPtr<Component>& { return _z; }
@@ -387,6 +389,15 @@ void GeneralVector<Component, BHManagerSetter>::mapCellValues(Func func) {
 template <typename Component, typename BHManagerSetter>
 void GeneralVector<Component, BHManagerSetter>::addDefaultBoundaryHandlers() {
     _setter.set(this->boundaryHandlersManager());
+}
+
+template <typename Component, typename BHManagerSetter>
+auto GeneralVector<Component, BHManagerSetter>::gradAtCell(const mesh::Cell& cell) -> Tensor3d {
+    Tensor3d gradU;
+    gradU.col(0) = _x->gradAtCell(cell);
+    gradU.col(1) = _y->gradAtCell(cell);
+    gradU.col(2) = _z->gradAtCell(cell);
+    return gradU;
 }
 
 } // namespace prism::field
