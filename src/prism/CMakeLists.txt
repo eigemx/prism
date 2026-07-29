@@ -23,7 +23,6 @@ add_library(prism
     mesh/face.cpp
     mesh/cell.cpp
     mesh/boundary.cpp
-    mesh/iterators.cpp
     mesh/pmesh.cpp 
     mesh/unv.cpp
     mesh/trie.cpp

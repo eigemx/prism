@@ -1,6 +1,5 @@
 #include "pmesh.h"
 
-#include <algorithm>
 #include <cassert>
 #include <span>
 #include <stdexcept>
@@ -13,44 +12,110 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
              std::vector<Face> faces,
              std::vector<BoundaryPatch> boundary_patches,
              std::vector<FieldInfo> field_infos,
-             std::vector<std::size_t> boundary_faces_ids,
-             std::vector<std::size_t> interior_faces_ids) noexcept
+             std::vector<size_t> boundary_faces_ids,
+             std::vector<size_t> interior_faces_ids) noexcept
     : _vertices(std::move(vertices)),
       _cells(std::move(cells)),
       _faces(std::move(faces)),
       _boundary_patches(std::move(boundary_patches)),
       _field_infos(std::move(field_infos)),
-      _boundary_faces_ids(std::move(boundary_faces_ids)),
-      _interior_faces_ids(std::move(interior_faces_ids)),
       _n_cells(_cells.size()),
       _n_faces(_faces.size()) {
+    auto perm = buildFacePermutation(boundary_faces_ids, interior_faces_ids);
+
+    reorderFaces(perm.old_to_new);
+    remapFaceIds(perm.old_to_new);
+
+    _n_boundary_faces = perm.n_boundary;
+    _n_nonempty_boundary_faces = perm.n_nonempty;
+
+    std::vector<size_t> {}.swap(perm.old_to_new);
+    std::vector<size_t> {}.swap(boundary_faces_ids);
+    std::vector<size_t> {}.swap(interior_faces_ids);
+
     /// TODO: Check if inputs constitutes a valid mesh.
     log::debug("prism::mesh::PMesh() object created with {} cells, {} faces and {} vertices.",
                _n_cells,
                _n_faces,
                _vertices.size());
     log::debug("prism::mesh::PMesh() object has {} internal faces and {} boundary faces. ",
-               _interior_faces_ids.size(),
-               _boundary_faces_ids.size());
+               _n_faces - _n_boundary_faces,
+               _n_boundary_faces);
 
     _cells_volume.resize(_n_cells);
     for (const auto& cell : _cells) {
         _cells_volume[cell.id()] = cell.volume();
     }
+}
 
-    /// TODO: can we do this differently? we need to avoid allocating memory for the vector of
-    /// non-empty boundary face ids
-    /// TODO: this is the first thing that well fail for an ill-formed mesh. Here, we try to get
-    /// the boundary patch of a face withouth checking validity of the mesh, so most probably we
-    /// will get a bad std::optional access. We need to check if given parameters forms a valid
-    /// mesh before proceeding with the construction.
-    std::copy_if(_boundary_faces_ids.begin(),
-                 _boundary_faces_ids.end(),
-                 std::back_inserter(_nonempty_boundary_faces_ids),
-                 [this](const std::size_t& face_id) {
-                     const auto& patch = faceBoundaryPatch(face_id);
-                     return !patch.isEmpty();
-                 });
+auto PMesh::buildFacePermutation(const std::vector<size_t>& boundary_faces_ids,
+                                 const std::vector<size_t>& interior_faces_ids) const
+    -> FacePermutation {
+    auto n_faces = _faces.size();
+    auto n_boundary = boundary_faces_ids.size();
+
+    size_t n_nonempty = 0;
+    for (auto old_id : boundary_faces_ids) {
+        const auto& face = _faces[old_id];
+        if (!_boundary_patches[face.boundaryPatchId().value()].isEmpty()) {
+            ++n_nonempty;
+        }
+    }
+
+    std::vector<size_t> old_to_new(n_faces);
+    size_t nonempty_pos = 0;
+    size_t empty_pos = n_nonempty;
+    size_t interior_pos = n_boundary;
+
+    for (auto old_id : boundary_faces_ids) {
+        const auto& face = _faces[old_id];
+        if (!_boundary_patches[face.boundaryPatchId().value()].isEmpty()) {
+            old_to_new[old_id] = nonempty_pos++;
+        } else {
+            old_to_new[old_id] = empty_pos++;
+        }
+    }
+
+    for (auto old_id : interior_faces_ids) {
+        old_to_new[old_id] = interior_pos++;
+    }
+
+    return {
+        .old_to_new = std::move(old_to_new), .n_boundary = n_boundary, .n_nonempty = n_nonempty};
+}
+
+void PMesh::reorderFaces(const std::vector<size_t>& old_to_new) {
+    auto n_faces = _faces.size();
+
+    std::vector<size_t> new_to_old(n_faces);
+    for (size_t old_id = 0; old_id < n_faces; ++old_id) {
+        new_to_old[old_to_new[old_id]] = old_id;
+    }
+
+    std::vector<Face> new_faces;
+    new_faces.reserve(n_faces);
+    for (size_t new_id = 0; new_id < n_faces; ++new_id) {
+        auto old_id = new_to_old[new_id];
+        new_faces.emplace_back(std::move(_faces[old_id]));
+        new_faces.back().id() = new_id;
+    }
+    _faces = std::move(new_faces);
+}
+
+void PMesh::remapFaceIds(const std::vector<size_t>& old_to_new) {
+    for (auto& cell : _cells) {
+        auto& ids = cell.facesIds();
+        for (auto& face_id : ids) {
+            face_id = old_to_new[face_id];
+        }
+    }
+
+    for (auto& patch : _boundary_patches) {
+        auto& ids = patch.facesIds();
+        for (auto& face_id : ids) {
+            face_id = old_to_new[face_id];
+        }
+    }
 }
 
 auto PMesh::vertices() const noexcept -> const std::vector<Vector3d>& {
@@ -65,11 +130,11 @@ auto PMesh::cells() noexcept -> std::vector<Cell>& {
     return _cells;
 }
 
-auto PMesh::cell(std::size_t cell_id) const -> const Cell& {
+auto PMesh::cell(size_t cell_id) const -> const Cell& {
     return _cells[cell_id];
 }
 
-auto PMesh::cell(std::size_t cell_id) noexcept -> Cell& {
+auto PMesh::cell(size_t cell_id) noexcept -> Cell& {
     return _cells[cell_id];
 }
 
@@ -80,11 +145,11 @@ auto PMesh::faces() noexcept -> std::vector<Face>& {
     return _faces;
 }
 
-auto PMesh::face(std::size_t face_id) const -> const Face& {
+auto PMesh::face(size_t face_id) const -> const Face& {
     return _faces[face_id];
 }
 
-auto PMesh::face(std::size_t face_id) noexcept -> Face& {
+auto PMesh::face(size_t face_id) noexcept -> Face& {
     return _faces[face_id];
 }
 
@@ -109,9 +174,7 @@ auto PMesh::boundaryPatch(const std::string& name) const -> const BoundaryPatch&
                     name));
 }
 
-/// TODO: faceBoundaryPatch() methods don't check if face is boundary or not this is to avoid
-// branching in the code, but it might be better to check think this over
-auto PMesh::faceBoundaryPatch(std::size_t face_id) const -> const BoundaryPatch& {
+auto PMesh::faceBoundaryPatch(size_t face_id) const -> const BoundaryPatch& {
     assert(face_id < _faces.size() &&
            "prism::mesh::PMesh::faceBoundaryPatch() was called on a face with an index larger "
            "than mesh faces "
@@ -125,20 +188,16 @@ auto PMesh::faceBoundaryPatch(const Face& face) const -> const BoundaryPatch& {
     return _boundary_patches[face.boundaryPatchId().value()];
 }
 
-auto PMesh::cellCount() const noexcept -> std::size_t {
+auto PMesh::cellCount() const noexcept -> size_t {
     return _n_cells;
 }
 
-auto PMesh::faceCount() const noexcept -> std::size_t {
+auto PMesh::faceCount() const noexcept -> size_t {
     return _n_faces;
 }
 
-auto PMesh::boundaryFaceCount() const noexcept -> std::size_t {
-    return _boundary_faces_ids.size();
-}
-
-auto PMesh::nonEmptyboundaryFaceCount() const noexcept -> std::size_t {
-    return _nonempty_boundary_faces_ids.size();
+auto PMesh::boundaryFaceCount() const noexcept -> size_t {
+    return _n_boundary_faces;
 }
 
 auto PMesh::cellsVolumeVector() const noexcept -> const VectorXd& {
@@ -152,22 +211,16 @@ auto PMesh::otherSharingCell(const Cell& c, const Face& f) const -> const Cell& 
     return _cells[n_id];
 }
 
-auto PMesh::interiorFaces() const -> iterators::InteriorFaces {
-    return iterators::InteriorFaces(std::span<const Face>(_faces),
-                                    std::span<const std::size_t>(_interior_faces_ids));
+auto PMesh::interiorFaces() const noexcept -> std::span<const Face> {
+    return {_faces.data() + _n_boundary_faces, _faces.size() - _n_boundary_faces};
 }
 
-/// TODO: for boundaryFaces() and nonEmptyBoundaryFaces() we could iterate over the boundary
-// patches instead, this allows us to get rid of _boundary_faces_ids and
-// _nonempty_boundary_faces_ids vectors.
-auto PMesh::boundaryFaces() const -> iterators::BoundaryFaces {
-    return iterators::BoundaryFaces(std::span<const Face>(_faces),
-                                    std::span<const std::size_t>(_boundary_faces_ids));
+auto PMesh::boundaryFaces() const noexcept -> std::span<const Face> {
+    return {_faces.data(), _n_boundary_faces};
 }
 
-auto PMesh::nonEmptyBoundaryFaces() const -> iterators::BoundaryFaces {
-    return iterators::BoundaryFaces(std::span<const Face>(_faces),
-                                    std::span<const std::size_t>(_nonempty_boundary_faces_ids));
+auto PMesh::nonEmptyBoundaryFaces() const noexcept -> std::span<const Face> {
+    return {_faces.data(), _n_nonempty_boundary_faces};
 }
 
 auto PMesh::fieldsInfo() const noexcept -> const std::vector<FieldInfo>& {
