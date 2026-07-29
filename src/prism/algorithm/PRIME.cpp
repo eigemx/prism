@@ -6,7 +6,7 @@
 
 namespace prism::algo {
 
-PRIME::PRIME(PRIMEParameters parameters) : _params(parameters) {}
+PRIME::PRIME(PRIMEControls controls) : _controls(controls) {}
 
 auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
                  SharedPtr<field::Velocity>& U,
@@ -23,15 +23,15 @@ auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
     solveExplicitMomentum(momentum_predictors);
 
     // solve pressure equation
-    SIMPLEParameters SIMPLE_params {.pressure_urf = _params.pressure_urf,
-                                    .pressure_max_iter = _params.pressure_max_iter,
-                                    .pressure_residual = _params.pressure_residual,
-                                    .p_ref_cell = _params.p_ref_cell,
-                                    .p_ref_value = _params.p_ref_value};
+    SIMPLEControls SIMPLE_controls {.pressure_urf = _controls.pressure_urf,
+                                    .pressure_max_iter = _controls.pressure_max_iter,
+                                    .pressure_residual = _controls.pressure_residual,
+                                    .p_ref_cell = _controls.p_ref_cell,
+                                    .p_ref_value = _controls.p_ref_value};
     log::debug("prism::algo::PRIME::step(): solving pressure equation");
-    auto result = solvePressureEquation(SIMPLE_params, momentum_predictors, U, mdot, p);
+    auto result = solvePressureEquation(SIMPLE_controls, momentum_predictors, U, mdot, p);
 
-    correctFields(U, mdot, p, result.D, result.pprime, _params.pressure_urf);
+    correctFields(U, mdot, p, result.D, result.pprime, _controls.pressure_urf);
     return result.reports;
 }
 

@@ -66,15 +66,15 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
-    algo::SIMPLEParameters params;
-    uEqn.setUnderRelaxFactor(params.momentum_urf);
-    vEqn.setUnderRelaxFactor(params.momentum_urf);
+    algo::SIMPLEControls controls;
+    uEqn.setUnderRelaxFactor(controls.momentum_urf);
+    vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
     auto nOuterIter = 200;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::IncompressibleSIMPLE(params).step(
+        algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 

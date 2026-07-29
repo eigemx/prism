@@ -53,15 +53,15 @@ TEST_CASE("SIMPLE algorithm mass conservation on coarse pipe", "[algo]") {
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
-    algo::SIMPLEParameters params;
-    uEqn.setUnderRelaxFactor(params.momentum_urf);
-    vEqn.setUnderRelaxFactor(params.momentum_urf);
+    algo::SIMPLEControls controls;
+    uEqn.setUnderRelaxFactor(controls.momentum_urf);
+    vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
     auto nOuterIter = 200;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::IncompressibleSIMPLE(params).step(
+        algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 
@@ -112,16 +112,16 @@ TEST_CASE("PISO auto pRef on cavity_hex (closed domain)", "[algo]") {
     vEqn.setUnderRelaxFactor(0.7);
     std::vector<eqn::Momentum*> meq {&uEqn, &vEqn};
 
-    algo::PISOParameters pp;
-    pp.outer_iterations = 3;
-    pp.pressure_correction_steps = 1;
-    pp.non_ortho_correctors = 0;
-    pp.momentum_urf = 0.7;
-    pp.pressure_urf = 0.3;
+    algo::PISOControls controls;
+    controls.outer_iterations = 3;
+    controls.pressure_correction_steps = 1;
+    controls.non_ortho_correctors = 0;
+    controls.momentum_urf = 0.7;
+    controls.pressure_urf = 0.3;
 
     auto nSteps = 20;
     for (int ts = 0; ts < nSteps; ++ts) {
-        algo::PISO(pp).step(std::span<eqn::Momentum*>(meq), U, mdot, p);
+        algo::PISO(controls).step(std::span<eqn::Momentum*>(meq), U, mdot, p);
         U->x()->updatePrevTimeSteps();
         U->y()->updatePrevTimeSteps();
     }
@@ -158,15 +158,15 @@ TEST_CASE("SIMPLE ductSIMPLE (open domain, no pRef needed)", "[algo]") {
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
-    algo::SIMPLEParameters params;
-    uEqn.setUnderRelaxFactor(params.momentum_urf);
-    vEqn.setUnderRelaxFactor(params.momentum_urf);
+    algo::SIMPLEControls controls;
+    uEqn.setUnderRelaxFactor(controls.momentum_urf);
+    vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
     auto nOuterIter = 500;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::IncompressibleSIMPLE(params).step(
+        algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 
@@ -211,19 +211,19 @@ TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
-    algo::PISOParameters params;
-    params.outer_iterations = 1;
-    params.momentum_implicit_steps = 1;
-    params.pressure_correction_steps = 1;
-    params.non_ortho_correctors = 2;
-    params.momentum_urf = 0.7;
-    params.pressure_urf = 0.3;
-    params.momentum_residual = 1e-7;
-    params.pressure_residual = 1e-7;
+    algo::PISOControls controls;
+    controls.outer_iterations = 1;
+    controls.momentum_implicit_steps = 1;
+    controls.pressure_correction_steps = 1;
+    controls.non_ortho_correctors = 2;
+    controls.momentum_urf = 0.7;
+    controls.pressure_urf = 0.3;
+    controls.momentum_residual = 1e-7;
+    controls.pressure_residual = 1e-7;
 
     auto nOuterIter = 200;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::PISO(params).step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
+        algo::PISO(controls).step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 
     auto inlet = flowRate(*U, *mesh, "Inlet");
@@ -267,19 +267,19 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
-    algo::PISOParameters params;
-    params.outer_iterations = 1;
-    params.momentum_implicit_steps = 1;
-    params.pressure_correction_steps = 2;
-    params.non_ortho_correctors = 2;
-    params.momentum_urf = 0.7;
-    params.pressure_urf = 0.3;
-    params.momentum_residual = 1e-7;
-    params.pressure_residual = 1e-7;
+    algo::PISOControls controls;
+    controls.outer_iterations = 1;
+    controls.momentum_implicit_steps = 1;
+    controls.pressure_correction_steps = 2;
+    controls.non_ortho_correctors = 2;
+    controls.momentum_urf = 0.7;
+    controls.pressure_urf = 0.3;
+    controls.momentum_residual = 1e-7;
+    controls.pressure_residual = 1e-7;
 
     auto nSteps = 50;
     for (int i = 0; i < nSteps; ++i) {
-        algo::PISO(params).step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
+        algo::PISO(controls).step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
     }
 
     auto inlet = flowRate(*U, *mesh, "Inlet");

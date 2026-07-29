@@ -8,7 +8,7 @@
 
 namespace prism::algo {
 
-struct PISOParameters {
+struct PISOControls {
     // PISO outer loop iterations count
     size_t outer_iterations = 1;
 
@@ -49,14 +49,14 @@ struct PISOParameters {
 
 class PISO : public IPressureLinked {
   public:
-    PISO(PISOParameters parameters);
+    PISO(PISOControls controls);
     auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
               SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> override;
 
   private:
-    PISOParameters _params;
+    PISOControls _controls;
 };
 
 } // namespace prism::algo

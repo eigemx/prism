@@ -16,7 +16,7 @@
 namespace prism::algo {
 using field::Pressure;
 
-auto solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors)
+auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> momentum_predictors)
     -> std::vector<report::Entry> {
     auto reports = std::vector<report::Entry>();
     // solve momentum equations implicitly
@@ -24,7 +24,7 @@ auto solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> mo
     log::debug("prism::algo::solveMomentumImplicitly(): solving momentum equations");
     for (auto* eqn : momentum_predictors) {
         auto result =
-            momentum_solver.solve(*eqn, params.momentum_max_iter, params.momentum_residual);
+            momentum_solver.solve(*eqn, controls.momentum_max_iter, controls.momentum_residual);
         reports.push_back({eqn->field()->name(),
                            result.iteration(),
                            result.initialResidual(),
@@ -117,7 +117,7 @@ auto needsPressureReference(const SharedPtr<field::Pressure>& pprime) -> bool {
     return true;
 }
 
-auto solvePressureEquation(SIMPLEParameters params,
+auto solvePressureEquation(SIMPLEControls controls,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
                            SharedPtr<field::Velocity>& mdot,
@@ -146,14 +146,14 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     // If no reference cell was explicitly set and all pressure BCs are Neumann (closed
     // domain), auto-select cell 0 to break the matrix singularity (OpenFOAM compatibility).
-    if (!params.p_ref_cell.has_value() && needsPressureReference(pprime)) {
-        params.p_ref_cell = 0;
+    if (!controls.p_ref_cell.has_value() && needsPressureReference(pprime)) {
+        controls.p_ref_cell = 0;
         log::debug(
             "prism::algo::solvePressureEquation(): all-Neumann pressure BCs "
             "detected, auto-selecting p_ref_cell = 0");
     }
 
-    /// TODO: based on number of non-orthogonal corrections in _params, we should check if we need
+    /// TODO: based on number of non-orthogonal corrections in _controls, we should check if we need
     /// diffusion::Corrected or diffusion::NonCorrected
     using laplacian_p = Corrected;
     using div_U = scheme::source::Divergence<Sign::Negative>;
@@ -166,12 +166,12 @@ auto solvePressureEquation(SIMPLEParameters params,
     log::debug("prism::algo::solvePressureEquation(): solving pressure equation");
     auto p_solver = solver::BiCGSTAB();
 
-    for (std::size_t i = 0; i <= params.non_ortho_correctors; ++i) {
+    for (std::size_t i = 0; i <= controls.non_ortho_correctors; ++i) {
         auto result = p_solver.solve(pEqn,
-                                     params.pressure_max_iter,
-                                     params.pressure_residual,
-                                     params.p_ref_cell,
-                                     params.p_ref_value);
+                                     controls.pressure_max_iter,
+                                     controls.pressure_residual,
+                                     controls.p_ref_cell,
+                                     controls.p_ref_value);
         reports.push_back({fmt::format("{}_corr_{}", pprime->name(), i),
                            result.iteration(),
                            result.initialResidual(),
@@ -182,7 +182,7 @@ auto solvePressureEquation(SIMPLEParameters params,
     return {.pprime = pprime, .D = D, .reports = std::move(reports)};
 }
 
-IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEParameters parameters) : _params(parameters) {}
+IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEControls controls) : _controls(controls) {}
 
 auto IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                                 SharedPtr<field::Velocity>& U,
@@ -195,10 +195,10 @@ auto IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                         momentum_predictors.size()));
     }
 
-    auto reports = solveImplicitMomentum(_params, momentum_predictors);
-    auto result = solvePressureEquation(_params, momentum_predictors, U, mdot, p);
+    auto reports = solveImplicitMomentum(_controls, momentum_predictors);
+    auto result = solvePressureEquation(_controls, momentum_predictors, U, mdot, p);
     reports.insert(reports.end(), result.reports.begin(), result.reports.end());
-    correctFields(U, mdot, p, result.D, result.pprime, _params.pressure_urf);
+    correctFields(U, mdot, p, result.D, result.pprime, _controls.pressure_urf);
     return reports;
 }
 

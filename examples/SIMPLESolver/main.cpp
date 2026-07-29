@@ -38,7 +38,7 @@ auto main(int argc, char* argv[]) -> int {
     auto nOuterIter = 50;
     auto mdot = makeShared<field::Velocity>(U->clone());
 
-    algo::SIMPLEParameters params;
+    algo::SIMPLEControls controls;
 
     auto uEqn = eqn::Momentum(div(mdot, U->x()),      // ∇.(Uu)
                               laplacian(nu, U->x()),  // -∇.(ν∇u)
@@ -58,14 +58,14 @@ auto main(int argc, char* argv[]) -> int {
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
-    uEqn.setUnderRelaxFactor(params.momentum_urf);
-    vEqn.setUnderRelaxFactor(params.momentum_urf);
+    uEqn.setUnderRelaxFactor(controls.momentum_urf);
+    vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
         log::info("Outer iteration: {}", outer_iteration);
-        auto reports = algo::IncompressibleSIMPLE(params).step(
+        auto reports = algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
         for (const auto& entry : reports) {
             log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",

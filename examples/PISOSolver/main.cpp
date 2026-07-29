@@ -53,12 +53,12 @@ auto main(int argc, char* argv[]) -> int {
     vEqn.setUnderRelaxFactor(0.7);
     std::vector<eqn::Momentum*> meq {&uEqn, &vEqn};
 
-    algo::PISOParameters pp;
-    pp.outer_iterations = 3;
-    pp.pressure_correction_steps = 1; // no PRIME
-    pp.non_ortho_correctors = 0;
-    pp.momentum_urf = 0.7;
-    pp.pressure_urf = 0.3;
+    algo::PISOControls controls;
+    controls.outer_iterations = 3;
+    controls.pressure_correction_steps = 1; // no PRIME
+    controls.non_ortho_correctors = 0;
+    controls.momentum_urf = 0.7;
+    controls.pressure_urf = 0.3;
 
     f64 time = 0.0;
     for (int ts = 0; ts < nTs; ++ts) {
@@ -67,7 +67,7 @@ auto main(int argc, char* argv[]) -> int {
                   time,
                   U->x()->values().lpNorm<Eigen::Infinity>(),
                   p->values().lpNorm<Eigen::Infinity>());
-        auto reps = algo::PISO(pp).step(std::span<eqn::Momentum*>(meq), U, mdot, p);
+        auto reps = algo::PISO(controls).step(std::span<eqn::Momentum*>(meq), U, mdot, p);
         for (auto& r : reps) {
             if (std::isnan(r.final_residual)) {
                 log::warn("NaN residual in field {}", r.field_name);

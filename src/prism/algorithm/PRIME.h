@@ -10,7 +10,7 @@
 #include "prism/types.h"
 
 namespace prism::algo {
-struct PRIMEParameters {
+struct PRIMEControls {
     // Number of non-orthogonal correctors for pressure equation
     size_t non_ortho_correctors = 2;
 
@@ -31,14 +31,14 @@ struct PRIMEParameters {
 
 class PRIME : public IPressureLinked {
   public:
-    PRIME(PRIMEParameters parameters);
+    PRIME(PRIMEControls controls);
     auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
               SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> override;
 
   private:
-    PRIMEParameters _params;
+    PRIMEControls _controls;
 };
 
 void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors);

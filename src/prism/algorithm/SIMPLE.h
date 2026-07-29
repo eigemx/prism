@@ -11,7 +11,7 @@
 #include "prism/types.h"
 
 namespace prism::algo {
-struct SIMPLEParameters {
+struct SIMPLEControls {
     // Under-relaxation factor for momentum predictor
     f64 momentum_urf = 0.7;
 
@@ -44,17 +44,17 @@ struct SIMPLEParameters {
 
 class IncompressibleSIMPLE : public IPressureLinked {
   public:
-    IncompressibleSIMPLE(SIMPLEParameters parameters);
+    IncompressibleSIMPLE(SIMPLEControls controls);
     auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
               SharedPtr<field::Pressure>& p) -> std::vector<report::Entry> override;
 
   private:
-    SIMPLEParameters _params;
+    SIMPLEControls _controls;
 };
 
-auto solveImplicitMomentum(SIMPLEParameters params, std::span<eqn::Momentum*> momentum_predictors)
+auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> momentum_predictors)
     -> std::vector<report::Entry>;
 
 // Returns true if all pressure BCs are Neumann (closed domain requiring a reference cell).
@@ -71,7 +71,7 @@ struct PressureEquationResult {
     std::vector<report::Entry> reports;
 };
 
-auto solvePressureEquation(SIMPLEParameters params,
+auto solvePressureEquation(SIMPLEControls controls,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
                            SharedPtr<field::Velocity>& mdot,
