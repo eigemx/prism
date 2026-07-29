@@ -153,7 +153,7 @@ auto solvePressureEquation(SIMPLEParameters params,
             "detected, auto-selecting p_ref_cell = 0");
     }
 
-    /// TODO: based on number of non-orhogonal corrections in _params, we should check if we need
+    /// TODO: based on number of non-orthogonal corrections in _params, we should check if we need
     /// diffusion::Corrected or diffusion::NonCorrected
     using laplacian_p = Corrected;
     using div_U = scheme::source::Divergence<Sign::Negative>;

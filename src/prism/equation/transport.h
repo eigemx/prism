@@ -16,7 +16,7 @@
 
 namespace prism::eqn {
 
-/// TODO: Make Transport check consistincey of the conserved transport field, meaning that a
+/// TODO: Make Transport check consistency of the conserved transport field, meaning that a
 /// transport equation shall have only one transport field.
 
 /// TODO: Schemes that require no correction shall be updated only once.

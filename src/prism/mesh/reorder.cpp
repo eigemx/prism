@@ -76,10 +76,9 @@ auto CuthillMckee::permute() -> std::vector<std::size_t> {
             }
 
             // sort neighbors by degree, ascending
-            std::sort(
-                not_visited_neighbors.begin(),
-                not_visited_neighbors.end(),
-                [](const auto& lhs, const auto& rhs) { return lhs.degree() < rhs.degree(); });
+            std::sort(not_visited_neighbors.begin(),
+                      not_visited_neighbors.end(),
+                      [](const auto& lhs, const auto& rhs) { return lhs.degree() < rhs.degree(); });
 
             queue.insert(queue.end(), not_visited_neighbors.begin(), not_visited_neighbors.end());
             permutations.push_back(queue.front().id());
@@ -110,11 +109,11 @@ void CuthillMckee::reorder(bool reverse) {
 
     std::vector<Cell> new_cells = cells;
 
-    /// TODO: replace this with std::transform
-    for (auto& cell : cells) {
+    for (const auto& cell : cells) {
         auto new_id = old_to_new[cell.id()];
-        cell.id() = new_id;
-        new_cells[new_id] = cell;
+        Cell updated = cell;
+        updated.id() = new_id;
+        new_cells[new_id] = updated;
     }
 
     // swap the old cells vector with the new one

@@ -31,7 +31,7 @@ class GeneralVector
                   const SharedPtr<mesh::PMesh>& mesh,
                   std::array<Component, 3>& components);
 
-    /// TODO: impelement this.
+    /// TODO: implement this.
     GeneralVector(std::string name,
                   const SharedPtr<mesh::PMesh>& mesh,
                   std::vector<Vector3d>& data);
