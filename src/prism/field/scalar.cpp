@@ -271,7 +271,7 @@ void Scalar::setGradScheme() {
             "field `{}` in `fields.json`, setting the gradient scheme to least squares.",
             this->name());
 
-        _grad_scheme = std::make_shared<gradient::LeastSquares>(this->mesh());
+        _grad_scheme = makeShared<gradient::LeastSquares>(this->mesh());
         return;
     }
 
@@ -282,7 +282,7 @@ void Scalar::setGradScheme() {
             "Scalar::setGradScheme(): setting the gradient scheme to Green-Gauss for "
             "field `{}`",
             this->name());
-        _grad_scheme = std::make_shared<gradient::GreenGauss>(this->mesh());
+        _grad_scheme = makeShared<gradient::GreenGauss>(this->mesh());
         return;
     }
 
@@ -295,7 +295,7 @@ void Scalar::setGradScheme() {
         "for field `{}`",
         this->name());
 
-    _grad_scheme = std::make_shared<gradient::LeastSquares>(this->mesh());
+    _grad_scheme = makeShared<gradient::LeastSquares>(this->mesh());
 }
 
 void Scalar::setHistorySize(std::size_t num_time_steps) {

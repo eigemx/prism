@@ -105,9 +105,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          f64 value)
     : IVector(name, mesh),
-      _x(std::make_shared<Component>(this->name() + "_x", mesh, value, VectorCoord::X)),
-      _y(std::make_shared<Component>(this->name() + "_y", mesh, value, VectorCoord::Y)),
-      _z(std::make_shared<Component>(this->name() + "_z", mesh, value, VectorCoord::Z)) {
+      _x(makeShared<Component>(this->name() + "_x", mesh, value, VectorCoord::X)),
+      _y(makeShared<Component>(this->name() + "_y", mesh, value, VectorCoord::Y)),
+      _z(makeShared<Component>(this->name() + "_z", mesh, value, VectorCoord::Z)) {
     log::debug("Creating vector field: '{}' with real value = {}", this->name(), value);
     addDefaultBoundaryHandlers();
 }
@@ -117,9 +117,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(const std::string& name
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          const Vector3d& data)
     : IVector(name, mesh),
-      _x(std::make_shared<Component>(this->name() + "_x", mesh, data[0], VectorCoord::X)),
-      _y(std::make_shared<Component>(this->name() + "_y", mesh, data[1], VectorCoord::Y)),
-      _z(std::make_shared<Component>(this->name() + "_z", mesh, data[2], VectorCoord::Z)) {
+      _x(makeShared<Component>(this->name() + "_x", mesh, data[0], VectorCoord::X)),
+      _y(makeShared<Component>(this->name() + "_y", mesh, data[1], VectorCoord::Y)),
+      _z(makeShared<Component>(this->name() + "_z", mesh, data[2], VectorCoord::Z)) {
     log::debug("Creating vector field: '{}' with uniform vector value [{}, {}, {}]",
                this->name(),
                data.x(),
@@ -133,9 +133,9 @@ GeneralVector<Component, BHManagerSetter>::GeneralVector(std::string name,
                                                          const SharedPtr<mesh::PMesh>& mesh,
                                                          std::array<Component, 3>& components)
     : IVector(std::move(name), mesh),
-      _x(std::make_shared<Component>(components[0])),
-      _y(std::make_shared<Component>(components[1])),
-      _z(std::make_shared<Component>(components[2])) {
+      _x(makeShared<Component>(components[0])),
+      _y(makeShared<Component>(components[1])),
+      _z(makeShared<Component>(components[2])) {
     log::debug("Creating vector field: '{}'", this->name());
     // check sub-fields naming consistency
     if ((_x->name() != (this->name() + "_x")) || (_y->name() != (this->name() + "_y")) ||
@@ -275,8 +275,8 @@ void GeneralVector<Component, BHManagerSetter>::initFaceData() {
             face_flux_values[face_id] = fluxAtFace(face_id);
         }
     }
-    _face_data = std::make_shared<std::vector<Vector3d>>(std::move(face_values));
-    _face_flux_data = std::make_shared<VectorXd>(std::move(face_flux_values));
+    _face_data = makeShared<std::vector<Vector3d>>(std::move(face_values));
+    _face_flux_data = makeShared<VectorXd>(std::move(face_flux_values));
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -353,7 +353,7 @@ void GeneralVector<Component, BHManagerSetter>::setFaceValues(std::vector<Vector
     }
 
     log::debug("Setting face values for field '{}'", name());
-    _face_data = std::make_shared<std::vector<Vector3d>>(std::move(values));
+    _face_data = makeShared<std::vector<Vector3d>>(std::move(values));
 }
 
 template <typename Component, typename BHManagerSetter>
@@ -372,7 +372,7 @@ void GeneralVector<Component, BHManagerSetter>::setFaceFluxValues(VectorXd value
             name());
     }
     log::debug("Setting face flux values for field '{}'", name());
-    _face_flux_data = std::make_shared<VectorXd>(std::move(values));
+    _face_flux_data = makeShared<VectorXd>(std::move(values));
 }
 
 template <typename Component, typename BHManagerSetter>

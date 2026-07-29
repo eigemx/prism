@@ -29,12 +29,12 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = std::make_shared<Scalar>("T", mesh, 300.0);
+    auto T = makeShared<Scalar>("T", mesh, 300.0);
     T->setHistorySize(2);     // enable history with a single time step in the past
     T->updatePrevTimeSteps(); // sets the initial value of the field at t = 0
 
     // diffusion coefficient
-    auto kappa = std::make_shared<Scalar>("kappa", mesh, 1e-3);
+    auto kappa = makeShared<Scalar>("kappa", mesh, 1e-3);
 
     auto dt = 2;
 

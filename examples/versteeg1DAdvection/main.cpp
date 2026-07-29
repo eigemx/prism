@@ -42,7 +42,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto T = std::make_shared<field::Scalar>("T", mesh, 0.0);
+    auto T = makeShared<field::Scalar>("T", mesh, 0.0);
 
     // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -61,8 +61,8 @@ auto main(int argc, char* argv[]) -> int {
     Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("U");
 
     log::info("Setting velocity field to {} [m/s]", inlet_velocity.norm());
-    auto U = std::make_shared<field::Velocity>("U", mesh, inlet_velocity);
-    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 0.1);
+    auto U = makeShared<field::Velocity>("U", mesh, inlet_velocity);
+    auto kappa = makeShared<field::Scalar>("kappa", mesh, 0.1);
 
     log::info("Peclet number = {}", inlet_velocity.x() * 0.2 / 0.1);
 

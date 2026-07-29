@@ -35,7 +35,7 @@ auto testPoissonWithMesh(const std::string& mesh_file_name)
     auto boundary_file = std::filesystem::path(mesh_file_name).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file_name, boundary_file).toPMesh();
 
-    auto P = std::make_shared<field::Scalar>("P", mesh, 0.0);
+    auto P = makeShared<field::Scalar>("P", mesh, 0.0);
 
     // create source term
     VectorXd src_values;
@@ -50,10 +50,10 @@ auto testPoissonWithMesh(const std::string& mesh_file_name)
         src_values[cell.id()] = src;
     }
 
-    auto c = std::make_shared<field::Tensor>("c", mesh, Matrix3d::Identity());
+    auto c = makeShared<field::Tensor>("c", mesh, Matrix3d::Identity());
 
     using laplacian = diffusion::Corrected;
-    auto source = std::make_shared<field::Scalar>("S", mesh, std::move(src_values));
+    auto source = makeShared<field::Scalar>("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport(laplacian(c, P),                               // -∇.∇p
                               source::ConstantScalar<Sign::Positive>(source) // = S

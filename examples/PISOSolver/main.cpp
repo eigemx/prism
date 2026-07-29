@@ -20,10 +20,10 @@ auto main(int argc, char* argv[]) -> int {
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {.0, .0, .0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 0.01);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {.0, .0, .0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 0.01);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     U->x()->setHistorySize(2);
     U->y()->setHistorySize(2);

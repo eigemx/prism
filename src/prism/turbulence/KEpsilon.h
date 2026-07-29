@@ -19,10 +19,12 @@ class IncompressibleKEpsilon : public IRASModel {
     auto epsilon() -> const SharedPtr<field::Scalar>&;
     auto turbulentViscosity() -> const SharedPtr<field::Scalar>&;
 
-    auto kEqn() -> eqn::Transport;
-    auto epsilonEqn() -> eqn::Transport;
+    auto equations() -> Pair<eqn::Transport, eqn::Transport>;
 
   private:
+    auto buildKEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport;
+    auto buildEpsilonEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport;
+
     void setTurbulentViscosity();
 
     f64 _c_mu = 0.09;

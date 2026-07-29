@@ -33,11 +33,11 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto T = std::make_shared<field::Scalar>("T", mesh, 200.0);
+    auto T = makeShared<field::Scalar>("T", mesh, 200.0);
     T->setHistorySize(2);
     T->updatePrevTimeSteps();
 
-    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 1e-3);
+    auto kappa = makeShared<field::Scalar>("kappa", mesh, 1e-3);
 
     auto dt = 2;
 

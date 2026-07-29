@@ -13,9 +13,9 @@ IncompressibleKEpsilon::IncompressibleKEpsilon(const SharedPtr<field::Velocity>&
                                                const SharedPtr<field::Scalar>& mu,
                                                Optional<f64> dt)
     : _mdot(mdot), _U(U), _nu(mu) {
-    _k = std::make_shared<field::Scalar>("k", mu->mesh(), 0.0);
-    _epsilon = std::make_shared<field::Scalar>("epsilon", mu->mesh(), 0.0);
-    _nu_t = std::make_shared<field::Scalar>("mu_t", mu->mesh(), 0.0);
+    _k = makeShared<field::Scalar>("k", mu->mesh(), 0.0);
+    _epsilon = makeShared<field::Scalar>("epsilon", mu->mesh(), 0.0);
+    _nu_t = makeShared<field::Scalar>("mu_t", mu->mesh(), 0.0);
 
     if (dt.has_value() && dt.value() > 0.0) {
         _is_transient = true;
@@ -30,12 +30,15 @@ void IncompressibleKEpsilon::setTurbulentViscosity() {
     _nu_t->values() = _nu_t_vals;
 }
 
-auto IncompressibleKEpsilon::kEqn() -> eqn::Transport {
+auto IncompressibleKEpsilon::equations() -> Pair<eqn::Transport, eqn::Transport> {
     setTurbulentViscosity();
     auto pk = kProductionIncompressible(_nu_t, _k, _U);
+    return {buildKEqn(pk), buildEpsilonEqn(pk)};
+}
 
+auto IncompressibleKEpsilon::buildKEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport {
     VectorXd nu_eff_k_vals = _nu->values() + (_nu_t->values() / _sigma_k);
-    auto nu_eff_k = std::make_shared<field::Scalar>("mu_eff_k", _k->mesh(), nu_eff_k_vals);
+    auto nu_eff_k = makeShared<field::Scalar>("mu_eff_k", _k->mesh(), nu_eff_k_vals);
 
     auto k_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _k),
                                 scheme::diffusion::NonCorrected(nu_eff_k, _k),
@@ -49,19 +52,16 @@ auto IncompressibleKEpsilon::kEqn() -> eqn::Transport {
     return k_eqn;
 }
 
-auto IncompressibleKEpsilon::epsilonEqn() -> eqn::Transport {
-    setTurbulentViscosity();
-    auto pk = kProductionIncompressible(_nu_t, _k, _U);
-
+auto IncompressibleKEpsilon::buildEpsilonEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport {
     VectorXd nu_eff_eps_vals = _nu->values() + (_nu_t->values() / _sigma_eps);
-    auto nu_eff_eps = std::make_shared<field::Scalar>("mu_eff_eps", _k->mesh(), nu_eff_eps_vals);
+    auto nu_eff_eps = makeShared<field::Scalar>("mu_eff_eps", _k->mesh(), nu_eff_eps_vals);
 
     auto eps_over_k = field::divide(_epsilon, _k);
 
-    auto eps_source = std::make_shared<field::Scalar>(
+    auto eps_source = makeShared<field::Scalar>(
         "eps_source", _k->mesh(), _c_eps1 * field::mul(eps_over_k, pk));
 
-    auto eps_sink = std::make_shared<field::Scalar>(
+    auto eps_sink = makeShared<field::Scalar>(
         "eps_sink", _k->mesh(), _c_eps2 * field::mul(_epsilon, eps_over_k));
 
     auto eps_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _epsilon),

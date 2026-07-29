@@ -26,7 +26,7 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = std::make_shared<field::Scalar>("temperature", mesh, 300.0);
+    auto T = makeShared<field::Scalar>("temperature", mesh, 300.0);
 
     // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -49,8 +49,8 @@ auto main(int argc, char* argv[]) -> int {
               inlet_velocity.x(),
               inlet_velocity.y(),
               inlet_velocity.z());
-    auto U = std::make_shared<field::Velocity>("U", mesh, inlet_velocity);
-    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 1e-2);
+    auto U = makeShared<field::Velocity>("U", mesh, inlet_velocity);
+    auto kappa = makeShared<field::Scalar>("kappa", mesh, 1e-2);
 
     // solve for temperature advection: ∇.(ρUT) - ∇.(κ ∇T) = 0
     // where ρ is the density and U is the velocity vector, and S is an arbitraty constant source

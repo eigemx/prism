@@ -96,7 +96,7 @@ auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
         eqn->zeroOutCoeffs();
     }
 
-    return std::make_shared<field::Tensor>("D", mesh, std::move(D_data));
+    return makeShared<field::Tensor>("D", mesh, std::move(D_data));
 }
 
 auto needsPressureReference(const SharedPtr<field::Pressure>& pprime) -> bool {
@@ -133,7 +133,7 @@ auto solvePressureEquation(SIMPLEParameters params,
 
     // pressure correction field created with same name as pressure field to get same boundary
     // conditions without having to define _pprime in fields.json file.
-    auto pprime = std::make_shared<field::Pressure>(Pressure(p->name(), p->mesh(), 0.0));
+    auto pprime = makeShared<field::Pressure>(Pressure(p->name(), p->mesh(), 0.0));
 
     // The corrector should reset to zero the correction field at every iteration and should
     // also apply a zero value at all boundaries for which a Dirichlet (fixed) boundary

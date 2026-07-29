@@ -67,14 +67,14 @@ auto BoundaryHandlersManager<BaseHandler>::getHandler(const std::string& bc) con
 template <typename BaseHandler>
 template <typename DerivedHandler>
 void BoundaryHandlersManager<BaseHandler>::addHandler() {
-    auto handler = std::make_shared<DerivedHandler>();
+    auto handler = makeShared<DerivedHandler>();
     _handler_cache.emplace(handler->name(), std::move(handler));
 }
 
 template <typename BaseHandler>
 template <typename DerivedHandler, typename... Args>
 void BoundaryHandlersManager<BaseHandler>::addHandler(Args&&... args) {
-    auto handler = std::make_shared<DerivedHandler>(std::forward<Args>(args)...);
+    auto handler = makeShared<DerivedHandler>(std::forward<Args>(args)...);
     _handler_cache.emplace(handler->name(), std::move(handler));
 }
 

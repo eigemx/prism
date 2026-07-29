@@ -45,7 +45,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto P = std::make_shared<field::Scalar>("P", mesh, 0.0);
+    auto P = makeShared<field::Scalar>("P", mesh, 0.0);
 
     // create source term
     /// TODO: use a more generic way to create source terms using mapped scalar fields
@@ -61,10 +61,10 @@ auto main(int argc, char* argv[]) -> int {
         src_values[cell.id()] = src;
     }
 
-    auto c = std::make_shared<field::Tensor>("c", mesh, Matrix3d::Identity());
+    auto c = makeShared<field::Tensor>("c", mesh, Matrix3d::Identity());
 
     using laplacian = diffusion::Corrected;
-    auto source = std::make_shared<field::Scalar>("S", mesh, std::move(src_values));
+    auto source = makeShared<field::Scalar>("S", mesh, std::move(src_values));
 
     auto eqn = eqn::Transport(laplacian(c, P),                               // -∇.∇p
                               source::ConstantScalar<Sign::Positive>(source) // = S

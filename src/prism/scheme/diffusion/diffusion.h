@@ -61,14 +61,14 @@ class Corrected
     Corrected(const SharedPtr<Kappa>& kappa,
               const SharedPtr<field::Scalar>& phi,
               SharedPtr<nonortho::INonOrthoCorrector> corrector =
-                  std::make_shared<nonortho::OverRelaxedCorrector>());
+                  makeShared<nonortho::OverRelaxedCorrector>());
 
     auto corrector() const noexcept -> const nonortho::INonOrthoCorrector& { return *_corrector; }
     auto needsCorrection() const noexcept -> bool override { return true; }
 
     template <typename Corrector>
     auto setCorrector() -> void {
-        _corrector = std::make_shared<Corrector>();
+        _corrector = makeShared<Corrector>();
     }
 
   private:
@@ -88,9 +88,9 @@ namespace detail {
 template <typename Kappa>
 auto wrapKappa(SharedPtr<Kappa> kappa) -> SharedPtr<IDiffusionCoeff> {
     if constexpr (std::is_same_v<Kappa, field::Scalar>) {
-        return std::make_shared<ScalarDiffusionCoeff>(kappa);
+        return makeShared<ScalarDiffusionCoeff>(kappa);
     } else {
-        return std::make_shared<TensorDiffusionCoeff>(kappa);
+        return makeShared<TensorDiffusionCoeff>(kappa);
     }
 }
 } // namespace detail

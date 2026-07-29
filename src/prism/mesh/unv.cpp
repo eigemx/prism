@@ -60,7 +60,7 @@ auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces
 namespace prism::mesh {
 UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
                                          const std::filesystem::path& boundary_path) {
-    _unv_mesh = std::make_unique<unvpp::Mesh>(unvpp::read(mesh_path));
+    _unv_mesh = makeUnique<unvpp::Mesh>(unvpp::read(mesh_path));
 
     // check that mesh has non-zero vertices
     if (_unv_mesh->vertices().empty()) {
@@ -74,7 +74,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
         _vertices.emplace_back(v[0], v[1], v[2]);
     }
 
-    _faces_lookup_trie = std::make_unique<FacesLookupTrie>(_unv_mesh->vertices().size());
+    _faces_lookup_trie = makeUnique<FacesLookupTrie>(_unv_mesh->vertices().size());
 
     processCells();
     processGroup();
@@ -112,7 +112,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
 auto UnvToPMeshConverter::toPMesh() -> SharedPtr<PMesh> {
     /// TODO: This makes UnvToPMeshConverter usable only once, but the user is not aware (fix).
     // move all resources to PMesh object, UnvToPMeshConverter is no longer needed
-    return std::make_shared<PMesh>(std::move(_vertices),
+    return makeShared<PMesh>(std::move(_vertices),
                                    std::move(_cells),
                                    std::move(_faces),
                                    std::move(_boundary_patches),

@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace prism {
 
@@ -38,6 +39,19 @@ using Optional = std::optional<T>;
 
 template <typename T>
 using Ref = std::reference_wrapper<T>;
+
+template <typename T1, typename T2>
+using Pair = std::pair<T1, T2>;
+
+template <typename T, typename... Args>
+auto makeShared(Args&&... args) -> SharedPtr<T> {
+    return std::make_shared<T>(std::forward<Args>(args)...);
+}
+
+template <typename T, typename... Args>
+auto makeUnique(Args&&... args) -> UniquePtr<T> {
+    return std::make_unique<T>(std::forward<Args>(args)...);
+}
 
 inline constexpr auto NullOption = std::nullopt;
 } // namespace prism

@@ -19,10 +19,12 @@ class KOmega : public IRASModel {
     auto omega() -> const SharedPtr<field::Scalar>&;
     auto turbulentViscosity() -> const SharedPtr<field::Scalar>&;
 
-    auto kEqn() -> eqn::Transport;
-    auto omegaEqn() -> eqn::Transport;
+    auto equations() -> Pair<eqn::Transport, eqn::Transport>;
 
   private:
+    auto buildKEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport;
+    auto buildOmegaEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport;
+
     auto kProduction() -> SharedPtr<field::Scalar>;
     void setViscosity();
 

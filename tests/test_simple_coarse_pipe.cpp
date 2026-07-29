@@ -47,10 +47,10 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 1e-3);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     using div = LinearUpwind;
     using laplacian = diffusion::Corrected;

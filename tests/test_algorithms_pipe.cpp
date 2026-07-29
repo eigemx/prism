@@ -34,10 +34,10 @@ TEST_CASE("SIMPLE algorithm mass conservation on coarse pipe", "[algo]") {
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 1e-3);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     using div = LinearUpwind;
     using laplacian = diffusion::Corrected;
@@ -82,10 +82,10 @@ TEST_CASE("PISO auto pRef on cavity_hex (closed domain)", "[algo]") {
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 0.01);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 0.01);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     using div = LinearUpwind;
     using lap = diffusion::Corrected;
@@ -139,10 +139,10 @@ TEST_CASE("SIMPLE ductSIMPLE (open domain, no pRef needed)", "[algo]") {
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 1e-3);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     using div = LinearUpwind;
     using laplacian = diffusion::Corrected;
@@ -187,10 +187,10 @@ TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 1e-3);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     using div = LinearUpwind;
     using laplacian = diffusion::Corrected;
@@ -243,10 +243,10 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
-    auto nu = std::make_shared<field::Scalar>("nu", mesh, 1e-3);
-    auto mdot = std::make_shared<field::Velocity>(U->clone());
+    auto U = makeShared<field::Velocity>("U", mesh, Vector3d {0, 0, 0});
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
+    auto nu = makeShared<field::Scalar>("nu", mesh, 1e-3);
+    auto mdot = makeShared<field::Velocity>(U->clone());
 
     using div = LinearUpwind;
     using laplacian = diffusion::Corrected;

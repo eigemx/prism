@@ -26,12 +26,12 @@ auto main(int argc, char* argv[]) -> int {
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
     // set up the temperature field defined over the mesh, with an initial value of 300.0 [K]
-    auto T = std::make_shared<Scalar>("T", mesh, 300.0);
+    auto T = makeShared<Scalar>("T", mesh, 300.0);
 
     // diffusion coefficient
     // Note: this does not have to be a tensor, but it is just a demonstration of how to use
     // different diffusion coefficient fields.
-    auto kappa = std::make_shared<Tensor>("kappa", mesh, Matrix3d::Identity() * 1e-5);
+    auto kappa = makeShared<Tensor>("kappa", mesh, Matrix3d::Identity() * 1e-5);
 
     auto eqn = eqn::Transport(diffusion::Corrected(kappa, T));
 

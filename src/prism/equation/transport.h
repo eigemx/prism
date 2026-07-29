@@ -97,13 +97,13 @@ Transport::Transport(Scheme&& scheme, Schemes&&... schemes)
 }
 template <typename Scheme>
 void Transport::addScheme(Scheme&& scheme) {
-    _schemes.emplace_back(std::make_shared<Scheme>(std::forward<Scheme>(scheme)));
+    _schemes.emplace_back(makeShared<Scheme>(std::forward<Scheme>(scheme)));
 }
 
 template <scheme::convection::IConvectionBased Convection>
 void Transport::addScheme(Convection&& convection) {
     log::debug("Transport::addScheme() found a convection scheme.");
-    auto conv_scheme = std::make_shared<Convection>(std::forward<Convection>(convection));
+    auto conv_scheme = makeShared<Convection>(std::forward<Convection>(convection));
     _conv_scheme = conv_scheme;
     _schemes.emplace_back(conv_scheme);
 }
@@ -111,7 +111,7 @@ void Transport::addScheme(Convection&& convection) {
 template <scheme::diffusion::IDiffusionBased Diffusion>
 void Transport::addScheme(Diffusion&& diffusion) {
     log::debug("Transport::addScheme() found a diffusion scheme.");
-    auto diff_scheme = std::make_shared<Diffusion>(std::forward<Diffusion>(diffusion));
+    auto diff_scheme = makeShared<Diffusion>(std::forward<Diffusion>(diffusion));
     _diff_scheme = diff_scheme;
     _schemes.emplace_back(diff_scheme);
 }
@@ -119,21 +119,21 @@ void Transport::addScheme(Diffusion&& diffusion) {
 template <scheme::source::IExplicitSourceBased Source>
 void Transport::addScheme(Source&& source) {
     log::debug("Transport::addScheme() found an explicit source scheme.");
-    auto src_scheme = std::make_shared<Source>(std::forward<Source>(source));
+    auto src_scheme = makeShared<Source>(std::forward<Source>(source));
     _sources.emplace_back(src_scheme);
 }
 
 template <scheme::source::IImplicitSourceBased Source>
 void Transport::addScheme(Source&& source) {
     log::debug("Transport::addScheme() found an implicit source scheme.");
-    auto src_scheme = std::make_shared<Source>(std::forward<Source>(source));
+    auto src_scheme = makeShared<Source>(std::forward<Source>(source));
     _schemes.emplace_back(src_scheme);
 }
 
 template <scheme::temporal::ITemporalBased Temporal>
 void Transport::addScheme(Temporal&& temporal) {
     log::debug("Transport::addScheme() found a temporal scheme.");
-    auto temp_scheme = std::make_shared<Temporal>(std::forward<Temporal>(temporal));
+    auto temp_scheme = makeShared<Temporal>(std::forward<Temporal>(temporal));
     _schemes.emplace_back(temp_scheme);
     _is_transient = true;
 }

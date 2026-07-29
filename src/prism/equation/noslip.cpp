@@ -8,7 +8,7 @@ namespace prism::eqn::boundary {
 
 namespace {
 auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& Ub, const Vector3d& n)
-    -> std::pair<f64, f64> {
+    -> Pair<f64, f64> {
     // n
     f64 nx = n.x();
     f64 ny = n.y();

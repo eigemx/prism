@@ -32,7 +32,7 @@ class UnvToPMeshConverter : public ToPMeshConverter {
     // we use the bool value to check if the faces is an "orphan" boundary face (a boundary face
     // that has no boundary patch defined in the input mesh), "true" means that the face is
     // located in a well defined boundary patch, and "false" otherwise.
-    using BoundaryFaceData = std::pair<std::size_t, bool>;
+    using BoundaryFaceData = Pair<std::size_t, bool>;
 
     // maps a boundary face Unv element index to BoundaryFaceData defined above
     using UnvIndexToBFaceDataMap = std::map<std::size_t, BoundaryFaceData>;

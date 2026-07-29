@@ -34,7 +34,7 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto T = std::make_shared<field::Scalar>("T", mesh, 0.0);
+    auto T = makeShared<field::Scalar>("T", mesh, 0.0);
 
     // set up a uniform velocity field defined over the mesh
     // set the velocity of the field to be the same as the inlet value
@@ -46,8 +46,8 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
     // Set a uniform velocity field, with value equal to inlet velocity;
     Vector3d inlet_velocity = inlet_patch->getVectorBoundaryCondition("U");
 
-    auto U = std::make_shared<field::Velocity>("U", mesh, inlet_velocity);
-    auto kappa = std::make_shared<field::Scalar>("kappa", mesh, 0.1);
+    auto U = makeShared<field::Velocity>("U", mesh, inlet_velocity);
+    auto kappa = makeShared<field::Scalar>("kappa", mesh, 0.1);
 
     using div = scheme::convection::Upwind;
     using laplacian = scheme::diffusion::NonCorrected;

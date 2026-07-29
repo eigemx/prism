@@ -1,7 +1,5 @@
 #include "KOmega.h"
 
-#include <memory>
-
 #include "prism/scheme/source/constant_scalar.h"
 #include "prism/scheme/temporal/adam_moulton.h"
 
@@ -12,10 +10,10 @@ KOmega::KOmega(const SharedPtr<field::Density>& rho,
                const SharedPtr<field::Scalar>& mu,
                f64 dt)
     : _rho(rho), _mdot(mdot), _U(U), _mu(mu), _dt(dt) {
-    _k = std::make_shared<field::Scalar>("k", mu->mesh(), 0.0);
-    _omega = std::make_shared<field::Scalar>("omega", mu->mesh(), 0.0);
-    _mu_t = std::make_shared<field::Scalar>("mu_t", mu->mesh(), 0.0);
-    _mu_eff = std::make_shared<field::Scalar>("mu_eff", mu->mesh(), 0.0);
+    _k = makeShared<field::Scalar>("k", mu->mesh(), 0.0);
+    _omega = makeShared<field::Scalar>("omega", mu->mesh(), 0.0);
+    _mu_t = makeShared<field::Scalar>("mu_t", mu->mesh(), 0.0);
+    _mu_eff = makeShared<field::Scalar>("mu_eff", mu->mesh(), 0.0);
 
     if (dt > 0.0) {
         _is_transient = true;
@@ -28,11 +26,15 @@ void KOmega::setViscosity() {
     _mu_eff->values() = mu_t_vals + _mu->values();
 }
 
-auto KOmega::kEqn() -> eqn::Transport {
+auto KOmega::equations() -> Pair<eqn::Transport, eqn::Transport> {
     setViscosity();
     auto pk = kProduction();
+    return {buildKEqn(pk), buildOmegaEqn(pk)};
+}
+
+auto KOmega::buildKEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport {
     auto sk_values = field::mul(_rho, _k, _omega);
-    auto sk = std::make_shared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
+    auto sk = makeShared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
     auto k_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _k),
                                 scheme::diffusion::NonCorrected(_mu_eff, _k),
                                 scheme::source::ConstantScalar<Sign::Positive>(pk),
@@ -45,13 +47,10 @@ auto KOmega::kEqn() -> eqn::Transport {
     return k_eqn;
 }
 
-auto KOmega::omegaEqn() -> eqn::Transport {
-    setViscosity();
-    auto pk = kProduction();
-
+auto KOmega::buildOmegaEqn(const SharedPtr<field::Scalar>& pk) -> eqn::Transport {
     VectorXd sk_values = _c_alpha1 * field::mul(field::divide(_omega, _k), pk);
     sk_values -= _c_beta1 * field::mul(_rho, _omega, _omega);
-    auto sk = std::make_shared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
+    auto sk = makeShared<field::Scalar>("sk", _k->mesh(), _beta_star * sk_values);
     auto omega_eqn = eqn::Transport(scheme::convection::LinearUpwind(_mdot, _omega),
                                     scheme::diffusion::NonCorrected(_mu_eff, _omega),
                                     scheme::source::ConstantScalar<Sign::Positive>(sk));

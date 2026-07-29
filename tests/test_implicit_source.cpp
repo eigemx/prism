@@ -40,8 +40,8 @@ TEST_CASE("test implicit source", "[implicit-source]") {
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    auto y = std::make_shared<field::Scalar>("y", mesh, 0.0);
-    auto c = std::make_shared<field::Scalar>("c", mesh, 1.0);
+    auto y = makeShared<field::Scalar>("y", mesh, 0.0);
+    auto c = makeShared<field::Scalar>("c", mesh, 1.0);
 
     using laplacian = diffusion::NonCorrected;
 

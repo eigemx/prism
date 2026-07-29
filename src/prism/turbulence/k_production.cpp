@@ -21,7 +21,7 @@ auto kProductionIncompressible(const SharedPtr<field::Scalar>& nu_t,
         pk_vals[i] = ops::doubleContraction(tau_r, gradU);
     }
 
-    return std::make_shared<field::Scalar>("Pk", mesh, std::move(pk_vals));
+    return makeShared<field::Scalar>("Pk", mesh, std::move(pk_vals));
 }
 
 auto kProductionCompressible(const SharedPtr<field::Scalar>& mu_t,
@@ -45,7 +45,7 @@ auto kProductionCompressible(const SharedPtr<field::Scalar>& mu_t,
         pk_vals[i] = ops::doubleContraction(tau_r, gradU);
     }
 
-    return std::make_shared<field::Scalar>("Pk", mesh, std::move(pk_vals));
+    return makeShared<field::Scalar>("Pk", mesh, std::move(pk_vals));
 }
 
 } // namespace prism::turbulence

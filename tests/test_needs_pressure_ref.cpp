@@ -11,7 +11,7 @@ TEST_CASE("needsPressureReference cavity_hex (all zero-gradient) returns true", 
     auto boundary_file = mesh_file.parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
     REQUIRE(algo::needsPressureReference(p));
 }
 
@@ -22,7 +22,7 @@ TEST_CASE("needsPressureReference coarsePipeHex (fixed outlet) returns false", "
     auto boundary_file = mesh_file.parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
     REQUIRE_FALSE(algo::needsPressureReference(p));
 }
 
@@ -33,6 +33,6 @@ TEST_CASE("needsPressureReference ductSIMPLE (fixed outlet) returns false", "[al
     auto boundary_file = mesh_file.parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    auto p = std::make_shared<field::Pressure>("P", mesh, 0.0);
+    auto p = makeShared<field::Pressure>("P", mesh, 0.0);
     REQUIRE_FALSE(algo::needsPressureReference(p));
 }
