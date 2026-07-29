@@ -51,5 +51,6 @@ add_library(prism
     algorithm/PRIME.cpp
     algorithm/PISO.cpp
 
+    turbulence/k_production.cpp
     turbulence/KEpsilon.cpp
 )
