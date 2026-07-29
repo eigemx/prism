@@ -2,8 +2,6 @@
 
 #include <fmt/format.h>
 
-#include <cmath>
-
 #include "prism/field/scalar.h"
 #include "prism/field/tensor.h"
 #include "prism/field/vector.h"

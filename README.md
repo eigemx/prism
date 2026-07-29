@@ -8,7 +8,7 @@ Prism is a C++20 library for solving partial differential equations (PDEs) using
 - Support for non-orthogonal correction for diffusion scheme.
 - Central difference, Upwind, Second-order upwind, QUICK and high-resolution (TVD) schemes.
 - Support for explicit and implicit source terms.
-- Support for implicit transiet schemes such as Backward Euler (first order) and Adam-Moulton (second order).
+- Support for implicit transient schemes such as Backward Euler (first order) and Adam-Moulton (second order).
 - Support for user defined boundary conditions (with many default boundary conditions available such as Fixed, FixedGradient, Symmetric, Outlet, ...).
 - Exporting results to VTU format (right now supporting meshes with hexahedral, tetrahedral and pyramidal cells only).
 - and much more...
