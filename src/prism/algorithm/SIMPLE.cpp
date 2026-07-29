@@ -48,6 +48,11 @@ void constrainPPrime(SharedPtr<field::Pressure>& pprime) {
         const auto& bc = patch.getBoundaryCondition("P");
         const auto& handler = pprime->boundaryHandlersManager().getHandler(bc.kindString());
 
+        if (handler == nullptr) {
+            throw error::NonImplementedBoundaryCondition(
+                "prism::algo::constrainPPrime()", patch.name(), bc.kindString());
+        }
+
         if (handler->isDirichlet() || handler->name() == "symmetry") {
             for (const auto& face_id : patch.facesIds()) {
                 face_values[face_id] = 0.0;
