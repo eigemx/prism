@@ -3,7 +3,6 @@
 #include <fmt/format.h>
 
 #include <cstddef>
-#include <memory>
 #include <stdexcept>
 
 #include "prism/equation/transport.h"
@@ -210,25 +209,18 @@ void correctFields(SharedPtr<field::Velocity>& U,
                    SharedPtr<field::Pressure>& pprime,
                    double pressure_urf) {
     // update velocity field
-    U->mapCellValues([&](const mesh::Cell& cell) {
-        /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
-        /// stack-use-after-return errors. This might be related to how temporaries are handled
-        /// in complex expressions. Note: This issue only appears in debug mode with
-        /// AddressSanitizer, not in release mode.
-        Vector3d update =
-            U->valueAtCell(cell) - (D->valueAtCellRef(cell) * pprime->gradAtCell(cell));
-        return update;
+    U->mapCellValues([&](const mesh::Cell& cell) -> Vector3d {
+        // Eigen's lazy expression templates hold references to temporaries.
+        // Without `-> Vector3d`, the lambda would return an expression
+        // template with dangling references after temporaries are destroyed,
+        // causing stack-use-after-return errors under AddressSanitizer.
+        return U->valueAtCell(cell) - (D->valueAtCellRef(cell) * pprime->gradAtCell(cell));
     });
 
     // update mass flow rate at interior faces
-    mdot->mapInteriorFaceValues([&](const mesh::Face& face) {
-        /// TODO: Investigate why explicitly creating a Vector3d object here is necessary to avoid
-        /// stack-use-after-return errors. This might be related to how temporaries are handled
-        /// in complex expressions. Note: This issue only appears in debug mode with
-        /// AddressSanitizer, not in release mode.
-        Vector3d update =
-            mdot->valueAtFace(face) - (D->valueAtFace(face) * pprime->gradAtFace(face));
-        return update;
+    mdot->mapInteriorFaceValues([&](const mesh::Face& face) -> Vector3d {
+        // Same as above, we need to return a Vector3d to avoid dangling references.
+        return mdot->valueAtFace(face) - (D->valueAtFace(face) * pprime->gradAtFace(face));
     });
 
     // update pressure
