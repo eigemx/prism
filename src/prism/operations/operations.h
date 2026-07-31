@@ -11,53 +11,70 @@
 
 namespace prism::ops {
 
-///
-/// @brief      Divergence of a vector field: \f$ \nabla \cdot \mathbf{U} \f$
-///
-/// Computed via the Green-Gauss theorem:
-/// \f$ \int (\nabla \cdot \mathbf{U}) dV = \oint \mathbf{U} \cdot d\mathbf{S} \f$
-///
-/// @param U    Vector field (must support fluxAtFace)
-/// @return     Scalar field \f$ \nabla \cdot \mathbf{U} \f$
-///
+/** @brief Divergence of a vector field: \f$ \nabla \cdot \mathbf{U} \f$.
+ *
+ * Computed via the Green-Gauss theorem:
+ * \f$ \int (\nabla \cdot \mathbf{U}) dV = \oint \mathbf{U} \cdot d\mathbf{S} \f$
+ *
+ * @param U Vector field (must support fluxAtFace).
+ * @return Scalar field \f$ \nabla \cdot \mathbf{U} \f$. */
 template <typename Vector>
 auto div(const Vector& U) -> field::Scalar;
 
-///
-/// @brief      Single component of the gradient of a scalar field
-///
-/// Extracts one coordinate (X, Y, or Z) of \f$ \nabla \phi \f$ as a Scalar field.
-///
-/// @param field   Scalar field whose gradient is computed
-/// @param coord   Which component to extract (VectorCoord::X / Y / Z)
-/// @return        Scalar field containing \f$ \partial \phi / \partial x_i \f$
-///
+/** @brief Single component of the gradient of a scalar field.
+ *
+ * Extracts one coordinate (X, Y, or Z) of \f$ \nabla \phi \f$ as a Scalar field.
+ *
+ * @param field Scalar field whose gradient is computed.
+ * @param coord Which component to extract (VectorCoord::X / Y / Z).
+ * @return Scalar field containing \f$ \partial \phi / \partial x_i \f$. */
 template <field::IScalarBased Field>
 auto grad(Field& field, VectorCoord coord) -> field::Scalar;
 
-///
-/// @brief      Gradient of a scalar field as a Vector field
-///
-/// Combines all three components of \f$ \nabla \phi \f$ into a Vector field.
-/// Equivalent to calling grad(field, X), grad(field, Y), grad(field, Z).
-///
-/// @param field   Scalar field
-/// @return        Vector field \f$ \nabla \phi \f$
-///
+/** @brief Gradient of a scalar field as a Vector field.
+ *
+ * Combines all three components of \f$ \nabla \phi \f$ into a Vector field.
+ * Equivalent to calling grad(field, X), grad(field, Y), grad(field, Z).
+ *
+ * @param field Scalar field.
+ * @return Vector field \f$ \nabla \phi \f$. */
 template <field::IScalarBased Field>
 auto grad(Field& field) -> field::Vector;
 
-///
-/// @brief      Velocity gradient tensor as a full Tensor field
-///
-/// One 3×3 matrix per cell. Equivalent to calling velocityGradientAtCell()
-/// on every cell in the mesh.
-///
-/// @param U    Vector field
-/// @return     Tensor field \f$ \nabla \mathbf{U} \f$
-///
+/** @brief Velocity gradient tensor as a full Tensor field.
+ *
+ * One 3×3 matrix per cell. Equivalent to calling velocityGradientAtCell()
+ * on every cell in the mesh.
+ *
+ * @param U Vector field.
+ * @return Tensor field \f$ \nabla \mathbf{U} \f$. */
 template <typename VectorType>
 auto grad(const VectorType& U) -> field::Tensor;
+
+/** @brief Symmetric part of a tensor: \f$ \frac{1}{2}(A + A^T) \f$.
+ *
+ * @param A The tensor.
+ * @return The symmetric part of A. */
+inline auto symm(const Tensor3d& A) -> Tensor3d;
+
+/** @brief Twice the symmetric part of a tensor: \f$ A + A^T \f$.
+ *
+ * @param A The tensor.
+ * @return A + A^T. */
+inline auto twoSymm(const Tensor3d& A) -> Tensor3d;
+
+/** @brief Deviatoric part of a tensor: \f$ A - \frac{tr(A)}{3} I \f$.
+ *
+ * @param A The tensor.
+ * @return The deviatoric part of A. */
+inline auto dev(const Tensor3d& A) -> Tensor3d;
+
+/** @brief Double contraction of two tensors: \f$ A : B = \sum_{ij} A_{ij} B_{ij} \f$.
+ *
+ * @param A First tensor.
+ * @param B Second tensor.
+ * @return The double contraction of A and B. */
+inline auto doubleContraction(const Tensor3d& A, const Tensor3d& B) -> f64;
 
 namespace detail {
 template <typename Vector>
@@ -164,11 +181,6 @@ auto grad(const VectorType& U) -> field::Tensor {
 
     return field::Tensor(fmt::format("grad({})", U.name()), mesh, std::move(data));
 }
-
-//
-// Tensor algebra — free functions operating on Tensor3d
-// Mirroring OpenFOAM's global functions: symm(), twoSymm(), dev(), etc.
-//
 
 inline auto symm(const Tensor3d& A) -> Tensor3d {
     return 0.5 * (A + A.transpose());
