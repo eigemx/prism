@@ -25,11 +25,11 @@ auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> mo
     for (auto* eqn : momentum_predictors) {
         auto result =
             momentum_solver.solve(*eqn, controls.momentum_max_iter, controls.momentum_residual);
-        reports.push_back({eqn->field()->name(),
-                           result.iteration(),
-                           result.initialResidual(),
-                           result.finalResidual(),
-                           result.hasConverged()});
+        reports.push_back({.field_name = eqn->field()->name(),
+                           .n_iterations = result.iteration(),
+                           .initial_residual = result.initialResidual(),
+                           .final_residual = result.finalResidual(),
+                           .converged = result.hasConverged()});
     }
     return reports;
 }

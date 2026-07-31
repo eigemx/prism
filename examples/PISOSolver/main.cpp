@@ -31,7 +31,7 @@ auto main(int argc, char* argv[]) -> int {
     U->y()->updatePrevTimeSteps();
 
     f64 dt = 0.005;
-    f64 endTime = 0.5;
+    f64 endTime = 1.0;
     int nTs = int(endTime / dt);
 
     using div = LinearUpwind;
@@ -61,6 +61,11 @@ auto main(int argc, char* argv[]) -> int {
     controls.pressure_urf = 0.3;
 
     f64 time = 0.0;
+
+    output::TimeWriter writer("result", /*interval=*/2, output::WriteMode::Ascii);
+    writer.add(p);
+    writer.add(U);
+
     for (int ts = 0; ts < nTs; ++ts) {
         time = (ts + 1) * dt;
         log::info("t={:.5f}  |U|max={:.4e}  |p|max={:.4e}",
@@ -75,10 +80,8 @@ auto main(int argc, char* argv[]) -> int {
         }
         U->x()->updatePrevTimeSteps();
         U->y()->updatePrevTimeSteps();
+        writer.writeAndAdvance(dt);
     }
-    exportToVTU(*(U->x()), "solution_x.vtu");
-    exportToVTU(*(U->y()), "solution_y.vtu");
-    exportToVTU(*p, "pressure.vtu");
 
     return 0;
 }

@@ -76,7 +76,7 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    exportToVTU(*(U->x()), "solution_x.vtu");
-    exportToVTU(*(U->y()), "solution_y.vtu");
-    exportToVTU(*p, "pressure.vtu");
+    auto scalars = std::vector<const field::IScalar*> {p.get(), nu.get()};
+    auto vectors = std::vector<const field::IVector*> {U.get()};
+    output::toVtu(scalars, vectors, {}, "solution.vtu");
 }

@@ -83,12 +83,12 @@ auto main(int argc, char* argv[]) -> int {
                   eqn.field()->name());
     }
 
-    prism::exportToVTU(*P, "solution.vtu");
-    prism::exportToVTU(solution(mesh), "analytical.vtu");
+    prism::output::toVtu(*P, "solution.vtu");
+    prism::output::toVtu(solution(mesh), "analytical.vtu");
 
     VectorXd diff = P->values() - solution(mesh).values();
     auto diff_field = field::Scalar("diff", mesh, diff);
-    prism::exportToVTU(diff_field, "diff.vtu");
+    prism::output::toVtu(diff_field, "diff.vtu");
 
     fmt::print("relative l2-norm: {}\n", l2NormRelative(P->values(), solution(mesh).values()));
 
@@ -103,10 +103,10 @@ auto main(int argc, char* argv[]) -> int {
         grad_p_anal_y.values()[cell.id()] = -PI * std::sin(x * PI) * std::sin(y * PI);
     }
 
-    prism::exportToVTU(grad_p_anal_x, "grad_p_anal_x.vtu");
-    prism::exportToVTU(grad_p_anal_y, "grad_p_anal_y.vtu");
-    prism::exportToVTU(ops::grad(*P, VectorCoord::X), "grad_p_x.vtu");
-    prism::exportToVTU(ops::grad(*P, VectorCoord::Y), "grad_p_y.vtu");
+    prism::output::toVtu(grad_p_anal_x, "grad_p_anal_x.vtu");
+    prism::output::toVtu(grad_p_anal_y, "grad_p_anal_y.vtu");
+    prism::output::toVtu(ops::grad(*P, VectorCoord::X), "grad_p_x.vtu");
+    prism::output::toVtu(ops::grad(*P, VectorCoord::Y), "grad_p_y.vtu");
 
     // print relative l2-norm of the analytical solution for each pressure gradient component
     fmt::print("relative l2-norm of the analytical solution for grad_p_x: {}\n",

@@ -66,7 +66,7 @@ auto main(int argc, char* argv[]) -> int {
         log::info("T_prev = {}", T->prevValues()->get().mean());
         log::info("T_prev_prev = {}", T->prevPrevValues()->get().mean());
     }
-    prism::exportToVTU(*(eqn.field()), "solution.vtu");
+    prism::output::toVtu(*(eqn.field()), "solution.vtu");
 
     return 0;
 }

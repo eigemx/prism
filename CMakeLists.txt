@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(
     prism
     LANGUAGES CXX
-    VERSION 0.0.1
+    VERSION 0.1.0
     DESCRIPTION "A C++ CFD library based on the finite volume method"
 )
 

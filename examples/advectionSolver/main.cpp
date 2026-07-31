@@ -76,12 +76,12 @@ auto main(int argc, char* argv[]) -> int {
                   eqn.field()->name());
     }
 
-    prism::exportToVTU(*eqn.field(), "solution.vtu");
+    prism::output::toVtu(*eqn.field(), "solution.vtu");
 
     auto div_U = ops::div(*U);
-    prism::exportToVTU(div_U, "div.vtu");
+    prism::output::toVtu(div_U, "div.vtu");
 
-    exportToVTU(*(U->x()), "U_x.vtu");
-    exportToVTU(*(U->y()), "U_y.vtu");
+    prism::output::toVtu(*(U->x()), "U_x.vtu");
+    prism::output::toVtu(*(U->y()), "U_y.vtu");
     return 0;
 }
