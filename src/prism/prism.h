@@ -17,6 +17,7 @@
 #include "mesh/pmesh.h"
 #include "mesh/reorder.h"
 #include "mesh/unv.h"
+#include "monitor/courant.h"
 #include "numerics/bicgstab.h"
 #include "numerics/jacobi.h"
 #include "numerics/solver.h"

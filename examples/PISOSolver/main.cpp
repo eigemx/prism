@@ -1,4 +1,5 @@
 #include <prism/algorithm/PISO.h>
+#include <prism/monitor/courant.h>
 #include <prism/prism.h>
 #include <prism/scheme/temporal/adam_moulton.h>
 
@@ -62,8 +63,10 @@ auto main(int argc, char* argv[]) -> int {
 
     for (size_t ts = 0; ts < n_time_steps; ++ts) {
         time = (ts + 1) * dt;
-        log::info("t={:.5f}  |U|max={:.4e}  |p|max={:.4e}",
+        auto co = monitor::courantNumber(*mdot, dt);
+        log::info("t={:.5f}  Co|max={:.4e}  |U|max={:.4e}  |p|max={:.4e}",
                   time,
+                  co.values().maxCoeff(),
                   U->x()->values().lpNorm<Eigen::Infinity>(),
                   p->values().lpNorm<Eigen::Infinity>());
         auto reps = algo::PISO(controls).step(std::span<eqn::Momentum*>(meq), U, mdot, p);

@@ -42,6 +42,8 @@ add_library(prism
     gradient/green_gauss.cpp
     gradient/least_squares.cpp
 
+    monitor/courant.cpp
+
     operations/rhie_chow.cpp
 
     algorithm/SIMPLE.cpp
