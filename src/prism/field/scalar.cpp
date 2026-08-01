@@ -257,14 +257,21 @@ void Scalar::setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme) {
 }
 
 void Scalar::setGradScheme() {
+    // Vector field components resolve the gradient scheme from their parent field, so a
+    // `gradScheme` declared for e.g. `U` in `fields.json` applies to `U_x`, `U_y` and `U_z`.
+    auto lookup_name = name();
+    if (_coord.has_value()) {
+        // Component names are `{parent}_x`, `{parent}_y` or `{parent}_z` (enforced by
+        // GeneralVector), so stripping the trailing two characters yields the parent name.
+        lookup_name = name().substr(0, name().size() - 2);
+    }
+
     // did user specify gradient scheme for the field in `fields.json`?
     auto field_infos = this->mesh()->fieldsInfo();
-    auto it = std::find_if(field_infos.begin(), field_infos.end(), [this](const auto& fi) {
-        return fi.name() == this->name() && fi.gradScheme().has_value();
+    auto it = std::find_if(field_infos.begin(), field_infos.end(), [&lookup_name](const auto& fi) {
+        return fi.name() == lookup_name && fi.gradScheme().has_value();
     });
 
-    /// TODO: this is buggy, it doesn't find the grad scheme defined in fields.json for the
-    // field, also does not consider vector fields.
     if (it == field_infos.end()) {
         log::debug(
             "Scalar::setGradScheme(): couldn't find a specified gradient scheme for "
@@ -286,9 +293,6 @@ void Scalar::setGradScheme() {
         return;
     }
 
-    /// TODO: if scalar field is a component of a vector field, prism should get the grad scheme
-    /// type from it's parent field, and we should also implement setGradScheme(scheme) for vector
-    /// field type.
 
     log::debug(
         "Scalar::setGradScheme(): setting the gradient scheme to Least-Squares "

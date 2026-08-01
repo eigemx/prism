@@ -47,8 +47,9 @@ auto main(int argc, char* argv[]) -> int {
                               lap(nu, U->y()),
                               grad(p, VectorCoord::Y));
 
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
+    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
+    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
+
     uEqn.setUnderRelaxFactor(0.7);
     vEqn.setUnderRelaxFactor(0.7);
     std::vector<eqn::Momentum*> meq {&uEqn, &vEqn};

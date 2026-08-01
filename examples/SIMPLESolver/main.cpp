@@ -50,13 +50,9 @@ auto main(int argc, char* argv[]) -> int {
                               grad(p, VectorCoord::Y) // = -∂p/∂y
     );
 
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
+    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
+    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
     uEqn.setUnderRelaxFactor(controls.momentum_urf);
     vEqn.setUnderRelaxFactor(controls.momentum_urf);

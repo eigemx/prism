@@ -46,13 +46,6 @@ TEST_CASE("SIMPLE algorithm mass conservation on coarse pipe", "[algo]") {
     auto uEqn = eqn::Momentum(div(mdot, U->x()), laplacian(nu, U->x()), grad(p, VectorCoord::X));
     auto vEqn = eqn::Momentum(div(mdot, U->y()), laplacian(nu, U->y()), grad(p, VectorCoord::Y));
 
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
-
     algo::SIMPLEControls controls;
     uEqn.setUnderRelaxFactor(controls.momentum_urf);
     vEqn.setUnderRelaxFactor(controls.momentum_urf);
@@ -106,8 +99,6 @@ TEST_CASE("PISO auto pRef on cavity_hex (closed domain)", "[algo]") {
                               lap(nu, U->y()),
                               grad(p, VectorCoord::Y));
 
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
     uEqn.setUnderRelaxFactor(0.7);
     vEqn.setUnderRelaxFactor(0.7);
     std::vector<eqn::Momentum*> meq {&uEqn, &vEqn};
@@ -151,12 +142,8 @@ TEST_CASE("SIMPLE ductSIMPLE (open domain, no pRef needed)", "[algo]") {
     auto uEqn = eqn::Momentum(div(mdot, U->x()), laplacian(nu, U->x()), grad(p, VectorCoord::X));
     auto vEqn = eqn::Momentum(div(mdot, U->y()), laplacian(nu, U->y()), grad(p, VectorCoord::Y));
 
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
+    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
+    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
     algo::SIMPLEControls controls;
     uEqn.setUnderRelaxFactor(controls.momentum_urf);
@@ -198,13 +185,6 @@ TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
 
     auto uEqn = eqn::Momentum(div(mdot, U->x()), laplacian(nu, U->x()), grad(p, VectorCoord::X));
     auto vEqn = eqn::Momentum(div(mdot, U->y()), laplacian(nu, U->y()), grad(p, VectorCoord::Y));
-
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
     uEqn.setUnderRelaxFactor(0.7);
     vEqn.setUnderRelaxFactor(0.7);
@@ -254,13 +234,6 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
 
     auto uEqn = eqn::Momentum(div(mdot, U->x()), laplacian(nu, U->x()), grad(p, VectorCoord::X));
     auto vEqn = eqn::Momentum(div(mdot, U->y()), laplacian(nu, U->y()), grad(p, VectorCoord::Y));
-
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::NoSlip<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Momentum>>();
-    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Outlet<eqn::Momentum>>();
 
     uEqn.setUnderRelaxFactor(0.7);
     vEqn.setUnderRelaxFactor(0.7);

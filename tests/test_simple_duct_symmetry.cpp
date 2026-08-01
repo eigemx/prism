@@ -37,12 +37,13 @@ auto l2NormRel(const prism::VectorXd& x, const prism::VectorXd& x_ref) -> double
 
 } // anonymous namespace
 
-TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
+TEST_CASE("SIMPLE on non-orthogonal duct with symmetry matches OpenFOAM",
+          "[SIMPLESolver][symmetry]") {
     using namespace prism;
     using namespace prism::scheme;
     using namespace prism::scheme::convection;
 
-    auto mesh_file = std::filesystem::path("tests/cases/coarsePipeHex/mesh.unv");
+    auto mesh_file = std::filesystem::path("tests/cases/ductSIMPLE/mesh.unv");
     auto boundary_file = mesh_file.parent_path() / "fields.json";
 
     auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
@@ -59,13 +60,16 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
     auto uEqn = eqn::Momentum(div(mdot, U->x()), laplacian(nu, U->x()), grad(p, VectorCoord::X));
     auto vEqn = eqn::Momentum(div(mdot, U->y()), laplacian(nu, U->y()), grad(p, VectorCoord::Y));
 
+    uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
+    vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
+
     algo::SIMPLEControls controls;
     uEqn.setUnderRelaxFactor(controls.momentum_urf);
     vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
-    auto nOuterIter = 200;
+    auto nOuterIter = 500;
     for (int iter = 0; iter < nOuterIter; ++iter) {
         algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
@@ -76,21 +80,21 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
     // Compare pressure
     double p_error = l2NormRel(p->values(), p_ref);
     INFO("Pressure relative L2 error: " << p_error);
-    REQUIRE(p_error < 0.01);
+    REQUIRE(p_error < 0.04);
 
-    // Compare Ux component
+    // Compare Ux component (near the symmetry plane)
     VectorXd Ux_computed = U->x()->values();
     VectorXd Ux_ref(mesh->cellCount());
     for (size_t i = 0; i < mesh->cellCount(); ++i) Ux_ref(i) = U_ref[i].x();
     double Ux_error = l2NormRel(Ux_computed, Ux_ref);
     INFO("Ux relative L2 error: " << Ux_error);
-    REQUIRE(Ux_error < 0.01);
+    REQUIRE(Ux_error < 0.1);
 
-    // Compare Uy component
+    // Compare Uy component (primary flow direction)
     VectorXd Uy_computed = U->y()->values();
     VectorXd Uy_ref(mesh->cellCount());
     for (size_t i = 0; i < mesh->cellCount(); ++i) Uy_ref(i) = U_ref[i].y();
     double Uy_error = l2NormRel(Uy_computed, Uy_ref);
     INFO("Uy relative L2 error: " << Uy_error);
-    REQUIRE(Uy_error < 0.1);
+    REQUIRE(Uy_error < 0.01);
 }

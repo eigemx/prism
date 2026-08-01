@@ -1,12 +1,8 @@
-#include <utility>
-
 #include "boundary.h"
 #include "prism/equation/transport.h"
 #include "prism/types.h"
 
 namespace prism::eqn::boundary {
-/// TODO: many logic here is copied from the NoSlip boundary condition, we should refactor it to
-/// avoid code duplication.
 
 namespace {
 auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n) -> Pair<f64, f64> {
@@ -46,7 +42,16 @@ auto contribution(VectorCoord coord, const Vector3d& Uc, const Vector3d& n) -> P
 }
 } // namespace
 
-void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) {
+/** @brief Applies the symmetry-plane momentum constraint (Moukalled et al., Eqn 15.154).
+ *
+ * For each symmetry face, adds the wall-normal diagonal contribution g*ac and the
+ * cross-component rhs contribution -g*b to the momentum equation of the owner cell.
+ * The diffusion scheme's symmetry handler is a no-op, so this is the sole matrix
+ * treatment at symmetry patches.
+ *
+ * @param eqn The momentum equation to modify.
+ * @param patch The symmetry boundary patch. */
+void Symmetry<Transport>::apply(Transport& eqn, const mesh::BoundaryPatch& patch) {
     auto field = eqn.field();
     const auto& mesh = eqn.field()->mesh();
 
@@ -70,7 +75,9 @@ void Symmetry<Momentum>::apply(Momentum& eqn, const mesh::BoundaryPatch& patch) 
         Vector3d Uc = U->valueAtCell(owner);
 
         Vector3d Sf = face.areaVector();
-        f64 g = 2 * mu->multiply(Sf, face).norm() / d_normal;
+        // use the owner-cell diffusion coefficient, consistent with the diffusion scheme's
+        // boundary treatment (the coefficient field is not required to have boundary conditions).
+        f64 g = 2 * mu->multiply(Sf, owner).norm() / d_normal;
         auto [ac, b] = contribution(field->coord().value(), Uc, n);
 
         sys.insert(owner_id, owner_id, g * ac);

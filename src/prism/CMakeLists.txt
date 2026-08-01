@@ -2,9 +2,7 @@ add_library(prism
     linear.cpp
 
     equation/transport.cpp
-    equation/noslip.cpp
     equation/symmetry.cpp
-    equation/outlet.cpp
 
     numerics/solver.cpp
     numerics/bicgstab.cpp

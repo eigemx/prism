@@ -10,6 +10,7 @@ add_executable(tests
                     test_transient_1d.cpp
                     test_solver.cpp
                     test_simple_coarse_pipe.cpp
+                    test_simple_duct_symmetry.cpp
                     test_algorithms_pipe.cpp
                     test_needs_pressure_ref.cpp
                )

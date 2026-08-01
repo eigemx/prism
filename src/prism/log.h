@@ -2,8 +2,10 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cstdint>
+
 namespace prism::log {
-enum class Level {
+enum class Level : std::uint8_t {
     Debug,
     Info,
     Warn,

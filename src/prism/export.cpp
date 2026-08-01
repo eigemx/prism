@@ -82,6 +82,7 @@ auto cellToPoint(const std::vector<f64>& cell_data, const mesh::PMesh& pmesh, si
 
     for (size_t vertex_id = 0; vertex_id < n_verts; ++vertex_id) {
         const auto& vertex_adj_cells = cache.vert_to_cells[vertex_id];
+
         if (vertex_adj_cells.empty()) {
             throw error::InvalidMesh(fmt::format(
                 "Vertex {} has no adjacent cells; point data cannot be computed.", vertex_id));
@@ -89,11 +90,13 @@ auto cellToPoint(const std::vector<f64>& cell_data, const mesh::PMesh& pmesh, si
 
         auto weights = std::vector<f64>(vertex_adj_cells.size());
         f64 sum_weights = 0.0;
+
         for (size_t i = 0; i < vertex_adj_cells.size(); ++i) {
             f64 distance_norm = (verts[vertex_id] - cache.cell_centres[vertex_adj_cells[i]]).norm();
             weights[i] = 1.0 / std::max(distance_norm, EPSILON);
             sum_weights += weights[i];
         }
+
         for (size_t i = 0; i < vertex_adj_cells.size(); ++i) {
             f64 weight_i = weights[i] / sum_weights;
             auto cell_id = vertex_adj_cells[i];
