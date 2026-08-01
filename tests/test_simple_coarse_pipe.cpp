@@ -60,8 +60,6 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
     auto vEqn = eqn::Momentum(div(mdot, U->y()), laplacian(nu, U->y()), grad(p, VectorCoord::Y));
 
     algo::SIMPLEControls controls;
-    uEqn.setUnderRelaxFactor(controls.momentum_urf);
-    vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 

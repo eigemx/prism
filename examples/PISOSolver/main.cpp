@@ -50,16 +50,12 @@ auto main(int argc, char* argv[]) -> int {
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
-    uEqn.setUnderRelaxFactor(0.7);
-    vEqn.setUnderRelaxFactor(0.7);
     std::vector<eqn::Momentum*> meq {&uEqn, &vEqn};
 
     algo::PISOControls controls;
-    controls.outer_iterations = 3;
-    controls.pressure_correction_steps = 1; // no PRIME
-    controls.non_ortho_correctors = 0;
-    controls.momentum_urf = 0.7;
-    controls.pressure_urf = 0.3;
+    controls.outer_iterations = 1;
+    controls.pressure_correction_steps = 2; // SIMPLE predictor + 1 PRIME corrector
+    controls.non_ortho_correctors = 1;
 
     f64 time = 0.0;
 

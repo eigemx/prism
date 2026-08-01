@@ -23,7 +23,8 @@ auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
     solveExplicitMomentum(momentum_predictors);
 
     // solve pressure equation
-    SIMPLEControls SIMPLE_controls {.pressure_urf = _controls.pressure_urf,
+    SIMPLEControls SIMPLE_controls {.non_ortho_correctors = _controls.non_ortho_correctors,
+                                    .pressure_urf = _controls.pressure_urf,
                                     .pressure_max_iter = _controls.pressure_max_iter,
                                     .pressure_residual = _controls.pressure_residual,
                                     .p_ref_cell = _controls.p_ref_cell,
@@ -38,8 +39,9 @@ auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
 void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors) {
     for (auto* eqn : momentum_predictors) {
         eqn->updateCoeffs();
-        eqn->relax();
 
+        // PISO corrector steps are not under-relaxed (Moukalled et al., Fig. 15.27): this is a
+        // full explicit Jacobi update U = (b - H)/aP, not a damped one.
         auto U = eqn->field();
         const auto& A = eqn->matrix();
         const auto& b = eqn->rhs();
@@ -48,7 +50,8 @@ void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors) {
         const auto H = A * U->values() - ac.cwiseProduct(U->values());
         U->values() = (-H + b).cwiseQuotient(ac);
 
-        // Keep the relaxed matrix: pressureEquationCoeffsTensor() reuses its diagonal to build D.
+        // Keep the matrix: pressureEquationCoeffsTensor() reuses its (unrelaxed) diagonal to build
+        // D, consistent with the full explicit solve.
     }
 }
 } // namespace prism::algo

@@ -64,8 +64,6 @@ TEST_CASE("SIMPLE on non-orthogonal duct with symmetry matches OpenFOAM",
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
     algo::SIMPLEControls controls;
-    uEqn.setUnderRelaxFactor(controls.momentum_urf);
-    vEqn.setUnderRelaxFactor(controls.momentum_urf);
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 

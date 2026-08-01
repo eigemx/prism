@@ -54,9 +54,6 @@ auto main(int argc, char* argv[]) -> int {
 
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
-    uEqn.setUnderRelaxFactor(controls.momentum_urf);
-    vEqn.setUnderRelaxFactor(controls.momentum_urf);
-
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {

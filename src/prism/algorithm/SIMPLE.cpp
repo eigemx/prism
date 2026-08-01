@@ -23,6 +23,8 @@ auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> mo
 
     auto momentum_solver = solver::BiCGSTAB();
     for (auto* eqn : momentum_predictors) {
+        eqn->setUnderRelaxFactor(controls.momentum_urf);
+
         // Keep the relaxed matrix after solving so pressureEquationCoeffsTensor() can reuse its
         // diagonal to build D without re-assembling the equation. So, we run solve() with
         // keep_matrix = true, and we don't need to provide a reference cell or value for momentum

@@ -34,7 +34,7 @@ struct PISOControls {
     size_t non_ortho_correctors = 2;
 
     // Under-relaxation factor for pressure field
-    f64 pressure_urf = 0.3;
+    f64 pressure_urf = 1.0;
 
     // Pressure equation inner solve() loop max. iterations count
     size_t pressure_max_iter = 5;
