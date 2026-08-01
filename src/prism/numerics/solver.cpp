@@ -28,7 +28,8 @@ auto ISolver::solve(eqn::Transport& eqn,
                     size_t n_iter,
                     f64 eps,
                     Optional<size_t> ref_cell,
-                    f64 ref_value) -> SolverResult {
+                    f64 ref_value,
+                    bool clear_coeffs) -> SolverResult {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto phi = eqn.field();
@@ -69,7 +70,9 @@ auto ISolver::solve(eqn::Transport& eqn,
             break;
         }
     }
-    eqn.zeroOutCoeffs();
+    if (clear_coeffs) {
+        eqn.zeroOutCoeffs();
+    }
 
     SolverResult data(iter, init_res, current_res);
     if (has_converged) {

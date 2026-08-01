@@ -48,7 +48,7 @@ void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors) {
         const auto H = A * U->values() - ac.cwiseProduct(U->values());
         U->values() = (-H + b).cwiseQuotient(ac);
 
-        eqn->zeroOutCoeffs();
+        // Keep the relaxed matrix: pressureEquationCoeffsTensor() reuses its diagonal to build D.
     }
 }
 } // namespace prism::algo

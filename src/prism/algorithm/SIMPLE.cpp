@@ -19,12 +19,16 @@ using field::Pressure;
 auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> momentum_predictors)
     -> std::vector<report::Entry> {
     auto reports = std::vector<report::Entry>();
-    // solve momentum equations implicitly
-    auto momentum_solver = solver::BiCGSTAB();
     log::debug("prism::algo::solveMomentumImplicitly(): solving momentum equations");
+
+    auto momentum_solver = solver::BiCGSTAB();
     for (auto* eqn : momentum_predictors) {
-        auto result =
-            momentum_solver.solve(*eqn, controls.momentum_max_iter, controls.momentum_residual);
+        // Keep the relaxed matrix after solving so pressureEquationCoeffsTensor() can reuse its
+        // diagonal to build D without re-assembling the equation. So, we run solve() with
+        // keep_matrix = true, and we don't need to provide a reference cell or value for momentum
+        // equations.
+        auto result = momentum_solver.solve(
+            *eqn, controls.momentum_max_iter, controls.momentum_residual, NullOption, 0.0, false);
         reports.push_back({.field_name = eqn->field()->name(),
                            .n_iterations = result.iteration(),
                            .initial_residual = result.initialResidual(),
@@ -70,11 +74,9 @@ void constrainPPrime(SharedPtr<field::Pressure>& pprime) {
 
 auto pressureEquationCoeffsTensor(std::span<eqn::Momentum*> momentum_predictors,
                                   const SharedPtr<field::Pressure>& p) -> SharedPtr<field::Tensor> {
-    for (auto* eqn : momentum_predictors) {
-        eqn->updateCoeffs();
-        eqn->relax();
-    }
-
+    // The momentum equations were already assembled and relaxed by the momentum phase
+    // (solveImplicitMomentum / solveExplicitMomentum, which keep the matrix for reuse here);
+    // we only need their (relaxed) diagonal to build D = V / aP.
     const auto& mesh = p->mesh();
     const VectorXd& vol_vec = mesh->cellsVolumeVector();
     const VectorXd& uEqn_diag = momentum_predictors[0]->matrix().diagonal();
