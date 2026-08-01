@@ -157,6 +157,7 @@ auto Scalar::values() const -> const VectorXd& {
 
 auto Scalar::values() -> VectorXd& {
     assert(_cell_values.size() > 0);
+    ++_event_no;
     return _cell_values;
 }
 
@@ -310,6 +311,7 @@ void Scalar::setHistorySize(std::size_t num_time_steps) {
 void Scalar::update(VectorXd values) {
     updatePrevTimeSteps();
     _cell_values = std::move(values);
+    ++_event_no;
 
     // clear face values if they exist
     if (hasFaceValues()) {
@@ -336,24 +338,22 @@ auto Scalar::getHistory(std::size_t index) const -> Optional<Ref<const VectorXd>
 }
 
 
-auto Scalar::gradAtFace(const mesh::Face& face) -> Vector3d {
+auto Scalar::gradAtFace(const mesh::Face& face) const -> Vector3d {
     return _grad_scheme->gradAtFace(face, *this);
 }
 
 
-auto Scalar::gradAtCell(const mesh::Cell& cell) -> Vector3d {
+auto Scalar::gradAtCell(const mesh::Cell& cell) const -> Vector3d {
     return _grad_scheme->gradAtCell(cell, *this);
 }
 
 
-auto Scalar::gradAtCellStored(const mesh::Cell& cell) const -> Vector3d {
-    return _grad_scheme->gradAtCellStored(cell, *this);
+auto Scalar::eventNo() const noexcept -> std::size_t {
+    return _event_no;
 }
 
 void Scalar::computeAllCellGradients() {
-    for (const auto& cell : this->mesh()->cells()) {
-        this->gradAtCell(cell);
-    }
+    _grad_scheme->computeAllCellGradients(*this);
 }
 
 
@@ -367,6 +367,7 @@ auto Scalar::operator[](std::size_t i) const -> f64 {
 auto Scalar::operator[](std::size_t i) -> f64& {
     assert(_cell_values.size() > 0);
     assert(i < _cell_values.size());
+    ++_event_no;
     return _cell_values[i];
 }
 

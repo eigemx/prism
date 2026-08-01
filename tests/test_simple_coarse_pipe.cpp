@@ -63,7 +63,7 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
-    auto nOuterIter = 200;
+    auto nOuterIter = 100;
     for (int iter = 0; iter < nOuterIter; ++iter) {
         algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);

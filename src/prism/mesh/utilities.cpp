@@ -1,7 +1,6 @@
 #include "utilities.h"
 
 #include <cassert>
-#include <cmath>
 
 namespace prism::mesh {
 /**
@@ -15,7 +14,7 @@ namespace prism::mesh {
  */
 auto outwardAreaVector(const Face& face, const Cell& cell) -> Vector3d {
     bool is_neighbor = !face.isOwnedBy(cell.id());
-    return face.areaVector() * std::pow(-1., static_cast<int>(is_neighbor));
+    return is_neighbor ? -face.areaVector() : face.areaVector();
 }
 
 /**

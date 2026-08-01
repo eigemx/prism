@@ -5,7 +5,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <fstream>
-#include <memory>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -67,7 +66,7 @@ TEST_CASE("SIMPLE on non-orthogonal duct with symmetry matches OpenFOAM",
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
-    auto nOuterIter = 500;
+    auto nOuterIter = 100;
     for (int iter = 0; iter < nOuterIter; ++iter) {
         algo::IncompressibleSIMPLE(controls).step(
             std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);

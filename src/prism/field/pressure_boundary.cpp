@@ -1,7 +1,5 @@
 #include "pressure_boundary.h"
 
-#include <cassert>
-
 #include "pressure.h"
 
 namespace prism::field::boundary::scalar {
@@ -12,7 +10,7 @@ auto Symmetry<Pressure>::get(const IScalar& field, const mesh::Face& face) -> do
     // boundary is computed as:
     // ∇pb = ∇pc - (∇pc.n)n
     const auto& owner = field.mesh()->cell(face.owner());
-    const Vector3d grad_c = field.gradAtCellStored(owner);
+    const Vector3d grad_c = field.gradAtCell(owner);
     const Vector3d grad_b = grad_c - grad_c.dot(face.normal()) * face.normal();
 
     // pb = pc + ∇pb.dCb

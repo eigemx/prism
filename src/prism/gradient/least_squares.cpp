@@ -60,7 +60,23 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
     }
 }
 
-auto LeastSquares::gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> Vector3d {
+auto LeastSquares::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
+    // Lazy cache: recompute over the whole mesh only when the field's cell values changed.
+    if (field.eventNo() != _computed_event) {
+        computeAllCellGradients(field);
+    }
+    return _cell_gradients[cell.id()];
+}
+
+void LeastSquares::computeAllCellGradients(const field::IScalar& field) {
+    for (const auto& cell : field.mesh()->cells()) {
+        computeGradAtCell(cell, field);
+    }
+    _computed_event = field.eventNo();
+}
+
+auto LeastSquares::computeGradAtCell(const mesh::Cell& cell, const field::IScalar& field)
+    -> Vector3d {
     // right hand side of equation (9.27)
     Vector3d b {0.0, 0.0, 0.0};
     auto phi_cell = field.valueAtCell(cell);
@@ -81,10 +97,5 @@ auto LeastSquares::gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> 
     _cell_gradients[cell.id()] = grad;
 
     return grad;
-}
-
-auto LeastSquares::gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field) // NOLINT
-    -> Vector3d {
-    return _cell_gradients[cell.id()];
 }
 } // namespace prism::gradient

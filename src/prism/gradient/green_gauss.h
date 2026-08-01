@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <vector>
 
 #include "gradient.h"
@@ -10,9 +11,12 @@ class GreenGauss : public IGradient {
   public:
     explicit GreenGauss(const SharedPtr<mesh::PMesh>& mesh);
 
-    auto gradAtCell(const mesh::Cell& cell,  field::IScalar& field) -> Vector3d override;
-    auto gradAtCellStored(const mesh::Cell& cell,
-                          const field::IScalar& field) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d override;
+    void computeAllCellGradients(const field::IScalar& field) override;
+
+  protected:
+    auto computeGradAtCell(const mesh::Cell& cell, const field::IScalar& field)
+        -> Vector3d override;
 
   private:
     auto correctSkewness(const mesh::Face& face,
@@ -20,6 +24,7 @@ class GreenGauss : public IGradient {
                          const mesh::Cell& nei) const -> double;
 
     std::vector<Vector3d> _cell_gradients;
+    std::size_t _computed_event {std::numeric_limits<std::size_t>::max()};
 };
 
 } // namespace prism::gradient

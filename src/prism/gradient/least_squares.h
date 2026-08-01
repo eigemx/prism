@@ -1,4 +1,6 @@
 #pragma once
+#include <limits>
+
 #include "gradient.h"
 #include "prism/mesh/pmesh.h"
 
@@ -8,8 +10,12 @@ class LeastSquares : public IGradient {
   public:
     explicit LeastSquares(const SharedPtr<mesh::PMesh>& mesh);
 
-    auto gradAtCell(const mesh::Cell& cell, field::IScalar& field) -> Vector3d override;
-    auto gradAtCellStored(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d override;
+    void computeAllCellGradients(const field::IScalar& field) override;
+
+  protected:
+    auto computeGradAtCell(const mesh::Cell& cell, const field::IScalar& field)
+        -> Vector3d override;
 
   private:
     struct FaceContrib {
@@ -23,6 +29,7 @@ class LeastSquares : public IGradient {
     std::vector<Vector3d> _cell_gradients;
     std::vector<Matrix3d> _pinv_matrices;
     std::vector<std::vector<FaceContrib>> _cell_face_cache;
+    size_t _computed_event {std::numeric_limits<size_t>::max()};
 };
 
 } // namespace prism::gradient

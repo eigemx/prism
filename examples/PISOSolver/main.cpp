@@ -1,6 +1,6 @@
 #include <prism/algorithm/PISO.h>
 #include <prism/prism.h>
-#include <prism/scheme/temporal/backward_euler.h>
+#include <prism/scheme/temporal/adam_moulton.h>
 
 #include <filesystem>
 
@@ -31,21 +31,18 @@ auto main(int argc, char* argv[]) -> int {
     U->y()->updatePrevTimeSteps();
 
     f64 dt = 0.005;
-    f64 endTime = 1.0;
-    int nTs = int(endTime / dt);
+    f64 end_time = 1.0;
+    auto n_time_steps = size_t(end_time / dt);
 
     using div = LinearUpwind;
     using lap = diffusion::Corrected;
     using grad = source::Gradient<Sign::Negative>;
+    using ddt = temporal::AdamMoulton;
 
-    auto uEqn = eqn::Momentum(temporal::BackwardEuler(U->x(), dt),
-                              div(mdot, U->x()),
-                              lap(nu, U->x()),
-                              grad(p, VectorCoord::X));
-    auto vEqn = eqn::Momentum(temporal::BackwardEuler(U->y(), dt),
-                              div(mdot, U->y()),
-                              lap(nu, U->y()),
-                              grad(p, VectorCoord::Y));
+    auto uEqn =
+        eqn::Momentum(ddt(U->x(), dt), div(mdot, U->x()), lap(nu, U->x()), grad(p, VectorCoord::X));
+    auto vEqn =
+        eqn::Momentum(ddt(U->y(), dt), div(mdot, U->y()), lap(nu, U->y()), grad(p, VectorCoord::Y));
 
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
@@ -54,7 +51,7 @@ auto main(int argc, char* argv[]) -> int {
 
     algo::PISOControls controls;
     controls.outer_iterations = 1;
-    controls.pressure_correction_steps = 2; // SIMPLE predictor + 1 PRIME corrector
+    controls.pressure_correction_steps = 3; // SIMPLE predictor + 2 PRIME corrector
     controls.non_ortho_correctors = 1;
 
     f64 time = 0.0;
@@ -63,7 +60,7 @@ auto main(int argc, char* argv[]) -> int {
     writer.add(p);
     writer.add(U);
 
-    for (int ts = 0; ts < nTs; ++ts) {
+    for (size_t ts = 0; ts < n_time_steps; ++ts) {
         time = (ts + 1) * dt;
         log::info("t={:.5f}  |U|max={:.4e}  |p|max={:.4e}",
                   time,

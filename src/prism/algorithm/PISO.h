@@ -25,7 +25,7 @@ struct PISOControls {
     size_t momentum_max_iter = 3;
 
     // Minimum residual for momentum predictor
-    f64 momentum_residual = 1e-7;
+    f64 momentum_residual = 1e-4;
 
     // Initial residual stopping criterion for momentum predictor
     f64 momentum_residual_stop = 1e-5;
@@ -40,7 +40,7 @@ struct PISOControls {
     size_t pressure_max_iter = 5;
 
     // Minimum residual for pressure equation
-    f64 pressure_residual = 1e-7;
+    f64 pressure_residual = 1e-4;
 
     // Reference cell for singular (all-Neumann) pressure systems.
     Optional<size_t> p_ref_cell = NullOption;

@@ -3,15 +3,15 @@
 #include "prism/types.h"
 
 namespace prism::gradient::boundary {
-auto Symmetry::get(field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
+auto Symmetry::get(const field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
     return field.gradAtCell(field.mesh()->cell(face.owner()));
 }
 
-auto Outlet::get(field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
+auto Outlet::get(const field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
     return field.gradAtCell(field.mesh()->cell(face.owner()));
 }
 
-auto Fixed::get(field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
+auto Fixed::get(const field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
     // The following is based on uFVM gradient correction in cfdUpdateGradient function
     const auto& owner = field.mesh()->cell(face.owner());
     const Vector3d grad_c = field.gradAtCell(owner);
@@ -24,12 +24,12 @@ auto Fixed::get(field::IScalar& field, const prism::mesh::Face& face) -> Vector3
     return grad_c - (grad_c.dot(e)) * e + (phi_b - phi_C) / d_Cf.norm() * e;
 }
 
-auto NoSlip::get(field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
+auto NoSlip::get(const field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
     Fixed fixed;
     return fixed.get(field, face);
 }
 
-auto ZeroGradient::get(field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
+auto ZeroGradient::get(const field::IScalar& field, const prism::mesh::Face& face) -> Vector3d {
     return field.gradAtCell(field.mesh()->cell(face.owner()));
 }
 } // namespace prism::gradient::boundary

@@ -58,13 +58,13 @@ class Scalar : public IScalar,
     auto valueAtFace(std::size_t face_id) const -> f64 override;
     auto valueAtFace(const mesh::Face& face) const -> f64 override;
 
-    auto gradAtFace(const mesh::Face& face) -> Vector3d override;
-    auto gradAtCell(const mesh::Cell& cell) -> Vector3d override;
-    auto gradAtCellStored(const mesh::Cell& cell) const -> Vector3d override;
+    auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
+    auto gradAtCell(const mesh::Cell& cell) const -> Vector3d override;
 
     void computeAllCellGradients();
 
-    /// TODO: overload for the case of zero arguments, to update with current values.
+    auto eventNo() const noexcept -> size_t override;
+
     void update(VectorXd values);
     void updatePrevTimeSteps();
 
@@ -113,7 +113,14 @@ class Scalar : public IScalar,
 
     /// TODO: _face_data should not include empty faces
     VectorXd _face_values;
-    SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
+
+    // Gradient scheme that caches per-field cell gradients. mutable: gradient reads are const
+    // with respect to the field values, only the scheme's internal cache is updated.
+    mutable SharedPtr<gradient::IGradient> _grad_scheme = nullptr;
+
+    // Revision of the cell values; bumped on every mutation. Cached gradients are invalidated
+    // when this changes.
+    size_t _event_no {0};
 
     // This should have a value only when the object is a component of a field::Vector instance.
     Optional<VectorCoord> _coord = NullOption;
@@ -160,6 +167,7 @@ void Scalar::mapCellValues(Func func) {
     for (const auto& cell : mesh()->cells()) {
         _cell_values[cell.id()] = func(cell);
     }
+    ++_event_no;
 }
 
 // Element-wise field arithmetic
