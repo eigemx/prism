@@ -5,7 +5,7 @@
 namespace prism::report {
 
 struct Entry {
-    String field_name;
+    std::string field_name;
     size_t n_iterations;
     f64 initial_residual;
     f64 final_residual;

@@ -104,7 +104,7 @@ class TimeWriter {
      * @param write_interval Write every N steps. 1 writes every step. Must be > 0.
      * @param mode The VTU write mode.
      * @param write_pvd If true, generate a .pvd file for ParaView. */
-    TimeWriter(String prefix = "result",
+    TimeWriter(std::string prefix = "result",
                size_t write_interval = 1,
                WriteMode mode = WriteMode::RawBinaryCompressed,
                bool write_pvd = true);
@@ -141,11 +141,11 @@ class TimeWriter {
     FieldRegistry _registry;
     size_t _step {0};
     f64 _time {0.0};
-    String _prefix;
+    std::string _prefix;
     size_t _interval;
     WriteMode _mode;
     bool _write_pvd;
-    std::vector<Pair<f64, String>> _pvd_entries;
+    std::vector<Pair<f64, std::string>> _pvd_entries;
 };
 
 } // namespace prism::output

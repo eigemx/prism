@@ -13,10 +13,10 @@
 #include "prism/log.h"
 
 
-using VectorOfFaces = std::vector<std::vector<std::size_t>>;
+using VectorOfFaces = std::vector<std::vector<size_t>>;
 
 // Vector of 6 quad faces
-auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
+auto inline hex_cell_faces(const std::vector<size_t>& c) -> VectorOfFaces {
     VectorOfFaces hfaces;
     hfaces.resize(6);
 
@@ -31,7 +31,7 @@ auto inline hex_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
 }
 
 // Vector of 4 triangular faces
-auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
+auto inline tetra_cell_faces(const std::vector<size_t>& c) -> VectorOfFaces {
     VectorOfFaces tfaces;
     tfaces.resize(4);
 
@@ -44,7 +44,7 @@ auto inline tetra_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces
 }
 
 // Vector of 5 faces (3 quads & 2 triangels)
-auto inline wedge_cell_faces(const std::vector<std::size_t>& c) -> VectorOfFaces {
+auto inline wedge_cell_faces(const std::vector<size_t>& c) -> VectorOfFaces {
     VectorOfFaces wfaces;
     wfaces.resize(5);
 
@@ -93,7 +93,7 @@ UnvToPMeshConverter::UnvToPMeshConverter(const std::filesystem::path& mesh_path,
 
     // for each boundary patch, set the faces that belong to it, and make the patch aware of the
     // ids of the faces it owns
-    std::size_t boundary_patch_id {0};
+    size_t boundary_patch_id {0};
     for (auto& patch : _boundary_patches) {
         const auto& faces_ids = _boundary_name_to_faces_map[patch.name()];
 
@@ -122,7 +122,7 @@ auto UnvToPMeshConverter::toPMesh() -> SharedPtr<PMesh> {
 }
 
 void UnvToPMeshConverter::processCells() {
-    std::size_t unv_element_counter {0};
+    size_t unv_element_counter {0};
 
     for (const auto& element : _unv_mesh->elements().value()) {
         switch (element.type()) {
@@ -167,7 +167,7 @@ void UnvToPMeshConverter::processCells() {
 
 void UnvToPMeshConverter::processCell(const unvpp::Element& element) {
     // keep track of face ids inside the current cell
-    std::vector<std::size_t> cell_faces_ids;
+    std::vector<size_t> cell_faces_ids;
 
     switch (element.type()) {
         case unvpp::ElementType::Hex: {
@@ -208,8 +208,8 @@ void UnvToPMeshConverter::processCell(const unvpp::Element& element) {
     _cell_id_counter++;
 }
 
-auto UnvToPMeshConverter::processFace(std::vector<std::size_t>& face_vertices_ids)
-    -> std::size_t {
+auto UnvToPMeshConverter::processFace(std::vector<size_t>& face_vertices_ids)
+    -> size_t {
     // sort the face indices to be used in face lookup trie
     auto sorted_face_vertices_ids = face_vertices_ids;
     std::sort(sorted_face_vertices_ids.begin(), sorted_face_vertices_ids.end());
@@ -261,7 +261,7 @@ auto UnvToPMeshConverter::processFace(std::vector<std::size_t>& face_vertices_id
 }
 
 auto UnvToPMeshConverter::processBoundaryFace(const unvpp::Element& boundary_face)
-    -> std::size_t {
+    -> size_t {
     // sort the face indices to be used as a std::map key for searching
     auto sorted_face_vertices = boundary_face.vertices_ids();
     std::sort(sorted_face_vertices.begin(), sorted_face_vertices.end());
@@ -286,8 +286,8 @@ auto UnvToPMeshConverter::processBoundaryFace(const unvpp::Element& boundary_fac
     return face_id;
 }
 
-auto UnvToPMeshConverter::faceIndex(const std::vector<std::size_t>& face_vertices) const
-    -> std::optional<std::size_t> {
+auto UnvToPMeshConverter::faceIndex(const std::vector<size_t>& face_vertices) const
+    -> std::optional<size_t> {
     auto res = _faces_lookup_trie->find(face_vertices);
     if (res.has_value()) {
         return res.value();
@@ -340,7 +340,7 @@ void UnvToPMeshConverter::processGroup() {
 void UnvToPMeshConverter::processGroup(const unvpp::Group& group) {
     assert(group.elements_ids().size() > 0 &&
            "UnvToPMeshConverter::process_group() cannot handle an empty group");
-    std::vector<std::size_t> group_faces;
+    std::vector<size_t> group_faces;
     group_faces.reserve(group.elements_ids().size());
 
     // copy the group elements ids to group_faces after transforming them using
@@ -355,7 +355,7 @@ void UnvToPMeshConverter::processGroup(const unvpp::Group& group) {
 }
 
 void UnvToPMeshConverter::checkBoundaryFaces() {
-    std::size_t undefined_boundary_faces_count = 0;
+    size_t undefined_boundary_faces_count = 0;
 
     for (const auto& [unv_id, face_data] : _unv_id_to_bface_index_map) {
         if (!face_data.second) {

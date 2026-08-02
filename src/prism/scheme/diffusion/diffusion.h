@@ -132,8 +132,8 @@ inline void NonCorrected::applyInterior(const mesh::Face& face) {
     // Taking the norm of Sf_prime discards the sign of kappa, so we use the following instead
     const f64 g_diff = Sf_prime.dot(d_CF) / (d_CF_norm * d_CF_norm + EPSILON);
 
-    const std::size_t owner_id = owner.id();
-    const std::size_t neighbor_id = neighbor.id();
+    const size_t owner_id = owner.id();
+    const size_t neighbor_id = neighbor.id();
 
     // g_diff * (Φ_C - Φ_N)
     // diagonal coefficients
@@ -172,8 +172,8 @@ inline void Corrected::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field()->mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
-    const std::size_t owner_id = owner.id();
-    const std::size_t neighbor_id = neighbor.id();
+    const size_t owner_id = owner.id();
+    const size_t neighbor_id = neighbor.id();
 
     // vector joining the centers of the two cells
     const Vector3d d_CF = neighbor.center() - owner.center();

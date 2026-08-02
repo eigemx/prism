@@ -32,16 +32,16 @@ class IField {
     auto mesh() const -> const SharedPtr<mesh::PMesh>&;
 
     virtual auto hasFaceValues() const -> bool;
-    virtual auto valueAtCell(std::size_t cell_id) const -> CellValueType = 0;
+    virtual auto valueAtCell(size_t cell_id) const -> CellValueType = 0;
     virtual auto valueAtCell(const mesh::Cell& cell) const -> CellValueType = 0;
-    virtual auto valueAtFace(std::size_t face_id) const -> CellValueType = 0;
+    virtual auto valueAtFace(size_t face_id) const -> CellValueType = 0;
     virtual auto valueAtFace(const mesh::Face& face) const -> CellValueType = 0;
     virtual auto coord() const noexcept -> Optional<VectorCoord>;
 
     using ValueType = CellValueType;
 
   private:
-    String _name;
+    std::string _name;
     SharedPtr<mesh::PMesh> _mesh = nullptr;
 };
 
@@ -74,7 +74,7 @@ class IVector : public IField<Vector3d> {
   public:
     IVector(std::string name, const SharedPtr<mesh::PMesh>& mesh);
     virtual auto fluxAtFace(const mesh::Face& face) const -> f64 = 0;
-    virtual auto fluxAtFace(std::size_t face_id) const -> f64 = 0;
+    virtual auto fluxAtFace(size_t face_id) const -> f64 = 0;
     virtual auto gradAtCell(const mesh::Cell& cell) -> Tensor3d = 0;
 };
 

@@ -132,7 +132,7 @@ auto flattenScalar(const field::IScalar& field, const mesh::PMesh& pmesh) -> std
     auto data = std::vector<f64>();
     const auto n_cells = pmesh.cells().size();
     data.reserve(n_cells);
-    for (std::size_t i = 0; i < n_cells; ++i) {
+    for (size_t i = 0; i < n_cells; ++i) {
         data.push_back(field.valueAtCell(i));
     }
     return data;
@@ -146,7 +146,7 @@ auto flattenVector(const field::IVector& field, const mesh::PMesh& pmesh) -> std
     auto data = std::vector<f64>();
     const auto n_cells = pmesh.cells().size();
     data.reserve(n_cells * 3);
-    for (std::size_t i = 0; i < n_cells; ++i) {
+    for (size_t i = 0; i < n_cells; ++i) {
         auto v = field.valueAtCell(i);
         data.push_back(v.x());
         data.push_back(v.y());
@@ -163,7 +163,7 @@ auto flattenTensor(const field::ITensor& field, const mesh::PMesh& pmesh) -> std
     const auto n_cells = pmesh.cells().size();
     auto data = std::vector<f64>();
     data.reserve(n_cells * 9);
-    for (std::size_t i = 0; i < n_cells; ++i) {
+    for (size_t i = 0; i < n_cells; ++i) {
         Tensor3d tensor = field.valueAtCell(i);
         data.push_back(tensor(0, 0));
         data.push_back(tensor(0, 1));
@@ -342,7 +342,7 @@ void FieldRegistry::exportAll(const std::string& file_name, WriteMode mode) cons
     toVtu(scalar_ptrs, vector_ptrs, tensor_ptrs, file_name, mode);
 }
 
-TimeWriter::TimeWriter(String prefix, size_t write_interval, WriteMode mode, bool write_pvd)
+TimeWriter::TimeWriter(std::string prefix, size_t write_interval, WriteMode mode, bool write_pvd)
     : _prefix(std::move(prefix)), _interval(write_interval), _mode(mode), _write_pvd(write_pvd) {
     if (write_interval == 0) {
         throw std::invalid_argument(fmt::format(

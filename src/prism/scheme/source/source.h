@@ -18,7 +18,7 @@ concept IImplicitSourceBased = std::derived_from<T, IImplicitSource>;
 // coefficients for the linear system of the conserved equation.
 class IExplicitSource : public ISource, public IPartialScheme {
   public:
-    IExplicitSource(std::size_t n_cells) : IPartialScheme(n_cells) {}
+    IExplicitSource(size_t n_cells) : IPartialScheme(n_cells) {}
 };
 
 template <typename T>

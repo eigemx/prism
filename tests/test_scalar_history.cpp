@@ -10,7 +10,7 @@ TEST_CASE("GeneralScalar History with Real Mesh", "[field][history]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    const std::size_t num_cells = mesh->cellCount();
+    const size_t num_cells = mesh->cellCount();
 
     // Define distinct field values for timesteps
     prism::VectorXd t0_values = prism::VectorXd::Constant(num_cells, 1.0);

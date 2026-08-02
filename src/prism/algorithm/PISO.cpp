@@ -35,10 +35,10 @@ auto PISO::step(std::span<eqn::Momentum*> momentum_predictors,
         .p_ref_value = _controls.p_ref_value,
     };
 
-    for (std::size_t i = 0; i < _controls.outer_iterations; ++i) {
+    for (size_t i = 0; i < _controls.outer_iterations; ++i) {
         // Step 1: SIMPLE — implicit momentum predictor
         if (_controls.momentum_implicit_steps > 0) {
-            for (std::size_t j = 0; j < _controls.momentum_implicit_steps; ++j) {
+            for (size_t j = 0; j < _controls.momentum_implicit_steps; ++j) {
                 auto simple_reports =
                     IncompressibleSIMPLE(simple_controls).step(momentum_predictors, U, mdot, p);
                 reports.insert(reports.end(), simple_reports.begin(), simple_reports.end());
@@ -46,7 +46,7 @@ auto PISO::step(std::span<eqn::Momentum*> momentum_predictors,
         }
 
         // Steps 2-N: PRIME correctors (pressure_correction_steps includes the SIMPLE step)
-        for (std::size_t j = 1; j < _controls.pressure_correction_steps; ++j) {
+        for (size_t j = 1; j < _controls.pressure_correction_steps; ++j) {
             auto prime_reports = PRIME(prime_controls).step(momentum_predictors, U, mdot, p);
             reports.insert(reports.end(), prime_reports.begin(), prime_reports.end());
         }

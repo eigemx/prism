@@ -53,9 +53,9 @@ class Scalar : public IScalar,
     void setFaceValues(VectorXd values);
     void clearFaceValues();
 
-    auto valueAtCell(std::size_t cell_id) const -> f64 override;
+    auto valueAtCell(size_t cell_id) const -> f64 override;
     auto valueAtCell(const mesh::Cell& cell) const -> f64 override;
-    auto valueAtFace(std::size_t face_id) const -> f64 override;
+    auto valueAtFace(size_t face_id) const -> f64 override;
     auto valueAtFace(const mesh::Face& face) const -> f64 override;
 
     auto gradAtFace(const mesh::Face& face) const -> Vector3d override;
@@ -81,13 +81,13 @@ class Scalar : public IScalar,
 
     void setGradScheme(const SharedPtr<gradient::IGradient>& grad_scheme);
 
-    void setHistorySize(std::size_t num_time_steps);
+    void setHistorySize(size_t num_time_steps);
     auto prevValues() const -> Optional<Ref<const VectorXd>>;
     auto prevPrevValues() const -> Optional<Ref<const VectorXd>>;
-    auto getHistory(std::size_t index) const -> Optional<Ref<const VectorXd>>;
+    auto getHistory(size_t index) const -> Optional<Ref<const VectorXd>>;
 
-    auto operator[](std::size_t i) const -> f64;
-    auto operator[](std::size_t i) -> f64&;
+    auto operator[](size_t i) const -> f64;
+    auto operator[](size_t i) -> f64&;
 
   protected:
     auto valueAtInteriorFace(const mesh::Face& face) const -> f64;

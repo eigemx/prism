@@ -414,11 +414,11 @@ auto BoundaryPatch::isEmpty() const noexcept -> bool {
     return _is_empty;
 }
 
-auto BoundaryPatch::facesIds() const noexcept -> const std::vector<std::size_t>& {
+auto BoundaryPatch::facesIds() const noexcept -> const std::vector<size_t>& {
     return _faces_ids;
 }
 
-auto BoundaryPatch::facesIds() noexcept -> std::vector<std::size_t>& {
+auto BoundaryPatch::facesIds() noexcept -> std::vector<size_t>& {
     return _faces_ids;
 }
 

@@ -6,12 +6,10 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <string>
 #include <utility>
 
 namespace prism {
 
-using String = std::string;
 using f32 = float;
 using f64 = double;
 using std::size_t;

@@ -36,9 +36,9 @@ CuthillMckee::CuthillMckee(const SharedPtr<PMesh>& mesh) noexcept : _mesh(mesh) 
     });
 }
 
-auto CuthillMckee::permute() -> std::vector<std::size_t> {
+auto CuthillMckee::permute() -> std::vector<size_t> {
     // initialize the permutation vector. This is the output of the algorithm
-    std::vector<std::size_t> permutations;
+    std::vector<size_t> permutations;
 
     // The queue of nodes to visit
     std::deque<Node> queue;
@@ -99,8 +99,8 @@ void CuthillMckee::reorder(bool reverse) {
         std::reverse(perms.begin(), perms.end());
     }
 
-    std::map<std::size_t, std::size_t> old_to_new;
-    for (std::size_t i = 0; i < n_cells; ++i) {
+    std::map<size_t, size_t> old_to_new;
+    for (size_t i = 0; i < n_cells; ++i) {
         old_to_new[perms[i]] = i;
     }
 

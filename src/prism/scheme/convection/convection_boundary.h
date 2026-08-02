@@ -46,7 +46,7 @@ class Outlet<convection::IConvection> : public ISchemeBoundaryHandler<convection
     auto name() const -> std::string override { return "outlet"; }
 
   private:
-    std::size_t _n_reverse_flow_faces {0};
+    size_t _n_reverse_flow_faces {0};
 };
 
 

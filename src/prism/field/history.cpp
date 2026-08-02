@@ -2,7 +2,7 @@
 
 namespace prism::field {
 
-HistoryManager::HistoryManager(std::size_t num_time_steps) : _max_steps(num_time_steps) {
+HistoryManager::HistoryManager(size_t num_time_steps) : _max_steps(num_time_steps) {
     _history.reserve(_max_steps);
 }
 
@@ -20,7 +20,7 @@ auto HistoryManager::prevPrevValues() const -> Optional<Ref<const VectorXd>> {
     return std::ref(_history[1]);
 }
 
-auto HistoryManager::valuesAt(std::size_t n) const -> Optional<Ref<const VectorXd>> {
+auto HistoryManager::valuesAt(size_t n) const -> Optional<Ref<const VectorXd>> {
     if (n >= _history.size()) {
         return NullOption;
     }
@@ -47,7 +47,7 @@ void HistoryManager::update(VectorXd&& current_values) {
     _history.insert(_history.begin(), std::move(current_values));
 }
 
-void HistoryManager::resize(std::size_t new_size) {
+void HistoryManager::resize(size_t new_size) {
     if (new_size == _max_steps) {
         return;
     }

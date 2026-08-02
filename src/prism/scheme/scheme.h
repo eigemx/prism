@@ -35,7 +35,7 @@ concept ISchemeBased = std::derived_from<T, IScheme>;
 // discretized linear system.
 class IPartialScheme : public IScheme, public RHSProvider {
   public:
-    IPartialScheme(std::size_t n_cells);
+    IPartialScheme(size_t n_cells);
 };
 
 // Base type for finite volume schemes that requires contribution to both sides of the discretized

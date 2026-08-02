@@ -78,7 +78,7 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
         T->updatePrevTimeSteps();
     }
 
-    for (std::size_t i = 1; i < diff_norm_vec.size(); i++) {
+    for (size_t i = 1; i < diff_norm_vec.size(); i++) {
         REQUIRE(diff_norm_vec[i] < diff_norm_vec[i - 1]);
     }
 

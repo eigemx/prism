@@ -9,8 +9,7 @@ namespace prism::monitor {
 /** @brief Computes a cell Courant number field from a face flux field.
  *
  * Each cell gets Co = 0.5 * dt * sum_faces(|mdot_face|) / V_cell, where the sum runs over
- * all faces of the cell. The 0.5 factor accounts for each interior face contributing its
- * flux to both neighbouring cells.
+ * all faces of the cell. 
  *
  * @param mdot The face flux field.
  * @param dt The time step size.

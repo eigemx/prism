@@ -7,10 +7,10 @@
 namespace prism::mesh {
 class FacesLookupTrie {
   public:
-    FacesLookupTrie(std::size_t n_vertices);
+    FacesLookupTrie(size_t n_vertices);
 
-    void insert(const std::vector<std::size_t>& face_labels, std::size_t face_id);
-    auto find(const std::vector<std::size_t>& face_labels) const -> std::optional<std::size_t>;
+    void insert(const std::vector<size_t>& face_labels, size_t face_id);
+    auto find(const std::vector<size_t>& face_labels) const -> std::optional<size_t>;
 
   private:
     // forward declarations
@@ -20,13 +20,13 @@ class FacesLookupTrie {
     using Node = std::variant<VertexNode, TailNode>;
 
     struct VertexNode {
-        std::size_t v_id;
+        size_t v_id;
         std::vector<Node> children;
         bool is_end {false};
     };
 
     struct TailNode {
-        std::size_t face_id;
+        size_t face_id;
     };
 
     std::vector<VertexNode> _root_nodes;

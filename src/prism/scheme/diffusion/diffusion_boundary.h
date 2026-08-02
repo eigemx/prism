@@ -157,7 +157,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
         const mesh::Face& face = mesh->face(face_id);
         const mesh::Cell& owner = mesh->cell(face.owner());
         const double phi_wall = phi->valueAtFace(face);
-        const std::size_t cell_id = owner.id();
+        const size_t cell_id = owner.id();
 
         // vector joining the centers of the cell and the face
         const Vector3d d_Cf = face.center() - owner.center();
@@ -201,7 +201,7 @@ void Fixed<Scheme>::apply(Scheme& scheme, const mesh::BoundaryPatch& patch) {
     for (const auto& face_id : patch.facesIds()) {
         const mesh::Face& face = mesh->face(face_id);
         const mesh::Cell& owner = mesh->cell(face.owner());
-        const std::size_t owner_id = owner.id();
+        const size_t owner_id = owner.id();
 
         // get the fixed phi variable associated with the face
         const double phi_wall = phi->valueAtFace(face);

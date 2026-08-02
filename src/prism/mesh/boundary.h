@@ -161,13 +161,13 @@ class BoundaryPatch {
      * @brief Returns the const reference to face IDs associated with this patch.
      * @return const reference to vector of face IDs.
      */
-    auto facesIds() const noexcept -> const std::vector<std::size_t>&;
+    auto facesIds() const noexcept -> const std::vector<size_t>&;
 
     /**
      * @brief Returns the mutable reference to face IDs associated with this patch.
      * @return reference to vector of face IDs.
      */
-    auto facesIds() noexcept -> std::vector<std::size_t>&;
+    auto facesIds() noexcept -> std::vector<size_t>&;
 
     /**
      * @brief Checks if this patch is an empty patch.
@@ -180,7 +180,7 @@ class BoundaryPatch {
 
     std::string _name;
     std::map<std::string, BoundaryCondition> _field_name_to_bc_map;
-    std::vector<std::size_t> _faces_ids;
+    std::vector<size_t> _faces_ids;
     bool _is_empty {false};
 };
 

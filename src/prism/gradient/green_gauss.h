@@ -24,7 +24,7 @@ class GreenGauss : public IGradient {
                          const mesh::Cell& nei) const -> double;
 
     std::vector<Vector3d> _cell_gradients;
-    std::size_t _computed_event {std::numeric_limits<std::size_t>::max()};
+    size_t _computed_event {std::numeric_limits<size_t>::max()};
 };
 
 } // namespace prism::gradient

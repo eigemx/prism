@@ -11,7 +11,7 @@ auto l2NormRel(const prism::VectorXd& x, const prism::VectorXd& x_ref) -> double
 } // anonymous namespace
 
 TEST_CASE("All solvers converge to known solution of linear system", "[solver]") {
-    constexpr prism::size_t n = 10;
+    constexpr size_t n = 10;
     prism::VectorXd x_analytical(n);
     x_analytical << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
 
@@ -39,7 +39,7 @@ TEST_CASE("All solvers converge to known solution of linear system", "[solver]")
         prism::solver::BiCGSTAB solver;
         prism::VectorXd x = prism::VectorXd::Zero(n);
 
-        for (prism::size_t iter = 0; iter < 20; ++iter) {
+        for (size_t iter = 0; iter < 20; ++iter) {
             x = solver.step(A, x, b);
         }
 
@@ -51,7 +51,7 @@ TEST_CASE("All solvers converge to known solution of linear system", "[solver]")
         prism::solver::Jacobi solver;
         prism::VectorXd x = prism::VectorXd::Zero(n);
 
-        for (prism::size_t iter = 0; iter < 20; ++iter) {
+        for (size_t iter = 0; iter < 20; ++iter) {
             x = solver.step(A, x, b);
         }
 

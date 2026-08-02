@@ -19,8 +19,8 @@ void IConvection::applyInterior(const mesh::Face& face) {
     const auto& mesh = this->field()->mesh();
     const mesh::Cell& owner = mesh->cell(face.owner());
     const mesh::Cell& neighbor = mesh->cell(face.neighbor().value());
-    const std::size_t owner_id = owner.id();
-    const std::size_t neighbor_id = neighbor.id();
+    const size_t owner_id = owner.id();
+    const size_t neighbor_id = neighbor.id();
 
     // since face is owned by `owner`, the flux will be in the intended way, as the face normal
     // points from cell center to face center, so no need to flip the sign of the flux.

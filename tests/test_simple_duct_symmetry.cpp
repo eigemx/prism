@@ -18,7 +18,7 @@ auto loadReference(const std::filesystem::path& json_path)
 
     auto count = data["p"].size();
     prism::VectorXd p_ref(count);
-    for (prism::size_t i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         p_ref(i) = data["p"][i].get<double>();
     }
 

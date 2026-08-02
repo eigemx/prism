@@ -170,7 +170,7 @@ auto solvePressureEquation(SIMPLEControls controls,
     log::debug("prism::algo::solvePressureEquation(): solving pressure equation");
     auto p_solver = solver::BiCGSTAB();
 
-    for (std::size_t i = 0; i <= controls.non_ortho_correctors; ++i) {
+    for (size_t i = 0; i <= controls.non_ortho_correctors; ++i) {
         auto result = p_solver.solve(pEqn,
                                      controls.pressure_max_iter,
                                      controls.pressure_residual,

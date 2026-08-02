@@ -26,7 +26,7 @@ Tensor::Tensor(std::string name, const SharedPtr<mesh::PMesh>& mesh, std::vector
     }
 }
 
-auto Tensor::valueAtCell(std::size_t cell_id) const -> Matrix3d {
+auto Tensor::valueAtCell(size_t cell_id) const -> Matrix3d {
     return _data[cell_id];
 }
 
@@ -34,7 +34,7 @@ auto Tensor::valueAtCell(const mesh::Cell& cell) const -> Matrix3d {
     return valueAtCell(cell.id());
 }
 
-auto Tensor::valueAtCellRef(std::size_t cell_id) const -> const Matrix3d& {
+auto Tensor::valueAtCellRef(size_t cell_id) const -> const Matrix3d& {
     return _data[cell_id];
 }
 
@@ -50,7 +50,7 @@ auto Tensor::cellValues() -> std::vector<Matrix3d>& {
     return _data;
 }
 
-auto Tensor::valueAtFace(std::size_t face_id) const -> Matrix3d {
+auto Tensor::valueAtFace(size_t face_id) const -> Matrix3d {
     const mesh::Face& face = this->mesh()->face(face_id);
     return valueAtFace(face);
 }
@@ -111,11 +111,11 @@ void Tensor::clearFaceValues() {
     _face_data.shrink_to_fit();
 }
 
-auto Tensor::operator[](std::size_t i) -> Matrix3d& {
+auto Tensor::operator[](size_t i) -> Matrix3d& {
     return _data[i];
 }
 
-auto Tensor::operator[](std::size_t i) const -> const Matrix3d& {
+auto Tensor::operator[](size_t i) const -> const Matrix3d& {
     return _data[i];
 }
 

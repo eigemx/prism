@@ -180,13 +180,13 @@ auto Scalar::valueAtCell(const mesh::Cell& cell) const -> f64 {
     return valueAtCell(cell.id());
 }
 
-auto Scalar::valueAtCell(std::size_t cell_id) const -> f64 {
+auto Scalar::valueAtCell(size_t cell_id) const -> f64 {
     assert(_cell_values.size() > 0);       // NOLINT
     assert(cell_id < mesh()->cellCount()); // NOLINT
     return _cell_values[cell_id];
 }
 
-auto Scalar::valueAtFace(std::size_t face_id) const -> f64 {
+auto Scalar::valueAtFace(size_t face_id) const -> f64 {
     if (hasFaceValues()) {
         // Face data were calculated already, just return the value (as in Rhie-Chow
         // correction).
@@ -303,7 +303,7 @@ void Scalar::setGradScheme() {
     _grad_scheme = makeShared<gradient::LeastSquares>(this->mesh());
 }
 
-void Scalar::setHistorySize(std::size_t num_time_steps) {
+void Scalar::setHistorySize(size_t num_time_steps) {
     _history_manager.resize(num_time_steps);
 }
 
@@ -333,7 +333,7 @@ auto Scalar::prevPrevValues() const -> Optional<Ref<const VectorXd>> {
 }
 
 
-auto Scalar::getHistory(std::size_t index) const -> Optional<Ref<const VectorXd>> {
+auto Scalar::getHistory(size_t index) const -> Optional<Ref<const VectorXd>> {
     return _history_manager.valuesAt(index);
 }
 
@@ -348,7 +348,7 @@ auto Scalar::gradAtCell(const mesh::Cell& cell) const -> Vector3d {
 }
 
 
-auto Scalar::eventNo() const noexcept -> std::size_t {
+auto Scalar::eventNo() const noexcept -> size_t {
     return _event_no;
 }
 
@@ -357,14 +357,14 @@ void Scalar::computeAllCellGradients() {
 }
 
 
-auto Scalar::operator[](std::size_t i) const -> f64 {
+auto Scalar::operator[](size_t i) const -> f64 {
     assert(_cell_values.size() > 0);
     assert(i < _cell_values.size());
     return _cell_values[i];
 }
 
 
-auto Scalar::operator[](std::size_t i) -> f64& {
+auto Scalar::operator[](size_t i) -> f64& {
     assert(_cell_values.size() > 0);
     assert(i < _cell_values.size());
     ++_event_no;

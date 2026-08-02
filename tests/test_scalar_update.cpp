@@ -9,8 +9,8 @@ TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    const std::size_t num_cells = mesh->cellCount();
-    const std::size_t num_faces = mesh->faceCount();
+    const size_t num_cells = mesh->cellCount();
+    const size_t num_faces = mesh->faceCount();
 
     prism::VectorXd cell_values = prism::VectorXd::Constant(num_cells, 1.0);
     prism::field::Scalar T("T", mesh, cell_values);
@@ -18,7 +18,7 @@ TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
     SECTION("initializes face values if not set") {
         REQUIRE_FALSE(T.hasFaceValues());
 
-        std::size_t interior_face_count = 0;
+        size_t interior_face_count = 0;
         for (const auto& face : mesh->interiorFaces()) {
             interior_face_count++;
         }
@@ -61,7 +61,7 @@ TEST_CASE("Scalar updateFaces", "[field][update]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    const std::size_t num_cells = mesh->cellCount();
+    const size_t num_cells = mesh->cellCount();
 
     prism::VectorXd cell_values = prism::VectorXd::Constant(num_cells, 1.0);
     prism::field::Scalar T("T", mesh, cell_values);
@@ -69,7 +69,7 @@ TEST_CASE("Scalar updateFaces", "[field][update]") {
     SECTION("updates all faces including boundary") {
         T.updateFaces([]([[maybe_unused]] const prism::mesh::Face& face) { return 10.0; });
 
-        for (std::size_t i = 0; i < mesh->faceCount(); ++i) {
+        for (size_t i = 0; i < mesh->faceCount(); ++i) {
             REQUIRE(T.valueAtFace(i) == 10.0);
         }
     }
@@ -78,7 +78,7 @@ TEST_CASE("Scalar updateFaces", "[field][update]") {
         T.updateFaces(
             [](const prism::mesh::Face& face) { return static_cast<prism::f64>(face.id() * 2); });
 
-        for (std::size_t i = 0; i < mesh->faceCount(); ++i) {
+        for (size_t i = 0; i < mesh->faceCount(); ++i) {
             REQUIRE(T.valueAtFace(i) == static_cast<prism::f64>(i * 2));
         }
     }
@@ -90,7 +90,7 @@ TEST_CASE("Scalar updateCells", "[field][update]") {
     auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
     auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
 
-    const std::size_t num_cells = mesh->cellCount();
+    const size_t num_cells = mesh->cellCount();
 
     prism::VectorXd cell_values = prism::VectorXd::Constant(num_cells, 1.0);
     prism::field::Scalar T("T", mesh, cell_values);

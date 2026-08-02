@@ -11,7 +11,7 @@ class SolverResult {
     SolverResult(size_t iteration, f64 initial_residual, f64 final_residual);
     void setAsConverged() noexcept;
     auto hasConverged() const noexcept -> bool;
-    auto iteration() const noexcept -> std::size_t;
+    auto iteration() const noexcept -> size_t;
     auto initialResidual() const noexcept -> f64;
     auto finalResidual() const noexcept -> f64;
 

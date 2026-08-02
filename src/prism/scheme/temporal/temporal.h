@@ -21,7 +21,7 @@ class ITemporal : public scheme::IFullScheme {
     void applyBoundary() override {}
 
     double _dt {1e-5}; // To avoid initialization with 0
-    std::size_t _n_timesteps {0};
+    size_t _n_timesteps {0};
 };
 
 

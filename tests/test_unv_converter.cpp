@@ -14,7 +14,7 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
     auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    std::size_t n_wrong_normals = 0;
+    size_t n_wrong_normals = 0;
 
     for (const auto& face : mesh->interiorFaces()) {
         const auto& owner = mesh->cell(face.owner());
@@ -53,7 +53,7 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
     // "cylinder" mesh should have a surface area of 69.0842
     REQUIRE(std::abs(surface_area - 69.0842) < 1e-4);
 
-    std::size_t bad_interior_faces = 0;
+    size_t bad_interior_faces = 0;
     std::for_each(mesh->interiorFaces().begin(),
                   mesh->interiorFaces().end(),
                   [&bad_interior_faces](const mesh::Face& face) {
@@ -63,7 +63,7 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
                   });
     REQUIRE(bad_interior_faces == 0);
 
-    std::size_t bad_boundary_faces = 0;
+    size_t bad_boundary_faces = 0;
     std::for_each(mesh->boundaryFaces().begin(),
                   mesh->boundaryFaces().end(),
                   [&bad_boundary_faces](const mesh::Face& face) {

@@ -4,7 +4,7 @@
 
 namespace prism::scheme {
 
-IPartialScheme::IPartialScheme(std::size_t n_cells) : RHSProvider(n_cells) {}
+IPartialScheme::IPartialScheme(size_t n_cells) : RHSProvider(n_cells) {}
 
 IFullScheme::IFullScheme(const SharedPtr<field::Scalar>& field)
     : LinearSystem(field->mesh()->cellCount()), _field(field) {}

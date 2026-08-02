@@ -1,10 +1,10 @@
 #include "linear.h"
 
 namespace prism {
-RHSProvider::RHSProvider(std::size_t n_cells) : _b(n_cells) {
+RHSProvider::RHSProvider(size_t n_cells) : _b(n_cells) {
     _b.setZero();
 }
-LinearSystem::LinearSystem(std::size_t n_cells) : RHSProvider(n_cells), _A(n_cells, n_cells) {
+LinearSystem::LinearSystem(size_t n_cells) : RHSProvider(n_cells), _A(n_cells, n_cells) {
     // assume that the mesh is purely tetrahedral, so each cell has 3 neighbors
     // then the number of triplets (i, j, v) is 4 * n_cells
     // this is the minimum number of triplets, but it is not the exact number
@@ -14,7 +14,7 @@ LinearSystem::LinearSystem(std::size_t n_cells) : RHSProvider(n_cells), _A(n_cel
     _triplets.reserve(4 * n_cells);
 }
 
-void LinearSystem::insert(std::size_t i, std::size_t j, double v) {
+void LinearSystem::insert(size_t i, size_t j, double v) {
     _triplets.emplace_back(i, j, v);
 }
 
