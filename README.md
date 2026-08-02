@@ -4,13 +4,17 @@ Prism is a C++20 library for solving partial differential equations (PDEs) using
 
 - Handling unstructured polyhedral meshes (currently the only mesh reader implemented is for Ideas-UNV meshes).
 - Mesh traversal with ease.
-- Native support for scalar, vector and tensor fields.
-- Support for non-orthogonal correction for diffusion scheme.
-- Central difference, Upwind, Second-order upwind, QUICK and high-resolution (TVD) schemes.
-- Support for explicit and implicit source terms.
-- Support for implicit transient schemes such as Backward Euler (first order) and Adam-Moulton (second order).
-- Support for user defined boundary conditions (with many default boundary conditions available such as Fixed, FixedGradient, Symmetric, Outlet, ...).
-- Exporting results to VTU format (right now supporting meshes with hexahedral, tetrahedral and pyramidal cells only).
+- Native support for scalar, vector and tensor fields, with time history for transient schemes.
+- Pressure-velocity coupling algorithms: SIMPLE (steady), PISO (transient) and PRIME corrector, built on Rhie-Chow face interpolation, with automatic pressure reference for closed domains.
+- Linear solvers: BiCGSTAB and Jacobi, with reference-cell handling for singular (all-Neumann) systems.
+- Convection schemes: upwind, central difference, second-order upwind, QUICK, FROMM, and the high-resolution (TVD) schemes MINMOD, MUSCL and SMART.
+- Diffusion schemes with over-relaxed non-orthogonal correction for non-orthogonal meshes.
+- Gradient schemes: Green-Gauss (with skewness correction) and least-squares.
+- Explicit and implicit source terms (gradient, divergence, laplacian, constant, ...).
+- Implicit transient schemes: Backward Euler (first order) and Adam-Moulton (second order).
+- Built-in boundary conditions: Fixed, FixedGradient, ZeroGradient, NoSlip, Symmetry and Outlet, with support for user-defined boundary conditions.
+- Courant number monitor for transient runs.
+- Exporting results to VTU format (ASCII or raw-binary-compressed), with a time-series writer for transient runs (hexahedral, tetrahedral and prism cells).
 - and much more...
 
 Prism's main goal is to be simple, modular and easy to use. The following example shows how to solve steady state advection equation:
