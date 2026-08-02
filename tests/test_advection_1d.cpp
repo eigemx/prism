@@ -1,38 +1,31 @@
 #include <prism/prism.h>
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <filesystem>
 #include <memory>
 
-#include "prism/field/scalar.h"
-#include "prism/field/velocity.h"
+#include "test_utils.h"
 
-auto advection_analytical_solution(double u, const prism::SharedPtr<prism::mesh::PMesh>& mesh)
-    -> prism::field::Scalar {
-    prism::VectorXd sol;
-    sol.resize(mesh->cellCount());
+using namespace prism;
+using namespace prism::test;
 
-    for (const auto& cell : mesh->cells()) {
+namespace {
+
+auto advection_analytical_solution(f64 u, const SharedPtr<mesh::PMesh>& mesh) -> field::Scalar {
+    return makeScalarField(mesh, "analytical_solution", [u](const auto& cell) {
         double x = cell.center().x();
-        double y = cell.center().y();
-        double sol_cell = -(std::exp(u * x / 0.1) - 1) / (std::exp(u / 0.1) - 1);
-        sol[cell.id()] = sol_cell + 1;
-    }
-
-    return {"analytical_solution", mesh, std::move(sol)};
+        return -((std::exp(u * x / 0.1) - 1) / (std::exp(u / 0.1) - 1)) + 1;
+    });
 }
 
+} // anonymous namespace
+
 TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
-    using namespace prism;
+    using namespace prism::scheme;
     log::setLevel(log::Level::Error);
 
-    // read mesh
-    const auto* mesh_file = "tests/cases/versteeg_advection_1d/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+    auto mesh = loadMesh("tests/cases/versteeg_advection_1d/mesh.unv");
 
     auto T = makeShared<field::Scalar>("T", mesh, 0.0);
 
@@ -56,13 +49,7 @@ TEST_CASE("solve advection equation at u = 2.5 m/s, Pe ~= 5", "[advection]") {
                               laplacian(kappa, T) // - ∇.(κ ∇T)
     );
 
-    // solve
-    auto solver = solver::BiCGSTAB();
-    auto nOrthogonalCorrectors = 5;
-
-    for (int i = 0; i < nOrthogonalCorrectors; ++i) {
-        solver.solve(eqn, 5, 1e-20);
-    }
+    solveWithBiCGSTAB(eqn, 5, 5, 1e-20);
 
     VectorXd diff = eqn.field()->values().array() -
                     advection_analytical_solution(inlet_velocity.x(), mesh).values().array();

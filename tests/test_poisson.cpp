@@ -1,54 +1,37 @@
 #include <prism/prism.h>
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <filesystem>
 #include <memory>
 
-auto poisson_analytical_solution(const auto& mesh) -> prism::field::Scalar {
-    prism::VectorXd sol;
-    sol.resize(mesh->cellCount());
+#include "test_utils.h"
 
-    for (const auto& cell : mesh->cells()) {
+using namespace prism;
+using namespace prism::scheme;
+using namespace prism::test;
+
+namespace {
+
+auto poisson_analytical_solution(const auto& mesh) -> field::Scalar {
+    return makeScalarField(mesh, "S", [](const auto& cell) {
         double x = cell.center().x();
         double y = cell.center().y();
-        double sol_cell = std::sin(prism::PI * x);
-        sol_cell *= std::cos(prism::PI * y);
-        sol[cell.id()] = sol_cell;
-    }
-
-    return prism::field::Scalar("S", mesh, std::move(sol));
+        return std::sin(prism::PI * x) * std::cos(prism::PI * y);
+    });
 }
 
-auto l2NormRel(const prism::VectorXd& x, const prism::VectorXd& x_ref) -> double {
-    return (x - x_ref).norm() / x_ref.norm();
-}
-
-auto testPoissonWithMesh(const std::string& mesh_file_name)
-    -> prism::SharedPtr<prism::field::Scalar> {
-    using namespace prism;
-    using namespace prism::scheme;
-
-    // read mesh
-    auto boundary_file = std::filesystem::path(mesh_file_name).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file_name, boundary_file).toPMesh();
+auto testPoissonWithMesh(const std::string& mesh_file_name) -> SharedPtr<field::Scalar> {
+    auto mesh = loadMesh(mesh_file_name);
 
     auto P = makeShared<field::Scalar>("P", mesh, 0.0);
 
-    // create source term
-    VectorXd src_values;
-    src_values.resize(mesh->cellCount());
-
-    for (const auto& cell : mesh->cells()) {
-        double x = cell.center().x();
-        double y = cell.center().y();
-        double src = 2 * std::pow(prism::PI, 2);
-        src *= std::sin(prism::PI * x);
-        src *= std::cos(prism::PI * y);
-        src_values[cell.id()] = src;
-    }
+    VectorXd src_values =
+        makeScalarField(mesh, "S", [](const auto& cell) {
+            double x = cell.center().x();
+            double y = cell.center().y();
+            return 2 * std::pow(prism::PI, 2) * std::sin(prism::PI * x) * std::cos(prism::PI * y);
+        }).values();
 
     auto c = makeShared<field::Tensor>("c", mesh, Matrix3d::Identity());
 
@@ -59,16 +42,12 @@ auto testPoissonWithMesh(const std::string& mesh_file_name)
                               source::ConstantScalar<Sign::Positive>(source) // = S
     );
 
-    // solve
-    auto solver = solver::BiCGSTAB();
-    auto nOrthogonalCorrectors = 5;
-
-    for (int i = 0; i < nOrthogonalCorrectors; ++i) {
-        solver.solve(eqn, 15, 1e-20);
-    }
+    solveWithBiCGSTAB(eqn);
 
     return P;
 }
+
+} // anonymous namespace
 
 TEST_CASE("test poisson equation unstructured", "[poisson]") {
     auto P = testPoissonWithMesh("tests/cases/poisson/mesh.unv");

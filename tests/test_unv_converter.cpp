@@ -4,15 +4,13 @@
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
-#include <filesystem>
 
-TEST_CASE("test UNV converter owner-neighbor shared face normal direction",
-          "[unv-face-normals]") {
+#include "test_utils.h"
+
+TEST_CASE("test UNV converter owner-neighbor shared face normal direction", "[unv-face-normals]") {
     using namespace prism;
 
-    const auto* unv_file_name = "tests/cases/cylinder/mesh.unv";
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
+    auto mesh = prism::test::loadMesh("tests/cases/cylinder/mesh.unv");
 
     size_t n_wrong_normals = 0;
 

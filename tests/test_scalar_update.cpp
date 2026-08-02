@@ -3,11 +3,10 @@
 
 #include "prism/field/scalar.h"
 #include "prism/mesh/unv.h"
+#include "test_utils.h"
 
-TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
-    const auto* mesh_file = "tests/cases/versteeg_advection_1d/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+TEST_CASE("Scalar mapInteriorFaceValues", "[field][update]") {
+    auto mesh = prism::test::loadMesh("tests/cases/versteeg_advection_1d/mesh.unv");
 
     const size_t num_cells = mesh->cellCount();
     const size_t num_faces = mesh->faceCount();
@@ -23,7 +22,7 @@ TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
             interior_face_count++;
         }
 
-        T.updateInteriorFaces([]([[maybe_unused]] const prism::mesh::Face& face) { return 2.0; });
+        T.mapInteriorFaceValues([]([[maybe_unused]] const prism::mesh::Face& face) { return 2.0; });
 
         REQUIRE(T.hasFaceValues());
         for (const auto& face : mesh->interiorFaces()) {
@@ -32,7 +31,7 @@ TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
     }
 
     SECTION("updates only interior faces") {
-        T.updateInteriorFaces([]([[maybe_unused]] const prism::mesh::Face& face) { return 5.0; });
+        T.mapInteriorFaceValues([]([[maybe_unused]] const prism::mesh::Face& face) { return 5.0; });
 
         for (const auto& patch : mesh->boundaryPatches()) {
             if (patch.isEmpty()) {
@@ -46,7 +45,7 @@ TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
     }
 
     SECTION("callback receives correct face IDs") {
-        T.updateInteriorFaces(
+        T.mapInteriorFaceValues(
             [&mesh](const prism::mesh::Face& face) { return static_cast<prism::f64>(face.id()); });
 
         for (const auto& face : mesh->interiorFaces()) {
@@ -56,10 +55,8 @@ TEST_CASE("Scalar updateInteriorFaces", "[field][update]") {
 }
 
 
-TEST_CASE("Scalar updateFaces", "[field][update]") {
-    const auto* mesh_file = "tests/cases/versteeg_advection_1d/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+TEST_CASE("Scalar mapFaceValues", "[field][update]") {
+    auto mesh = prism::test::loadMesh("tests/cases/versteeg_advection_1d/mesh.unv");
 
     const size_t num_cells = mesh->cellCount();
 
@@ -67,7 +64,7 @@ TEST_CASE("Scalar updateFaces", "[field][update]") {
     prism::field::Scalar T("T", mesh, cell_values);
 
     SECTION("updates all faces including boundary") {
-        T.updateFaces([]([[maybe_unused]] const prism::mesh::Face& face) { return 10.0; });
+        T.mapFaceValues([]([[maybe_unused]] const prism::mesh::Face& face) { return 10.0; });
 
         for (size_t i = 0; i < mesh->faceCount(); ++i) {
             REQUIRE(T.valueAtFace(i) == 10.0);
@@ -75,7 +72,7 @@ TEST_CASE("Scalar updateFaces", "[field][update]") {
     }
 
     SECTION("callback receives correct face IDs for all faces") {
-        T.updateFaces(
+        T.mapFaceValues(
             [](const prism::mesh::Face& face) { return static_cast<prism::f64>(face.id() * 2); });
 
         for (size_t i = 0; i < mesh->faceCount(); ++i) {
@@ -85,10 +82,8 @@ TEST_CASE("Scalar updateFaces", "[field][update]") {
 }
 
 
-TEST_CASE("Scalar updateCells", "[field][update]") {
-    const auto* mesh_file = "tests/cases/versteeg_advection_1d/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+TEST_CASE("Scalar mapCellValues", "[field][update]") {
+    auto mesh = prism::test::loadMesh("tests/cases/versteeg_advection_1d/mesh.unv");
 
     const size_t num_cells = mesh->cellCount();
 
@@ -96,7 +91,7 @@ TEST_CASE("Scalar updateCells", "[field][update]") {
     prism::field::Scalar T("T", mesh, cell_values);
 
     SECTION("updates all cell values") {
-        T.updateCells([]([[maybe_unused]] const prism::mesh::Cell& cell) { return 7.0; });
+        T.mapCellValues([]([[maybe_unused]] const prism::mesh::Cell& cell) { return 7.0; });
 
         for (const auto& cell : mesh->cells()) {
             REQUIRE(T.valueAtCell(cell) == 7.0);
@@ -104,7 +99,7 @@ TEST_CASE("Scalar updateCells", "[field][update]") {
     }
 
     SECTION("callback receives correct cell IDs") {
-        T.updateCells(
+        T.mapCellValues(
             [](const prism::mesh::Cell& cell) { return static_cast<prism::f64>(cell.id() + 1); });
 
         for (const auto& cell : mesh->cells()) {
@@ -114,7 +109,7 @@ TEST_CASE("Scalar updateCells", "[field][update]") {
 
     SECTION("can use lambda with captured state") {
         prism::f64 multiplier = 3.0;
-        T.updateCells(
+        T.mapCellValues(
             [multiplier](const prism::mesh::Cell& cell) { return multiplier * cell.id(); });
 
         for (const auto& cell : mesh->cells()) {

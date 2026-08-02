@@ -12,33 +12,26 @@
 #include <filesystem>
 #include <memory>
 
+#include "test_utils.h"
+
 using namespace prism;
 using namespace prism::scheme;
+using namespace prism::test;
 
-auto implicit_analytic_solution(const auto& mesh) -> prism::field::Scalar {
+namespace {
+
+auto implicit_analytic_solution(const SharedPtr<mesh::PMesh>& mesh) -> field::Scalar {
     // y = sinh(2x + 1)
-    prism::VectorXd sol;
-    sol.resize(mesh->cellCount());
-
-    for (const auto& cell : mesh->cells()) {
+    return makeScalarField(mesh, "S", [](const auto& cell) {
         double x = cell.center().x();
-        double sol_cell = std::sinh(2 * x + 1);
-        sol[cell.id()] = sol_cell;
-    }
-
-    return {"S", mesh, std::move(sol)};
+        return std::sinh((2 * x) + 1);
+    });
 }
 
-auto l2NormRelative(const VectorXd& x, const VectorXd& x_ref) -> double {
-    return (x - x_ref).norm() / x_ref.norm();
-}
+} // anonymous namespace
 
 TEST_CASE("test implicit source", "[implicit-source]") {
-    const auto* unv_file_name = "tests/cases/channel1d_coarse/mesh.unv";
-
-    // read mesh
-    auto boundary_file = std::filesystem::path(unv_file_name).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
+    auto mesh = loadMesh("tests/cases/channel1d_coarse/mesh.unv");
 
     auto y = makeShared<field::Scalar>("y", mesh, 0.0);
     auto c = makeShared<field::Scalar>("c", mesh, 1.0);
@@ -49,14 +42,8 @@ TEST_CASE("test implicit source", "[implicit-source]") {
                               source::ImplicitField<Sign::Negative>(4, y) // = -4y
     );
 
-    // solve
-    auto solver = solver::BiCGSTAB();
-    auto nOuterIter = 5;
+    solveWithBiCGSTAB(eqn);
 
-    for (int i = 0; i < nOuterIter; ++i) {
-        solver.solve(eqn, 15, 1e-20);
-    }
-
-    auto norm = l2NormRelative(y->values(), implicit_analytic_solution(mesh).values());
+    auto norm = l2NormRel(y->values(), implicit_analytic_solution(mesh).values());
     REQUIRE(norm < 0.005);
 }

@@ -2,13 +2,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace {
+#include "test_utils.h"
 
-auto l2NormRel(const prism::VectorXd& x, const prism::VectorXd& x_ref) -> double {
-    return (x - x_ref).norm() / x_ref.norm();
-}
-
-} // anonymous namespace
+using namespace prism;
+using namespace prism::test;
 
 TEST_CASE("All solvers converge to known solution of linear system", "[solver]") {
     constexpr size_t n = 10;

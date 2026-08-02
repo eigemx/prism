@@ -9,6 +9,7 @@
 #include "prism/field/scalar.h"
 #include "prism/scheme/temporal/adam_moulton.h"
 #include "prism/types.h"
+#include "test_utils.h"
 
 auto transientAnalyticalSolution(prism::f64 x, prism::f64 t, prism::f64 kappa) -> prism::f64 {
     auto n_modes = 100;
@@ -29,9 +30,7 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     using namespace prism;
 
     // read mesh
-    const auto* mesh_file = "tests/cases/versteeg_trans_1d/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+    auto mesh = prism::test::loadMesh("tests/cases/versteeg_trans_1d/mesh.unv");
 
     auto T = makeShared<field::Scalar>("T", mesh, 200.0);
     T->setHistorySize(2);

@@ -1,14 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
-#include <filesystem>
 
 #include "prism/field/scalar.h"
-#include "prism/mesh/unv.h"
+#include "test_utils.h"
 
 TEST_CASE("GeneralScalar History with Real Mesh", "[field][history]") {
     // Load mesh from test_advection_1d.cpp
-    const auto* mesh_file = "tests/cases/versteeg_advection_1d/mesh.unv";
-    auto boundary_file = std::filesystem::path(mesh_file).parent_path() / "fields.json";
-    auto mesh = prism::mesh::UnvToPMeshConverter(mesh_file, boundary_file).toPMesh();
+    auto mesh = prism::test::loadMesh("tests/cases/versteeg_advection_1d/mesh.unv");
 
     const size_t num_cells = mesh->cellCount();
 
