@@ -18,8 +18,9 @@ struct PISOControls {
     // Number of pressure correction steps (PRIME steps).
     size_t pressure_correction_steps = 2;
 
-    // Under-relaxation factor for momentum predictor
-    f64 momentum_urf = 0.7;
+    // Under-relaxation factor for momentum predictor (in transient simulations under-relaxation is
+    // not required).
+    f64 momentum_urf = 1.0;
 
     // Momentum predictor inner solve() loop max. iterations count
     size_t momentum_max_iter = 3;

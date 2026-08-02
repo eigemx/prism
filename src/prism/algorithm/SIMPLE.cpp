@@ -183,6 +183,15 @@ auto solvePressureEquation(SIMPLEControls controls,
                            result.hasConverged()});
     }
 
+    // The pressure-correction equation solve updates only the cell values, and the boundary face
+    // values were fixed by constrainPPrime() before the solve and are now stale. So, for Neumann
+    // (like zero-gradient) boundary patches they were set to the initial zero value and never
+    // updated, so valueAtFace() on a boundary face returns a wrong 0 instead of the solved
+    // cell value. This will make gradient schemes return wrong pressure gradient fields, corrupting
+    // the velocity/mdot correction near the walls. Reset the stored face values so valueAtFace()
+    // falls back to the boundary handlers.
+    pprime->clearFaceValues();
+
     return {.pprime = pprime, .D = D, .reports = std::move(reports)};
 }
 

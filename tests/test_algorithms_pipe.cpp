@@ -11,7 +11,9 @@ auto flowRate(const prism::field::Velocity& U,
               const prism::mesh::PMesh& mesh,
               const std::string& patch_name) -> double {
     for (const auto& patch : mesh.boundaryPatches()) {
-        if (patch.name() != patch_name) continue;
+        if (patch.name() != patch_name) {
+            continue;
+        }
         double rate = 0.0;
         for (auto fid : patch.facesIds()) {
             const auto& face = mesh.face(fid);
@@ -60,7 +62,7 @@ TEST_CASE("SIMPLE algorithm mass conservation on coarse pipe", "[algo]") {
     auto outlet = flowRate(*U, *mesh, "Outlet");
     double imbalance = std::abs(inlet + outlet) / std::abs(inlet);
     INFO("inlet flow = " << inlet << "  outlet flow = " << outlet << ", imbalance = " << imbalance);
-    REQUIRE(imbalance < 0.05);
+    REQUIRE(imbalance < 1e-6);
 }
 
 TEST_CASE("PISO auto pRef on cavity_hex (closed domain)", "[algo]") {
@@ -103,8 +105,8 @@ TEST_CASE("PISO auto pRef on cavity_hex (closed domain)", "[algo]") {
     controls.outer_iterations = 3;
     controls.pressure_correction_steps = 1;
     controls.non_ortho_correctors = 0;
-    controls.momentum_urf = 0.7;
-    controls.pressure_urf = 0.3;
+    controls.momentum_urf = 1.0;
+    controls.pressure_urf = 1.0;
 
     auto nSteps = 20;
     for (int ts = 0; ts < nSteps; ++ts) {
@@ -155,7 +157,7 @@ TEST_CASE("SIMPLE ductSIMPLE (open domain, no pRef needed)", "[algo]") {
     auto outlet = flowRate(*U, *mesh, "outlet");
     double imbalance = std::abs(inlet + outlet) / std::abs(inlet);
     INFO("inlet flow = " << inlet << "  outlet flow = " << outlet << "  imbalance = " << imbalance);
-    REQUIRE(imbalance < 0.05);
+    REQUIRE(imbalance < 1e-6);
 }
 
 TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
@@ -187,6 +189,7 @@ TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
     controls.momentum_implicit_steps = 1;
     controls.pressure_correction_steps = 1;
     controls.non_ortho_correctors = 2;
+    // Steady pipe (no time term): steady pressure-based solvers need under-relaxation to converge.
     controls.momentum_urf = 0.7;
     controls.pressure_urf = 0.3;
     controls.momentum_residual = 1e-7;
@@ -201,7 +204,7 @@ TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
     auto outlet = flowRate(*U, *mesh, "Outlet");
     double imbalance = std::abs(inlet + outlet) / std::abs(inlet);
     INFO("inlet flow = " << inlet << "  outlet flow = " << outlet << ", imbalance = " << imbalance);
-    REQUIRE(imbalance < 0.05);
+    REQUIRE(imbalance < 1e-6);
 }
 
 TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
@@ -233,6 +236,7 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
     controls.momentum_implicit_steps = 1;
     controls.pressure_correction_steps = 2;
     controls.non_ortho_correctors = 2;
+    // Steady pipe (no time term): steady pressure-based solvers need under-relaxation to converge.
     controls.momentum_urf = 0.7;
     controls.pressure_urf = 0.3;
     controls.momentum_residual = 1e-7;
@@ -247,5 +251,5 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
     auto outlet = flowRate(*U, *mesh, "Outlet");
     double imbalance = std::abs(inlet + outlet) / std::abs(inlet);
     INFO("inlet flow = " << inlet << "  outlet flow = " << outlet << ", imbalance = " << imbalance);
-    REQUIRE(imbalance < 0.05);
+    REQUIRE(imbalance < 1e-6);
 }

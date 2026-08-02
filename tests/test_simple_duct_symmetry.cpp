@@ -77,21 +77,25 @@ TEST_CASE("SIMPLE on non-orthogonal duct with symmetry matches OpenFOAM",
     // Compare pressure
     double p_error = l2NormRel(p->values(), p_ref);
     INFO("Pressure relative L2 error: " << p_error);
-    REQUIRE(p_error < 0.04);
+    REQUIRE(p_error < 0.025);
 
     // Compare Ux component (near the symmetry plane)
     VectorXd Ux_computed = U->x()->values();
     VectorXd Ux_ref(mesh->cellCount());
-    for (size_t i = 0; i < mesh->cellCount(); ++i) Ux_ref(i) = U_ref[i].x();
+    for (size_t i = 0; i < mesh->cellCount(); ++i) {
+        Ux_ref(i) = U_ref[i].x();
+    }
     double Ux_error = l2NormRel(Ux_computed, Ux_ref);
     INFO("Ux relative L2 error: " << Ux_error);
-    REQUIRE(Ux_error < 0.1);
+    REQUIRE(Ux_error < 0.07);
 
     // Compare Uy component (primary flow direction)
     VectorXd Uy_computed = U->y()->values();
     VectorXd Uy_ref(mesh->cellCount());
-    for (size_t i = 0; i < mesh->cellCount(); ++i) Uy_ref(i) = U_ref[i].y();
+    for (size_t i = 0; i < mesh->cellCount(); ++i) {
+        Uy_ref(i) = U_ref[i].y();
+    }
     double Uy_error = l2NormRel(Uy_computed, Uy_ref);
     INFO("Uy relative L2 error: " << Uy_error);
-    REQUIRE(Uy_error < 0.01);
+    REQUIRE(Uy_error < 0.007);
 }
