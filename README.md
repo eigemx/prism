@@ -53,6 +53,28 @@ Prism is in early development stages and is not yet ready for production use. Ho
 
 ## Examples
 
+### Lid-driven cavity - transient incompressible flow (PISO algorithm)
+
+check `examples/PISOSolver/main.cpp` for complete implementation
+
+Incompressible Navier-Stokes equations:
+
+$$ \frac{\partial U}{\partial t} + \nabla . (UU) - \nu \nabla^2 U = - \nabla P $$
+
+$$ \nabla . U = 0 $$
+
+Solved with the PISO (Pressure-Implicit with Splitting of Operators) algorithm on a unit lid-driven cavity at Re = 100, and validated against the reference solution of Ghia et al. (1982).
+
+<p align="center">
+    <img alt="cavity" src="https://github.com/eigemx/prism/blob/main/screenshots/cavity.png?raw=true" width="90%">
+</p>
+
+Centerline velocity profiles against Ghia et al. (1982):
+
+<p align="center">
+    <img alt="ghiaComparison" src="https://github.com/eigemx/prism/blob/main/screenshots/ghia_comparison.png?raw=true" width="90%">
+</p>
+
 ### 2D SIMPLE Algorithm - backward facing step
 
 check `examples/SIMPLESolver/main.cpp` for complete implementation:
