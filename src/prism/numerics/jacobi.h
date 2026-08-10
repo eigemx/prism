@@ -6,7 +6,12 @@ namespace prism::solver {
 
 class Jacobi : public ISolver {
   public:
-    auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd override;
+    void prepare(const SparseMatrix& A) override;
+    auto step(const VectorXd& x, const VectorXd& b) -> VectorXd override;
+
+  private:
+    const SparseMatrix* _A {nullptr};
+    VectorXd _D_inv;
 };
 
 } // namespace prism::solver

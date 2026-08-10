@@ -2,10 +2,14 @@
 
 namespace prism::solver {
 
-auto Jacobi::step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd {
-    VectorXd D_inv = A.diagonal().cwiseInverse();
-    VectorXd r = b - (A * x);
-    return x + (D_inv.asDiagonal() * r);
+void Jacobi::prepare(const SparseMatrix& A) {
+    _A = &A;
+    _D_inv = A.diagonal().cwiseInverse();
+}
+
+auto Jacobi::step(const VectorXd& x, const VectorXd& b) -> VectorXd {
+    VectorXd r = b - ((*_A) * x);
+    return x + (_D_inv.asDiagonal() * r);
 }
 
 } // namespace prism::solver

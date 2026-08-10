@@ -56,12 +56,17 @@ auto ISolver::solve(eqn::Transport& eqn,
         vec[idx] += diag * ref_value;
     }
 
+    // Factorize the (relaxed, reference-pinned) matrix once; step() then reuses the
+    // factorization for every iteration instead of recomputing it each time. Convergence is
+    // driven by the scaled residual check below rather than by any internal solver tolerance.
+    prepare(A);
+
     for (; iter < n_iter; iter++) {
         if (iter == 0) {
             init_res = residual(A, phi->values(), b);
         }
 
-        phi->values() = step(A, phi->values(), b);
+        phi->values() = step(phi->values(), b);
         current_res = residual(A, phi->values(), b);
 
         if (current_res < eps) {

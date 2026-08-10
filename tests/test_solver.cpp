@@ -36,8 +36,9 @@ TEST_CASE("All solvers converge to known solution of linear system", "[solver]")
         prism::solver::BiCGSTAB solver;
         prism::VectorXd x = prism::VectorXd::Zero(n);
 
+        solver.prepare(A);
         for (size_t iter = 0; iter < 20; ++iter) {
-            x = solver.step(A, x, b);
+            x = solver.step(x, b);
         }
 
         double error = l2NormRel(x, x_analytical);
@@ -48,8 +49,9 @@ TEST_CASE("All solvers converge to known solution of linear system", "[solver]")
         prism::solver::Jacobi solver;
         prism::VectorXd x = prism::VectorXd::Zero(n);
 
+        solver.prepare(A);
         for (size_t iter = 0; iter < 20; ++iter) {
-            x = solver.step(A, x, b);
+            x = solver.step(x, b);
         }
 
         double error = l2NormRel(x, x_analytical);

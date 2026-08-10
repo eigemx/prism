@@ -46,7 +46,25 @@ class ISolver {
                        Optional<size_t> ref_cell = NullOption,
                        f64 ref_value = 0.0,
                        bool clear_coeffs = true) -> SolverResult;
-    virtual auto step(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> VectorXd = 0;
+
+    /** @brief Factorizes/prepares the preconditioner for the matrix A.
+     *
+     * Must be called once before iterating. The matrix must remain alive for the
+     * duration of the iteration loop (the solver keeps a reference to it).
+     *
+     * @param A The matrix to factorize. */
+    virtual void prepare(const SparseMatrix& A) = 0;
+
+    /** @brief Performs one solver application using the factorization from prepare().
+     *
+     * For BiCGSTAB this runs one full internal Krylov solve with the cached
+     * preconditioner, so the factorization performed by prepare() is reused instead of
+     * being recomputed on every step.
+     *
+     * @param x Current solution guess.
+     * @param b Right-hand side vector.
+     * @return The updated solution. */
+    virtual auto step(const VectorXd& x, const VectorXd& b) -> VectorXd = 0;
 };
 
 } // namespace prism::solver
