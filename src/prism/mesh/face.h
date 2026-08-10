@@ -41,6 +41,11 @@ class Face {
         _boundary_patch_id = boundary_patch_id;
     }
 
+    /// True if this face belongs to an empty boundary patch. Interior faces and faces on
+    /// non-empty patches always return false.
+    auto isEmpty() const noexcept -> bool { return _is_empty; }
+    void setIsEmpty(bool is_empty) noexcept { _is_empty = is_empty; }
+
   private:
     size_t _id {0};
     size_t _vertices_count {0};
@@ -53,5 +58,6 @@ class Face {
     std::optional<size_t> _owner {std::nullopt};
     std::optional<size_t> _neighbor {std::nullopt};
     std::optional<size_t> _boundary_patch_id {std::nullopt};
+    bool _is_empty {false};
 };
 } // namespace prism::mesh

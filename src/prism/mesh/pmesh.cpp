@@ -29,6 +29,13 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
     _n_boundary_faces = perm.n_boundary;
     _n_nonempty_boundary_faces = perm.n_nonempty;
 
+    // Make each boundary face aware of whether it belongs to an empty patch, so callers can
+    // skip empty faces with a single flag load instead of probing the owning patch.
+    for (size_t face_id = 0; face_id < _n_boundary_faces; ++face_id) {
+        const auto& face = _faces[face_id];
+        _faces[face_id].setIsEmpty(_boundary_patches[face.boundaryPatchId().value()].isEmpty());
+    }
+
     std::vector<size_t> {}.swap(perm.old_to_new);
     std::vector<size_t> {}.swap(boundary_faces_ids);
     std::vector<size_t> {}.swap(interior_faces_ids);

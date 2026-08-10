@@ -4,3 +4,4 @@ vcpkg_installed/
 *.vtu
 *.pvd
 todo.md
+perf.md

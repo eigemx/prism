@@ -71,3 +71,36 @@ TEST_CASE("test UNV converter owner-neighbor shared face normal direction", "[un
                   });
     REQUIRE(bad_boundary_faces == 0);
 }
+
+TEST_CASE("Face::isEmpty() matches its boundary patch", "[unv-face-emptiness]") {
+    using namespace prism;
+
+    // 2D cavity: the front/back patches are "empty", so some boundary faces must be flagged.
+    auto mesh = prism::test::loadMesh("tests/cases/cavity/mesh.unv");
+
+    size_t n_empty_faces = 0;
+    size_t mismatches = 0;
+
+    for (const auto& face : mesh->boundaryFaces()) {
+        if (face.isEmpty() != mesh->boundaryPatch(face).isEmpty()) {
+            mismatches++;
+        }
+        if (face.isEmpty()) {
+            n_empty_faces++;
+        }
+    }
+
+    REQUIRE(mismatches == 0);
+
+    // interior faces are never empty
+    size_t n_empty_interior_faces = 0;
+    for (const auto& face : mesh->interiorFaces()) {
+        if (face.isEmpty()) {
+            n_empty_interior_faces++;
+        }
+    }
+    REQUIRE(n_empty_interior_faces == 0);
+
+    // the cavity case must actually exercise the true branch
+    REQUIRE(n_empty_faces > 0);
+}

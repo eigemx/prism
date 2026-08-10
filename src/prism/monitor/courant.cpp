@@ -12,7 +12,7 @@ auto courantNumber(const field::IVector& mdot, f64 dt) -> field::Scalar {
         f64 flux_sum = 0.0;
         for (auto face_id : cell.facesIds()) {
             const auto& face = mesh->face(face_id);
-            if (face.isBoundary() && mesh->boundaryPatch(face).isEmpty()) {
+            if (face.isEmpty()) {
                 continue;
             }
             flux_sum += std::abs(mdot.fluxAtFace(face_id));
