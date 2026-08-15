@@ -50,7 +50,7 @@ void constrainPPrime(SharedPtr<field::Pressure>& pprime) {
             continue; // skip empty patches
         }
 
-        const auto& bc = patch.getBoundaryCondition("P");
+        const auto& bc = patch.getBoundaryCondition(pprime->name());
         const auto& handler = pprime->boundaryHandlersManager().getHandler(bc.kindString());
 
         if (handler == nullptr) {
