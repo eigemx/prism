@@ -2,7 +2,6 @@
 
 #include <fmt/format.h>
 
-#include <cstddef>
 #include <stdexcept>
 
 #include "prism/equation/transport.h"

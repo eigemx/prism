@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <memory>
 
 auto main(int argc, char* argv[]) -> int {
     using namespace prism;
@@ -49,6 +48,7 @@ auto main(int argc, char* argv[]) -> int {
               inlet_velocity.x(),
               inlet_velocity.y(),
               inlet_velocity.z());
+
     auto U = makeShared<field::Velocity>("U", mesh, inlet_velocity);
     auto kappa = makeShared<field::Scalar>("kappa", mesh, 1e-2);
 

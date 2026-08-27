@@ -1,6 +1,6 @@
 # Prism
 
-Prism is a C++20 library for solving partial differential equations (PDEs) using finite volume methods. It is designed to be simple and easy to use, with a focus on computational fluid dynamics (CFD). Prism has many capabilities such as:
+Prism is a modern C++ library for solving partial differential equations (PDEs) using finite volume methods. It is designed to be simple and easy to use, with a focus on computational fluid dynamics (CFD). Prism has many capabilities such as:
 
 - Handling unstructured polyhedral meshes (currently the only mesh reader implemented is for Ideas-UNV meshes).
 - Mesh traversal with ease.

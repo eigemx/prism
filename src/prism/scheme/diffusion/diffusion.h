@@ -87,6 +87,7 @@ inline IDiffusion::IDiffusion(SharedPtr<IDiffusionCoeff> kappa, const SharedPtr<
 namespace detail {
 template <typename Kappa>
 auto wrapKappa(SharedPtr<Kappa> kappa) -> SharedPtr<IDiffusionCoeff> {
+    /// TODO: Is this the best way to handle this?
     if constexpr (std::is_same_v<Kappa, field::Scalar>) {
         return makeShared<ScalarDiffusionCoeff>(kappa);
     } else {
@@ -130,7 +131,7 @@ inline void NonCorrected::applyInterior(const mesh::Face& face) {
 
     // geometric diffusion coefficient
     // Taking the norm of Sf_prime discards the sign of kappa, so we use the following instead
-    const f64 g_diff = Sf_prime.dot(d_CF) / (d_CF_norm * d_CF_norm + EPSILON);
+    const f64 g_diff = Sf_prime.dot(d_CF) / ((d_CF_norm * d_CF_norm) + EPSILON);
 
     const size_t owner_id = owner.id();
     const size_t neighbor_id = neighbor.id();
@@ -185,7 +186,7 @@ inline void Corrected::applyInterior(const mesh::Face& face) {
     const auto [Ef_prime, Tf_prime] = _corrector->decompose(Sf_prime, e);
 
     // geometric diffusion coefficient
-    const f64 g_diff = Ef_prime.dot(d_CF) / (d_CF_norm * d_CF_norm + EPSILON);
+    const f64 g_diff = Ef_prime.dot(d_CF) / ((d_CF_norm * d_CF_norm) + EPSILON);
 
     /// g_diff * (Φ_C - Φ_N)
     // diagonal coefficients

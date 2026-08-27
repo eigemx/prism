@@ -386,6 +386,12 @@ void TimeWriter::write() {
     }
 }
 
+/// TODO: writeAndAdvance() silently skips the initial state. Because advance() runs before
+/// write(), and write() only writes when `_step % _interval == 0`, step 0 (and any step below
+/// the first interval) is never written to disk. With interval=20 and 100 iterations the user
+/// gets 5 frames instead of the expected 6 (0000-0100). Fix: write the initial state at
+/// `_step == 0` (e.g. special-case it in write(), or restructure to write-then-advance with a
+/// naming guard to avoid double-writing result_0000.vtu).
 void TimeWriter::writeAndAdvance(f64 dt) {
     advance(dt);
     write();
