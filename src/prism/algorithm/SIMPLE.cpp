@@ -175,11 +175,11 @@ auto solvePressureEquation(SIMPLEControls controls,
                                      controls.pressure_residual,
                                      controls.p_ref_cell,
                                      controls.p_ref_value);
-        reports.push_back({fmt::format("{}_corr_{}", pprime->name(), i),
-                           result.iteration(),
-                           result.initialResidual(),
-                           result.finalResidual(),
-                           result.hasConverged()});
+        reports.push_back({.field_name = fmt::format("{}_corr_{}", pprime->name(), i),
+                           .n_iterations = result.iteration(),
+                           .initial_residual = result.initialResidual(),
+                           .final_residual = result.finalResidual(),
+                           .converged = result.hasConverged()});
     }
 
     // The pressure-correction equation solve updates only the cell values, and the boundary face

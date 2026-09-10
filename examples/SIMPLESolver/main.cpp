@@ -2,8 +2,6 @@
 
 #include <filesystem>
 
-#include "prism/algorithm/SIMPLE.h"
-
 using namespace prism;
 namespace fs = std::filesystem;
 
@@ -26,7 +24,7 @@ auto main(int argc, char* argv[]) -> int {
     log::info("Loading mesh file `{}`...", unv_file_name);
     auto mesh = mesh::UnvToPMeshConverter(unv_file_name, boundary_file).toPMesh();
 
-    // set mesh fields
+    // set fields
     auto U = makeShared<field::Velocity>("U", mesh, Vector3d {.0, .0, .0});
     auto p = makeShared<field::Pressure>("P", mesh, 0.0);
     auto nu = makeShared<field::Scalar>("nu", mesh, 1e-3);
@@ -51,7 +49,6 @@ auto main(int argc, char* argv[]) -> int {
     );
 
     uEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
-
     vEqn.boundaryHandlersManager().addHandler<eqn::boundary::Symmetry<eqn::Transport>>();
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
