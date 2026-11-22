@@ -120,6 +120,11 @@ class PMesh {
      * @return The cell sharing face f with cell c. */
     auto otherSharingCell(const Cell& c, const Face& f) const -> const Cell&;
 
+    /** @brief Geometric interpolation weight of an interior face (cached at mesh build). */
+    auto faceGeometricWeight(size_t face_id) const noexcept -> f64 {
+        return _face_gc[face_id];
+    }
+
     /** @brief Returns a span over interior faces. */
     auto interiorFaces() const noexcept -> std::span<const Face>;
 
@@ -172,6 +177,7 @@ class PMesh {
     size_t _n_boundary_faces {0};
     size_t _n_nonempty_boundary_faces {0};
     VectorXd _cells_volume;
+    VectorXd _face_gc;
 };
 
 class ToPMeshConverter {

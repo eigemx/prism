@@ -1,3 +1,5 @@
+#pragma once
+
 #include "model.h"
 #include "prism/equation/transport.h"
 #include "prism/field/density.h"

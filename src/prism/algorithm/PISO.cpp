@@ -1,11 +1,20 @@
 #include "PISO.h"
 
+#include <stdexcept>
+#include <utility>
+
 #include "PRIME.h"
 #include "SIMPLE.h"
 
 namespace prism::algo {
 
-PISO::PISO(PISOControls controls) : _controls(controls) {}
+PISO::PISO(PISOControls controls, solver::LinearSolvers solvers)
+    : _controls(controls), _solvers(std::move(solvers)) {
+    if (!_solvers.valid()) {
+        throw std::invalid_argument(
+            "prism::algo::PISO(): both momentum and pressure solvers are required");
+    }
+}
 
 auto PISO::step(std::span<eqn::Momentum*> momentum_predictors,
                 SharedPtr<field::Velocity>& U,
@@ -40,14 +49,17 @@ auto PISO::step(std::span<eqn::Momentum*> momentum_predictors,
         if (_controls.momentum_implicit_steps > 0) {
             for (size_t j = 0; j < _controls.momentum_implicit_steps; ++j) {
                 auto simple_reports =
-                    IncompressibleSIMPLE(simple_controls).step(momentum_predictors, U, mdot, p);
+                    IncompressibleSIMPLE(
+                        simple_controls, _solvers.momentum.get(), _solvers.pressure.get())
+                        .step(momentum_predictors, U, mdot, p);
                 reports.insert(reports.end(), simple_reports.begin(), simple_reports.end());
             }
         }
 
         // Steps 2-N: PRIME correctors (pressure_correction_steps includes the SIMPLE step)
         for (size_t j = 1; j < _controls.pressure_correction_steps; ++j) {
-            auto prime_reports = PRIME(prime_controls).step(momentum_predictors, U, mdot, p);
+            auto prime_reports = PRIME(prime_controls, _solvers.pressure.get())
+                                     .step(momentum_predictors, U, mdot, p);
             reports.insert(reports.end(), prime_reports.begin(), prime_reports.end());
         }
     }

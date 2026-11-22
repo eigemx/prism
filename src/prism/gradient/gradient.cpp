@@ -23,7 +23,7 @@ auto IGradient::gradAtFace(const mesh::Face& face, const field::IScalar& field) 
         const auto& neighbor_cell = mesh->cell(face.neighbor().value());
         auto neighbor_grad = gradAtCell(neighbor_cell, field);
 
-        auto gc = mesh::geometricWeight(owner_cell, neighbor_cell, face);
+        auto gc = mesh->faceGeometricWeight(face.id());
 
         // Equation 9.33 without the correction part, a simple linear interpolation.
         return (gc * owner_grad) + ((1. - gc) * neighbor_grad);

@@ -68,7 +68,7 @@ auto main(int argc, char* argv[]) -> int {
     auto nOuterIterations = 25;
 
     for (int i = 0; i < nOuterIterations; ++i) {
-        auto result = solver.solve(eqn, 10, 1e-20);
+        auto result = solver.solve(eqn, {.max_iterations = 10, .tolerance = 1e-20});
         log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",
                   result.initialResidual(),
                   result.finalResidual(),

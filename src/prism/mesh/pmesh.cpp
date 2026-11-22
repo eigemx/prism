@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "prism/log.h"
+#include "utilities.h"
 
 namespace prism::mesh {
 PMesh::PMesh(std::vector<Vector3d> vertices,
@@ -52,6 +53,14 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
     _cells_volume.resize(_n_cells);
     for (const auto& cell : _cells) {
         _cells_volume[cell.id()] = cell.volume();
+    }
+
+    // Interpolation weights are geometry-only and constant, so compute them once.
+    _face_gc.resize(_n_faces);
+    for (size_t face_id = _n_boundary_faces; face_id < _n_faces; ++face_id) {
+        const auto& face = _faces[face_id];
+        _face_gc[face_id] =
+            geometricWeight(_cells[face.owner()], _cells[face.neighbor().value()], face);
     }
 }
 

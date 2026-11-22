@@ -1,19 +1,19 @@
 #include "least_squares.h"
 
+#include <unordered_map>
+
 #include "prism/constants.h"
 
 namespace prism::gradient {
+namespace {
+using CacheEntry = std::pair<std::weak_ptr<mesh::PMesh>, std::shared_ptr<const LSQGeometry>>;
+std::unordered_map<const mesh::PMesh*, CacheEntry> g_geometry_cache;
 
-LeastSquares::LeastSquares(const SharedPtr<mesh::PMesh>& mesh) {
-    _cell_gradients.resize(mesh->cellCount(), Vector3d::Zero());
-    setPseudoInvMatrices(mesh);
-}
-
-void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
+auto buildGeometry(const SharedPtr<mesh::PMesh>& mesh) -> std::shared_ptr<const LSQGeometry> {
     // This function is based on section 9.3 'Least-Square Gradient'
-
-    _pinv_matrices.resize(mesh->cellCount());
-    _cell_face_cache.resize(mesh->cellCount());
+    auto geometry = std::make_shared<LSQGeometry>();
+    geometry->pinv_matrices.resize(mesh->cellCount());
+    geometry->cell_face_cache.resize(mesh->cellCount());
 
     for (const auto& cell : mesh->cells()) {
         // A 3x3 matrix of the left hand side of equation (9.27)
@@ -39,7 +39,7 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
                 const double wk = 1 / (r_CF.norm() + EPSILON);
                 Vector3d w_dir = r_CF * wk;
                 d_matrix += w_dir * r_CF.transpose();
-                _cell_face_cache[cell.id()].push_back({true, neighbor.id(), w_dir});
+                geometry->cell_face_cache[cell.id()].push_back({true, neighbor.id(), w_dir});
 
             } else {
                 // boundary face
@@ -50,14 +50,35 @@ void LeastSquares::setPseudoInvMatrices(const SharedPtr<mesh::PMesh>& mesh) {
 
                 const auto& patch = mesh->faceBoundaryPatch(face);
                 if (!patch.isEmpty()) {
-                    _cell_face_cache[cell.id()].push_back({false, face_id, w_dir});
+                    geometry->cell_face_cache[cell.id()].push_back({false, face_id, w_dir});
                 }
             }
         }
 
         const auto& d_matrix_t = d_matrix.transpose();
-        _pinv_matrices[cell.id()] = (d_matrix_t * d_matrix).inverse() * d_matrix_t;
+        geometry->pinv_matrices[cell.id()] = (d_matrix_t * d_matrix).inverse() * d_matrix_t;
     }
+    return geometry;
+}
+
+auto sharedGeometry(const SharedPtr<mesh::PMesh>& mesh) -> std::shared_ptr<const LSQGeometry> {
+    const auto* key = mesh.get();
+    const auto it = g_geometry_cache.find(key);
+
+    if (it != g_geometry_cache.end() && !it->second.first.expired()) {
+        return it->second.second;
+    }
+
+    auto geometry = buildGeometry(mesh);
+    g_geometry_cache[key] = {mesh, geometry};
+
+    return geometry;
+}
+} // namespace
+
+LeastSquares::LeastSquares(const SharedPtr<mesh::PMesh>& mesh) {
+    _cell_gradients.resize(mesh->cellCount(), Vector3d::Zero());
+    _geometry = sharedGeometry(mesh);
 }
 
 auto LeastSquares::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
@@ -81,7 +102,7 @@ auto LeastSquares::computeGradAtCell(const mesh::Cell& cell, const field::IScala
     Vector3d b {0.0, 0.0, 0.0};
     auto phi_cell = field.valueAtCell(cell);
 
-    for (const auto& gf : _cell_face_cache[cell.id()]) {
+    for (const auto& gf : _geometry->cell_face_cache[cell.id()]) {
         f64 other_phi {};
         if (gf.is_interior) {
             other_phi = field.valueAtCell(gf.other_id);
@@ -93,7 +114,7 @@ auto LeastSquares::computeGradAtCell(const mesh::Cell& cell, const field::IScala
         b += gf.w_dir * (other_phi - phi_cell);
     }
 
-    Vector3d grad = _pinv_matrices[cell.id()] * b;
+    Vector3d grad = _geometry->pinv_matrices[cell.id()] * b;
     _cell_gradients[cell.id()] = grad;
 
     return grad;

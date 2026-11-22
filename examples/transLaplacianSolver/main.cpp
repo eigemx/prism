@@ -51,7 +51,7 @@ auto main(int argc, char* argv[]) -> int {
         log::info("Solving timestep {}/{} at time = {}", timestep + 1, nTimesteps, dt * timestep);
 
         for (auto i = 0; i < nNonOrthoIter; i++) {
-            auto result = solver.solve(eqn, 10, 1e-20);
+            auto result = solver.solve(eqn, {.max_iterations = 10, .tolerance = 1e-20});
             log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",
                       result.initialResidual(),
                       result.finalResidual(),

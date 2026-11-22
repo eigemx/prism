@@ -3,6 +3,7 @@
 #include <span>
 
 #include "algorithm.h"
+#include "prism/numerics/solver.h"
 #include "prism/report.h"
 #include "prism/types.h"
 
@@ -50,7 +51,7 @@ struct PISOControls {
 
 class PISO : public IPressureLinked {
   public:
-    PISO(PISOControls controls);
+    PISO(PISOControls controls, solver::LinearSolvers solvers);
     auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
@@ -58,6 +59,7 @@ class PISO : public IPressureLinked {
 
   private:
     PISOControls _controls;
+    solver::LinearSolvers _solvers;
 };
 
 } // namespace prism::algo

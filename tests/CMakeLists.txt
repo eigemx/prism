@@ -13,6 +13,7 @@ add_executable(tests
                     test_simple_duct_symmetry.cpp
                     test_algorithms_pipe.cpp
                     test_needs_pressure_ref.cpp
+                    test_export.cpp
                )
 target_link_libraries(tests PRIVATE prism Catch2::Catch2WithMain)
 

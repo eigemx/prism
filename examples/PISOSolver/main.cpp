@@ -1,7 +1,4 @@
-#include <prism/algorithm/PISO.h>
-#include <prism/monitor/courant.h>
 #include <prism/prism.h>
-#include <prism/scheme/temporal/adam_moulton.h>
 
 #include <filesystem>
 
@@ -56,25 +53,38 @@ auto main(int argc, char* argv[]) -> int {
     controls.non_ortho_correctors = 1;
 
     f64 time = 0.0;
+    algo::PISO piso(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
 
-    output::TimeWriter writer("result", /*interval=*/2, output::WriteMode::Ascii);
+    output::VtuTimeWriter writer({.prefix = "result",
+                                  .interval = 2,
+                                  .write_pvd = true,
+                                  .mode = output::WriteMode::RawBinaryCompressed,
+                                  .write_point_data = false});
     writer.add(p);
     writer.add(U);
+
+    // Emit the initial state before the time loop. writeAndAdvance() advances first.
+    writer.write();
 
     for (size_t ts = 0; ts < n_time_steps; ++ts) {
         time = (ts + 1) * dt;
         auto co = monitor::courantNumber(*mdot, dt);
+
         log::info("t={:.5f}  Co|max={:.4e}  |U|max={:.4e}  |p|max={:.4e}",
                   time,
                   co.values().maxCoeff(),
                   U->x()->values().lpNorm<Eigen::Infinity>(),
                   p->values().lpNorm<Eigen::Infinity>());
-        auto reps = algo::PISO(controls).step(std::span<eqn::Momentum*>(meq), U, mdot, p);
+
+        auto reps = piso.step(std::span<eqn::Momentum*>(meq), U, mdot, p);
         for (auto& r : reps) {
             if (std::isnan(r.final_residual)) {
                 log::warn("NaN residual in field {}", r.field_name);
             }
         }
+
         U->x()->updatePrevTimeSteps();
         U->y()->updatePrevTimeSteps();
         writer.writeAndAdvance(dt);

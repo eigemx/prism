@@ -1,12 +1,29 @@
 #include "PRIME.h"
 
+#include <stdexcept>
+#include <utility>
+
 #include "SIMPLE.h"
 #include "prism/equation/transport.h"
 #include "prism/log.h"
 
 namespace prism::algo {
 
-PRIME::PRIME(PRIMEControls controls) : _controls(controls) {}
+PRIME::PRIME(PRIMEControls controls, UniquePtr<solver::ISolver> pressure_solver)
+    : _controls(controls),
+      _owned_pressure_solver(std::move(pressure_solver)),
+      _pressure_solver(_owned_pressure_solver.get()) {
+    if (_pressure_solver == nullptr) {
+        throw std::invalid_argument("prism::algo::PRIME(): a pressure solver is required");
+    }
+}
+
+PRIME::PRIME(PRIMEControls controls, solver::ISolver* pressure_solver)
+    : _controls(controls), _pressure_solver(pressure_solver) {
+    if (_pressure_solver == nullptr) {
+        throw std::invalid_argument("prism::algo::PRIME(): a pressure solver is required");
+    }
+}
 
 auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
                  SharedPtr<field::Velocity>& U,
@@ -30,8 +47,8 @@ auto PRIME::step(std::span<eqn::Momentum*> momentum_predictors,
                                     .p_ref_cell = _controls.p_ref_cell,
                                     .p_ref_value = _controls.p_ref_value};
     log::debug("prism::algo::PRIME::step(): solving pressure equation");
-    auto result = solvePressureEquation(SIMPLE_controls, momentum_predictors, U, mdot, p);
-
+    auto result =
+        solvePressureEquation(SIMPLE_controls, momentum_predictors, U, mdot, p, _pressure_solver);
     correctFields(U, mdot, p, result.D, result.pprime, _controls.pressure_urf);
     return result.reports;
 }
@@ -54,4 +71,5 @@ void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors) {
         // D, consistent with the full explicit solve.
     }
 }
+
 } // namespace prism::algo

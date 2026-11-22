@@ -77,7 +77,7 @@ auto main(int argc, char* argv[]) -> int {
     // solve
     auto solver = solver::BiCGSTAB();
 
-    auto result = solver.solve(eqn, 5, 1e-20);
+    auto result = solver.solve(eqn, {.max_iterations = 5, .tolerance = 1e-20});
     log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",
               result.initialResidual(),
               result.finalResidual(),

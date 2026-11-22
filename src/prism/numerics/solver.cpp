@@ -24,12 +24,7 @@ auto residual(const SparseMatrix& A, const VectorXd& x, const VectorXd& b) -> f6
 }
 } // namespace
 
-auto ISolver::solve(eqn::Transport& eqn,
-                    size_t n_iter,
-                    f64 eps,
-                    Optional<size_t> ref_cell,
-                    f64 ref_value,
-                    bool clear_coeffs) -> SolverResult {
+auto ISolver::solve(eqn::Transport& eqn, const SolverOptions& options) -> SolverResult {
     const auto& A = eqn.matrix();
     const auto& b = eqn.rhs();
     auto phi = eqn.field();
@@ -47,21 +42,26 @@ auto ISolver::solve(eqn::Transport& eqn,
     // diagonal removes the constant vector from the null space since the row
     // sum is no longer zero. The RHS adjustment b[ref] += diag * ref_value
     // anchors the solution to the desired reference value.
-    if (ref_cell.has_value() && *ref_cell < size_t(eqn.matrix().rows())) {
+    if (options.reference_cell.has_value() &&
+        *options.reference_cell < size_t(eqn.matrix().rows())) {
         auto& mat = eqn.matrix();
         auto& vec = eqn.rhs();
-        auto idx = static_cast<Eigen::Index>(*ref_cell);
+        auto idx = static_cast<Eigen::Index>(*options.reference_cell);
         auto diag = mat.coeff(idx, idx);
         mat.coeffRef(idx, idx) += diag;
-        vec[idx] += diag * ref_value;
+        vec[idx] += diag * options.reference_value;
     }
 
     // Factorize the (relaxed, reference-pinned) matrix once; step() then reuses the
     // factorization for every iteration instead of recomputing it each time. Convergence is
     // driven by the scaled residual check below rather than by any internal solver tolerance.
-    prepare(A);
+    if (options.reuse_prepared) {
+        reattach(A);
+    } else {
+        prepare(A);
+    }
 
-    for (; iter < n_iter; iter++) {
+    for (; iter < options.max_iterations; iter++) {
         if (iter == 0) {
             init_res = residual(A, phi->values(), b);
         }
@@ -69,13 +69,13 @@ auto ISolver::solve(eqn::Transport& eqn,
         phi->values() = step(phi->values(), b);
         current_res = residual(A, phi->values(), b);
 
-        if (current_res < eps) {
+        if (current_res < options.tolerance) {
             has_converged = true;
             iter++;
             break;
         }
     }
-    if (clear_coeffs) {
+    if (options.clear_coeffs) {
         eqn.zeroOutCoeffs();
     }
 

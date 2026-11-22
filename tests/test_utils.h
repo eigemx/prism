@@ -146,7 +146,7 @@ inline void solveWithBiCGSTAB(Eqn& eqn,
                               f64 tol = 1e-20) {
     solver::BiCGSTAB solver;
     for (size_t i = 0; i < n_ortho_correctors; ++i) {
-        solver.solve(eqn, max_iters, tol);
+        solver.solve(eqn, {.max_iterations = max_iters, .tolerance = tol});
     }
 }
 

@@ -53,10 +53,13 @@ auto main(int argc, char* argv[]) -> int {
 
     std::vector<eqn::Momentum*> momentum_eqns {&uEqn, &vEqn};
 
+    algo::IncompressibleSIMPLE simple(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
+
     for (auto outer_iteration = 0; outer_iteration < nOuterIter; ++outer_iteration) {
         log::info("Outer iteration: {}", outer_iteration);
-        auto reports = algo::IncompressibleSIMPLE(controls).step(
-            std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
+        auto reports = simple.step(std::span<eqn::Momentum*>(momentum_eqns), U, mdot, p);
         for (const auto& entry : reports) {
             log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",
                       entry.initial_residual,

@@ -30,17 +30,6 @@ if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting build type to 'Release' as none was specified.")
 endif()
 
-# set optimization flags for release builds for gcc, clang and msvc
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
-    endif()
-endif()
-
 # set warning flags for debug builds for gcc, clang and msvc
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

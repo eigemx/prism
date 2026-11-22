@@ -25,10 +25,12 @@ TEST_CASE("SIMPLE algorithm converges on coarse pipe", "[SIMPLESolver]") {
     algo::SIMPLEControls controls;
 
     auto momentum_eqns = meq.eqns();
+    algo::IncompressibleSIMPLE simple(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
     auto nOuterIter = 100;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::IncompressibleSIMPLE(controls).step(
-            std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
+        simple.step(std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
     }
 
     auto [p_ref, U_ref] = loadReference(mesh_file.parent_path() / "foam_fields.json");

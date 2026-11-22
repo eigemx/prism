@@ -6,10 +6,12 @@
 #include "prism/equation/boundary.h"
 #include "prism/field/pressure.h"
 #include "prism/field/velocity.h"
+#include "prism/numerics/solver.h"
 #include "prism/report.h"
 #include "prism/types.h"
 
 namespace prism::algo {
+
 struct PRIMEControls {
     // Number of non-orthogonal correctors for pressure equation
     size_t non_ortho_correctors = 2;
@@ -31,7 +33,8 @@ struct PRIMEControls {
 
 class PRIME : public IPressureLinked {
   public:
-    PRIME(PRIMEControls controls);
+    PRIME(PRIMEControls controls, UniquePtr<solver::ISolver> pressure_solver);
+    PRIME(PRIMEControls controls, solver::ISolver* pressure_solver);
     auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
@@ -39,8 +42,11 @@ class PRIME : public IPressureLinked {
 
   private:
     PRIMEControls _controls;
+    UniquePtr<solver::ISolver> _owned_pressure_solver;
+    solver::ISolver* _pressure_solver {nullptr};
 };
 
+/** @brief Assembles and explicitly updates the momentum equations (PRIME). */
 void solveExplicitMomentum(std::span<eqn::Momentum*> momentum_predictors);
 
 } // namespace prism::algo

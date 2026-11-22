@@ -1,9 +1,9 @@
 #include "export.h"
 
-#include <fmt/format.h>
-
+#include <algorithm>
 #include <array>
 #include <fstream>
+#include <memory>
 #include <stdexcept>
 #include <vtu11/vtu11.hpp>
 
@@ -15,100 +15,6 @@
 namespace prism::output {
 
 namespace {
-
-/** @brief Caches vertex-to-cell adjacency and cell centres for a mesh.
- *
- *  Populated once per mesh by ensureCache(). Used by cellToPoint() to
- *  accelerate inverse distance weighting (IDW) interpolation.
- *
- *  The cache is keyed on the mesh address, so it assumes the mesh is not
- *  mutated in place (PMesh::cells() has a non-const overload and
- *  CuthillMckee::reorder rewrites cells) and is not freed then reallocated at
- *  the same address. It is also not thread-safe. */
-struct MeshCache {
-    std::vector<std::vector<size_t>> vert_to_cells;
-    std::vector<Vector3d> cell_centres;
-    const mesh::PMesh* mesh_key = nullptr;
-};
-
-/** @brief Returns the static MeshCache singleton. */
-auto getMeshCache() -> MeshCache& {
-    static MeshCache cache;
-    return cache;
-}
-
-/** @brief Ensures the mesh cache is populated for the given mesh.
- *
- *  Rebuilds the cache only when the mesh pointer differs from the cached
- *  one. Populates vertex-to-cell adjacency and cell centre data. */
-void ensureCache(const mesh::PMesh& pmesh) {
-    auto& cache = getMeshCache();
-    const auto* key = &pmesh;
-
-    if (cache.mesh_key == key) {
-        return;
-    }
-
-    const auto& cells = pmesh.cells();
-    const auto n_cells = cells.size();
-
-    cache.vert_to_cells.assign(pmesh.vertices().size(), {});
-    for (size_t ci = 0; ci < n_cells; ++ci) {
-        for (auto vi : cells[ci].verticesIds()) {
-            cache.vert_to_cells[vi].push_back(ci);
-        }
-    }
-
-    cache.cell_centres.resize(n_cells);
-    for (size_t ci = 0; ci < n_cells; ++ci) {
-        cache.cell_centres[ci] = cells[ci].center();
-    }
-
-    cache.mesh_key = key;
-}
-
-/** @brief Interpolates cell-centred data to vertices using inverse distance weighting.
- *  @param cell_data Flat cell-centred data (n_cells * n_components).
- *  @param pmesh The mesh.
- *  @param n_components Number of components per value (1 for scalar, 3 for vector, etc.).
- *  @return Vertex data (n_vertices * n_components). */
-auto cellToPoint(const std::vector<f64>& cell_data, const mesh::PMesh& pmesh, size_t n_components)
-    -> std::vector<f64> {
-    ensureCache(pmesh);
-    const auto& cache = getMeshCache();
-    const auto& verts = pmesh.vertices();
-    const auto n_verts = verts.size();
-    auto result = std::vector<f64>(n_verts * n_components, 0.0);
-
-    for (size_t vertex_id = 0; vertex_id < n_verts; ++vertex_id) {
-        const auto& vertex_adj_cells = cache.vert_to_cells[vertex_id];
-
-        if (vertex_adj_cells.empty()) {
-            throw error::InvalidMesh(fmt::format(
-                "Vertex {} has no adjacent cells; point data cannot be computed.", vertex_id));
-        }
-
-        auto weights = std::vector<f64>(vertex_adj_cells.size());
-        f64 sum_weights = 0.0;
-
-        for (size_t i = 0; i < vertex_adj_cells.size(); ++i) {
-            f64 distance_norm = (verts[vertex_id] - cache.cell_centres[vertex_adj_cells[i]]).norm();
-            weights[i] = 1.0 / std::max(distance_norm, EPSILON);
-            sum_weights += weights[i];
-        }
-
-        for (size_t i = 0; i < vertex_adj_cells.size(); ++i) {
-            f64 weight_i = weights[i] / sum_weights;
-            auto cell_id = vertex_adj_cells[i];
-            for (size_t component_i = 0; component_i < n_components; ++component_i) {
-                auto vertex_pos = (vertex_id * n_components) + component_i;
-                auto cell_pos = (cell_id * n_components) + component_i;
-                result[vertex_pos] += weight_i * cell_data[cell_pos];
-            }
-        }
-    }
-    return result;
-}
 
 /** @brief Converts a WriteMode enum to the VTU11 format string.
  *  @param mode The write mode.
@@ -124,10 +30,7 @@ auto toVtuMode(WriteMode mode) -> std::string {
     }
 }
 
-/** @brief Flattens a scalar field's cell-centred values into a vector.
- *  @param field The scalar field.
- *  @param pmesh The mesh.
- *  @return Vector of cell-centred values (size = n_cells). */
+/** @brief Flattens a scalar field's cell-centred values into a vector. */
 auto flattenScalar(const field::IScalar& field, const mesh::PMesh& pmesh) -> std::vector<f64> {
     auto data = std::vector<f64>();
     const auto n_cells = pmesh.cells().size();
@@ -138,10 +41,7 @@ auto flattenScalar(const field::IScalar& field, const mesh::PMesh& pmesh) -> std
     return data;
 }
 
-/** @brief Flattens a vector field's cell-centred values into an interleaved vector.
- *  @param field The vector field.
- *  @param pmesh The mesh.
- *  @return Interleaved vector data (x, y, z repeating; size = n_cells * 3). */
+/** @brief Flattens a vector field's cell-centred values into an interleaved vector. */
 auto flattenVector(const field::IVector& field, const mesh::PMesh& pmesh) -> std::vector<f64> {
     auto data = std::vector<f64>();
     const auto n_cells = pmesh.cells().size();
@@ -155,10 +55,7 @@ auto flattenVector(const field::IVector& field, const mesh::PMesh& pmesh) -> std
     return data;
 }
 
-/** @brief Flattens a tensor field's cell-centred values into a row-major vector.
- *  @param field The tensor field.
- *  @param pmesh The mesh.
- *  @return Row-major tensor data (size = n_cells * 9). */
+/** @brief Flattens a tensor field's cell-centred values into a row-major vector. */
 auto flattenTensor(const field::ITensor& field, const mesh::PMesh& pmesh) -> std::vector<f64> {
     const auto n_cells = pmesh.cells().size();
     auto data = std::vector<f64>();
@@ -178,134 +75,255 @@ auto flattenTensor(const field::ITensor& field, const mesh::PMesh& pmesh) -> std
     return data;
 }
 
-/** @brief Low-level VTU writer. Builds the VTU mesh from a PMesh and delegates to vtu11::writeVtu.
- *  @param pmesh The mesh (vertices + cells).
- *  @param info Per-dataset metadata (name, type, components).
- *  @param data Per-dataset data (CellData then PointData, in same order as info).
- *  @param file_name Output .vtu file path.
- *  @param mode Write mode (Ascii or RawBinaryCompressed). */
-void writeVtu(const mesh::PMesh& pmesh,
-              const std::vector<vtu11::DataSetInfo>& info,
-              const std::vector<vtu11::DataSetData>& data,
-              const std::string& file_name,
-              WriteMode mode) {
-    auto points = std::vector<f64>();
-    auto connectivity = std::vector<vtu11::VtkIndexType>();
-    auto offsets = std::vector<vtu11::VtkIndexType>();
-    auto types = std::vector<vtu11::VtkCellType>();
+// VTK unstructured cell type ids.
+constexpr vtu11::VtkCellType vtk_tetra {10};
+constexpr vtu11::VtkCellType vtk_hexahedron {12};
+constexpr vtu11::VtkCellType vtk_wedge {13};
 
-    points.reserve(pmesh.vertices().size() * 3);
-    for (const auto& vertex : pmesh.vertices()) {
-        points.push_back(vertex.x());
-        points.push_back(vertex.y());
-        points.push_back(vertex.z());
+struct FieldPointers {
+    std::vector<const field::IScalar*> scalars;
+    std::vector<const field::IVector*> vectors;
+    std::vector<const field::ITensor*> tensors;
+};
+
+auto fieldPointers(const FieldRegistry& registry) -> FieldPointers {
+    FieldPointers pointers;
+    pointers.scalars.reserve(registry.scalars().size());
+    pointers.vectors.reserve(registry.vectors().size());
+    pointers.tensors.reserve(registry.tensors().size());
+
+    for (const auto& f : registry.scalars()) {
+        pointers.scalars.push_back(f.get());
+    }
+    for (const auto& f : registry.vectors()) {
+        pointers.vectors.push_back(f.get());
+    }
+    for (const auto& f : registry.tensors()) {
+        pointers.tensors.push_back(f.get());
+    }
+    return pointers;
+}
+
+} // namespace
+
+namespace detail {
+
+/** @brief Writes VTU files for one mesh, caching the mesh geometry and the vertex-to-cell
+ * adjacency used by the cell-to-point interpolation. */
+class VtuWriter {
+  public:
+    explicit VtuWriter(SharedPtr<mesh::PMesh> mesh);
+
+    void write(const std::string& file_name,
+               std::span<const field::IScalar*> scalars,
+               std::span<const field::IVector*> vectors,
+               std::span<const field::ITensor*> tensors,
+               const VtuOptions& options) const;
+
+  private:
+    template <typename FieldPtr, typename FlattenFn>
+    void appendFieldData(FieldPtr field,
+                         size_t n_components,
+                         FlattenFn flatten,
+                         std::vector<vtu11::DataSetInfo>& info,
+                         std::vector<vtu11::DataSetData>& data,
+                         const VtuOptions& options) const;
+
+    auto cellToPoint(const std::vector<f64>& cell_data, size_t n_components) const
+        -> std::vector<f64>;
+
+    SharedPtr<mesh::PMesh> _mesh;
+    std::vector<f64> _points;
+    std::vector<vtu11::VtkIndexType> _connectivity;
+    std::vector<vtu11::VtkIndexType> _offsets;
+    std::vector<vtu11::VtkCellType> _types;
+
+    // Flattened vertex-to-cell adjacency: cell ids for vertex i are
+    // [_vertex_cell_offsets[i], _vertex_cell_offsets[i + 1]).
+    std::vector<size_t> _vertex_cell_offsets;
+    std::vector<size_t> _vertex_cells;
+};
+
+VtuWriter::VtuWriter(SharedPtr<mesh::PMesh> mesh) : _mesh(std::move(mesh)) {
+    const auto& mesh_ref = *_mesh;
+    const auto& cells = mesh_ref.cells();
+    const auto& vertices = mesh_ref.vertices();
+
+    _points.reserve(vertices.size() * 3);
+    for (const auto& vertex : vertices) {
+        _points.push_back(vertex.x());
+        _points.push_back(vertex.y());
+        _points.push_back(vertex.z());
     }
 
-    offsets.reserve(pmesh.cells().size());
-    types.reserve(pmesh.cells().size());
-    for (const auto& cell : pmesh.cells()) {
-        connectivity.insert(
-            connectivity.end(), cell.verticesIds().begin(), cell.verticesIds().end());
-        offsets.push_back(static_cast<vtu11::VtkIndexType>(connectivity.size()));
+    _offsets.reserve(cells.size());
+    _types.reserve(cells.size());
+    for (const auto& cell : cells) {
+        const auto& vertices_ids = cell.verticesIds();
+        _connectivity.insert(_connectivity.end(), vertices_ids.begin(), vertices_ids.end());
+        _offsets.push_back(static_cast<vtu11::VtkIndexType>(_connectivity.size()));
 
-        switch (cell.verticesIds().size()) {
-            /// TODO: This supports only hexahedra, tetrahedra, and prisms. General polygons are not
-            /// supported by vtu11.
-            case 8: types.push_back(12); break; // hexahedron
-            case 4: types.push_back(10); break; // tetrahedron
-            case 6: types.push_back(13); break; // prism
+        // TODO: Cell type is inferred from the vertex count. This works only while prism
+        // accepts hexahedral, tetrahedral and wedge cells. Store an explicit mesh::CellType
+        // and map it to VTK types when 2D or polyhedral cell support is added.
+        switch (vertices_ids.size()) {
+            case 8: _types.push_back(vtk_hexahedron); break;
+            case 4: _types.push_back(vtk_tetra); break;
+            case 6: _types.push_back(vtk_wedge); break;
 
             default: throw std::runtime_error("Unsupported cell type for vtu export.");
         }
     }
 
-    auto mesh = vtu11::Vtu11UnstructuredMesh {
-        .points_ = points, .connectivity_ = connectivity, .offsets_ = offsets, .types_ = types};
-    vtu11::writeVtu(file_name, mesh, info, data, toVtuMode(mode));
-}
-
-/** @brief Flattens a field, interpolates it to points, and appends CellData and PointData.
- *  @param f Field pointer.
- *  @param n_components Number of components per value (1 scalar, 3 vector, 9 tensor).
- *  @param flatten Flatten function taking the field and its mesh.
- *  @param expected_mesh Mesh all exported fields must share.
- *  @param info Appended with CellData and PointData metadata.
- *  @param data Appended with the flattened cell and interpolated point values. */
-template <typename FieldPtr, typename FlattenFn>
-void appendFieldData(FieldPtr f,
-                     size_t n_components,
-                     FlattenFn flatten,
-                     const mesh::PMesh* expected_mesh,
-                     std::vector<vtu11::DataSetInfo>& info,
-                     std::vector<vtu11::DataSetData>& data) {
-    if (f->mesh().get() != expected_mesh) {
-        throw error::InvalidMesh(fmt::format(
-            "Field '{}' does not share the mesh of the other exported fields.", f->name()));
+    _vertex_cell_offsets.assign(vertices.size() + 1, 0);
+    for (const auto& cell : cells) {
+        for (const auto vertex_id : cell.verticesIds()) {
+            ++_vertex_cell_offsets[vertex_id + 1];
+        }
     }
-    auto cell_data = flatten(*f, *expected_mesh);
-    auto point_data = cellToPoint(cell_data, *expected_mesh, n_components);
+    for (size_t i = 0; i < vertices.size(); ++i) {
+        _vertex_cell_offsets[i + 1] += _vertex_cell_offsets[i];
+    }
 
-    info.emplace_back(f->name(), vtu11::DataSetType::CellData, n_components);
+    _vertex_cells.resize(_vertex_cell_offsets.back());
+    auto cursor = _vertex_cell_offsets;
+    for (const auto& cell : cells) {
+        for (const auto vertex_id : cell.verticesIds()) {
+            _vertex_cells[cursor[vertex_id]++] = cell.id();
+        }
+    }
+}
+
+template <typename FieldPtr, typename FlattenFn>
+void VtuWriter::appendFieldData(FieldPtr field,
+                                size_t n_components,
+                                FlattenFn flatten,
+                                std::vector<vtu11::DataSetInfo>& info,
+                                std::vector<vtu11::DataSetData>& data,
+                                const VtuOptions& options) const {
+    if (field->mesh().get() != _mesh.get()) {
+        throw error::InvalidMesh(fmt::format(
+            "Field '{}' does not share the mesh of the other exported fields.", field->name()));
+    }
+
+    auto cell_data = flatten(*field, *_mesh);
+    std::vector<f64> point_data;
+    if (options.write_point_data) {
+        point_data = cellToPoint(cell_data, n_components);
+    }
+
+    info.emplace_back(field->name(), vtu11::DataSetType::CellData, n_components);
     data.push_back(std::move(cell_data));
-    info.emplace_back(f->name(), vtu11::DataSetType::PointData, n_components);
-    data.push_back(std::move(point_data));
+
+    if (options.write_point_data) {
+        info.emplace_back(field->name(), vtu11::DataSetType::PointData, n_components);
+        data.push_back(std::move(point_data));
+    }
 }
 
-} // namespace
+auto VtuWriter::cellToPoint(const std::vector<f64>& cell_data, size_t n_components) const
+    -> std::vector<f64> {
+    const auto& vertices = _mesh->vertices();
+    const auto& cells = _mesh->cells();
+    const auto n_vertices = vertices.size();
+    auto result = std::vector<f64>(n_vertices * n_components, 0.0);
 
-void toVtu(const field::IScalar& field, const std::string& file_name, WriteMode mode) {
+    for (size_t vertex_id = 0; vertex_id < n_vertices; ++vertex_id) {
+        const auto begin = _vertex_cell_offsets[vertex_id];
+        const auto end = _vertex_cell_offsets[vertex_id + 1];
+
+        if (begin == end) {
+            throw error::InvalidMesh(fmt::format(
+                "Vertex {} has no adjacent cells; point data cannot be computed.", vertex_id));
+        }
+
+        f64 sum_weights = 0.0;
+        for (auto k = begin; k < end; ++k) {
+            const auto cell_id = _vertex_cells[k];
+            const f64 distance = (vertices[vertex_id] - cells[cell_id].center()).norm();
+            sum_weights += 1.0 / std::max(distance, EPSILON);
+        }
+
+        for (auto k = begin; k < end; ++k) {
+            const auto cell_id = _vertex_cells[k];
+            const f64 distance = (vertices[vertex_id] - cells[cell_id].center()).norm();
+            const f64 weight = (1.0 / std::max(distance, EPSILON)) / sum_weights;
+
+            for (size_t component = 0; component < n_components; ++component) {
+                result[(vertex_id * n_components) + component] +=
+                    weight * cell_data[(cell_id * n_components) + component];
+            }
+        }
+    }
+    return result;
+}
+
+void VtuWriter::write(const std::string& file_name,
+                      std::span<const field::IScalar*> scalars,
+                      std::span<const field::IVector*> vectors,
+                      std::span<const field::ITensor*> tensors,
+                      const VtuOptions& options) const {
+    auto info = std::vector<vtu11::DataSetInfo>();
+    auto data = std::vector<vtu11::DataSetData>();
+    const size_t sets_per_field = options.write_point_data ? 2 : 1;
+    info.reserve((scalars.size() + vectors.size() + tensors.size()) * sets_per_field);
+    data.reserve((scalars.size() + vectors.size() + tensors.size()) * sets_per_field);
+
+    for (const auto* field : scalars) {
+        appendFieldData(field, 1, flattenScalar, info, data, options);
+    }
+    for (const auto* field : vectors) {
+        appendFieldData(field, 3, flattenVector, info, data, options);
+    }
+    for (const auto* field : tensors) {
+        appendFieldData(field, 9, flattenTensor, info, data, options);
+    }
+
+    auto mesh = vtu11::Vtu11UnstructuredMesh {
+        .points_ = _points,
+        .connectivity_ = _connectivity,
+        .offsets_ = _offsets,
+        .types_ = _types,
+    };
+    vtu11::writeVtu(file_name, mesh, info, data, toVtuMode(options.mode));
+}
+
+} // namespace detail
+
+void toVtu(const field::IScalar& field, const std::string& file_name, const VtuOptions& options) {
     std::array<const field::IScalar*, 1> scalars {&field};
-    toVtu(scalars, {}, {}, file_name, mode);
+    toVtu(scalars, {}, {}, file_name, options);
 }
 
-void toVtu(const field::IVector& field, const std::string& file_name, WriteMode mode) {
+void toVtu(const field::IVector& field, const std::string& file_name, const VtuOptions& options) {
     std::array<const field::IVector*, 1> vectors {&field};
-    toVtu({}, vectors, {}, file_name, mode);
+    toVtu({}, vectors, {}, file_name, options);
 }
 
-void toVtu(const field::ITensor& field, const std::string& file_name, WriteMode mode) {
+void toVtu(const field::ITensor& field, const std::string& file_name, const VtuOptions& options) {
     std::array<const field::ITensor*, 1> tensors {&field};
-    toVtu({}, {}, tensors, file_name, mode);
+    toVtu({}, {}, tensors, file_name, options);
 }
 
 void toVtu(std::span<const field::IScalar*> scalars,
            std::span<const field::IVector*> vectors,
            std::span<const field::ITensor*> tensors,
            const std::string& file_name,
-           WriteMode mode) {
-    const mesh::PMesh* pmesh_ptr = nullptr;
+           const VtuOptions& options) {
+    SharedPtr<mesh::PMesh> pmesh;
     if (!scalars.empty()) {
-        pmesh_ptr = scalars.front()->mesh().get();
+        pmesh = scalars.front()->mesh();
     } else if (!vectors.empty()) {
-        pmesh_ptr = vectors.front()->mesh().get();
+        pmesh = vectors.front()->mesh();
     } else if (!tensors.empty()) {
-        pmesh_ptr = tensors.front()->mesh().get();
+        pmesh = tensors.front()->mesh();
     } else {
         log::debug("prism::output::toVtu(): no fields provided; skipping export.");
         return;
     }
 
-    const auto& pmesh = *pmesh_ptr;
-
-    const size_t n_scalars = scalars.size();
-    const size_t n_vectors = vectors.size();
-    const size_t n_tensors = tensors.size();
-    auto info = std::vector<vtu11::DataSetInfo>();
-    auto data = std::vector<vtu11::DataSetData>();
-    info.reserve((n_scalars * 2) + (n_vectors * 2) + (n_tensors * 2));
-    data.reserve((n_scalars * 2) + (n_vectors * 2) + (n_tensors * 2));
-
-    for (const auto* f : scalars) {
-        appendFieldData(f, 1, flattenScalar, pmesh_ptr, info, data);
-    }
-    for (const auto* f : vectors) {
-        appendFieldData(f, 3, flattenVector, pmesh_ptr, info, data);
-    }
-    for (const auto* f : tensors) {
-        appendFieldData(f, 9, flattenTensor, pmesh_ptr, info, data);
-    }
-
-    writeVtu(pmesh, info, data, file_name, mode);
+    detail::VtuWriter writer(std::move(pmesh));
+    writer.write(file_name, scalars, vectors, tensors, options);
 }
 
 void FieldRegistry::add(SharedPtr<field::IScalar> f) {
@@ -320,85 +338,93 @@ void FieldRegistry::add(SharedPtr<field::ITensor> f) {
     _tensors.push_back(std::move(f));
 }
 
-void FieldRegistry::exportAll(const std::string& file_name, WriteMode mode) const {
-    auto scalar_ptrs = std::vector<const field::IScalar*>();
-    scalar_ptrs.reserve(_scalars.size());
-    for (const auto& f : _scalars) {
-        scalar_ptrs.push_back(f.get());
-    }
-
-    auto vector_ptrs = std::vector<const field::IVector*>();
-    vector_ptrs.reserve(_vectors.size());
-    for (const auto& f : _vectors) {
-        vector_ptrs.push_back(f.get());
-    }
-
-    auto tensor_ptrs = std::vector<const field::ITensor*>();
-    tensor_ptrs.reserve(_tensors.size());
-    for (const auto& f : _tensors) {
-        tensor_ptrs.push_back(f.get());
-    }
-
-    toVtu(scalar_ptrs, vector_ptrs, tensor_ptrs, file_name, mode);
+void FieldRegistry::exportAll(const std::string& file_name, const VtuOptions& options) const {
+    auto pointers = fieldPointers(*this);
+    toVtu(pointers.scalars, pointers.vectors, pointers.tensors, file_name, options);
 }
 
-TimeWriter::TimeWriter(std::string prefix, size_t write_interval, WriteMode mode, bool write_pvd)
-    : _prefix(std::move(prefix)), _interval(write_interval), _mode(mode), _write_pvd(write_pvd) {
-    if (write_interval == 0) {
-        throw std::invalid_argument(fmt::format(
-            "prism::output::TimeWriter(prefix, write_interval, ...): write_interval must be "
-            "positive, got {}",
-            write_interval));
+auto FieldRegistry::empty() const noexcept -> bool {
+    return _scalars.empty() && _vectors.empty() && _tensors.empty();
+}
+
+auto FieldRegistry::mesh() const -> SharedPtr<mesh::PMesh> {
+    if (!_scalars.empty()) {
+        return _scalars.front()->mesh();
+    }
+    if (!_vectors.empty()) {
+        return _vectors.front()->mesh();
+    }
+    if (!_tensors.empty()) {
+        return _tensors.front()->mesh();
+    }
+    throw std::runtime_error("prism::output::FieldRegistry::mesh(): no fields are registered.");
+}
+
+VtuTimeWriter::VtuTimeWriter(VtuTimeWriterOptions options) : _options(std::move(options)) {
+    if (_options.interval == 0) {
+        throw std::invalid_argument(
+            fmt::format("prism::output::VtuTimeWriter(): write interval must be positive, got {}",
+                        _options.interval));
     }
 }
 
-void TimeWriter::add(SharedPtr<field::IScalar> f) {
+VtuTimeWriter::VtuTimeWriter(VtuTimeWriter&&) noexcept = default;
+
+auto VtuTimeWriter::operator=(VtuTimeWriter&&) noexcept -> VtuTimeWriter& = default;
+
+VtuTimeWriter::~VtuTimeWriter() = default;
+
+void VtuTimeWriter::add(SharedPtr<field::IScalar> f) {
     _registry.add(std::move(f));
 }
 
-void TimeWriter::add(SharedPtr<field::IVector> f) {
+void VtuTimeWriter::add(SharedPtr<field::IVector> f) {
     _registry.add(std::move(f));
 }
 
-void TimeWriter::add(SharedPtr<field::ITensor> f) {
+void VtuTimeWriter::add(SharedPtr<field::ITensor> f) {
     _registry.add(std::move(f));
 }
 
-void TimeWriter::advance(f64 dt) {
+void VtuTimeWriter::advance(f64 dt) {
     ++_step;
     _time += dt;
 }
 
-void TimeWriter::write() {
-    if (_step % _interval != 0) {
+void VtuTimeWriter::write() {
+    if (_step % _options.interval != 0) {
         return;
     }
-    if (_registry.scalars().empty() && _registry.vectors().empty() && _registry.tensors().empty()) {
+    if (_registry.empty()) {
         return;
     }
 
-    auto file_name = fmt::format("{}_{:04d}.vtu", _prefix, _step);
-    _registry.exportAll(file_name, _mode);
+    if (!_vtu_writer) {
+        _vtu_writer = std::make_unique<detail::VtuWriter>(_registry.mesh());
+    }
 
-    if (_write_pvd) {
+    auto file_name = fmt::format("{}_{:04d}.vtu", _options.prefix, _step);
+    auto pointers = fieldPointers(_registry);
+    const VtuOptions vtu_options {
+        .mode = _options.mode,
+        .write_point_data = _options.write_point_data,
+    };
+    _vtu_writer->write(
+        file_name, pointers.scalars, pointers.vectors, pointers.tensors, vtu_options);
+
+    if (_options.write_pvd) {
         _pvd_entries.emplace_back(_time, file_name);
         flushPvd();
     }
 }
 
-/// TODO: writeAndAdvance() silently skips the initial state. Because advance() runs before
-/// write(), and write() only writes when `_step % _interval == 0`, step 0 (and any step below
-/// the first interval) is never written to disk. With interval=20 and 100 iterations the user
-/// gets 5 frames instead of the expected 6 (0000-0100). Fix: write the initial state at
-/// `_step == 0` (e.g. special-case it in write(), or restructure to write-then-advance with a
-/// naming guard to avoid double-writing result_0000.vtu).
-void TimeWriter::writeAndAdvance(f64 dt) {
+void VtuTimeWriter::writeAndAdvance(f64 dt) {
     advance(dt);
     write();
 }
 
-void TimeWriter::flushPvd() const {
-    auto pvd_name = fmt::format("{}.pvd", _prefix);
+void VtuTimeWriter::flushPvd() const {
+    auto pvd_name = fmt::format("{}.pvd", _options.prefix);
     auto f = std::ofstream(pvd_name);
 
     f.exceptions(std::ios::failbit | std::ios::badbit);

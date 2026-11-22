@@ -71,7 +71,7 @@ auto Tensor::valueAtFace(const mesh::Face& face) const -> Matrix3d {
         return _data[owner.id()];
     }
     const mesh::Cell& neighbor = mesh->otherSharingCell(owner, face);
-    const double gc = mesh::geometricWeight(owner, neighbor, face);
+    const double gc = mesh->faceGeometricWeight(face.id());
 
     return (gc * _data[owner.id()]) + ((1 - gc) * _data[neighbor.id()]);
 }

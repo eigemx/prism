@@ -211,7 +211,7 @@ auto Scalar::valueAtInteriorFace(const mesh::Face& face) const -> f64 {
     const auto& owner = mesh()->cell(face.owner());
     const auto& neighbor = mesh()->cell(face.neighbor().value());
 
-    const auto gc = mesh::geometricWeight(owner, neighbor, face);
+    const auto gc = mesh()->faceGeometricWeight(face.id());
     f64 val = gc * _cell_values[owner.id()];
     val += (1 - gc) * _cell_values[neighbor.id()];
 

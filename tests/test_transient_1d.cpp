@@ -51,7 +51,7 @@ TEST_CASE("solve transient diffusion equation 1D", "[transient]") {
     double final_diff_norm = 0.0;
 
     for (auto timestep = 0; timestep < nTimesteps; timestep++) {
-        solver.solve(eqn, 10, 1e-20);
+        solver.solve(eqn, {.max_iterations = 10, .tolerance = 1e-20});
 
         VectorXd analytical_sol(mesh->cellCount());
         analytical_sol.setZero();

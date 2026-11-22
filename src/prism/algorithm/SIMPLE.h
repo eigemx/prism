@@ -7,6 +7,7 @@
 #include "prism/field/pressure.h"
 #include "prism/field/tensor.h"
 #include "prism/field/velocity.h"
+#include "prism/numerics/solver.h"
 #include "prism/report.h"
 #include "prism/types.h"
 
@@ -44,7 +45,11 @@ struct SIMPLEControls {
 
 class IncompressibleSIMPLE : public IPressureLinked {
   public:
-    IncompressibleSIMPLE(SIMPLEControls controls);
+    IncompressibleSIMPLE(SIMPLEControls controls, solver::LinearSolvers solvers);
+    IncompressibleSIMPLE(SIMPLEControls controls,
+                         solver::ISolver* momentum_solver,
+                         solver::ISolver* pressure_solver);
+
     auto step(std::span<eqn::Momentum*> momentum_predictors,
               SharedPtr<field::Velocity>& U,
               SharedPtr<field::Velocity>& mdot,
@@ -52,10 +57,14 @@ class IncompressibleSIMPLE : public IPressureLinked {
 
   private:
     SIMPLEControls _controls;
+    solver::LinearSolvers _owned_solvers;
+    solver::ISolver* _momentum_solver {nullptr};
+    solver::ISolver* _pressure_solver {nullptr};
 };
 
-auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> momentum_predictors)
-    -> std::vector<report::Entry>;
+auto solveImplicitMomentum(SIMPLEControls controls,
+                           std::span<eqn::Momentum*> momentum_predictors,
+                           solver::ISolver* momentum_solver) -> std::vector<report::Entry>;
 
 // Returns true if all pressure BCs are Neumann (closed domain requiring a reference cell).
 auto needsPressureReference(const SharedPtr<field::Pressure>& pprime) -> bool;
@@ -75,12 +84,13 @@ auto solvePressureEquation(SIMPLEControls controls,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
                            SharedPtr<field::Velocity>& mdot,
-                           SharedPtr<field::Pressure>& p) -> PressureEquationResult;
+                           SharedPtr<field::Pressure>& p,
+                           solver::ISolver* pressure_solver) -> PressureEquationResult;
 
 void correctFields(SharedPtr<field::Velocity>& U,
                    SharedPtr<field::Velocity>& mdot,
                    SharedPtr<field::Pressure>& p,
                    const SharedPtr<field::Tensor>& D,
                    SharedPtr<field::Pressure>& pprime,
-                   double pressure_urf);
+                   f64 pressure_urf);
 } // namespace prism::algo

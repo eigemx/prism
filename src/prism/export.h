@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <string>
 #include <vector>
@@ -13,46 +14,77 @@ namespace prism::output {
 /** @brief Supported VTU write modes. */
 enum class WriteMode : std::uint8_t { Ascii, RawBinaryCompressed };
 
-/** @brief Writes a scalar field to a VTU file (both CellData and PointData).
+/** @brief VTU output options. */
+struct VtuOptions {
+    // VTU encoding.
+    WriteMode mode {WriteMode::RawBinaryCompressed};
+
+    // If true, also write IDW-interpolated PointData for each field.
+    bool write_point_data {true};
+};
+
+/** @brief Time-series writer options. */
+struct VtuTimeWriterOptions {
+    // Base name for the output files (e.g. "result" produces result_0000.vtu).
+    std::string prefix {"result"};
+
+    // Write every N advances. Must be > 0.
+    size_t interval {1};
+
+    // If true, generate and update the .pvd collection.
+    bool write_pvd {true};
+
+    // VTU encoding.
+    WriteMode mode {WriteMode::RawBinaryCompressed};
+
+    // If true, also write IDW-interpolated PointData for each field.
+    bool write_point_data {true};
+};
+
+namespace detail {
+class VtuWriter;
+} // namespace detail
+
+/** @brief Writes a scalar field to a VTU file (CellData and optionally PointData).
  * @param field The scalar field to export.
  * @param file_name The output file name.
- * @param mode The VTU write mode. */
+ * @param options The VTU output options. */
 void toVtu(const field::IScalar& field,
            const std::string& file_name,
-           WriteMode mode = WriteMode::RawBinaryCompressed);
+           const VtuOptions& options = {});
 
-/** @brief Writes a vector field to a VTU file (both CellData and PointData).
+/** @brief Writes a vector field to a VTU file (CellData and optionally PointData).
  * @param field The vector field to export.
  * @param file_name The output file name.
- * @param mode The VTU write mode. */
+ * @param options The VTU output options. */
 void toVtu(const field::IVector& field,
            const std::string& file_name,
-           WriteMode mode = WriteMode::RawBinaryCompressed);
+           const VtuOptions& options = {});
 
-/** @brief Writes a tensor field to a VTU file (both CellData and PointData).
+/** @brief Writes a tensor field to a VTU file (CellData and optionally PointData).
  * @param field The tensor field to export.
  * @param file_name The output file name.
- * @param mode The VTU write mode. */
+ * @param options The VTU output options. */
 void toVtu(const field::ITensor& field,
            const std::string& file_name,
-           WriteMode mode = WriteMode::RawBinaryCompressed);
+           const VtuOptions& options = {});
 
 /** @brief Writes multiple fields into a single VTU file.
  *
- * All fields share the same mesh. Each field is written as both CellData and
- * PointData. PointData is computed via inverse distance weighting (IDW) from
- * cell centres to vertices.
+ * All fields share the same mesh. CellData is always written. PointData is
+ * computed via inverse distance weighting (IDW) from cell centres to vertices
+ * when options.write_point_data is true.
  *
  * @param scalars Scalar fields to export.
  * @param vectors Vector fields to export.
  * @param tensors Tensor fields to export.
  * @param file_name The output file name.
- * @param mode The VTU write mode. */
+ * @param options The VTU output options. */
 void toVtu(std::span<const field::IScalar*> scalars,
            std::span<const field::IVector*> vectors,
            std::span<const field::ITensor*> tensors,
            const std::string& file_name,
-           WriteMode mode = WriteMode::RawBinaryCompressed);
+           const VtuOptions& options = {});
 
 /** @brief A registry of fields that can be exported together.
  *
@@ -72,9 +104,15 @@ class FieldRegistry {
 
     /** @brief Export all registered fields into a single VTU file.
      * @param file_name The output file name.
-     * @param mode The VTU write mode. */
-    void exportAll(const std::string& file_name,
-                   WriteMode mode = WriteMode::RawBinaryCompressed) const;
+     * @param options The VTU output options. */
+    void exportAll(const std::string& file_name, const VtuOptions& options = {}) const;
+
+    /** @brief Returns true when no fields are registered. */
+    auto empty() const noexcept -> bool;
+
+    /** @brief Returns the mesh shared by the registered fields.
+     * @throws std::runtime_error If the registry is empty. */
+    auto mesh() const -> SharedPtr<mesh::PMesh>;
 
     auto scalars() const noexcept -> const std::vector<SharedPtr<field::IScalar>>& {
         return _scalars;
@@ -96,18 +134,21 @@ class FieldRegistry {
  *
  * Fields are registered once and written automatically on matching steps.
  * Each write produces a zero-padded VTU file and updates a PVD collection
- * for ParaView time-series support. */
-class TimeWriter {
+ * for ParaView time-series support.
+ *
+ * Call write() once before the first advance()/writeAndAdvance() to emit the
+ * initial state; the writer itself does not force an initial write. */
+class VtuTimeWriter {
   public:
     /** @brief Construct a time-stepped writer.
-     * @param prefix Base name for output files (e.g., "result" produces result_0000.vtu).
-     * @param write_interval Write every N steps. 1 writes every step. Must be > 0.
-     * @param mode The VTU write mode.
-     * @param write_pvd If true, generate a .pvd file for ParaView. */
-    TimeWriter(std::string prefix = "result",
-               size_t write_interval = 1,
-               WriteMode mode = WriteMode::RawBinaryCompressed,
-               bool write_pvd = true);
+     * @param options Time-series and VTU options. */
+    explicit VtuTimeWriter(VtuTimeWriterOptions options = {});
+
+    VtuTimeWriter(const VtuTimeWriter&) = delete;
+    auto operator=(const VtuTimeWriter&) -> VtuTimeWriter& = delete;
+    VtuTimeWriter(VtuTimeWriter&&) noexcept;
+    auto operator=(VtuTimeWriter&&) noexcept -> VtuTimeWriter&;
+    ~VtuTimeWriter();
 
     /** @brief Register a scalar field. */
     void add(SharedPtr<field::IScalar> f);
@@ -141,11 +182,9 @@ class TimeWriter {
     FieldRegistry _registry;
     size_t _step {0};
     f64 _time {0.0};
-    std::string _prefix;
-    size_t _interval;
-    WriteMode _mode;
-    bool _write_pvd;
+    VtuTimeWriterOptions _options;
     std::vector<Pair<f64, std::string>> _pvd_entries;
+    std::unique_ptr<detail::VtuWriter> _vtu_writer;
 };
 
 } // namespace prism::output

@@ -6,6 +6,7 @@ add_library(prism
 
     numerics/solver.cpp
     numerics/bicgstab.cpp
+    numerics/direct_ldlt.cpp
     numerics/jacobi.cpp
 
     field/ifield.cpp

@@ -3,6 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <stdexcept>
 
 #include "test_utils.h"
 
@@ -26,10 +27,12 @@ TEST_CASE("SIMPLE algorithm mass conservation on coarse pipe", "[algo]") {
     algo::SIMPLEControls controls;
 
     auto momentum_eqns = meq.eqns();
+    algo::IncompressibleSIMPLE simple(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
     auto nOuterIter = 200;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::IncompressibleSIMPLE(controls).step(
-            std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
+        simple.step(std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
     }
 
     auto inlet = flowRate(*fields.U, *mesh, "Inlet");
@@ -71,9 +74,12 @@ TEST_CASE("PISO auto pRef on cavity_hex (closed domain)", "[algo]") {
     controls.pressure_correction_steps = 1;
     controls.non_ortho_correctors = 0;
 
+    algo::PISO piso(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
     auto nSteps = 20;
     for (int ts = 0; ts < nSteps; ++ts) {
-        algo::PISO(controls).step(std::span<eqn::Momentum*>(meq), fields.U, fields.mdot, fields.p);
+        piso.step(std::span<eqn::Momentum*>(meq), fields.U, fields.mdot, fields.p);
         fields.U->x()->updatePrevTimeSteps();
         fields.U->y()->updatePrevTimeSteps();
     }
@@ -99,10 +105,12 @@ TEST_CASE("SIMPLE ductSIMPLE (open domain, no pRef needed)", "[algo]") {
     algo::SIMPLEControls controls;
 
     auto momentum_eqns = meq.eqns();
+    algo::IncompressibleSIMPLE simple(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
     auto nOuterIter = 500;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::IncompressibleSIMPLE(controls).step(
-            std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
+        simple.step(std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
     }
 
     auto inlet = flowRate(*fields.U, *mesh, "inlet");
@@ -136,10 +144,12 @@ TEST_CASE("PISO no-PRIME mass conservation on coarse pipe", "[algo]") {
     controls.pressure_residual = 1e-7;
 
     auto momentum_eqns = meq.eqns();
+    algo::PISO piso(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
     auto nOuterIter = 200;
     for (int iter = 0; iter < nOuterIter; ++iter) {
-        algo::PISO(controls).step(
-            std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
+        piso.step(std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
     }
 
     auto inlet = flowRate(*fields.U, *mesh, "Inlet");
@@ -173,10 +183,12 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
     controls.pressure_residual = 1e-7;
 
     auto momentum_eqns = meq.eqns();
+    algo::PISO piso(
+        controls,
+        {.momentum = makeUnique<solver::BiCGSTAB>(), .pressure = makeUnique<solver::DirectLDLT>()});
     auto nSteps = 50;
     for (int i = 0; i < nSteps; ++i) {
-        algo::PISO(controls).step(
-            std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
+        piso.step(std::span<eqn::Momentum*>(momentum_eqns), fields.U, fields.mdot, fields.p);
     }
 
     auto inlet = flowRate(*fields.U, *mesh, "Inlet");
@@ -184,4 +196,17 @@ TEST_CASE("PISO with PRIME mass conservation on coarse pipe", "[algo]") {
     f64 imbalance = std::abs(inlet + outlet) / std::abs(inlet);
     INFO("inlet flow = " << inlet << "  outlet flow = " << outlet << ", imbalance = " << imbalance);
     REQUIRE(imbalance < 1e-6);
+}
+
+TEST_CASE("Algorithms require explicit momentum and pressure solvers", "[algo]") {
+    algo::SIMPLEControls simple_controls;
+    REQUIRE_THROWS_AS(algo::IncompressibleSIMPLE(simple_controls, solver::LinearSolvers {}),
+                      std::invalid_argument);
+
+    algo::PISOControls piso_controls;
+    REQUIRE_THROWS_AS(algo::PISO(piso_controls, solver::LinearSolvers {}), std::invalid_argument);
+
+    algo::PRIMEControls prime_controls;
+    REQUIRE_THROWS_AS(algo::PRIME(prime_controls, UniquePtr<solver::ISolver> {}),
+                      std::invalid_argument);
 }

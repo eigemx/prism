@@ -42,7 +42,7 @@ auto main(int argc, char* argv[]) -> int {
 
     for (int iter = 0; iter < nIter; iter++) {
         for (int j = 0; j < nNonOrthoIter; j++) {
-            auto result = solver.solve(eqn, 10, 1e-20);
+            auto result = solver.solve(eqn, {.max_iterations = 10, .tolerance = 1e-20});
             log::info("Residuals: Initial = {:.4e} | Final: {:.4e} (nIterations = {}) | field: {}",
                       result.initialResidual(),
                       result.finalResidual(),

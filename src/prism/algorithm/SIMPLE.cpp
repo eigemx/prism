@@ -3,10 +3,10 @@
 #include <fmt/format.h>
 
 #include <stdexcept>
+#include <utility>
 
 #include "prism/equation/transport.h"
 #include "prism/log.h"
-#include "prism/numerics/bicgstab.h"
 #include "prism/operations/rhie_chow.h"
 #include "prism/scheme/diffusion/diffusion.h"
 #include "prism/scheme/source/divergence.h"
@@ -15,21 +15,26 @@
 namespace prism::algo {
 using field::Pressure;
 
-auto solveImplicitMomentum(SIMPLEControls controls, std::span<eqn::Momentum*> momentum_predictors)
-    -> std::vector<report::Entry> {
+auto solveImplicitMomentum(SIMPLEControls controls,
+                           std::span<eqn::Momentum*> momentum_predictors,
+                           solver::ISolver* momentum_solver) -> std::vector<report::Entry> {
     auto reports = std::vector<report::Entry>();
     log::debug("prism::algo::solveMomentumImplicitly(): solving momentum equations");
 
-    auto momentum_solver = solver::BiCGSTAB();
+    if (momentum_solver == nullptr) {
+        throw std::invalid_argument(
+            "prism::algo::solveImplicitMomentum(): a momentum solver is required");
+    }
+    auto* solver = momentum_solver;
     for (auto* eqn : momentum_predictors) {
         eqn->setUnderRelaxFactor(controls.momentum_urf);
 
         // Keep the relaxed matrix after solving so pressureEquationCoeffsTensor() can reuse its
-        // diagonal to build D without re-assembling the equation. So, we run solve() with
-        // keep_matrix = true, and we don't need to provide a reference cell or value for momentum
-        // equations.
-        auto result = momentum_solver.solve(
-            *eqn, controls.momentum_max_iter, controls.momentum_residual, NullOption, 0.0, false);
+        // diagonal to build D without re-assembling the equation.
+        auto result = solver->solve(*eqn,
+                                    {.max_iterations = controls.momentum_max_iter,
+                                     .tolerance = controls.momentum_residual,
+                                     .clear_coeffs = false});
         reports.push_back({.field_name = eqn->field()->name(),
                            .n_iterations = result.iteration(),
                            .initial_residual = result.initialResidual(),
@@ -124,7 +129,8 @@ auto solvePressureEquation(SIMPLEControls controls,
                            std::span<eqn::Momentum*> momentum_predictors,
                            SharedPtr<field::Velocity>& U,
                            SharedPtr<field::Velocity>& mdot,
-                           SharedPtr<field::Pressure>& p) -> PressureEquationResult {
+                           SharedPtr<field::Pressure>& p,
+                           solver::ISolver* pressure_solver) -> PressureEquationResult {
     using namespace scheme::diffusion;
     SharedPtr<field::Tensor> D = pressureEquationCoeffsTensor(momentum_predictors, p);
 
@@ -167,14 +173,25 @@ auto solvePressureEquation(SIMPLEControls controls,
 
     auto reports = std::vector<report::Entry>();
     log::debug("prism::algo::solvePressureEquation(): solving pressure equation");
-    auto p_solver = solver::BiCGSTAB();
 
+    if (pressure_solver == nullptr) {
+        throw std::invalid_argument(
+            "prism::algo::solvePressureEquation(): a pressure solver is required");
+    }
+
+    auto* p_solver = pressure_solver;
+
+    bool reuse_prepared = false;
     for (size_t i = 0; i <= controls.non_ortho_correctors; ++i) {
-        auto result = p_solver.solve(pEqn,
-                                     controls.pressure_max_iter,
-                                     controls.pressure_residual,
-                                     controls.p_ref_cell,
-                                     controls.p_ref_value);
+        // The pressure matrix is identical for every non-orthogonal corrector (only the
+        // cross-diffusion RHS changes), so factorize it once and reuse the factorization.
+        auto result = p_solver->solve(pEqn,
+                                      {.max_iterations = controls.pressure_max_iter,
+                                       .tolerance = controls.pressure_residual,
+                                       .reference_cell = controls.p_ref_cell,
+                                       .reference_value = controls.p_ref_value,
+                                       .reuse_prepared = reuse_prepared});
+        reuse_prepared = true;
         reports.push_back({.field_name = fmt::format("{}_corr_{}", pprime->name(), i),
                            .n_iterations = result.iteration(),
                            .initial_residual = result.initialResidual(),
@@ -194,7 +211,27 @@ auto solvePressureEquation(SIMPLEControls controls,
     return {.pprime = pprime, .D = D, .reports = std::move(reports)};
 }
 
-IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEControls controls) : _controls(controls) {}
+IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEControls controls, solver::LinearSolvers solvers)
+    : _controls(controls), _owned_solvers(std::move(solvers)) {
+    if (!_owned_solvers.valid()) {
+        throw std::invalid_argument(
+            "prism::algo::IncompressibleSIMPLE(): both momentum and pressure solvers are "
+            "required");
+    }
+    _momentum_solver = _owned_solvers.momentum.get();
+    _pressure_solver = _owned_solvers.pressure.get();
+}
+
+IncompressibleSIMPLE::IncompressibleSIMPLE(SIMPLEControls controls,
+                                           solver::ISolver* momentum_solver,
+                                           solver::ISolver* pressure_solver)
+    : _controls(controls), _momentum_solver(momentum_solver), _pressure_solver(pressure_solver) {
+    if (_momentum_solver == nullptr || _pressure_solver == nullptr) {
+        throw std::invalid_argument(
+            "prism::algo::IncompressibleSIMPLE(): both momentum and pressure solvers are "
+            "required");
+    }
+}
 
 auto IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                                 SharedPtr<field::Velocity>& U,
@@ -207,9 +244,10 @@ auto IncompressibleSIMPLE::step(std::span<eqn::Momentum*> momentum_predictors,
                         momentum_predictors.size()));
     }
 
-    auto reports = solveImplicitMomentum(_controls, momentum_predictors);
-    auto result = solvePressureEquation(_controls, momentum_predictors, U, mdot, p);
-    reports.insert(reports.end(), result.reports.begin(), result.reports.end());
+    auto reports = solveImplicitMomentum(_controls, momentum_predictors, _momentum_solver);
+    auto result =
+        solvePressureEquation(_controls, momentum_predictors, U, mdot, p, _pressure_solver);
+
     correctFields(U, mdot, p, result.D, result.pprime, _controls.pressure_urf);
     return reports;
 }
