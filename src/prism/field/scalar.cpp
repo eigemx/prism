@@ -4,10 +4,8 @@
 #include <cassert>
 
 #include "prism/exceptions.h"
-#include "prism/gradient/green_gauss.h"
 #include "prism/gradient/least_squares.h"
 #include "prism/log.h"
-#include "prism/mesh/utilities.h"
 
 /// TODO: make namespaces consistent before function names in log calls.
 
@@ -284,23 +282,23 @@ void Scalar::setGradScheme() {
     }
 
     auto grad_scheme_name = it->gradScheme().value();
+    auto grad_scheme = gradient::createGradScheme(grad_scheme_name, this->mesh());
 
-    if (grad_scheme_name == "green-gauss" || grad_scheme_name == "greenGauss") {
+    if (grad_scheme == nullptr) {
         log::debug(
-            "Scalar::setGradScheme(): setting the gradient scheme to Green-Gauss for "
-            "field `{}`",
+            "Scalar::setGradScheme(): couldn't find a gradient scheme named `{}` for field "
+            "`{}` in `fields.json`, setting the gradient scheme to least squares.",
+            grad_scheme_name,
             this->name());
-        _grad_scheme = makeShared<gradient::GreenGauss>(this->mesh());
-        return;
+
+        grad_scheme = makeShared<gradient::LeastSquares>(this->mesh());
+    } else {
+        log::debug("Scalar::setGradScheme(): setting the gradient scheme to `{}` for field `{}`",
+                   grad_scheme_name,
+                   this->name());
     }
 
-
-    log::debug(
-        "Scalar::setGradScheme(): setting the gradient scheme to Least-Squares "
-        "for field `{}`",
-        this->name());
-
-    _grad_scheme = makeShared<gradient::LeastSquares>(this->mesh());
+    _grad_scheme = std::move(grad_scheme);
 }
 
 void Scalar::setHistorySize(size_t num_time_steps) {

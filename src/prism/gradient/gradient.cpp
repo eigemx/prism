@@ -1,8 +1,74 @@
 #include "gradient.h"
 
-#include "prism/mesh/utilities.h"
+#include <map>
+
+#include "green_gauss.h"
+#include "least_squares.h"
 
 namespace prism::gradient {
+namespace {
+class GradSchemeRegistry {
+  public:
+    static auto instance() -> GradSchemeRegistry&;
+
+    void registerScheme(std::initializer_list<std::string> names, GradSchemeCreator creator);
+
+    template <typename Scheme>
+    void registerScheme(std::initializer_list<std::string> names) {
+        registerScheme(names, [](const SharedPtr<mesh::PMesh>& mesh) -> SharedPtr<IGradient> {
+            return makeShared<Scheme>(mesh);
+        });
+    }
+
+    auto createScheme(const std::string& name, const SharedPtr<mesh::PMesh>& mesh) const
+        -> SharedPtr<IGradient>;
+
+  private:
+    GradSchemeRegistry();
+
+    std::map<std::string, GradSchemeCreator> _creators;
+};
+
+auto GradSchemeRegistry::instance() -> GradSchemeRegistry& {
+    static GradSchemeRegistry registry;
+    return registry;
+}
+
+GradSchemeRegistry::GradSchemeRegistry() {
+    // add default gradient schemes implemented by prism
+    registerScheme<LeastSquares>({"least-squares", "leastSquares"});
+    registerScheme<GreenGauss>({"green-gauss", "greenGauss"});
+    registerScheme<SkewCorrectedGreenGauss>(
+        {"green-gauss-skew", "greenGaussSkew", "skewCorrectedGreenGauss"});
+}
+
+void GradSchemeRegistry::registerScheme(std::initializer_list<std::string> names,
+                                        GradSchemeCreator creator) {
+    for (const auto& name : names) {
+        _creators.insert_or_assign(name, creator);
+    }
+}
+
+auto GradSchemeRegistry::createScheme(const std::string& name,
+                                      const SharedPtr<mesh::PMesh>& mesh) const
+    -> SharedPtr<IGradient> {
+    const auto it = _creators.find(name);
+    if (it == _creators.end()) {
+        return nullptr;
+    }
+    return it->second(mesh);
+}
+} // namespace
+
+auto createGradScheme(const std::string& name, const SharedPtr<mesh::PMesh>& mesh)
+    -> SharedPtr<IGradient> {
+    return GradSchemeRegistry::instance().createScheme(name, mesh);
+}
+
+void registerGradScheme(std::initializer_list<std::string> names, GradSchemeCreator creator) {
+    GradSchemeRegistry::instance().registerScheme(names, std::move(creator));
+}
+
 IGradient::IGradient() {
     log::debug("prism::gradient::IGradient() adding default boundary handlers for IGradient");
     this->boundaryHandlersManager().template addHandler<boundary::Fixed>();
@@ -33,7 +99,8 @@ auto IGradient::gradAtFace(const mesh::Face& face, const field::IScalar& field) 
     return gradAtBoundaryFace(face, field);
 }
 
-auto IGradient::gradAtBoundaryFace(const mesh::Face& face, const field::IScalar& field) -> Vector3d {
+auto IGradient::gradAtBoundaryFace(const mesh::Face& face, const field::IScalar& field)
+    -> Vector3d {
     const auto& boundary_patch = field.mesh()->boundaryPatch(face);
     const auto& boundary_condition = boundary_patch.getBoundaryCondition(field.name());
 

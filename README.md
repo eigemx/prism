@@ -9,7 +9,7 @@ Prism is a modern C++ library for solving partial differential equations (PDEs) 
 - Linear solvers: BiCGSTAB and Jacobi, with reference-cell handling for singular (all-Neumann) systems.
 - Convection schemes: upwind, central difference, second-order upwind, QUICK, FROMM, and the high-resolution (TVD) schemes MINMOD, MUSCL and SMART.
 - Diffusion schemes with over-relaxed non-orthogonal correction for non-orthogonal meshes.
-- Gradient schemes: Green-Gauss (with skewness correction) and least-squares.
+- Gradient schemes: Green-Gauss (with skewness correction) and Least-squares.
 - Explicit and implicit source terms (gradient, divergence, laplacian, constant, ...).
 - Implicit transient schemes: Backward Euler (first order) and Adam-Moulton (second order).
 - Built-in boundary conditions: Fixed, FixedGradient, ZeroGradient, NoSlip, Symmetry and Outlet, with support for user-defined boundary conditions.

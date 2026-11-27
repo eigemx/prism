@@ -8,20 +8,10 @@ namespace {
 auto boundaryFaceIntegral(const mesh::Face& face, const field::IScalar& field) -> Vector3d;
 } // namespace
 
-auto GreenGauss::correctSkewness(const mesh::Face& face,
-                                 const mesh::Cell& cell,
-                                 const mesh::Cell& nei) const -> double {
-    // This correction is based on option 1 from "Gradient Compuation" in Moukalled et al. (2016)
-    // auto gc = mesh::geometricWeight(cell, nei, face);
-    // double correction = gc * _cell_gradients[cell.id()].dot(face.center() - cell.center());
-    // correction += (1.0 - gc) * _cell_gradients[nei.id()].dot(face.center() - nei.center());
-    // return correction;
-
-    // This correction is based on option 2 from "Gradient Compuation" in Moukalled et al. (2016)
-    auto grad_sum = _cell_gradients[cell.id()] + _cell_gradients[nei.id()];
-    auto vec = face.center() - (0.5 * (cell.center() + nei.center()));
-
-    return 0.5 * grad_sum.dot(vec);
+auto GreenGauss::skewnessCorrection(const mesh::Face& /*face*/,
+                                    const mesh::Cell& /*cell*/,
+                                    const mesh::Cell& /*nei*/) const -> f64 {
+    return 0.0;
 }
 
 
@@ -68,7 +58,7 @@ auto GreenGauss::computeGradAtCell(const mesh::Cell& cell, const field::IScalar&
         auto face_phi = 0.5 * (phi.valueAtCell(cell) + phi.valueAtCell(nei));
 
         // skewness correction
-        face_phi += correctSkewness(face, cell, nei);
+        face_phi += skewnessCorrection(face, cell, nei);
 
         grad += Sf * face_phi;
     }
@@ -88,5 +78,16 @@ auto boundaryFaceIntegral(const mesh::Face& face, const field::IScalar& field) -
     return phi * face.areaVector();
 }
 } // namespace
+
+auto SkewCorrectedGreenGauss::skewnessCorrection(const mesh::Face& face,
+                                                 const mesh::Cell& cell,
+                                                 const mesh::Cell& nei) const -> f64 {
+    // This correction is based on option 2 from "Gradient Computation" in Moukalled et al.
+    // (2016).
+    auto grad_sum = _cell_gradients[cell.id()] + _cell_gradients[nei.id()];
+    auto vec = face.center() - (0.5 * (cell.center() + nei.center()));
+
+    return 0.5 * grad_sum.dot(vec);
+}
 
 } // namespace prism::gradient

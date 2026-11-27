@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <initializer_list>
+#include <string>
 
 #include "boundary.h"
 #include "prism/field/ifield.h"
@@ -41,5 +44,27 @@ class IGradient : public prism::boundary::BHManagerProvider<boundary::IGradSchem
 
     virtual auto gradAtBoundaryFace(const mesh::Face& f, const field::IScalar& field) -> Vector3d;
 };
+
+using GradSchemeCreator = std::function<SharedPtr<IGradient>(const SharedPtr<mesh::PMesh>&)>;
+
+/** @brief Creates the scheme registered under `name`, or nullptr if it is unknown. */
+auto createGradScheme(const std::string& name, const SharedPtr<mesh::PMesh>& mesh)
+    -> SharedPtr<IGradient>;
+
+/** @brief Registers a scheme creator under one or more names.
+ *
+ * Names registered later replace earlier registrations. */
+void registerGradScheme(std::initializer_list<std::string> names, GradSchemeCreator creator);
+
+/** @brief Registers `Scheme` under one or more names.
+ *
+ * Names registered later replace earlier registrations. The scheme is constructed with the
+ * mesh of the field that selects it. */
+template <typename Scheme>
+void registerGradScheme(std::initializer_list<std::string> names) {
+    registerGradScheme(names, [](const SharedPtr<mesh::PMesh>& mesh) -> SharedPtr<IGradient> {
+        return makeShared<Scheme>(mesh);
+    });
+}
 
 } // namespace prism::gradient
