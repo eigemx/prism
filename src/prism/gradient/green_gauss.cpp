@@ -1,6 +1,6 @@
 #include "green_gauss.h"
 
-#include "prism/mesh/utilities.h"
+#include <algorithm>
 
 
 namespace prism::gradient {
@@ -17,6 +17,7 @@ auto GreenGauss::skewnessCorrection(const mesh::Face& /*face*/,
 
 GreenGauss::GreenGauss(const SharedPtr<mesh::PMesh>& mesh) {
     _cell_gradients.resize(mesh->cellCount(), prism::Vector3d::Zero());
+    _previous_gradients.resize(mesh->cellCount(), prism::Vector3d::Zero());
 }
 
 auto GreenGauss::gradAtCell(const mesh::Cell& cell, const field::IScalar& field) -> Vector3d {
@@ -28,46 +29,41 @@ auto GreenGauss::gradAtCell(const mesh::Cell& cell, const field::IScalar& field)
 }
 
 void GreenGauss::computeAllCellGradients(const field::IScalar& field) {
-    for (const auto& cell : field.mesh()->cells()) {
-        computeGradAtCell(cell, field);
+    const auto& mesh = field.mesh();
+    const auto& volumes = mesh->cellsVolumeVector();
+
+    // Keep the previous gradient field for the skewness correction, and reuse the existing
+    // storage as the new gradient buffer.
+    _previous_gradients.swap(_cell_gradients);
+    std::fill(_cell_gradients.begin(), _cell_gradients.end(), Vector3d::Zero());
+
+    for (const auto& face : mesh->interiorFaces()) {
+        const auto& owner = mesh->cell(face.owner());
+        const auto& neighbor = mesh->cell(face.neighbor().value());
+        auto face_phi = 0.5 * (field.valueAtCell(owner) + field.valueAtCell(neighbor));
+
+        // skewness correction
+        face_phi += skewnessCorrection(face, owner, neighbor);
+
+        const Vector3d contribution = face.areaVector() * face_phi;
+        _cell_gradients[owner.id()] += contribution;
+        _cell_gradients[neighbor.id()] -= contribution;
     }
+
+    for (const auto& face : mesh->nonEmptyBoundaryFaces()) {
+        _cell_gradients[face.owner()] += boundaryFaceIntegral(face, field);
+    }
+
+    for (size_t i = 0; i < _cell_gradients.size(); ++i) {
+        _cell_gradients[i] /= volumes[static_cast<Eigen::Index>(i)];
+    }
+
     _computed_event = field.eventNo();
 }
 
 auto GreenGauss::computeGradAtCell(const mesh::Cell& cell, const field::IScalar& field)
     -> Vector3d {
-    Vector3d grad {0., 0., 0.};
-    const auto& mesh = field.mesh();
-    const auto& phi = field;
-
-    for (auto face_id : cell.facesIds()) {
-        const mesh::Face& face = mesh->face(face_id);
-
-        // Empty faces contribute nothing to the gradient.
-        if (face.isEmpty()) {
-            continue;
-        }
-
-        if (face.isBoundary()) {
-            grad += boundaryFaceIntegral(face, field);
-            continue;
-        }
-
-        auto Sf = mesh::outwardAreaVector(face, cell);
-        const auto& nei = field.mesh()->otherSharingCell(cell, face);
-        auto face_phi = 0.5 * (phi.valueAtCell(cell) + phi.valueAtCell(nei));
-
-        // skewness correction
-        face_phi += skewnessCorrection(face, cell, nei);
-
-        grad += Sf * face_phi;
-    }
-    grad /= cell.volume();
-
-    // store the gradient to use it in next iterations, for skewness correction
-    _cell_gradients[cell.id()] = grad;
-
-    return grad;
+    return gradAtCell(cell, field);
 }
 
 namespace {
@@ -84,7 +80,7 @@ auto SkewCorrectedGreenGauss::skewnessCorrection(const mesh::Face& face,
                                                  const mesh::Cell& nei) const -> f64 {
     // This correction is based on option 2 from "Gradient Computation" in Moukalled et al.
     // (2016).
-    auto grad_sum = _cell_gradients[cell.id()] + _cell_gradients[nei.id()];
+    auto grad_sum = _previous_gradients[cell.id()] + _previous_gradients[nei.id()];
     auto vec = face.center() - (0.5 * (cell.center() + nei.center()));
 
     return 0.5 * grad_sum.dot(vec);

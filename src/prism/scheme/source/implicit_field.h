@@ -22,12 +22,12 @@ class ImplicitField : public IFullScheme, public IImplicitSource {
 
 template <Sign SourceSign>
 void ImplicitField<SourceSign>::apply() {
-    matrix().setIdentity();
-    matrix().diagonal() = _coeff * field()->mesh()->cellsVolumeVector();
+    resetValues();
 
-    if constexpr (SourceSign == Sign::Positive) {
-        matrix() *= -1;
-        return;
+    const auto& vol_field = field()->mesh()->cellsVolumeVector();
+    const f64 sign = (SourceSign == Sign::Positive) ? -1.0 : 1.0;
+    for (Eigen::Index i = 0; i < vol_field.size(); ++i) {
+        insert(static_cast<size_t>(i), static_cast<size_t>(i), sign * _coeff * vol_field[i]);
     }
 }
 } // namespace prism::scheme::source

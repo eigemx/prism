@@ -7,9 +7,13 @@ namespace prism::scheme {
 IPartialScheme::IPartialScheme(size_t n_cells) : RHSProvider(n_cells) {}
 
 IFullScheme::IFullScheme(const SharedPtr<field::Scalar>& field)
-    : LinearSystem(field->mesh()->cellCount()), _field(field) {}
+    : LinearSystem(field->mesh()->cellCount()), _field(field) {
+    // Every full scheme assembles into its own matrix, using the mesh pattern.
+    setPattern(field->mesh()->equationPattern());
+}
 
 void IFullScheme::apply() {
+    resetValues();
     applyBoundary();
 
     const auto& interior_faces = _field->mesh()->interiorFaces();

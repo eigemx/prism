@@ -26,6 +26,7 @@ class GreenGauss : public IGradient {
                                     const mesh::Cell& nei) const -> f64;
 
     std::vector<Vector3d> _cell_gradients;
+    std::vector<Vector3d> _previous_gradients;
     size_t _computed_event {std::numeric_limits<size_t>::max()};
 };
 

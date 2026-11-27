@@ -51,9 +51,14 @@ TEST_CASE("skew-corrected Green-Gauss is more accurate than plain on a skewed me
         mesh, "P", [&exact_grad](const auto& cell) { return exact_grad.dot(cell.center()); });
 
     phi.setGradScheme(makeShared<gradient::GreenGauss>(mesh));
+    phi.computeAllCellGradients();
     const f64 plain_error = gradientRmsError(phi, *mesh, exact_grad);
 
     phi.setGradScheme(makeShared<gradient::SkewCorrectedGreenGauss>(mesh));
+
+    // The correction uses the previous gradient sweep. Seed it with a plain sweep first.
+    phi.computeAllCellGradients();
+    phi.computeAllCellGradients();
     const f64 corrected_error = gradientRmsError(phi, *mesh, exact_grad);
 
     REQUIRE(plain_error > 0.0);

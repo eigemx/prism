@@ -2,13 +2,17 @@
 
 namespace prism::eqn {
 void Transport::updateCoeffs() {
-    // iterate over all equation's finite volume schemes
-    for (auto& scheme : _schemes) {
-        // apply the scheme
-        scheme->apply();
+    // Zero values but keep the equation's CSR pattern.
+    resetValues();
 
-        // update equation's universal coefficient matrix and RHS vector
-        matrix() += scheme->matrix();
+    for (auto& source : _sources) {
+        source->rhs().setZero();
+    }
+
+    // Each scheme assembles its own matrix; reduce those matrices into the equation.
+    for (auto& scheme : _schemes) {
+        scheme->apply();
+        accumulateFrom(*scheme);
         rhs() += scheme->rhs();
     }
 
@@ -18,21 +22,21 @@ void Transport::updateCoeffs() {
     }
 
     prism::boundary::detail::applyBoundaryIfExists("prism::eqn::Transport", *this);
+
+    collect();
 }
 
 void Transport::zeroOutCoeffs() {
     for (auto& scheme : _schemes) {
-        scheme->matrix().setZero();
-        scheme->rhs().setZero();
+        scheme->resetValues();
     }
 
     for (auto& source : _sources) {
         source->rhs().setZero();
     }
 
-    // zero out the universal coefficient matrix and RHS vector
-    matrix().setZero();
-    rhs().setZero();
+    // zero out the universal coefficient matrix and RHS without destroying the pattern
+    resetValues();
 }
 
 auto Transport::underRelaxFactor() const -> double {

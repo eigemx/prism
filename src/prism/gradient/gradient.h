@@ -37,8 +37,8 @@ class IGradient : public prism::boundary::BHManagerProvider<boundary::IGradSchem
     virtual void computeAllCellGradients(const field::IScalar& field) = 0;
 
   protected:
-    /** @brief Computes and stores the gradient at a single cell (no staleness check).
-     * Used by computeAllCellGradients() and the self-healing gradAtCell() implementation. */
+    /** @brief Computes the gradient at a single cell.
+     * Schemes that assemble a whole-mesh gradient cache may use it for a direct query. */
     virtual auto computeGradAtCell(const mesh::Cell& c, const field::IScalar& field)
         -> Vector3d = 0;
 

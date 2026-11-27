@@ -63,6 +63,7 @@ class Upwind : public IConvection {
                      const mesh::Cell& neighbor,
                      const mesh::Face& face) -> detail::CoeffsTriplet override;
     virtual auto weightsNVF(f64 phi_tilde) const noexcept -> WeightsNVF;
+    virtual auto needsPhiTilde() const noexcept -> bool { return false; }
 };
 
 // Central difference scheme
@@ -113,6 +114,7 @@ class MINMOD : public Upwind {
 
   protected:
     auto weightsNVF(f64 phi_tilde) const noexcept -> Upwind::WeightsNVF override;
+    auto needsPhiTilde() const noexcept -> bool override { return true; }
 };
 
 // MUSCL scheme
@@ -123,6 +125,7 @@ class MUSCL : public Upwind {
 
   protected:
     auto weightsNVF(f64 phi_tilde) const noexcept -> Upwind::WeightsNVF override;
+    auto needsPhiTilde() const noexcept -> bool override { return true; }
 };
 
 // SMART scheme
@@ -133,5 +136,6 @@ class SMART : public Upwind {
 
   protected:
     auto weightsNVF(f64 phi_tilde) const noexcept -> Upwind::WeightsNVF override;
+    auto needsPhiTilde() const noexcept -> bool override { return true; }
 };
 } // namespace prism::scheme::convection

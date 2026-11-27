@@ -6,6 +6,20 @@
 
 namespace prism::scheme::temporal {
 
+namespace detail {
+void assembleBackwardEuler(LinearSystem& system,
+                           const SharedPtr<field::Scalar>& field,
+                           f64 dt,
+                           const VectorXd& phi_prev) {
+    const auto& vol_field = field->mesh()->cellsVolumeVector();
+    const f64 coeff = 1.0 / dt;
+    for (Eigen::Index i = 0; i < vol_field.size(); ++i) {
+        system.insert(static_cast<size_t>(i), static_cast<size_t>(i), coeff * vol_field[i]);
+    }
+    system.rhs() = vol_field.cwiseProduct(phi_prev) / dt;
+}
+} // namespace detail
+
 BackwardEuler::BackwardEuler(const SharedPtr<field::Scalar>& phi) : ITemporal(phi) {
     log::debug(
         "prism::scheme::temporal::BackwardEuler() initialized for field `{}` with default dt = "
@@ -47,6 +61,7 @@ BackwardEuler::BackwardEuler(const SharedPtr<field::Density>& rho,
 }
 
 void BackwardEuler::apply() {
+    resetValues();
     if (_rho) {
         applyCompressible();
     } else {
@@ -62,7 +77,6 @@ void BackwardEuler::applyCompressible() { // NOLINT
 void BackwardEuler::applyIncompressible() {
     log::debug("Applying backward Euler scheme to field `{}` (no density field provided)",
                field()->name());
-    const auto& vol_field = field()->mesh()->cellsVolumeVector();
 
     // we need to make sure that the field is keeping track of at least one time step
     auto phi_prev_opt = field()->prevValues();
@@ -73,13 +87,9 @@ void BackwardEuler::applyIncompressible() {
             field()->name()));
     }
 
-    const VectorXd& phi_prev = *phi_prev_opt;
-
     // Note that the left hand side is constant for all time steps, we need to utilize this to
     // avoid recalculation of the LHS matrix each time step.
-    matrix().setIdentity();
-    matrix().diagonal() = vol_field / timeStep();
-    rhs() = vol_field.cwiseProduct(phi_prev) / timeStep();
+    detail::assembleBackwardEuler(*this, field(), timeStep(), *phi_prev_opt);
 }
 
 

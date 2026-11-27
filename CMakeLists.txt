@@ -77,3 +77,15 @@ target_link_libraries(prism
         vtu11
         spdlog::spdlog
 )
+
+# Enable link-time optimization for the library when the toolchain supports it.
+option(PRISM_ENABLE_LTO "Enable interprocedural optimization (LTO)" ON)
+if(PRISM_ENABLE_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT PRISM_IPO_SUPPORTED OUTPUT PRISM_IPO_ERROR)
+    if(PRISM_IPO_SUPPORTED)
+        set_target_properties(prism PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "LTO requested but not supported: ${PRISM_IPO_ERROR}")
+    endif()
+endif()

@@ -61,8 +61,6 @@ void Symmetry<Transport>::apply(Transport& eqn, const mesh::BoundaryPatch& patch
     const auto& diff_scheme = eqn.diffusionScheme();
     const auto& mu = diff_scheme->kappa();
 
-    LinearSystem sys(mesh->cellCount());
-
     for (size_t face_id : patch.facesIds()) {
         const auto& face = mesh->face(face_id);
         const auto& owner = mesh->cell(face.owner());
@@ -80,13 +78,9 @@ void Symmetry<Transport>::apply(Transport& eqn, const mesh::BoundaryPatch& patch
         f64 g = 2 * mu->multiply(Sf, owner).norm() / d_normal;
         auto [ac, b] = contribution(field->coord().value(), Uc, n);
 
-        sys.insert(owner_id, owner_id, g * ac);
-        sys.rhs(owner_id) += -g * b;
+        eqn.insert(owner_id, owner_id, g * ac);
+        eqn.rhs(owner_id) += -g * b;
     }
-
-    sys.collect();
-    eqn.matrix() += sys.matrix();
-    eqn.rhs() += sys.rhs();
 }
 
 } // namespace prism::eqn::boundary

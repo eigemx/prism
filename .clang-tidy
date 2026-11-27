@@ -1,12 +1,13 @@
 Checks: '-*,modernize-*, readability-*, performance-*, misc-*, cppcoreguidelines-*,
-         -readability-magic-numbers, 
-         -cppcoreguidelines-avoid-magic-numbers, 
+         -readability-magic-numbers,
+         -cppcoreguidelines-avoid-magic-numbers,
          -cppcoreguidelines-narrowing-conversions,
-         -cppcoreguidelines-pro-type-const-cast,
          -modernize-use-nodiscard,
          -readability-identifier-length,
-         -readability-use-anyofallof,
-         -modernize-use-ranges
+         -modernize-use-ranges,
+         -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+         -misc-non-private-member-variables-in-classes,
+         -cppcoreguidelines-non-private-member-variables-in-classes
 '
 
 WarningsAsErrors: '*'

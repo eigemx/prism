@@ -5,6 +5,19 @@
 
 namespace prism::scheme::temporal {
 
+namespace detail {
+
+/** @brief Assembles the incompressible backward-Euler diagonal and RHS into `system`.
+ *
+ * This lives in detail so AdamMoulton can reuse the Backward-Euler fallback without
+ * constructing a temporary scheme and copying its matrix. */
+void assembleBackwardEuler(LinearSystem& system,
+                           const SharedPtr<field::Scalar>& field,
+                           f64 dt,
+                           const VectorXd& phi_prev);
+
+} // namespace detail
+
 class BackwardEuler : public ITemporal {
   public:
     BackwardEuler(const SharedPtr<field::Scalar>& phi);

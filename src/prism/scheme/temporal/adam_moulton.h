@@ -22,7 +22,6 @@ class AdamMoulton : public ITemporal {
   private:
     void applyIncompressible();
     void applyCompressible();
-    void applyBackwardEuler();
 
     SharedPtr<field::Density> _rho;
 };

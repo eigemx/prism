@@ -12,13 +12,19 @@ auto phiAtDummyUpwind(SharedPtr<field::Scalar>& field,
     return phi_downwind - (2 * field->gradAtCell(cell).dot(d_CD));
 }
 
-auto phiTilde(SharedPtr<field::Scalar>& field,
-              const mesh::Cell& cell,
-              const mesh::Cell& downwind) -> f64 {
+auto phiTildeFromUpwind(SharedPtr<field::Scalar>& field,
+                        const mesh::Cell& cell,
+                        const mesh::Cell& downwind,
+                        f64 phi_upwind) -> f64 {
     // The following is based on equation (12.1) from Moukalled et. al (2016)
-    const auto phi_upwind = phiAtDummyUpwind(field, cell, downwind);
     auto a = field->valueAtCell(cell) - phi_upwind;
     auto b = field->valueAtCell(downwind) - phi_upwind;
     return a / b;
+}
+
+auto phiTilde(SharedPtr<field::Scalar>& field, const mesh::Cell& cell, const mesh::Cell& downwind)
+    -> f64 {
+    const auto phi_upwind = phiAtDummyUpwind(field, cell, downwind);
+    return phiTildeFromUpwind(field, cell, downwind, phi_upwind);
 }
 } // namespace prism::scheme::convection

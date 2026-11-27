@@ -76,11 +76,6 @@ inline auto dev(const Tensor3d& A) -> Tensor3d;
  * @return The double contraction of A and B. */
 inline auto doubleContraction(const Tensor3d& A, const Tensor3d& B) -> f64;
 
-namespace detail {
-template <typename Vector>
-auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> f64;
-} // namespace detail
-
 template <typename Vector>
 auto div(const Vector& U) -> field::Scalar {
     // applying green-gauss theorem to the divergence of a vector field
@@ -90,13 +85,22 @@ auto div(const Vector& U) -> field::Scalar {
     std::string name = fmt::format("div({})", U.name());
     const auto& mesh = U.mesh();
 
-    VectorXd cell_data;
-    cell_data.resize(mesh->cellCount());
+    VectorXd cell_data(mesh->cellCount());
+    cell_data.setZero();
 
-    for (const auto& cell : mesh->cells()) {
-        cell_data[cell.id()] = detail::fluxSumAtCell(cell, U) / cell.volume();
+    for (const auto& face : mesh->interiorFaces()) {
+        const f64 flux = U.fluxAtFace(face);
+        cell_data[face.owner()] += flux;
+        cell_data[face.neighbor().value()] -= flux;
     }
-    return {name, mesh, cell_data};
+
+    for (const auto& face : mesh->nonEmptyBoundaryFaces()) {
+        cell_data[face.owner()] += U.fluxAtFace(face);
+    }
+
+    cell_data.array() /= mesh->cellsVolumeVector().array();
+
+    return {name, mesh, std::move(cell_data)};
 }
 
 template <field::IScalarBased Field>
@@ -139,36 +143,6 @@ auto grad(Field& field) -> field::Vector {
 
     return field::Vector(name, mesh, components);
 }
-
-namespace detail {
-template <typename Vector>
-auto fluxSumAtCell(const mesh::Cell& cell, const Vector& U) -> f64 {
-    f64 sum = 0.0;
-    const auto& mesh = U.mesh();
-
-    for (auto face_id : cell.facesIds()) {
-        const mesh::Face& face = mesh->face(face_id);
-
-        // Skip empty faces
-        if (face.isBoundary()) {
-            const auto& boundary_patch = mesh->boundaryPatch(face);
-            if (boundary_patch.isEmpty()) {
-                continue;
-            }
-        }
-        f64 flux = U.fluxAtFace(face);
-        if (!face.isOwnedBy(cell.id())) {
-            // fluxAtFace returns flux in face normal direction from owner to face center, we need
-            // to reverse this value when `face` is not owned by `cell`
-            flux = -flux;
-        }
-        sum += flux;
-    }
-
-    return sum;
-}
-
-} // namespace detail
 
 template <typename VectorType>
 auto grad(const VectorType& U) -> field::Tensor {

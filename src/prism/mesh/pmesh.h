@@ -121,9 +121,7 @@ class PMesh {
     auto otherSharingCell(const Cell& c, const Face& f) const -> const Cell&;
 
     /** @brief Geometric interpolation weight of an interior face (cached at mesh build). */
-    auto faceGeometricWeight(size_t face_id) const noexcept -> f64 {
-        return _face_gc[face_id];
-    }
+    auto faceGeometricWeight(size_t face_id) const noexcept -> f64 { return _face_gc[face_id]; }
 
     /** @brief Returns a span over interior faces. */
     auto interiorFaces() const noexcept -> std::span<const Face>;
@@ -136,6 +134,12 @@ class PMesh {
 
     /** @brief Returns field metadata for the mesh. */
     auto fieldsInfo() const noexcept -> const std::vector<FieldInfo>&;
+
+    /** @brief Returns the sparsity pattern shared by transport matrices on this mesh.
+     *
+     * Transport matrices couple each cell with itself and its face neighbours, so the
+     * pattern is a mesh property and is built once here. */
+    auto equationPattern() const noexcept -> const SparseMatrix& { return _equation_pattern; }
 
   private:
     /** @brief Stores the old-to-new face ID permutation and face counts. */
@@ -178,6 +182,7 @@ class PMesh {
     size_t _n_nonempty_boundary_faces {0};
     VectorXd _cells_volume;
     VectorXd _face_gc;
+    SparseMatrix _equation_pattern;
 };
 
 class ToPMeshConverter {

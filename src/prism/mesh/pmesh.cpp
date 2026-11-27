@@ -62,6 +62,24 @@ PMesh::PMesh(std::vector<Vector3d> vertices,
         _face_gc[face_id] =
             geometricWeight(_cells[face.owner()], _cells[face.neighbor().value()], face);
     }
+
+    // Transport matrices couple each cell with itself and its face neighbours, so their
+    // sparsity pattern is a mesh property and can be built once here.
+    std::vector<Eigen::Triplet<f64>> pattern_triplets;
+    pattern_triplets.reserve(_n_cells + (2 * (_n_faces - _n_boundary_faces)));
+
+    for (size_t cell_id = 0; cell_id < _n_cells; ++cell_id) {
+        pattern_triplets.emplace_back(cell_id, cell_id, 1.0);
+    }
+
+    for (size_t face_id = _n_boundary_faces; face_id < _n_faces; ++face_id) {
+        const auto& face = _faces[face_id];
+        pattern_triplets.emplace_back(face.owner(), face.neighbor().value(), 1.0);
+        pattern_triplets.emplace_back(face.neighbor().value(), face.owner(), 1.0);
+    }
+
+    _equation_pattern.resize(_n_cells, _n_cells);
+    _equation_pattern.setFromTriplets(pattern_triplets.begin(), pattern_triplets.end());
 }
 
 auto PMesh::buildFacePermutation(const std::vector<size_t>& boundary_faces_ids,

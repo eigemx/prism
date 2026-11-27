@@ -48,21 +48,26 @@ auto Upwind::interpolate(f64 m_dot,
                          const mesh::Cell& neighbor, // NOLINT
                          const mesh::Face& face)     // NOLINT
     -> detail::CoeffsTriplet {
+    const bool needs_tilde = needsPhiTilde();
+
     // when `cell` is the upwind cell
-    f64 phi_tilde = phiTilde(field(), cell, neighbor);
-    f64 phi_upwind = phiAtDummyUpwind(field(), cell, neighbor);
-    const auto [l_plus, k_plus] = weightsNVF(phi_tilde);
+    const f64 phi_upwind_plus = phiAtDummyUpwind(field(), cell, neighbor);
+    const f64 phi_tilde_plus =
+        needs_tilde ? phiTildeFromUpwind(field(), cell, neighbor, phi_upwind_plus) : 0.0;
+    const auto [l_plus, k_plus] = weightsNVF(phi_tilde_plus);
     f64 a_C = std::max(m_dot, 0.0) * l_plus;
     f64 a_N = std::max(m_dot, 0.0) * k_plus;
-    f64 b = -std::max(m_dot, 0.0) * (1 - l_plus - k_plus) * phi_upwind;
+    f64 b = -std::max(m_dot, 0.0) * (1 - l_plus - k_plus) * phi_upwind_plus;
 
     // when `neighbor` is the upwind cell
-    phi_tilde = phiTilde(field(), neighbor, cell);          // NOLINT
-    phi_upwind = phiAtDummyUpwind(field(), neighbor, cell); // NOLINT
-    const auto [l_minus, k_minus] = weightsNVF(phi_tilde);
+    const f64 phi_upwind_minus = phiAtDummyUpwind(field(), neighbor, cell); // NOLINT
+    const f64 phi_tilde_minus =
+        needs_tilde ? phiTildeFromUpwind(field(), neighbor, cell, phi_upwind_minus) : 0.0;
+    const auto [l_minus, k_minus] = weightsNVF(phi_tilde_minus);
     a_C += -std::max(-m_dot, 0.0) * k_minus;
     a_N += -std::max(-m_dot, 0.0) * l_minus;
-    b += std::max(-m_dot, 0.0) * (1 - l_minus - k_minus) * phi_upwind;
+    b += std::max(-m_dot, 0.0) * (1 - l_minus - k_minus) * phi_upwind_minus;
+
     return {.ownerCoeff = a_C, .neighborCoeff = a_N, .rhs = b};
 }
 

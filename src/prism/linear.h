@@ -22,8 +22,8 @@ class RHSProvider {
     auto rhs() -> VectorXd& { return _b; }
 
     // getters and setters for the ith-row in the rhs vector.
-    auto rhs(size_t i) const -> double { return _b[i]; }
-    auto rhs(size_t i) -> double& { return _b[i]; }
+    auto rhs(size_t i) const -> f64 { return _b[static_cast<Eigen::Index>(i)]; }
+    auto rhs(size_t i) -> f64& { return _b[static_cast<Eigen::Index>(i)]; }
 
   private:
     VectorXd _b;
@@ -38,18 +38,31 @@ class LinearSystem : public RHSProvider {
     auto matrix() const -> const SparseMatrix& { return _A; }
     auto matrix() -> SparseMatrix& { return _A; }
 
-    // insert() updates the matrix coefficient at (i, j), with value v the value v does not
-    // overwrite existing value at that location but gets accumulated. insert() does not actually
-    // insert directly into matrix A, but inserts to a vector of triplets `_triplets` until
-    // collect() is called, which does the actual insertion to the matrix.
-    void insert(size_t i, size_t j, double v);
+    // Adopts a precomputed sparsity pattern (see mesh::PMesh::equationPattern()).
+    // Insertions are accumulated directly into the matrix values, so the pattern
+    // is never rebuilt and the assembly order does not matter.
+    void setPattern(const SparseMatrix& pattern);
 
-    // collect() should be called after inserting all the matrix coefficients
+    // insert() accumulates the coefficient at (i, j). With a pattern set, (i, j) must
+    // exist in it; otherwise coefficients are buffered as triplets until collect().
+    void insert(size_t i, size_t j, f64 v);
+
+    // collect() should be called after inserting all the matrix coefficients.
     void collect();
+
+    // Clears the coefficient values and RHS while keeping the sparsity pattern.
+    void resetValues();
+
+    // Accumulates the values of another system that shares this system's pattern.
+    void accumulateFrom(const LinearSystem& other);
 
   private:
     SparseMatrix _A;
-    std::vector<Eigen::Triplet<double>> _triplets;
+    std::vector<Eigen::Triplet<f64>> _triplets;
+
+    // Value slot of every matrix entry, grouped by row and sorted by column.
+    std::vector<std::vector<Pair<size_t, Eigen::Index>>> _row_slots;
+    bool _has_pattern {false};
 };
 
 } // namespace prism
