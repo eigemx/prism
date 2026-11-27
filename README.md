@@ -6,14 +6,13 @@ Prism is a modern C++ library for solving partial differential equations (PDEs) 
 - Mesh traversal with ease.
 - Native support for scalar, vector and tensor fields, with time history for transient schemes.
 - Pressure-velocity coupling algorithms: SIMPLE (steady), PISO (transient) and PRIME corrector, built on Rhie-Chow face interpolation, with automatic pressure reference for closed domains.
-- Linear solvers: BiCGSTAB and Jacobi, with reference-cell handling for singular (all-Neumann) systems.
 - Convection schemes: upwind, central difference, second-order upwind, QUICK, FROMM, and the high-resolution (TVD) schemes MINMOD, MUSCL and SMART.
-- Diffusion schemes with over-relaxed non-orthogonal correction for non-orthogonal meshes.
+- Diffusion schemes with non-orthogonal correction .
 - Gradient schemes: Green-Gauss (with skewness correction) and Least-squares.
-- Explicit and implicit source terms (gradient, divergence, laplacian, constant, ...).
+- Explicit and implicit source terms (gradient, divergence, laplacian, constant, and others).
 - Implicit transient schemes: Backward Euler (first order) and Adam-Moulton (second order).
 - Built-in boundary conditions: Fixed, FixedGradient, ZeroGradient, NoSlip, Symmetry and Outlet, with support for user-defined boundary conditions.
-- Courant number monitor for transient runs.
+- Solution monitors (currently only Courant number monitor for transient runs is implemented).
 - Exporting results to VTU format (ASCII or raw-binary-compressed), with a time-series writer for transient runs (hexahedral, tetrahedral and prism cells).
 - and much more...
 
