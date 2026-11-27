@@ -77,7 +77,8 @@ TEST_CASE("VtuTimeWriter writes the initial state and follows its interval", "[e
                                   .interval = 1,
                                   .write_pvd = false,
                                   .mode = output::WriteMode::Ascii,
-                                  .write_point_data = false});
+                                  .write_point_data = false,
+                                  .write_initial = true});
     writer.add(p);
     writer.write(); // initial state at step 0
     writer.writeAndAdvance(0.1);
@@ -88,5 +89,31 @@ TEST_CASE("VtuTimeWriter writes the initial state and follows its interval", "[e
     CHECK(writer.currentStep() == 2);
 
     std::filesystem::remove(step0);
+    std::filesystem::remove(step1);
+}
+
+TEST_CASE("VtuTimeWriter skips the initial state by default", "[export]") {
+    auto mesh = loadMesh("tests/cases/cavity_hex/mesh.unv");
+    auto p = makeShared<field::Scalar>("P", mesh, 1.0);
+
+    const auto prefix = tempPath("prism_time_writer_default");
+    const auto step0 = std::filesystem::path(prefix.string() + "_0000.vtu");
+    const auto step1 = std::filesystem::path(prefix.string() + "_0001.vtu");
+    std::filesystem::remove(step0);
+    std::filesystem::remove(step1);
+
+    output::VtuTimeWriter writer({.prefix = prefix.string(),
+                                  .interval = 1,
+                                  .write_pvd = false,
+                                  .mode = output::WriteMode::Ascii,
+                                  .write_point_data = false});
+    writer.add(p);
+    writer.write(); // no-op: write_initial is false by default
+    writer.writeAndAdvance(0.1);
+
+    CHECK_FALSE(std::filesystem::exists(step0));
+    CHECK(std::filesystem::exists(step1));
+    CHECK(writer.currentStep() == 1);
+
     std::filesystem::remove(step1);
 }

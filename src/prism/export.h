@@ -39,6 +39,9 @@ struct VtuTimeWriterOptions {
 
     // If true, also write IDW-interpolated PointData for each field.
     bool write_point_data {true};
+
+    // If true, write() may emit the initial state at step 0.
+    bool write_initial {false};
 };
 
 namespace detail {
@@ -137,7 +140,8 @@ class FieldRegistry {
  * for ParaView time-series support.
  *
  * Call write() once before the first advance()/writeAndAdvance() to emit the
- * initial state; the writer itself does not force an initial write. */
+ * initial state when write_initial is enabled; the writer itself does not force
+ * an initial write. */
 class VtuTimeWriter {
   public:
     /** @brief Construct a time-stepped writer.

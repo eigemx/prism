@@ -61,12 +61,9 @@ auto main(int argc, char* argv[]) -> int {
                                   .interval = 2,
                                   .write_pvd = true,
                                   .mode = output::WriteMode::RawBinaryCompressed,
-                                  .write_point_data = false});
+                                  .write_point_data = true});
     writer.add(p);
     writer.add(U);
-
-    // Emit the initial state before the time loop. writeAndAdvance() advances first.
-    writer.write();
 
     for (size_t ts = 0; ts < n_time_steps; ++ts) {
         time = (ts + 1) * dt;

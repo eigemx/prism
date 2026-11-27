@@ -392,6 +392,9 @@ void VtuTimeWriter::advance(f64 dt) {
 }
 
 void VtuTimeWriter::write() {
+    if (_step == 0 && !_options.write_initial) {
+        return;
+    }
     if (_step % _options.interval != 0) {
         return;
     }
